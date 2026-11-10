@@ -14,6 +14,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Milestone 2 started with owner-only publish history, version previews and restore to draft. Publishing a restored draft creates a new publication. The current live page stays in place until then.
 
+- Studio saves valid drafts after a one-second pause. It retains edits made while a save is pending and lets owners copy unsaved edits or load the saved version after a revision conflict. Publishing and avatar removal remain explicit.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -22,6 +24,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | `npm run lint`, `npm run typecheck`, `npm run build` | ESLint, Next route types, strict TypeScript and production compiler. | Passed |
 | `npm audit` | Locked production and development dependency tree. Resolved the initial development minimatch advisory via a scoped override. | 0 reported vulnerabilities |
 | `npm run test:e2e -- --workers=2` with `PLAYWRIGHT_CHANNEL=msedge` | Six homepage widths, anonymous Studio redirect, liveness and four mobile axe scans. Fixed the brand label mismatch and reran. | 12 passed, 2 provider tests skipped |
+| [GitHub Actions 42831324792](https://github.com/Truwty/snoozer-uk/actions/runs/42831324792) | Disposable Supabase with actual Auth and Storage. Version restore and republish, authenticated Studio and public-page axe scans, profile deletion, signed upload after deletion, and worker cleanup that preserves the replacement profile’s files. | 13 unit/SQL tests and 14 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
@@ -33,4 +36,4 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
-- Complete active-profile orphan cleanup, hosted cleanup scheduling, wider abuse and quota controls, and editor conflict recovery. Next implement autosave and editor conflict recovery, followed by the remaining [feature ledger](feature-ledger.md).
+- Complete active-profile orphan cleanup, hosted cleanup scheduling, wider abuse and quota controls. Continue Milestone 2 with active-profile asset expiry, then the remaining [feature ledger](feature-ledger.md).

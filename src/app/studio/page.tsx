@@ -45,7 +45,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <AvatarUpload revision={draft.revision} />
       </section>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
-      <Editor draft={draft} />
+      <Editor key={draft.username} draft={draft} />
       <DeleteProfile username={draft.username} revision={draft.revision} />
     </>}
   </main>;

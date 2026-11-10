@@ -212,3 +212,66 @@ test("concurrent claims yield one winner and direct storage requests are denied"
   expect((await other.client.storage.from("avatar-incoming").upload(`${scope}/pending`, image)).error).toBeTruthy();
   expect((await other.client.rpc("set_avatar", { p_owner: winner.id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
 });
+
+test("autosave keeps the public page stable and recovers a stale tab", async ({ page, request }) => {
+  test.setTimeout(90000);
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const name = `autosave-${randomUUID().slice(0, 12)}`;
+  const email = `${name}@example.com`;
+  expect((await admin.auth.admin.createUser({ email, password, email_confirm: true })).error).toBeNull();
+  await page.goto("/sign-in");
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Username").fill(name);
+  await page.getByRole("button", { name: "Claim address" }).click();
+  await page.getByRole("button", { name: "Publish page" }).click();
+  await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
+
+  const stale = await page.context().newPage();
+  await stale.goto("/studio");
+  await expect(stale.getByLabel("Display name")).toHaveValue(name);
+
+  await page.getByLabel("Display name").fill("Autosaved from the first tab");
+  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+  const publicPage = await request.get(`/${name}`);
+  expect(await publicPage.text()).not.toContain("Autosaved from the first tab");
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
+
+  await stale.getByLabel("Display name").fill("Unsaved from the stale tab");
+  await expect(stale.getByRole("alert").filter({ hasText: "Your draft changed elsewhere" })).toBeVisible();
+  await expect(stale.getByRole("button", { name: "Publish page" })).toBeDisabled();
+  await stale.getByText("Copy unsaved edits", { exact: true }).click();
+  await expect(stale.getByLabel("Unsaved profile content")).toHaveValue(/Unsaved from the stale tab/);
+  await stale.getByRole("button", { name: "Discard local edits and load saved draft" }).click();
+  await expect(stale.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
+
+  await stale.getByRole("button", { name: "Add link" }).click();
+  await stale.getByLabel("Link 1 label").fill("Portfolio");
+  await expect(stale.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
+  await stale.getByLabel("Link 1 URL").fill("https://example.com/");
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.reload();
+  await expect(stale.getByLabel("Link 1 label")).toHaveValue("Portfolio");
+  await expect(stale.getByLabel("Link 1 URL")).toHaveValue("https://example.com/");
+
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await stale.route("**/studio", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    await gate;
+    await route.fulfill({ response });
+  }, { times: 1 });
+  try {
+    await stale.getByLabel("Bio").fill("First edit");
+    await expect(stale.getByRole("status")).toHaveText("Saving…");
+    await stale.getByLabel("Bio").fill("Edit made during the save");
+  } finally {
+    release();
+  }
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.reload();
+  await expect(stale.getByLabel("Bio")).toHaveValue("Edit made during the save");
+});

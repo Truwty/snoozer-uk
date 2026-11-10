@@ -1,20 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { save } from "@/app/studio/actions";
-import { initialState } from "@/lib/actions";
+import { useState } from "react";
 import { themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { useDraftEditor } from "./use-draft-editor";
 
 export function Editor({ draft }: { draft: DraftProfile }) {
-  const [state, submit, pending] = useActionState(save, initialState);
-  const [content, setContent] = useState<ProfileContent>(draft);
-  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload } = useDraftEditor(draft);
   const [compact, setCompact] = useState(false);
+  const content = edits?.content ?? saved;
+  const removeAvatar = edits?.removeAvatar ?? false;
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
-    setContent((current) => ({ ...current, [field]: value }));
+    edit((current) => ({ ...current, content: { ...current.content, [field]: value } }));
   }
 
   function move(from: number, to: number) {
@@ -24,10 +23,12 @@ export function Editor({ draft }: { draft: DraftProfile }) {
   }
 
   return <div className="editor-grid">
-    <form action={submit} className="panel editor-form stack">
-      <input type="hidden" name="revision" value={draft.revision} />
-      <input type="hidden" name="links" value={JSON.stringify(content.links)} />
-      <fieldset disabled={pending} className="stack">
+    <form className="panel editor-form stack" onSubmit={(event) => {
+      event.preventDefault();
+      const button = (event.nativeEvent as SubmitEvent).submitter;
+      void commit(button instanceof HTMLButtonElement && button.value === "publish" ? "publish" : "draft");
+    }}>
+      <fieldset className="stack">
         <legend className="section-title">Profile details</legend>
         <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
           onChange={(event) => set("display_name", event.target.value)} /></label>
@@ -39,10 +40,13 @@ export function Editor({ draft }: { draft: DraftProfile }) {
         </select></label>
         <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
           onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
-        {draft.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar}
-          onChange={(event) => setRemoveAvatar(event.target.checked)} /> Remove avatar from draft</label>}
+        {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
+          onChange={(event) => {
+            const checked = event.target.checked;
+            edit((current) => ({ ...current, removeAvatar: checked }));
+          }} /> Remove avatar on next manual save</label>}
       </fieldset>
-      <fieldset disabled={pending} className="stack">
+      <fieldset className="stack">
         <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
         {content.links.map((item, index) => <div className="link-editor stack" key={index}>
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
@@ -59,10 +63,27 @@ export function Editor({ draft }: { draft: DraftProfile }) {
           onClick={() => set("links", [...content.links, { label: "", url: "" }])}>Add link</button>
       </fieldset>
       <div className="actions">
-        <button className="button" disabled={pending} name="intent" value="draft">Save draft</button>
-        <button className="button primary" disabled={pending} name="intent" value="publish">Publish page</button>
+        <button className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>
+        <button className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
       </div>
-      <ActionMessage state={state} />
+      {conflict && !pending ? <div className="stack">
+        <p className="message error" role="alert">Your draft changed elsewhere. Your unsaved edits are still here.</p>
+        <details>
+          <summary>Copy unsaved edits</summary>
+          <label>Unsaved profile content
+            <textarea readOnly rows={6} value={JSON.stringify({
+              display_name: content.display_name, bio: content.bio, theme: content.theme, indexable: content.indexable,
+              links: content.links, removeAvatar,
+            }, null, 2)} />
+          </label>
+        </details>
+        <div><button className="button" type="button" onClick={() => void discardAndReload()}>Discard local edits and load saved draft</button></div>
+      </div> : null}
+      {pending ? <p className="message" role="status">Saving…</p> : <>
+        {edits && !conflict && message.status !== "error"
+          ? <p className="message" role="status">{removeAvatar ? "Save manually to remove the avatar." : "Unsaved changes"}</p>
+          : <ActionMessage state={message} />}
+      </>}
     </form>
     <aside className="preview stack">
       <div className="actions preview-controls">
@@ -70,8 +91,8 @@ export function Editor({ draft }: { draft: DraftProfile }) {
         <button type="button" className="button small" aria-pressed={compact} onClick={() => setCompact(!compact)}>Phone width</button>
       </div>
       <div className={compact ? "preview-phone" : undefined}>
-        <ProfileCard preview profile={{ ...draft, ...content }}
-          avatarSrc={draft.avatar && !removeAvatar ? `/studio/avatar/${draft.avatar}` : undefined} />
+        <ProfileCard preview profile={{ ...saved, ...content }}
+          avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
       </div>
     </aside>
   </div>;

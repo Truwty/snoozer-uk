@@ -67,7 +67,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.3 | Undo And Redo | Deferred |
 | 7.4 | Autosave With Revision Numbers | Partially implemented |
 | 7.5 | Draft Versus Published State | Tested locally |
-| 7.6 | Version History | Implemented for the last 20 publications, including owner preview and restore-to-draft |
+| 7.6 | Version History | Tested in disposable CI for owner preview, restore-to-draft and republish of retained versions |
 | 7.7 | Live Responsive Preview | Partially implemented |
 | 7.8 | Snap-To-Grid Where Applicable | Deferred |
 | 7.9 | Global Design Tokens | Partially implemented |
