@@ -49,5 +49,5 @@ jobs:
             printf 'SNOOZER_TEST_LOCAL_SUPABASE=1\n'
           } >> "$GITHUB_ENV"
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --only-shell chromium
       - run: npm run test:e2e -- --workers=2

@@ -27,7 +27,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 The embedded PostgreSQL tests execute the actual application migrations with small adapters for Supabase-specific roles and catalogues. They do not verify hosted Auth, Storage or network behaviour. [GitHub Actions run 42827654246](https://github.com/Truwty/snoozer-uk/actions/runs/42827654246) passed all 10 unit/SQL tests and 14 browser tests against disposable Supabase. It covered registration through publishing and password recovery, concurrent claims, and direct storage denial.
 
-The first deletion CI run caught accessible names on Studio reorder buttons that differed from their visible labels. The labels were corrected for the rerun.
+The first deletion CI run caught accessible names on Studio reorder buttons that differed from their visible labels. The labels were corrected. A later run stalled on optional Ubuntu font downloads, so CI now installs only the headless Chromium binary on the hosted runner.
 
 ## Remaining
 
