@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { galleryItem, galleryLimit } from "./gallery";
 
 export const profileRevisionNumber = z.number().int().nonnegative().max(2147483646);
 export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
@@ -49,6 +50,7 @@ export const profileContent = z.object({
 export const publishedProfile = profileContent.extend({
   username,
   avatar: z.uuid().nullable(),
+  gallery: z.array(galleryItem).max(galleryLimit).default([]),
 });
 
 export const draftProfile = publishedProfile.extend({

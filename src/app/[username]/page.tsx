@@ -36,7 +36,7 @@ export default async function Page({ params }: Props) {
   if (!profile) notFound();
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   return <main className="public-page">
-    <ProfileCard profile={profile} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <Link className="public-credit" href="/">Made with Snoozer</Link>
   </main>;
 }

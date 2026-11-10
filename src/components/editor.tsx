@@ -153,7 +153,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
         </label>
       </div>
       <div className={"preview-card preview-" + previewSize}>
-        <ProfileCard preview profile={template ? {
+        <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme,
           sections: content.sections.length ? content.sections : template.sections,
         } : { ...saved, ...content }}

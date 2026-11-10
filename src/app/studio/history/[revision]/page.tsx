@@ -25,7 +25,7 @@ export default async function Page({ params }: { params: Promise<{ revision: str
     <section className="panel stack">
       <h1>Version {publication.revision}</h1>
       <p><time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}</p>
-      <ProfileCard profile={publication} preview avatarSrc={publication.avatar ? `/studio/avatar/${publication.avatar}` : undefined} />
+      <ProfileCard profile={publication} preview galleryBase="/studio/gallery/image" avatarSrc={publication.avatar ? `/studio/avatar/${publication.avatar}` : undefined} />
       <RestorePublication revision={publication.revision} draftRevision={publication.draft_revision} />
     </section>
   </main>;

@@ -31,6 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
       <header className="studio-heading">
         <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1><p className="muted">@{draft.username}</p></div>
         <div className="stack status-panel">
+          <Link className="button small" href="/studio/gallery">Image gallery</Link>
           <Link className="button small" href="/studio/history">Publish history</Link>
           <p className="status-label">{draft.published_revision === null ? "Offline · Draft only"
             : draft.revision === draft.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p>

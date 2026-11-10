@@ -274,6 +274,66 @@ test("concurrent claims yield one winner and direct storage requests are denied"
   expect((await other.client.rpc("set_avatar", { p_owner: winner.id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
 });
 
+test("gallery images upload to private Storage and follow publication visibility", async ({ page, request }) => {
+  test.setTimeout(90000);
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const name = "gallery-" + randomUUID().slice(0, 12);
+  const email = name + "@example.com";
+  expect((await admin.auth.admin.createUser({ email, password, email_confirm: true })).error).toBeNull();
+  await page.goto("/sign-in");
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Username").fill(name);
+  await page.getByRole("button", { name: "Claim address" }).click();
+  await page.getByRole("link", { name: "Image gallery" }).click();
+  await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  await page.getByLabel("Image description").fill("A disguised file");
+  await page.getByLabel("Choose a gallery image").setInputFiles({
+    name: "invalid.png", mimeType: "image/png", buffer: Buffer.from("<svg/>"),
+  });
+  await page.getByRole("button", { name: "Upload image" }).click();
+  await expect(page.getByRole("alert")).toContainText("Choose a single JPEG, PNG or WebP");
+  await expect(page.getByRole("img", { name: "A disguised file" })).toHaveCount(0);
+
+  const image = await sharp({ create: { width: 60, height: 30, channels: 3, background: "blue" } }).png().toBuffer();
+  for (const alt of ["Blue shoreline", "Open water"]) {
+    await page.getByLabel("Image description").fill(alt);
+    await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
+    await page.getByRole("button", { name: "Upload image" }).click();
+    await expect(page.getByRole("status")).toContainText("Image added to your draft");
+    await expect(page.getByRole("img", { name: alt })).toBeVisible();
+  }
+  const privatePath = (await page.getByRole("img", { name: "Blue shoreline" }).getAttribute("src"))!;
+  const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
+  expect((await page.request.get(privatePath)).headers()["content-type"]).toBe("image/webp");
+  expect((await request.get(privatePath)).status()).toBe(404);
+  expect((await request.get(publicPath)).status()).toBe(404);
+
+  await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
+  await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
+  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("button", { name: "Publish page" }).click();
+  await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
+  const liveImage = await request.get(publicPath);
+  expect(liveImage.status()).toBe(200);
+  expect(liveImage.headers()["content-type"]).toBe("image/webp");
+  const html = await (await request.get("/" + name)).text();
+  expect(html.indexOf('alt="Open water"')).toBeLessThan(html.indexOf('alt="Blue shoreline"'));
+  expect(html).toContain('alt="Open water"');
+
+  await page.getByRole("link", { name: "Image gallery" }).click();
+  await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
+  expect((await request.get(publicPath)).status()).toBe(200);
+  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("button", { name: "Publish page" }).click();
+  await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
+  expect((await page.request.get(privatePath)).status()).toBe(200);
+});
+
 test("autosave keeps the public page stable and recovers a stale tab", async ({ page, request }) => {
   test.setTimeout(90000);
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });

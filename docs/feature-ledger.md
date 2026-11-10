@@ -68,7 +68,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
 | 7.5 | Draft Versus Published State | Tested locally |
 | 7.6 | Version History | Tested in disposable CI for owner preview, restore-to-draft and republish of retained versions |
-| 7.7 | Live Responsive Preview | Partially implemented |
+| 7.7 | Live Responsive Preview | Tested in disposable CI for live preview, with matching Studio and public card measurements at 320 and 375 px |
 | 7.8 | Snap-To-Grid Where Applicable | Deferred |
 | 7.9 | Global Design Tokens | Partially implemented |
 | 7.10 | Per-Block Overrides | Deferred |
@@ -191,11 +191,11 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.2 | Background Image | Deferred |
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
-| 12.5 | Gallery And Folders | Deferred |
+| 12.5 | Gallery And Folders | Image galleries implemented and verified locally; folders deferred |
 | 12.6 | Drag-And-Drop Uploads | Deferred |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |
-| 12.9 | Image Transcoding | Partially implemented |
+| 12.9 | Image Transcoding | Avatar and gallery WebP conversion; gallery checks run locally |
 | 12.10 | Thumbnail Variants | Deferred |
 | 12.11 | Video Poster Frames | Deferred |
 | 12.12 | Audio Metadata | Deferred |

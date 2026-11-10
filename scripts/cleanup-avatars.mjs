@@ -21,11 +21,13 @@ async function rpc(name, args) {
 
 async function removeObjects(scope, bucketName, validName) {
   const bucket = client.storage.from(bucketName);
-  const { data, error } = await bucket.list(scope, { limit: 100 });
-  if (error || !data || data.some(({ name }) => !validName.test(name))) return false;
-  if (data.length === 0) return true;
-  const { error: removeError } = await bucket.remove(data.map(({ name }) => `${scope}/${name}`));
-  if (removeError) return false;
+  for (let batch = 0; batch < 5; batch++) {
+    const { data, error } = await bucket.list(scope, { limit: 100 });
+    if (error || !data || data.some(({ name }) => !validName.test(name))) return false;
+    if (data.length === 0) return true;
+    const { error: removeError } = await bucket.remove(data.map(({ name }) => scope + "/" + name));
+    if (removeError) return false;
+  }
   const { data: remaining, error: listError } = await bucket.list(scope, { limit: 1 });
   return !listError && remaining?.length === 0;
 }
@@ -44,6 +46,8 @@ for (let index = 0; index < 10; index++) {
     const results = await Promise.all([
       removeObjects(job.scope, "avatar-incoming", /^(?:pending|[0-9a-f-]{36}\.upload)$/),
       removeObjects(job.scope, "avatar-images", /^[0-9a-f-]{36}\.webp$/),
+      removeObjects(job.scope, "gallery-incoming", /^[0-9a-f-]{36}\.upload$/),
+      removeObjects(job.scope, "gallery-images", /^[0-9a-f-]{36}\.webp$/),
     ]);
     success = results.every(Boolean);
   } catch {
@@ -65,5 +69,13 @@ for (const [operation, bucket] of [
   const { error } = await client.storage.from(bucket).remove(keys);
   if (error) throw new Error("Couldn’t finish the avatar sweep. Run cleanup again to retry.");
   console.log(`Avatar sweep processed ${keys.length} objects in ${bucket}.`);
+}
+await rpc("collect_gallery_garbage");
+for (const bucket of ["gallery-incoming", "gallery-images"]) {
+  const keys = await rpc("find_orphan_gallery_objects", { p_bucket: bucket });
+  if (!keys.length) continue;
+  const { error } = await client.storage.from(bucket).remove(keys);
+  if (error) throw new Error("Couldn’t finish the gallery sweep. Run cleanup again to retry.");
+  console.log("Gallery sweep processed " + keys.length + " objects in " + bucket + ".");
 }
 if (failed) process.exitCode = 1;

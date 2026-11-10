@@ -20,7 +20,7 @@ export function anonymousClient() {
 export function storageAdmin() {
   const { url } = supabaseConfig();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error("Avatar storage is not configured.");
+  if (!key) throw new Error("Media storage is not configured.");
   return createClient(url, key, options);
 }
 

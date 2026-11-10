@@ -1,8 +1,9 @@
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 
-export function ProfileCard({ profile, avatarSrc, preview = false, previewLabel = "Page preview" }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
   profile: PublishedProfile;
   avatarSrc?: string;
+  galleryBase?: string;
   preview?: boolean;
   previewLabel?: string;
 }) {
@@ -28,6 +29,16 @@ export function ProfileCard({ profile, avatarSrc, preview = false, previewLabel 
           <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label} <span aria-hidden="true">↗</span></a></li>
         )}
       </ul>}
+      {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
+        {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
+        <ul className="profile-gallery-grid">
+          {profile.gallery.map((item) => <li key={item.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
+              width={item.width} height={item.height} loading="lazy" />
+          </li>)}
+        </ul>
+      </section>}
     </div>
   </section>;
 }

@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Eight SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Nine SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -27,6 +27,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio offers wide, 375 px and 320 px previews. Profile card spacing and type respond to the card width so a phone preview on a desktop follows the same rules as the public page.
 
+- Studio image galleries support private uploads, draft reordering and removal, and publication snapshots. The media worker now clears expired gallery attempts and unreferenced assets. See [Studio image gallery](image-gallery.md).
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -41,6 +43,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 42908138432](https://github.com/Truwty/snoozer-uk/actions/runs/42908138432) | Disposable Supabase verified signed upload replay after discard, replacement staging and profile cleanup. SQL tests cover stage expiry and the per-profile attempt limit. | 16 unit/SQL and 15 browser tests passed |
 | [GitHub Actions 42908876092](https://github.com/Truwty/snoozer-uk/actions/runs/42908876092) | Current Studio and asset baseline. Verified keyboard reordering, focus following the moved link, undo and redo across autosaves, stale-tab recovery, upload replay isolation and profile cleanup. | 16 unit/SQL and 15 browser tests passed |
 | [GitHub Actions 42922122949](https://github.com/Truwty/snoozer-uk/actions/runs/42922122949) | Template gallery and Studio selection, starter application, section ordering, literal HTML-like text, publish and history restore. | 17 unit/SQL and 16 browser tests passed |
+| [GitHub Actions 42922738910](https://github.com/Truwty/snoozer-uk/actions/runs/42922738910) | Full disposable Supabase suite, with browser comparison of Studio and public card widths and title sizes at 320 and 375 pixels. | 17 unit/SQL and 16 browser tests passed |
+| Local gallery verification | Raster orientation, metadata stripping, disguised and animated input rejection, pixel limits, owner-only media access, snapshot ordering, restore and cleanup selection. | 20 unit/SQL tests passed; provider browser verification pending |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
@@ -52,4 +56,4 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
-- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with additional block types, a media gallery and asset moderation, then the remaining [feature ledger](feature-ledger.md).
+- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with asset moderation, media folders and additional block types, then the remaining [feature ledger](feature-ledger.md).

@@ -92,13 +92,75 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(save(2, "Cross-user overwrite", [], true)).rejects.toMatchObject({ code: "40001" });
     await act("anon");
     expect(await published("alice")).toEqual({
-      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [],
+      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [],
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", alice);
     await db.query("select public.unpublish_profile(2)");
     await act("anon");
     expect(await published("alice")).toBeNull();
+  });
+
+  it("snapshots gallery order, authorizes images by publication, and preserves retained media", async () => {
+    type Stage = { scope: string; id: string };
+    const prepare = (revision: number, alt: string | null, id: string | null = null) =>
+      result<Stage>("select public.prepare_gallery_upload($1,$2,$3,$4) as value", [alice, revision, alt, id]);
+    const resolve = (id: string, name: string | null, owner: string | null) =>
+      result("select public.gallery_object($1,$2,$3) as value", [id, name, owner]);
+    const commit = (revision: number, id: string, variant: string) =>
+      result("select public.commit_gallery_upload($1,$2,$3,$4,200,100) as value", [alice, revision, id, variant]);
+    const edit = (revision: number, id: string, operation: string) =>
+      result("select public.edit_gallery($1,$2,$3) as value", [revision, id, operation]);
+
+    await act("authenticated", alice);
+    await claim("alice");
+    await expect(prepare(0, "First")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const first = await prepare(0, "First");
+    expect(await resolve(first.id, null, alice)).toBeNull();
+    expect(await commit(0, first.id, avatar)).toBe(false);
+    expect(await prepare(0, null, first.id)).toMatchObject({ id: first.id });
+    expect(await prepare(0, null, first.id)).toBeNull();
+    expect(await commit(0, first.id, avatar)).toBe(true);
+    expect(await prepare(0, "Stale")).toBeNull();
+    const second = await prepare(1, "Second");
+    await prepare(1, null, second.id);
+    expect(await commit(1, second.id, bob)).toBe(true);
+    expect(await resolve(first.id, "alice", null)).toBeNull();
+    expect(await resolve(first.id, null, bob)).toBeNull();
+    expect(await resolve(first.id, null, alice)).toMatchObject({ scope: first.scope, variant: avatar });
+
+    await act("authenticated", bob);
+    await claim("bobby");
+    expect(await edit(0, first.id, "remove")).toBe(false);
+    await act("authenticated", alice);
+    expect(await edit(2, second.id, "earlier")).toBe(true);
+    await save(3, "Published gallery", [], true);
+    expect(await published("alice")).toMatchObject({ gallery: [
+      { id: second.id, alt: "Second", width: 200, height: 100 }, { id: first.id, alt: "First" },
+    ] });
+    expect(await edit(3, first.id, "remove")).toBe(false);
+    expect(await edit(4, first.id, "remove")).toBe(true);
+    await save(5, "New gallery", [], true);
+    expect(await published("alice")).toMatchObject({ gallery: [{ id: second.id }] });
+    await act("service_role");
+    expect(await resolve(first.id, "alice", null)).toBeNull();
+    expect(await resolve(first.id, null, alice)).not.toBeNull();
+    await db.exec("reset role; update snoozer.gallery_items set created_at = now() - interval '2 days';");
+    await act("service_role");
+    expect(await result("select public.collect_gallery_garbage() as value")).toBe(0);
+    const abandoned = await prepare(6, "Abandoned");
+    await db.exec("reset role; update snoozer.gallery_items set created_at = now() - interval '2 days' where variant is null;");
+    const staleKey = abandoned.scope + "/" + abandoned.id + ".upload";
+    await db.query("insert into storage.objects values ('gallery-incoming',$1,now() - interval '2 days')", [staleKey]);
+    await act("service_role");
+    expect(await result("select public.collect_gallery_garbage() as value")).toBe(1);
+    expect(await result("select public.find_orphan_gallery_objects('gallery-incoming') as value")).toEqual([staleKey]);
+
+    await act("authenticated", alice);
+    await db.query("select public.restore_publication(4,6)");
+    expect(await draft()).toMatchObject({ revision: 7, gallery: [{ id: second.id }, { id: first.id }] });
+    expect(await published("alice")).toMatchObject({ gallery: [{ id: second.id }] });
   });
 
   it("rejects unsafe links from direct RPC clients without changing the revision", async () => {

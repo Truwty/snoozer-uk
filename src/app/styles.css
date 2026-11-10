@@ -110,6 +110,15 @@ textarea { resize: vertical; }
 .profile-links a:hover { text-decoration: underline; }
 .profile-links a:focus-visible { outline-color: var(--text); }
 
+.profile-gallery { display: grid; gap: .65rem; width: 100%; text-align: start; }
+.profile-gallery h2, .profile-gallery h3 { margin: 0; font-size: 1.1rem; }
+.profile-gallery-grid, .gallery-editor-grid { display: grid; gap: .65rem; list-style: none; margin: 0; padding: 0; }
+.profile-gallery-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+.gallery-editor-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+.gallery-editor-grid li { min-width: 0; overflow-wrap: anywhere; }
+.gallery-image { display: block; width: 100%; height: auto; border-radius: .7rem; }
+.gallery-editor-grid .gallery-image { width: 100%; height: 10rem; object-fit: contain; background: var(--ground); }
+
 @media (max-width: 54rem) {
   .hero { grid-template-columns: 1fr 1fr; min-height: 26rem; }
   .hero-copy { gap: 1rem; }
