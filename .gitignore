@@ -1,0 +1,14 @@
+node_modules/
+.next/
+coverage/
+test-results/
+playwright-report/
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+supabase/.temp/
+supabase/.branches/
+*.dump
+*.pem
+*.key

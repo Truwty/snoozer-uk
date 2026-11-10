@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Scan source for secrets
+        run: docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --redact --no-banner
+      - run: npm audit
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Start disposable local Supabase
+        run: |
+          npx --yes supabase@3.1.0 start
+          eval "$(npx --yes supabase@3.1.0 status -o env)"
+          {
+            printf 'NEXT_PUBLIC_SITE_URL=http://localhost:3000\n'
+            printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$API_URL"
+            printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "${PUBLISHABLE_KEY:-$ANON_KEY}"
+            printf 'SUPABASE_SERVICE_ROLE_KEY=%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+            printf 'SNOOZER_TEST_LOCAL_SUPABASE=1\n'
+          } >> "$GITHUB_ENV"
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --workers=2
