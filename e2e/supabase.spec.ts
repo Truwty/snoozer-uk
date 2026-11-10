@@ -335,9 +335,11 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect((await page.request.get(privatePath)).status()).toBe(200);
 
-  // Locate the currently published image by its accessible name and use its public path.
-  await page.getByRole("link", { name: "View live page" }).click();
-  const openWaterPath = (await page.getByRole("img", { name: "Open water" }).getAttribute("src"))!;
+  // The Studio preview also contains this image, but uses the owner-only URL.
+  await page.goto("/" + name);
+  const openWater = page.getByRole("img", { name: "Open water" });
+  await expect(openWater).toHaveAttribute("src", /^\/media\/gallery\//);
+  const openWaterPath = (await openWater.getAttribute("src"))!;
   const openWaterId = openWaterPath.split("/").at(-1)!;
   expect((await request.get(openWaterPath)).status()).toBe(200);
   const takedown = execFileSync(process.execPath, [

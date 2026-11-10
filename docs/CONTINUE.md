@@ -1,6 +1,6 @@
 # Continuation
 
-Start in this source directory. Read [PROGRESS.md](PROGRESS.md), [implementation-plan.md](implementation-plan.md), and the original specification. The Milestone 1 profile lifecycle is implemented. Verify the latest CI evidence before expanding Studio.
+Start in this source directory. Read [PROGRESS.md](PROGRESS.md), [implementation-plan.md](implementation-plan.md), and the original attachment `Snoozer_Codex_Prompt_v2.md`. The Milestone 1 profile lifecycle is implemented. Verify the latest CI evidence before expanding Studio.
 
 1. The [current Studio CI run](https://github.com/Truwty/snoozer-uk/actions/runs/42922738910) passed 17 unit/SQL and 16 browser tests. Use it as the baseline for changes in the private repository. Run `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm audit`, and `npm run build` in order. Build and type generation both write `.next` and must run sequentially. Run `npm run test:e2e` with Chromium installed. On this Windows host, `$env:PLAYWRIGHT_CHANNEL='msedge'` uses installed Edge.
 2. Run `npx --yes supabase@3.1.0 start` on a host with Docker or Podman. It failed here because neither runtime is installed. Follow [setup-supabase.md](setup-supabase.md), export local env values with `SNOOZER_TEST_LOCAL_SUPABASE=1`, rebuild and run the provider tests in `e2e/supabase.spec.ts`. Check auth emails, valid and invalid uploads, exact-origin Server Actions, signed upload permissions, and concurrent claims. The passing CI baseline uses disposable services. Re-run the same paths on staging before launch.
