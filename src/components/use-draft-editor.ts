@@ -7,11 +7,22 @@ import { initialState, type ActionState } from "@/lib/actions";
 import { profileContent, type DraftProfile, type ProfileContent } from "@/lib/profile";
 
 type Edits = { revision: number; content: ProfileContent; removeAvatar: boolean };
+type EditorState = {
+  edits: Edits | null;
+  past: ProfileContent[];
+  future: ProfileContent[];
+  historyRevision: number;
+};
+
+function emptyEditor(historyRevision: number): EditorState {
+  return { edits: null, past: [], future: [], historyRevision };
+}
 
 export function useDraftEditor(draft: DraftProfile) {
   const router = useRouter();
   const [confirmed, setConfirmed] = useState<DraftProfile>();
-  const [edits, setEdits] = useState<Edits | null>(null);
+  const [editor, setEditor] = useState(() => emptyEditor(draft.revision));
+  const { edits } = editor;
   const [message, setMessage] = useState<ActionState>(initialState);
   const [conflicted, setConflicted] = useState(false);
   const [pending, setPending] = useState(false);
@@ -20,8 +31,36 @@ export function useDraftEditor(draft: DraftProfile) {
   const saved = confirmed && confirmed.revision > draft.revision ? confirmed : draft;
   const conflict = conflicted || Boolean(edits && edits.revision !== saved.revision);
 
+  const historyCurrent = Boolean(edits) || editor.historyRevision === saved.revision;
+
   function edit(update: (current: Edits) => Edits) {
-    setEdits((current) => update(current ?? { revision: saved.revision, content: saved, removeAvatar: false }));
+    setEditor((current) => {
+      const state = current.edits || current.historyRevision === saved.revision ? current : emptyEditor(saved.revision);
+      const previous = state.edits ?? { revision: saved.revision, content: saved, removeAvatar: false };
+      const next = update(previous);
+      if (next.content === previous.content) return { ...state, edits: next };
+      return { ...state, edits: next, past: [...state.past.slice(-29), previous.content], future: [] };
+    });
+    setMessage(initialState);
+  }
+
+  function travel(direction: "undo" | "redo") {
+    if (!historyCurrent) return;
+    setEditor((current) => {
+      const previous = current.edits ?? { revision: saved.revision, content: saved, removeAvatar: false };
+      if (direction === "undo") {
+        const content = current.past.at(-1);
+        return content ? {
+          ...current, edits: { ...previous, content }, past: current.past.slice(0, -1),
+          future: [...current.future, previous.content],
+        } : current;
+      }
+      const content = current.future.at(-1);
+      return content ? {
+        ...current, edits: { ...previous, content }, past: [...current.past, previous.content],
+        future: current.future.slice(0, -1),
+      } : current;
+    });
     setMessage(initialState);
   }
 
@@ -53,10 +92,12 @@ export function useDraftEditor(draft: DraftProfile) {
         published_revision: intent === "publish" ? result.revision : saved.published_revision,
       });
       // Edits made during the request start from this write, never from a newer server response.
-      setEdits((current) => {
-        if (!current || current === edits) return null;
-        return { ...current, revision: result.revision, removeAvatar: snapshot.removeAvatar ? false : current.removeAvatar };
-      });
+      setEditor((current) => ({
+        ...current, historyRevision: result.revision,
+        edits: current.edits && current.edits !== edits
+          ? { ...current.edits, revision: result.revision, removeAvatar: snapshot.removeAvatar ? false : current.edits.removeAvatar }
+          : null,
+      }));
       failed.current = null;
       setMessage({ status: "success", message: intent === "publish" ? "Your page is live." : "Draft saved." });
     } catch {
@@ -92,7 +133,7 @@ export function useDraftEditor(draft: DraftProfile) {
     try {
       const latest = await loadSavedDraft();
       setConfirmed(latest ?? undefined);
-      setEdits((current) => current === edits ? null : current);
+      setEditor((current) => current.edits === edits ? emptyEditor(latest?.revision ?? saved.revision) : current);
       setConflicted(false);
       failed.current = null;
       setMessage({ status: "success", message: "Loaded your saved draft." });
@@ -105,5 +146,9 @@ export function useDraftEditor(draft: DraftProfile) {
     }
   }
 
-  return { saved, edits, edit, pending, conflict, message, commit, discardAndReload };
+  return {
+    saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel,
+    canUndo: historyCurrent && editor.past.length > 0,
+    canRedo: historyCurrent && editor.future.length > 0,
+  };
 }

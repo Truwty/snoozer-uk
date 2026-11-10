@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
 import { useDraftEditor } from "./use-draft-editor";
 
 export function Editor({ draft }: { draft: DraftProfile }) {
-  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload } = useDraftEditor(draft);
+  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const [compact, setCompact] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
+  const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
 
@@ -20,6 +23,12 @@ export function Editor({ draft }: { draft: DraftProfile }) {
     const reordered = [...content.links];
     [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
     set("links", reordered);
+    setAnnouncement(`Moved link to position ${to + 1} of ${reordered.length}.`);
+    focusLink(to);
+  }
+
+  function focusLink(index: number) {
+    window.requestAnimationFrame(() => (linkLabels.current[index] ?? addLink.current)?.focus());
   }
 
   return <div className="editor-grid">
@@ -28,6 +37,10 @@ export function Editor({ draft }: { draft: DraftProfile }) {
       const button = (event.nativeEvent as SubmitEvent).submitter;
       void commit(button instanceof HTMLButtonElement && button.value === "publish" ? "publish" : "draft");
     }}>
+      <div className="actions" aria-label="Editing history" role="group">
+        <button type="button" className="button small" disabled={!canUndo} onClick={() => travel("undo")}>Undo edit</button>
+        <button type="button" className="button small" disabled={!canRedo} onClick={() => travel("redo")}>Redo edit</button>
+      </div>
       <fieldset className="stack">
         <legend className="section-title">Profile details</legend>
         <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
@@ -48,19 +61,28 @@ export function Editor({ draft }: { draft: DraftProfile }) {
       </fieldset>
       <fieldset className="stack">
         <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
+        <p className="sr-only" aria-live="polite">{announcement}</p>
         {content.links.map((item, index) => <div className="link-editor stack" key={index}>
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
+            ref={(input) => { linkLabels.current[index] = input; }}
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
           <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
           <div className="actions">
             <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
             <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
-            <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => set("links", content.links.filter((_, i) => i !== index))}>Remove</button>
+            <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => {
+              set("links", content.links.filter((_, i) => i !== index));
+              setAnnouncement(`Removed link ${index + 1}.`);
+              focusLink(Math.min(index, content.links.length - 2));
+            }}>Remove</button>
           </div>
         </div>)}
-        <button className="button" type="button" disabled={content.links.length >= 20}
-          onClick={() => set("links", [...content.links, { label: "", url: "" }])}>Add link</button>
+        <button className="button" type="button" ref={addLink} disabled={content.links.length >= 20}
+          onClick={() => {
+            set("links", [...content.links, { label: "", url: "" }]);
+            focusLink(content.links.length);
+          }}>Add link</button>
       </fieldset>
       <div className="actions">
         <button className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>

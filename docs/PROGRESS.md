@@ -20,6 +20,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Avatar staging uses a distinct key for each attempt. Studio expires attempts after 24 hours and permits 12 new attempts per UTC day per profile. Discard and completion retire the old key, and cleanup can remove expired staged files safely.
 
+- Studio supports undo and redo for profile fields and links during the current editor session, including edits already autosaved. Keyboard focus follows added, moved and removed links.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -31,6 +33,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 42831324792](https://github.com/Truwty/snoozer-uk/actions/runs/42831324792) | Disposable Supabase with actual Auth and Storage. Version restore and republish, authenticated Studio and public-page axe scans, profile deletion, signed upload after deletion, and worker cleanup that preserves the replacement profile’s files. | 13 unit/SQL tests and 14 browser tests passed |
 | [GitHub Actions 42832744852](https://github.com/Truwty/snoozer-uk/actions/runs/42832744852) | Autosave persistence, public-page isolation, changes made during an in-flight save and conflict recovery across two tabs. | 13 unit/SQL and 15 browser tests passed |
 | [GitHub Actions 42833454025](https://github.com/Truwty/snoozer-uk/actions/runs/42833454025) | Processed avatar sweep migration and worker on disposable Supabase. SQL tests cover aged orphan selection, draft and history protection, and access control. | Passed |
+| [GitHub Actions 42908138432](https://github.com/Truwty/snoozer-uk/actions/runs/42908138432) | Disposable Supabase verified signed upload replay after discard, replacement staging and profile cleanup. SQL tests cover stage expiry and the per-profile attempt limit. | 16 unit/SQL and 15 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
@@ -42,4 +45,4 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
-- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with accessible block editing, templates and media gallery, then the remaining [feature ledger](feature-ledger.md).
+- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with richer content blocks, templates and a media gallery, then the remaining [feature ledger](feature-ledger.md).

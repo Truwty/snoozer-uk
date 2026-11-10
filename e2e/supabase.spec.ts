@@ -93,6 +93,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await page.getByLabel(`Link ${index + 1} URL`).fill(`https://example.com/${label}`);
     }
     await page.getByRole("button", { name: "Move up (link 2)" }).press("Enter");
+    await expect(page.getByLabel("Link 1 label")).toBeFocused();
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
+    await page.getByRole("button", { name: "Undo edit" }).press("Enter");
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
+    await page.getByRole("button", { name: "Redo edit" }).press("Enter");
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -290,6 +296,11 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   } finally {
     release();
   }
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.getByRole("button", { name: "Undo edit" }).click();
+  await expect(stale.getByLabel("Bio")).toHaveValue("First edit");
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.getByRole("button", { name: "Redo edit" }).click();
   await expect(stale.getByRole("status")).toHaveText("Draft saved.");
   await stale.reload();
   await expect(stale.getByLabel("Bio")).toHaveValue("Edit made during the save");
