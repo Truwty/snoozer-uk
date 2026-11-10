@@ -258,4 +258,57 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
     expect(await result("select public.find_orphan_avatars() as value")).toEqual([`${scope}/${orphan}.webp`]);
   });
+
+  it("rotates staging keys, rejects retired attempts and expires only old uploads", async () => {
+    await act("authenticated", alice);
+    await claim("staging-alice");
+    await expect(db.query("select public.prepare_avatar_upload($1,0,true)", [alice])).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const prepare = (open: boolean) =>
+      result<{ key: string | null; scope: string }>("select public.prepare_avatar_upload($1,0,$2) as value", [alice, open]);
+    const clear = (key: string) => result("select public.clear_avatar_upload($1,0,$2) as value", [alice, key]);
+    expect((await prepare(false))?.key).toBeNull();
+    const initial = (await prepare(true))!;
+    expect(initial.key).toMatch(/\.upload$/);
+    expect(await prepare(true)).toEqual(initial);
+    expect(await clear(initial.key!)).toBe(true);
+    const next = (await prepare(true))!;
+    expect(next.key).not.toBe(initial.key);
+    expect(await clear(initial.key!)).toBe(false);
+    expect(await result("select public.commit_avatar_upload($1,0,$2,$3) as value", [alice, initial.key, avatar])).toBe(false);
+
+    await db.exec("reset role");
+    await db.query(`insert into storage.objects values
+      ('avatar-incoming',$1,now()-interval '2 days'),
+      ('avatar-incoming',$2,now()-interval '2 days'),
+      ('avatar-incoming',$3,now())`, [
+      `${initial.scope}/${initial.key}`,
+      `${next.scope}/${next.key}`,
+      `${next.scope}/pending`,
+    ]);
+    await act("service_role");
+    expect(await result("select public.find_abandoned_avatar_uploads() as value")).toEqual([`${initial.scope}/${initial.key}`]);
+    await db.exec("reset role; update snoozer.profiles set avatar_upload_started_at = now() - interval '2 days';");
+    await act("service_role");
+    expect((await prepare(false))?.key).toBeNull();
+    expect(await result("select public.commit_avatar_upload($1,0,$2,$3) as value", [alice, next.key, avatar])).toBe(false);
+    expect(await result("select public.find_abandoned_avatar_uploads() as value"))
+      .toEqual(expect.arrayContaining([`${initial.scope}/${initial.key}`, `${next.scope}/${next.key}`]));
+    const newest = (await prepare(true))!;
+    expect(newest.key).not.toBe(next.key);
+    expect(await result("select public.commit_avatar_upload($1,0,$2,$3) as value", [alice, newest.key, avatar])).toBe(true);
+  });
+
+  it("limits new upload attempts without charging retries against the quota", async () => {
+    await act("authenticated", alice);
+    await claim("quota-alice");
+    await act("service_role");
+    const open = () => result<{ key: string }>("select public.prepare_avatar_upload($1,0,true) as value", [alice]);
+    for (let i = 0; i < 12; i++) {
+      const attempt = (await open())!;
+      expect(await open()).toEqual(attempt);
+      await result("select public.clear_avatar_upload($1,0,$2) as value", [alice, attempt.key]);
+    }
+    await expect(open()).rejects.toMatchObject({ code: "P1003" });
+  });
 });

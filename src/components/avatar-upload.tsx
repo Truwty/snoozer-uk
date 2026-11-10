@@ -23,7 +23,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
     setBusy(true);
     setState(initialState);
     try {
-      const intent = await requestAvatarUpload(revision);
+      const intent = await requestAvatarUpload(revision, Boolean(file));
       if (intent.error) throw new Error(intent.error);
       if (!intent.staged) {
         if (!file) throw new Error("Choose an image to upload.");
@@ -35,7 +35,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
       } else if (file) {
         throw new Error("An image is already pending. Clear the file selection to finish it, or discard it before uploading a new image.");
       }
-      const result = await finishAvatarUpload(revision);
+      const result = await finishAvatarUpload(revision, intent.uploadKey!);
       if (result.error) throw new Error(result.error);
       if (input.current) input.current.value = "";
       setState({ status: "success", message: result.message ?? "Avatar saved." });

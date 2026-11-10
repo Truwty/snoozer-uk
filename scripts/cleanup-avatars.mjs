@@ -22,7 +22,7 @@ async function rpc(name, args) {
 async function removeObjects(scope, bucketName, validName) {
   const bucket = client.storage.from(bucketName);
   const { data, error } = await bucket.list(scope, { limit: 100 });
-  if (error || !data || data.length >= 100 || data.some(({ name }) => !validName.test(name))) return false;
+  if (error || !data || data.some(({ name }) => !validName.test(name))) return false;
   if (data.length === 0) return true;
   const { error: removeError } = await bucket.remove(data.map(({ name }) => `${scope}/${name}`));
   if (removeError) return false;
@@ -42,7 +42,7 @@ for (let index = 0; index < 10; index++) {
   let success = false;
   try {
     const results = await Promise.all([
-      removeObjects(job.scope, "avatar-incoming", /^pending$/),
+      removeObjects(job.scope, "avatar-incoming", /^(?:pending|[0-9a-f-]{36}\.upload)$/),
       removeObjects(job.scope, "avatar-images", /^[0-9a-f-]{36}\.webp$/),
     ]);
     success = results.every(Boolean);
@@ -56,10 +56,14 @@ for (let index = 0; index < 10; index++) {
   else failed++;
 }
 console.log(`Avatar cleanup completed: ${completed}; retry or operator attention required: ${failed}.`);
-const orphans = await rpc("find_orphan_avatars");
-if (orphans.length) {
-  const { error } = await client.storage.from("avatar-images").remove(orphans);
-  if (error) throw new Error("Couldn’t remove orphan avatars. Run cleanup again to retry.");
-  console.log(`Orphan avatar sweep processed ${orphans.length} objects.`);
+for (const [operation, bucket] of [
+  ["find_orphan_avatars", "avatar-images"],
+  ["find_abandoned_avatar_uploads", "avatar-incoming"],
+]) {
+  const keys = await rpc(operation);
+  if (!keys.length) continue;
+  const { error } = await client.storage.from(bucket).remove(keys);
+  if (error) throw new Error("Couldn’t finish the avatar sweep. Run cleanup again to retry.");
+  console.log(`Avatar sweep processed ${keys.length} objects in ${bucket}.`);
 }
 if (failed) process.exitCode = 1;

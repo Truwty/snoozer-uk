@@ -61,6 +61,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();
+    const stageOwner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+    const stageLogin = await stageOwner.auth.signInWithPassword({ email, password });
+    expect(stageLogin.error).toBeNull();
+    const stageAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+    const { data: abandonedStage, error: stageError } = await stageAdmin.rpc("prepare_avatar_upload", {
+      p_owner: stageLogin.data.user!.id, p_expected: 0, p_open: true,
+    });
+    expect(stageError).toBeNull();
+    const abandonedPath = `${abandonedStage.scope}/${abandonedStage.key}`;
+    const oldToken = await stageAdmin.storage.from("avatar-incoming").createSignedUploadUrl(abandonedPath);
+    expect(oldToken.error).toBeNull();
+    await page.getByRole("button", { name: "Discard pending upload" }).click();
+    await expect(page.getByRole("status")).toHaveText("Pending upload cleared.");
+    expect((await stageOwner.storage.from("avatar-incoming").uploadToSignedUrl(
+      abandonedPath, oldToken.data!.token, image, { contentType: "image/png" },
+    )).error).toBeNull();
+    await page.getByRole("button", { name: "Upload or finish pending" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Choose an image to upload" })).toBeVisible();
+
     await page.getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
     await page.getByRole("button", { name: "Upload or finish pending" }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");

@@ -3,7 +3,6 @@ import { storageAdmin } from "./supabase";
 
 export const incomingBucket = "avatar-incoming";
 export const imagesBucket = "avatar-images";
-export const pendingPath = (scope: string) => `${scope}/pending`;
 export const avatarKey = (scope: string, avatar: string) => `${scope}/${avatar}.webp`;
 
 export async function pruneAvatars(admin: ReturnType<typeof storageAdmin>, owner: string, scope: string) {
