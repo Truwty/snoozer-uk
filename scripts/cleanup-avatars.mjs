@@ -56,4 +56,10 @@ for (let index = 0; index < 10; index++) {
   else failed++;
 }
 console.log(`Avatar cleanup completed: ${completed}; retry or operator attention required: ${failed}.`);
+const orphans = await rpc("find_orphan_avatars");
+if (orphans.length) {
+  const { error } = await client.storage.from("avatar-images").remove(orphans);
+  if (error) throw new Error("Couldn’t remove orphan avatars. Run cleanup again to retry.");
+  console.log(`Orphan avatar sweep processed ${orphans.length} objects.`);
+}
 if (failed) process.exitCode = 1;

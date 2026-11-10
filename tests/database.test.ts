@@ -25,6 +25,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
         as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       create schema storage;
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+      create table storage.objects(bucket_id text, name text, created_at timestamptz);
       insert into auth.users values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
     `);
     const migrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
@@ -36,7 +37,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup cascade;");
+    await db.exec("reset role; truncate snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -220,5 +221,41 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await getVersion()).toMatchObject({ revision: 1, display_name: "First publication", links });
     await save(3, "First publication", links, true);
     expect(await published("history-alice")).toMatchObject({ display_name: "First publication", links });
+  });
+
+  it("sweeps only old processed avatars outside the draft and every retained publication", async () => {
+    const draftAvatar = "00000000-0000-4000-8000-000000000012";
+    const orphan = "00000000-0000-4000-8000-000000000013";
+    const fresh = "00000000-0000-4000-8000-000000000014";
+    const draftOnly = "00000000-0000-4000-8000-000000000015";
+    await act("authenticated", alice);
+    await claim("sweep-alice");
+    const scope = await result<string>("select public.draft_media_scope(0) as value");
+    await act("service_role");
+    await db.query("select public.set_avatar($1,0,$2)", [alice, avatar]);
+    await act("authenticated", alice);
+    await save(1, "Old publication", [], true);
+    await act("service_role");
+    await db.query("select public.set_avatar($1,2,$2)", [alice, draftAvatar]);
+    await act("authenticated", alice);
+    await save(3, "Current publication", [], true);
+    await act("service_role");
+    await db.query("select public.set_avatar($1,4,$2)", [alice, draftOnly]);
+    await act("authenticated", alice);
+    await expect(db.query("select public.find_orphan_avatars()")).rejects.toMatchObject({ code: "42501" });
+
+    await db.exec("reset role");
+    await db.query(`insert into storage.objects values
+      ('avatar-images', $1, now() - interval '2 days'),
+      ('avatar-images', $2, now() - interval '2 days'),
+      ('avatar-images', $3, now() - interval '2 days'),
+      ('avatar-images', $4, now()),
+      ('avatar-images', $5, now() - interval '2 days'),
+      ('avatar-images', $6, now() - interval '2 days'),
+      ('avatar-incoming', $7, now() - interval '2 days')`,
+    [avatar, draftAvatar, orphan, fresh].map((id) => `${scope}/${id}.webp`)
+      .concat([`${scope}/unexpected.webp`, `${scope}/${draftOnly}.webp`, `${scope}/pending`]));
+    await act("service_role");
+    expect(await result("select public.find_orphan_avatars() as value")).toEqual([`${scope}/${orphan}.webp`]);
   });
 });
