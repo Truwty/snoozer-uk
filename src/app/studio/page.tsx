@@ -13,10 +13,10 @@ import { signOut } from "../auth/actions";
 
 export const metadata = { title: "Studio", robots: { index: false, follow: false } };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string; deleted?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string; deleted?: string; restored?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const draft = await readDraft();
-  const { logout, deleted } = await searchParams;
+  const { logout, deleted, restored } = await searchParams;
   return <main className="shell">
     <header className="nav"><Brand /><form action={signOut}><button className="button small">Sign out</button></form></header>
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
@@ -30,6 +30,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
       <header className="studio-heading">
         <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1><p className="muted">@{draft.username}</p></div>
         <div className="stack status-panel">
+          <Link className="button small" href="/studio/history">Publish history</Link>
           <p className="status-label">{draft.published_revision === null ? "Offline · Draft only"
             : draft.revision === draft.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p>
           {draft.published_revision !== null && <div className="actions">
@@ -43,6 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <h2>Avatar</h2>
         <AvatarUpload revision={draft.revision} />
       </section>
+      {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor draft={draft} />
       <DeleteProfile username={draft.username} revision={draft.revision} />
     </>}

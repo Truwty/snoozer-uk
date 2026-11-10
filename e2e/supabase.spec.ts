@@ -38,7 +38,7 @@ test.beforeEach(() => {
   }
 });
 
-test("verify, publish, reset, delete and clean up a profile", async ({ page, browser, request }) => {
+test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
   const email = `${name}@example.com`;
@@ -73,7 +73,7 @@ test("verify, publish, reset, delete and clean up a profile", async ({ page, bro
       await page.getByLabel(`Link ${index + 1} label`).fill(label);
       await page.getByLabel(`Link ${index + 1} URL`).fill(`https://example.com/${label}`);
     }
-    await page.getByRole("button", { name: "Move link 2 up" }).press("Enter");
+    await page.getByRole("button", { name: "Move up (link 2)" }).press("Enter");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -91,6 +91,24 @@ test("verify, publish, reset, delete and clean up a profile", async ({ page, bro
     const avatarPath = await publicPage.locator("img").getAttribute("src");
     expect(avatarPath).toBeTruthy();
     expect((await visitor.request.get(avatarPath!)).headers()["content-type"]).toBe("image/webp");
+
+    await page.getByLabel("Display name").fill("Second publication");
+    await page.getByRole("button", { name: "Publish page" }).click();
+    await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
+    await page.getByRole("link", { name: "Publish history" }).click();
+    await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
+    const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
+    await firstVersion.getByRole("link", { name: /Preview version/ }).click();
+    await expect(page.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
+    await page.getByRole("button", { name: "Restore to draft" }).click();
+    await expect(page.getByRole("status")).toContainText("Version restored");
+    await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
+    await page.getByRole("button", { name: "Publish page" }).click();
+    await expect(page.getByText("Live · Up to date")).toBeVisible();
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
 
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();
@@ -134,7 +152,7 @@ test("verify, publish, reset, delete and clean up a profile", async ({ page, bro
     await page.getByText("Review profile deletion").click();
     await page.getByLabel(`Type ${name} to confirm`).fill("wrong-name");
     await page.getByRole("button", { name: "Permanently delete profile" }).click();
-    await expect(page.getByRole("alert")).toContainText("exact username");
+    await expect(page.getByRole("alert").filter({ hasText: "exact username" })).toBeVisible();
     await page.getByLabel(`Type ${name} to confirm`).fill(name);
     await page.getByRole("button", { name: "Permanently delete profile" }).click();
     await expect(page.getByRole("status")).toContainText("Your profile was deleted");
@@ -184,7 +202,13 @@ test("concurrent claims yield one winner and direct storage requests are denied"
   const outcomes = await Promise.all(users.map(({ client }) => client.rpc("claim_profile", { p_name: name })));
   expect(outcomes.filter(({ error }) => !error)).toHaveLength(1);
   expect(outcomes.filter(({ error }) => error?.code === "23505")).toHaveLength(1);
+  const winnerIndex = outcomes.findIndex(({ error }) => !error);
+  const winner = users[winnerIndex];
+  const other = users[1 - winnerIndex];
+  const { data: scope, error } = await winner.client.rpc("draft_media_scope", { p_expected: 0 });
+  expect(error).toBeNull();
+  expect(scope).toMatch(/^[0-9a-f-]{36}$/);
   const image = new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" });
-  expect((await users[0].client.storage.from("avatar-incoming").upload(`${users[1].id}/pending`, image)).error).toBeTruthy();
-  expect((await users[0].client.rpc("set_avatar", { p_owner: users[1].id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
+  expect((await other.client.storage.from("avatar-incoming").upload(`${scope}/pending`, image)).error).toBeTruthy();
+  expect((await other.client.rpc("set_avatar", { p_owner: winner.id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
 });

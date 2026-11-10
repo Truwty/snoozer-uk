@@ -50,8 +50,8 @@ export function Editor({ draft }: { draft: DraftProfile }) {
           <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
           <div className="actions">
-            <button type="button" className="button small" disabled={index === 0} aria-label={`Move link ${index + 1} up`} onClick={() => move(index, index - 1)}>Move up</button>
-            <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move link ${index + 1} down`} onClick={() => move(index, index + 1)}>Move down</button>
+            <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
+            <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
             <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => set("links", content.links.filter((_, i) => i !== index))}>Remove</button>
           </div>
         </div>)}

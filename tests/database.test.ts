@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { publicationList, publicationPreview } from "../src/lib/publication";
 
 const alice = "00000000-0000-4000-8000-000000000001";
 const bob = "00000000-0000-4000-8000-000000000002";
@@ -191,5 +192,33 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.retry_avatar_cleanup() as value")).toBe(1);
     expect(await finish((await lease())!.lease_token, true)).toBe(true);
     expect(await lease()).toBeNull();
+  });
+
+  it("scopes publication history to its owner and restores only the draft", async () => {
+    const links = [{ label: "Original", url: "https://example.com/original" }];
+    await act("authenticated", alice);
+    await claim("history-alice");
+    await save(0, "First publication", links, true);
+    await save(1, "Second publication", [], true);
+    const getVersion = () => result("select public.get_publication(1) as value");
+    const restore = (expected: number) => db.query("select public.restore_publication(1,$1)", [expected]);
+    expect(publicationList.parse(await result("select public.list_publications() as value"))).toMatchObject([
+      { revision: 2, live: true }, { revision: 1, live: false },
+    ]);
+    expect(publicationPreview.parse(await getVersion())).toMatchObject({ display_name: "First publication", draft_revision: 2, links });
+    await act("authenticated", bob);
+    await claim("history-bob");
+    expect(await getVersion()).toBeNull();
+    await expect(restore(0)).rejects.toMatchObject({ code: "P1002" });
+    await act("anon");
+    await expect(getVersion()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await expect(restore(1)).rejects.toMatchObject({ code: "40001" });
+    await restore(2);
+    expect(await draft()).toMatchObject({ revision: 3, published_revision: 2, display_name: "First publication", links });
+    expect(await published("history-alice")).toMatchObject({ display_name: "Second publication", links: [] });
+    expect(await getVersion()).toMatchObject({ revision: 1, display_name: "First publication", links });
+    await save(3, "First publication", links, true);
+    expect(await published("history-alice")).toMatchObject({ display_name: "First publication", links });
   });
 });
