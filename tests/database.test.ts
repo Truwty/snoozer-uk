@@ -92,7 +92,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(save(2, "Cross-user overwrite", [], true)).rejects.toMatchObject({ code: "40001" });
     await act("anon");
     expect(await published("alice")).toEqual({
-      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links,
+      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [],
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", alice);
@@ -310,5 +310,40 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       await result("select public.clear_avatar_upload($1,0,$2) as value", [alice, attempt.key]);
     }
     await expect(open()).rejects.toMatchObject({ code: "P1003" });
+  });
+
+  it("validates text sections and snapshots them only on publish", async () => {
+    await act("authenticated", alice);
+    await claim("sections-alice");
+    const write = (expected: number, publish: boolean, sections: unknown) => result(
+      "select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,$3) as value",
+      [expected, publish, JSON.stringify(sections)],
+    );
+    const first = { heading: "About", body: "One line.\nA second line." };
+    const second = { heading: "Updates", body: "Plain text <strong>example</strong>." };
+    await expect(write(0, true, [{ heading: 5, body: "Value" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, [{ heading: " \t ", body: "Value" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, Array.from({ length: 7 }, () => first))).rejects.toMatchObject({ code: "22023" });
+    expect(await draft()).toMatchObject({ revision: 0, sections: [] });
+    expect(await published("sections-alice")).toBeNull();
+
+    await write(0, true, [first, second]);
+    await write(1, false, [second, first]);
+    expect(await draft()).toMatchObject({ revision: 2, sections: [second, first] });
+    await act("anon");
+    expect(await published("sections-alice")).toMatchObject({ sections: [first, second] });
+    await expect(db.query("select public.get_publication(1)")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    await claim("sections-bob");
+    expect(await result("select public.get_publication(1) as value")).toBeNull();
+    await expect(db.query("select * from snoozer.sections")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await save(2, "Legacy client", [], true); // An older client omits the new argument.
+    expect(await published("sections-alice")).toMatchObject({ sections: [second, first] });
+    await db.query("select public.restore_publication(1,3)");
+    expect(await draft()).toMatchObject({ revision: 4, sections: [first, second] });
+    expect(await published("sections-alice")).toMatchObject({ sections: [second, first] });
+    await write(4, true, []);
+    expect(await published("sections-alice")).toMatchObject({ sections: [] });
   });
 });

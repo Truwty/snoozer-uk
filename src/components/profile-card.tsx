@@ -1,11 +1,12 @@
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 
-export function ProfileCard({ profile, avatarSrc, preview = false }: {
+export function ProfileCard({ profile, avatarSrc, preview = false, previewLabel = "Page preview" }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   preview?: boolean;
+  previewLabel?: string;
 }) {
-  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? "Page preview" : undefined}>
+  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}>
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       {avatarSrc
@@ -16,6 +17,12 @@ export function ProfileCard({ profile, avatarSrc, preview = false }: {
       <p className="profile-handle">@{profile.username}</p>
       {preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+      {profile.sections.length > 0 && <div className="profile-sections">
+        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => <section className="profile-text-section" key={index}>
+          {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
+          <p>{section.body}</p>
+        </section>)}
+      </div>}
       {profile.links.length > 0 && <ul className="profile-links">
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
           <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label} <span aria-hidden="true">↗</span></a></li>

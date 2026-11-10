@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-for (const path of ["/", "/sign-up", "/sign-in", "/forgot-password"]) {
+for (const path of ["/", "/sign-up", "/sign-in", "/forgot-password", "/templates"]) {
   test(`automated WCAG checks at phone width for ${path}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(path);

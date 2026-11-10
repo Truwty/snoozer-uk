@@ -64,7 +64,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | --- | --- | --- |
 | 7.1 | Drag-And-Drop Blocks | Deferred |
 | 7.2 | Keyboard-Accessible Reorder | Partially implemented |
-| 7.3 | Undo And Redo | Deferred |
+| 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
 | 7.5 | Draft Versus Published State | Tested locally |
 | 7.6 | Version History | Tested in disposable CI for owner preview, restore-to-draft and republish of retained versions |

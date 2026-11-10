@@ -27,12 +27,23 @@ export const link = z.object({
   url: z.string().trim().max(2048).refine(safeLink, "Enter an HTTP or HTTPS address with a public domain."),
 });
 
+export const textSectionLimits = { count: 6, heading: 80, body: 800 };
+const textSection = z.object({
+  heading: z.string().trim().min(1, "Give each text section a heading.").refine(
+    (value) => Array.from(value).length <= textSectionLimits.heading, "Section headings can be up to 80 characters."),
+  body: z.string().trim().min(1, "Enter text for each section.").refine(
+    (value) => Array.from(value).length <= textSectionLimits.body, "Sections can be up to 800 characters."),
+});
+export type TextSection = z.infer<typeof textSection>;
+export const textSections = z.array(textSection).max(textSectionLimits.count);
+
 export const profileContent = z.object({
   display_name: z.string().trim().min(1, "Enter a display name.").max(60),
   bio: z.string().trim().max(280),
   theme: z.enum(themes),
   indexable: z.boolean(),
   links: z.array(link).max(20),
+  sections: textSections.default([]),
 });
 
 export const publishedProfile = profileContent.extend({
