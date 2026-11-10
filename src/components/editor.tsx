@@ -2,13 +2,17 @@
 
 import { useRef, useState } from "react";
 import { themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { studioTemplates } from "@/lib/studio-templates";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 
-export function Editor({ draft }: { draft: DraftProfile }) {
+export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const [compact, setCompact] = useState(false);
+  const [templateId, setTemplateId] = useState(initialTemplateId);
+  const template = studioTemplates.find(({ id }) => id === templateId);
   const [announcement, setAnnouncement] = useState("");
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
@@ -17,6 +21,18 @@ export function Editor({ draft }: { draft: DraftProfile }) {
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
     edit((current) => ({ ...current, content: { ...current.content, [field]: value } }));
+  }
+
+  function applyTemplate(includeSections: boolean) {
+    if (!template) return;
+    edit((current) => ({
+      ...current,
+      content: {
+        ...current.content, theme: template.theme,
+        sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
+      },
+    }));
+    setTemplateId("");
   }
 
   function move(from: number, to: number) {
@@ -60,6 +76,24 @@ export function Editor({ draft }: { draft: DraftProfile }) {
           }} /> Remove avatar on next manual save</label>}
       </fieldset>
       <fieldset className="stack">
+        <legend className="section-title">Studio templates</legend>
+        <label>Preview a template
+          <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
+            <option value="">Show my draft</option>
+            {studioTemplates.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        </label>
+        {template && <>
+          <p className="muted">{template.description} The preview is private.</p>
+          <div className="actions">
+            <button type="button" className="button small" onClick={() => applyTemplate(false)}>Apply template colours</button>
+            {content.sections.length === 0 && <button type="button" className="button small"
+              onClick={() => applyTemplate(true)}>Apply with starter sections</button>}
+          </div>
+        </>}
+      </fieldset>
+      <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
+      <fieldset className="stack">
         <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
         <p className="sr-only" aria-live="polite">{announcement}</p>
         {content.links.map((item, index) => <div className="link-editor stack" key={index}>
@@ -95,7 +129,7 @@ export function Editor({ draft }: { draft: DraftProfile }) {
           <label>Unsaved profile content
             <textarea readOnly rows={6} value={JSON.stringify({
               display_name: content.display_name, bio: content.bio, theme: content.theme, indexable: content.indexable,
-              links: content.links, removeAvatar,
+              links: content.links, sections: content.sections, removeAvatar,
             }, null, 2)} />
           </label>
         </details>
@@ -109,11 +143,14 @@ export function Editor({ draft }: { draft: DraftProfile }) {
     </form>
     <aside className="preview stack">
       <div className="actions preview-controls">
-        <p className="eyebrow">LIVE PREVIEW</p>
+        <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
         <button type="button" className="button small" aria-pressed={compact} onClick={() => setCompact(!compact)}>Phone width</button>
       </div>
       <div className={compact ? "preview-phone" : undefined}>
-        <ProfileCard preview profile={{ ...saved, ...content }}
+        <ProfileCard preview profile={template ? {
+          ...saved, ...content, theme: template.theme,
+          sections: content.sections.length ? content.sections : template.sections,
+        } : { ...saved, ...content }}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
       </div>
     </aside>

@@ -17,6 +17,7 @@ export default function Home() {
         <p className="lead">Give your work, socials and favourite things one address. Make it feel like you, then share it anywhere.</p>
         <div className="actions">
           <Link className="button primary" href="/sign-up">Create your page <span aria-hidden="true">↗</span></Link>
+          <Link className="button" href="/templates">Browse templates</Link>
           <a className="button" href="#how-it-works">How it works</a>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
-import { canonicalUsername, profileContent, profileRevisionNumber, username, type ProfileContent } from "@/lib/profile";
+import { canonicalUsername, profileContent, profileRevisionNumber, textSections, username, type ProfileContent } from "@/lib/profile";
 import { readDraft, requireAccount } from "@/lib/profiles-server";
 
 export async function claim(_: ActionState, form: FormData): Promise<ActionState> {
@@ -20,7 +20,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
 
 const saveRequest = z.object({
   revision: profileRevisionNumber,
-  content: profileContent,
+  content: profileContent.extend({ sections: textSections }),
   intent: z.enum(["draft", "publish"]),
   removeAvatar: z.boolean(),
 });
@@ -42,6 +42,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_theme: content.theme,
     p_indexable: content.indexable,
     p_links: links,
+    p_sections: content.sections,
     p_publish: intent === "publish",
     p_remove_avatar: removeAvatar,
   });

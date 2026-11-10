@@ -97,6 +97,12 @@ textarea { resize: vertical; }
 .avatar-fallback { display: grid; place-items: center; background: var(--chip); font-size: 2rem; font-weight: 700; }
 .profile-handle { color: var(--detail); font-size: .9rem; overflow-wrap: anywhere; }
 .profile-bio { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 34ch; }
+.template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem; list-style: none; padding: 0 0 2rem; }
+.template-grid li { grid-template-rows: auto 1fr auto; min-width: 0; }
+.profile-sections { display: grid; gap: .75rem; width: 100%; }
+.profile-text-section { background: var(--chip); border-radius: .75rem; text-align: start; padding: .85rem; overflow-wrap: anywhere; }
+.profile-text-section h2, .profile-text-section h3 { font-size: 1.1rem; line-height: 1.4; margin: 0 0 .3rem; }
+.profile-text-section p { margin: 0; white-space: pre-wrap; }
 .profile-links { display: grid; gap: .6rem; width: 100%; margin: .5rem 0 0; list-style: none; padding: 0; }
 .profile-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: start; min-height: 48px; border-radius: .75rem; background: var(--chip); padding: .6rem .8rem; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .profile-links a:hover { text-decoration: underline; }

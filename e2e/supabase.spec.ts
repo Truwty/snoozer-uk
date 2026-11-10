@@ -250,120 +250,81 @@ test("concurrent claims yield one winner and direct storage requests are denied"
   const outcomes = await Promise.all(users.map(({ client }) => client.rpc("claim_profile", { p_name: name })));
   expect(outcomes.filter(({ error }) => !error)).toHaveLength(1);
   expect(outcomes.filter(({ error }) => error?.code === "23505")).toHaveLength(1);
-  const winnerIndex = outcomes.findIndex(({ error }…6966 tokens truncated… position ${to + 1} of ${reordered.length}.`);
-    focusLink(to);
-  }
+  const winnerIndex = outcomes.findIndex(({ error }) => !error);
+  const winner = users[winnerIndex];
+  const other = users[1 - winnerIndex];
+  const { data: scope, error } = await winner.client.rpc("draft_media_scope", { p_expected: 0 });
+  expect(error).toBeNull();
+  expect(scope).toMatch(/^[0-9a-f-]{36}$/);
+  const image = new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" });
+  expect((await other.client.storage.from("avatar-incoming").upload(`${scope}/pending`, image)).error).toBeTruthy();
+  expect((await other.client.rpc("set_avatar", { p_owner: winner.id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
+});
 
-  function focusLink(index: number) {
-    window.requestAnimationFrame(() => (linkLabels.current[index] ?? addLink.current)?.focus());
-  }
+test("autosave keeps the public page stable and recovers a stale tab", async ({ page, request }) => {
+  test.setTimeout(90000);
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const name = `autosave-${randomUUID().slice(0, 12)}`;
+  const email = `${name}@example.com`;
+  expect((await admin.auth.admin.createUser({ email, password, email_confirm: true })).error).toBeNull();
+  await page.goto("/sign-in");
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Username").fill(name);
+  await page.getByRole("button", { name: "Claim address" }).click();
+  await page.getByRole("button", { name: "Publish page" }).click();
+  await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
-  return <div className="editor-grid">
-    <form className="panel editor-form stack" onSubmit={(event) => {
-      event.preventDefault();
-      const button = (event.nativeEvent as SubmitEvent).submitter;
-      void commit(button instanceof HTMLButtonElement && button.value === "publish" ? "publish" : "draft");
-    }}>
-      <div className="actions" aria-label="Editing history" role="group">
-        <button type="button" className="button small" disabled={!canUndo} onClick={() => travel("undo")}>Undo edit</button>
-        <button type="button" className="button small" disabled={!canRedo} onClick={() => travel("redo")}>Redo edit</button>
-      </div>
-      <fieldset className="stack">
-        <legend className="section-title">Profile details</legend>
-        <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
-          onChange={(event) => set("display_name", event.target.value)} /></label>
-        <label>Bio<textarea name="bio" maxLength={280} rows={4} value={content.bio}
-          onChange={(event) => set("bio", event.target.value)} /></label>
-        <label>Theme<select name="theme" value={content.theme}
-          onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
-          {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
-        </select></label>
-        <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
-          onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
-        {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
-          onChange={(event) => {
-            const checked = event.target.checked;
-            edit((current) => ({ ...current, removeAvatar: checked }));
-          }} /> Remove avatar on next manual save</label>}
-      </fieldset>
-      <fieldset className="stack">
-        <legend className="section-title">Studio templates</legend>
-        <label>Preview a template
-          <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
-            <option value="">Show my draft</option>
-            {studioTemplates.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
-          </select>
-        </label>
-        {template && <>
-          <p className="muted">{template.description} The preview is private.</p>
-          <div className="actions">
-            <button type="button" className="button small" onClick={() => applyTemplate(false)}>Apply template colours</button>
-            {content.sections.length === 0 && <button type="button" className="button small"
-              onClick={() => applyTemplate(true)}>Apply with starter sections</button>}
-          </div>
-        </>}
-      </fieldset>
-      <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
-      <fieldset className="stack">
-        <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
-        <p className="sr-only" aria-live="polite">{announcement}</p>
-        {content.links.map((item, index) => <div className="link-editor stack" key={index}>
-          <label>Link {index + 1} label<input required maxLength={80} value={item.label}
-            ref={(input) => { linkLabels.current[index] = input; }}
-            onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
-          <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
-            value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
-          <div className="actions">
-            <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
-            <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
-            <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => {
-              set("links", content.links.filter((_, i) => i !== index));
-              setAnnouncement(`Removed link ${index + 1}.`);
-              focusLink(Math.min(index, content.links.length - 2));
-            }}>Remove</button>
-          </div>
-        </div>)}
-        <button className="button" type="button" ref={addLink} disabled={content.links.length >= 20}
-          onClick={() => {
-            set("links", [...content.links, { label: "", url: "" }]);
-            focusLink(content.links.length);
-          }}>Add link</button>
-      </fieldset>
-      <div className="actions">
-        <button className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>
-        <button className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
-      </div>
-      {conflict && !pending ? <div className="stack">
-        <p className="message error" role="alert">Your draft changed elsewhere. Your unsaved edits are still here.</p>
-        <details>
-          <summary>Copy unsaved edits</summary>
-          <label>Unsaved profile content
-            <textarea readOnly rows={6} value={JSON.stringify({
-              display_name: content.display_name, bio: content.bio, theme: content.theme, indexable: content.indexable,
-              links: content.links, sections: content.sections, removeAvatar,
-            }, null, 2)} />
-          </label>
-        </details>
-        <div><button className="button" type="button" onClick={() => void discardAndReload()}>Discard local edits and load saved draft</button></div>
-      </div> : null}
-      {pending ? <p className="message" role="status">Saving…</p> : <>
-        {edits && !conflict && message.status !== "error"
-          ? <p className="message" role="status">{removeAvatar ? "Save manually to remove the avatar." : "Unsaved changes"}</p>
-          : <ActionMessage state={message} />}
-      </>}
-    </form>
-    <aside className="preview stack">
-      <div className="actions preview-controls">
-        <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
-        <button type="button" className="button small" aria-pressed={compact} onClick={() => setCompact(!compact)}>Phone width</button>
-      </div>
-      <div className={compact ? "preview-phone" : undefined}>
-        <ProfileCard preview profile={template ? {
-          ...saved, ...content, theme: template.theme,
-          sections: content.sections.length ? content.sections : template.sections,
-        } : { ...saved, ...content }}
-          avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
-      </div>
-    </aside>
-  </div>;
-}
+  const stale = await page.context().newPage();
+  await stale.goto("/studio");
+  await expect(stale.getByLabel("Display name")).toHaveValue(name);
+
+  await page.getByLabel("Display name").fill("Autosaved from the first tab");
+  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+  const publicPage = await request.get(`/${name}`);
+  expect(await publicPage.text()).not.toContain("Autosaved from the first tab");
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
+
+  await stale.getByLabel("Display name").fill("Unsaved from the stale tab");
+  await expect(stale.getByRole("alert").filter({ hasText: "Your draft changed elsewhere" })).toBeVisible();
+  await expect(stale.getByRole("button", { name: "Publish page" })).toBeDisabled();
+  await stale.getByText("Copy unsaved edits", { exact: true }).click();
+  await expect(stale.getByLabel("Unsaved profile content")).toHaveValue(/Unsaved from the stale tab/);
+  await stale.getByRole("button", { name: "Discard local edits and load saved draft" }).click();
+  await expect(stale.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
+
+  await stale.getByRole("button", { name: "Add link" }).click();
+  await stale.getByLabel("Link 1 label").fill("Portfolio");
+  await expect(stale.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
+  await stale.getByLabel("Link 1 URL").fill("https://example.com/");
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.reload();
+  await expect(stale.getByLabel("Link 1 label")).toHaveValue("Portfolio");
+  await expect(stale.getByLabel("Link 1 URL")).toHaveValue("https://example.com/");
+
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await stale.route("**/studio", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    await gate;
+    await route.fulfill({ response });
+  }, { times: 1 });
+  try {
+    await stale.getByLabel("Bio").fill("First edit");
+    await expect(stale.getByRole("status")).toHaveText("Saving…");
+    await stale.getByLabel("Bio").fill("Edit made during the save");
+  } finally {
+    release();
+  }
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.getByRole("button", { name: "Undo edit" }).click();
+  await expect(stale.getByLabel("Bio")).toHaveValue("First edit");
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.getByRole("button", { name: "Redo edit" }).click();
+  await expect(stale.getByRole("status")).toHaveText("Draft saved.");
+  await stale.reload();
+  await expect(stale.getByLabel("Bio")).toHaveValue("Edit made during the save");
+});
