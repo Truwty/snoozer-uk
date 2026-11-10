@@ -25,6 +25,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Studio text sections support headings and multiline plain text. The editor can add, reorder and remove up to six sections, with autosave and undo. Publishing and history restore include ordered section snapshots.
 - Studio and the public gallery include three first-party templates. Creators can preview privately, apply colours alone, or add starter text when their draft has no sections.
 
+- Studio offers wide, 375 px and 320 px previews. Profile card spacing and type respond to the card width so a phone preview on a desktop follows the same rules as the public page.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -38,6 +40,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 42833454025](https://github.com/Truwty/snoozer-uk/actions/runs/42833454025) | Processed avatar sweep migration and worker on disposable Supabase. SQL tests cover aged orphan selection, draft and history protection, and access control. | Passed |
 | [GitHub Actions 42908138432](https://github.com/Truwty/snoozer-uk/actions/runs/42908138432) | Disposable Supabase verified signed upload replay after discard, replacement staging and profile cleanup. SQL tests cover stage expiry and the per-profile attempt limit. | 16 unit/SQL and 15 browser tests passed |
 | [GitHub Actions 42908876092](https://github.com/Truwty/snoozer-uk/actions/runs/42908876092) | Current Studio and asset baseline. Verified keyboard reordering, focus following the moved link, undo and redo across autosaves, stale-tab recovery, upload replay isolation and profile cleanup. | 16 unit/SQL and 15 browser tests passed |
+| [GitHub Actions 42922122949](https://github.com/Truwty/snoozer-uk/actions/runs/42922122949) | Template gallery and Studio selection, starter application, section ordering, literal HTML-like text, publish and history restore. | 17 unit/SQL and 16 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

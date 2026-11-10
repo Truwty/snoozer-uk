@@ -95,7 +95,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.8 | Professional Business Card | Deferred |
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
-| 8.11 | Custom Sections | Deferred |
+| 8.11 | Custom Sections | Tested for ordered text sections with autosave, publish and restore. Additional block types pending |
 | 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Deferred |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
@@ -262,14 +262,14 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 15.1 | First-Party Templates | Deferred |
+| 15.1 | First-Party Templates | Tested in the public gallery and Studio with three built-in templates |
 | 15.2 | Creator-Submitted Templates | Deferred |
 | 15.3 | Draft And Publish States | Deferred |
 | 15.4 | Search And Filters | Deferred |
 | 15.5 | Tags | Deferred |
-| 15.6 | Preview | Deferred |
-| 15.7 | Apply Full Template | Deferred |
-| 15.8 | Apply Selected Components | Deferred |
+| 15.6 | Preview | Tested for public examples and private previews using the creator’s draft |
+| 15.7 | Apply Full Template | Implemented for colours and starter sections when the draft has no sections |
+| 15.8 | Apply Selected Components | Implemented for colours while preserving existing sections |
 | 15.9 | Fork With Attribution | Deferred |
 | 15.10 | Versioning | Deferred |
 | 15.11 | Safe Asset Handling | Deferred |

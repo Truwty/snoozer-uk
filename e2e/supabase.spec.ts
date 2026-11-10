@@ -133,6 +133,19 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects"]);
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const [option, width] of [["narrow", 320], ["phone", 375]] as const) {
+      await page.getByLabel("Preview width").selectOption(option);
+      await publicPage.setViewportSize({ width, height: 850 });
+      const measure = (card: Element) => ({
+        width: card.getBoundingClientRect().width,
+        fontSize: getComputedStyle(card.querySelector(".profile-inner > :is(h1,h2)")!).fontSize,
+      });
+      const studio = await page.getByRole("region", { name: "Page preview" }).evaluate(measure);
+      const live = await publicPage.locator(".profile-card").evaluate(measure);
+      expect(studio).toEqual(live);
+    }
+    await page.getByLabel("Preview width").selectOption("wide");
     await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     const avatarPath = await publicPage.locator("img").getAttribute("src");
     expect(avatarPath).toBeTruthy();

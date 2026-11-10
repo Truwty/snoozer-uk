@@ -10,7 +10,7 @@ import { useDraftEditor } from "./use-draft-editor";
 
 export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
-  const [compact, setCompact] = useState(false);
+  const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
   const [announcement, setAnnouncement] = useState("");
@@ -144,9 +144,15 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
     <aside className="preview stack">
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
-        <button type="button" className="button small" aria-pressed={compact} onClick={() => setCompact(!compact)}>Phone width</button>
+        <label>Preview width
+          <select value={previewSize} onChange={(event) => setPreviewSize(event.target.value)}>
+            <option value="wide">Wide page</option>
+            <option value="phone">Phone (375 px)</option>
+            <option value="narrow">Narrow phone (320 px)</option>
+          </select>
+        </label>
       </div>
-      <div className={compact ? "preview-phone" : undefined}>
+      <div className={"preview-card preview-" + previewSize}>
         <ProfileCard preview profile={template ? {
           ...saved, ...content, theme: template.theme,
           sections: content.sections.length ? content.sections : template.sections,

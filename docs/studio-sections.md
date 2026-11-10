@@ -2,7 +2,7 @@
 
 Creators can add up to six text sections. Each has a heading of up to 80 characters and body text of up to 800 characters. Studio displays sections above the link list. Both fields must contain text before the editor will save the draft. Link order and section order are independent.
 
-Select a template in Studio to see a private preview. Apply its colours to any draft. If the draft has no text sections, you can also add the starter sections. Applying a template is a single undoable draft edit. Existing sections, profile identity, links and avatar are preserved. The selected template preview itself never saves or publishes.
+Select a template in Studio to see a private preview. Apply its colours to any draft. If the draft has no text sections, you can also add the starter sections. Applying a template is a single undoable draft edit. Existing sections, profile identity, links and avatar are preserved. The selected template preview itself never saves or publishes. The preview width selector offers wide, 375 px and 320 px views. On narrow editor screens, the preview fits the space available.
 
 Section text is rendered as text, including line breaks and HTML-like characters. No HTML, embeds or external template assets are accepted. The built-in catalogue is defined in source. Applying a template saves only the resulting theme and text, so catalogue edits do not alter existing profiles.
 
