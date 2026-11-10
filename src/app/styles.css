@@ -115,6 +115,8 @@ textarea { resize: vertical; }
 .profile-gallery-grid, .gallery-editor-grid { display: grid; gap: .65rem; list-style: none; margin: 0; padding: 0; }
 .profile-gallery-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
 .gallery-editor-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+.media-folder-form { align-items: end; }
+.media-folder-settings { margin-top: 1rem; }
 .gallery-editor-grid li { min-width: 0; overflow-wrap: anywhere; }
 .gallery-image { display: block; width: 100%; height: auto; border-radius: .7rem; }
 .gallery-editor-grid .gallery-image { width: 100%; height: 10rem; object-fit: contain; background: var(--ground); }

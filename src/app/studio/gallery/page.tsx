@@ -21,6 +21,7 @@ export default async function GalleryPage() {
       <p className="eyebrow">STUDIO / MEDIA</p>
       <h1>Image gallery</h1>
       <p className="muted">Add up to eight images. Your changes stay in your draft until you publish in Studio.</p>
+      <div><Link className="button small" href="/studio/gallery/folders">Organise media folders</Link></div>
       <GalleryEditor revision={draft.revision} items={draft.gallery} pending={pending} />
     </section>
   </main>;

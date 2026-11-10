@@ -191,11 +191,11 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.2 | Background Image | Deferred |
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
-| 12.5 | Gallery And Folders | Image galleries implemented and verified locally; folders deferred |
+| 12.5 | Gallery And Folders | Image galleries verified in disposable Supabase CI; private folders implemented and verified locally |
 | 12.6 | Drag-And-Drop Uploads | Deferred |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |
-| 12.9 | Image Transcoding | Avatar and gallery WebP conversion; gallery checks run locally |
+| 12.9 | Image Transcoding | Avatar and gallery WebP conversion verified in disposable Supabase CI |
 | 12.10 | Thumbnail Variants | Deferred |
 | 12.11 | Video Poster Frames | Deferred |
 | 12.12 | Audio Metadata | Deferred |
@@ -344,7 +344,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 19.2 | User Lookup | Deferred |
 | 19.3 | Report Queues | Deferred |
 | 19.4 | Appeal Management | Deferred |
-| 19.5 | Media Takedown | Operator takedown for gallery images implemented and verified locally; dashboard, notices and other media remain open |
+| 19.5 | Media Takedown | Operator gallery takedown verified in disposable Supabase CI; dashboard, notices and other media remain open |
 | 19.6 | Impersonation Handling | Deferred |
 | 19.7 | Phishing Detection | Deferred |
 | 19.8 | Malware Link Checks | Deferred |

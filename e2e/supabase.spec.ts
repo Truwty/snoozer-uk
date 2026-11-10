@@ -326,7 +326,34 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(html.indexOf('alt="Open water"')).toBeLessThan(html.indexOf('alt="Blue shoreline"'));
   expect(html).toContain('alt="Open water"');
 
-  await page.getByRole("link", { name: "Image gallery" }).click();
+  await page.goto("/studio/gallery/folders");
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(page.getByRole("heading", { name: "Media folders" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByLabel("New folder name").fill("Private portfolio");
+  await page.getByRole("button", { name: "Create folder" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Folder created." })).toBeVisible();
+  await page.getByLabel("Folder for Blue shoreline").selectOption({ label: "Private portfolio" });
+  await page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Blue shoreline" }) })
+    .getByRole("button", { name: "Save location" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Image location saved." })).toBeVisible();
+  await page.reload();
+  await page.getByLabel("Show images in").selectOption({ label: "Private portfolio" });
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Open water" })).toHaveCount(0);
+  await page.getByText("Manage Private portfolio", { exact: true }).click();
+  await page.getByLabel("Folder name", { exact: true }).fill("Private archive");
+  await page.getByRole("button", { name: "Rename folder" }).click();
+  await expect(page.getByRole("heading", { name: "Private archive" })).toBeVisible();
+  await page.getByRole("button", { name: "Delete folder" }).click();
+  await expect(page.getByRole("heading", { name: "Unfiled" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
+  const afterFolders = await (await request.get("/" + name)).text();
+  expect(afterFolders).not.toContain("Private portfolio");
+  expect(afterFolders).not.toContain("Private archive");
+  expect(afterFolders.indexOf('alt="Open water"')).toBeLessThan(afterFolders.indexOf('alt="Blue shoreline"'));
+
+  await page.goto("/studio/gallery");
   await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   expect((await request.get(publicPath)).status()).toBe(200);

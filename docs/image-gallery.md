@@ -6,7 +6,13 @@ Snoozer issues a signed write URL for a private staging path; the original file 
 
 Migration `20261110000900_image_gallery.sql` adds both private buckets and the gallery registry. The public route reads an asset only if it belongs to the profile’s current publication. The Studio route checks ownership and permits draft or retained history images. Restoring a publication restores its image order to the draft. Public responses are served as WebP with no shared cache so unpublishing takes effect on the next request. An image someone previously downloaded cannot be recalled.
 
-The existing [cleanup command](avatar-cleanup.md) now processes both gallery buckets on profile deletion. It also collects gallery registry entries older than 24 hours when neither a draft nor retained publication references them, then removes aged orphan files through the Storage API. Files left by interrupted processing or late signed uploads are eligible for this sweep. Apply the migration before running the updated worker. A hosted schedule, aggregate free-tier capacity monitoring, media folders and videos remain open.
+The existing [cleanup command](avatar-cleanup.md) now processes both gallery buckets on profile deletion. It also collects gallery registry entries older than 24 hours when neither a draft nor retained publication references them, then removes aged orphan files through the Storage API. Files left by interrupted processing or late signed uploads are eligible for this sweep. Apply the migration before running the updated worker. A hosted schedule, aggregate free-tier capacity monitoring and videos remain open.
+
+## Private folders
+
+Open **Image gallery → Organise media folders** to filter the library, create or rename a folder, or move an image by choosing a destination and saving its location. The library includes current draft images and images kept by publish history. Pending, blocked and unreferenced images do not appear. Each profile can create 12 folders. Names are case-insensitively unique per profile, and **Unfiled** is reserved. Deleting a folder moves its images to Unfiled.
+
+Migration `20261110001100_media_folders.sql` uses an owner-scoped reference and a folder revision separate from the profile draft. Moving or deleting a folder leaves published content, gallery order and storage cleanup rules unchanged. Folder names and IDs never appear on a public page. A folder cannot extend how long a removed image is retained.
 
 ## Operator takedowns
 

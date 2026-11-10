@@ -163,6 +163,72 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toMatchObject({ gallery: [{ id: second.id }] });
   });
 
+  it("keeps folder edits private and protects cross-owner and retired media scopes", async () => {
+    type Library = { scope: string; revision: number; folders: { id: string; name: string }[]; items: unknown[] };
+    const library = () => result<Library>("select public.get_media_folders() as value");
+    const edit = (scope: string, revision: number, operation: string, id: string | null = null,
+      name: string | null = null, folder: string | null = null) =>
+      result("select public.edit_media_folders($1,$2,$3,$4,$5,$6) as value", [scope, revision, operation, id, name, folder]);
+
+    await act("anon");
+    await expect(library()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await claim("folder-alice");
+    const initial = await library();
+    expect(initial).toMatchObject({ revision: 0, folders: [], items: [] });
+    expect(await edit(initial.scope, 0, "create", null, "   ")).toBe("invalid_name");
+    expect(await edit(initial.scope, 0, "create", null, "Unfiled")).toBe("invalid_name");
+    expect(await edit(initial.scope, 0, "create", null, "  Work  ")).toBe("saved");
+    expect(await edit(initial.scope, 0, "create", null, "Stale")).toBe("changed");
+    expect(await edit(initial.scope, 1, "create", null, "WORK")).toBe("duplicate");
+    const [work] = (await library()).folders;
+    expect(work.name).toBe("Work");
+
+    await act("authenticated", bob);
+    await claim("bobby");
+    const other = await library();
+    expect(other.folders).toEqual([]);
+    expect(await edit(initial.scope, 1, "delete", work.id)).toBe("changed");
+    expect(await edit(other.scope, 0, "rename", work.id, "Cross owner")).toBe("not_found");
+    expect(await edit(other.scope, 0, "create", null, "Work")).toBe("saved");
+    const [bobsFolder] = (await library()).folders;
+
+    await act("service_role");
+    const stage = await result<{ id: string }>("select public.prepare_gallery_upload($1,0,'An image') as value", [alice]);
+    await act("authenticated", alice);
+    expect((await library()).items).toEqual([]);
+    expect(await edit(initial.scope, 1, "move", stage.id, null, work.id)).toBe("not_found");
+    await act("service_role");
+    await result("select public.prepare_gallery_upload($1,0,null,$2) as value", [alice, stage.id]);
+    await result("select public.commit_gallery_upload($1,0,$2,$3,200,100) as value", [alice, stage.id, avatar]);
+    await act("authenticated", alice);
+    await save(1, "Published", [], true);
+    const publicSnapshot = await published("folder-alice");
+    expect(await edit(initial.scope, 1, "move", stage.id, null, bobsFolder.id)).toBe("not_found");
+    expect(await edit(initial.scope, 1, "move", stage.id, null, work.id)).toBe("saved");
+    expect(await edit(initial.scope, 2, "rename", work.id, "Portfolio")).toBe("saved");
+    expect(await library()).toMatchObject({
+      revision: 3, folders: [{ id: work.id, name: "Portfolio" }],
+      items: [{ id: stage.id, folder: work.id, in_draft: true }],
+    });
+    expect(await draft()).toMatchObject({ revision: 2 });
+    expect(await published("folder-alice")).toEqual(publicSnapshot);
+    await db.query("select public.edit_gallery(2,$1,'remove')", [stage.id]);
+    expect((await library()).items).toMatchObject([{ id: stage.id, folder: work.id, in_draft: false }]);
+    expect(await edit(initial.scope, 3, "delete", work.id)).toBe("saved");
+    expect(await library()).toMatchObject({ folders: [], items: [{ id: stage.id, folder: null }] });
+    expect(await published("folder-alice")).toEqual(publicSnapshot);
+
+    expect(await edit(initial.scope, 4, "create", null, "Before deletion")).toBe("saved");
+    const [remaining] = (await library()).folders;
+    expect(await edit(initial.scope, 5, "move", stage.id, null, remaining.id)).toBe("saved");
+    await db.query("select public.delete_profile(3,'folder-alice')");
+    await claim("alice-new");
+    const replacement = await library();
+    expect(replacement).toMatchObject({ revision: 0, folders: [], items: [] });
+    expect(await edit(initial.scope, 0, "create", null, "From stale tab")).toBe("changed");
+  });
+
   it("limits gallery capacity and counts only new upload attempts against the daily allowance", async () => {
     type Stage = { id: string };
     const prepare = (revision: number, alt: string | null, id: string | null = null) =>
