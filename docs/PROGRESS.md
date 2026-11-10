@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the first Milestone 1 implementation are in the repo
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Two SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Three SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 ## Verification evidence
 
@@ -25,6 +25,6 @@ The embedded PostgreSQL tests execute the actual application migrations with sma
 
 ## Remaining
 
-- The private `Truwty/snoozer-uk` repository was created and its visibility verified. See GitHub Actions for the real disposable-stack CI result once the source is pushed.
+- The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check. A fresh CI run is required for the full flow.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
 - Complete profile deletion, durable orphan cleanup, abuse and quota controls, and browser coverage for authenticated Studio. Then continue with Studio history and advanced media, Stripe and Ko-fi, analytics, creator commerce, moderation, admin and the remaining [feature ledger](feature-ledger.md).

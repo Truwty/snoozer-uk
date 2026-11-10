@@ -6,3 +6,4 @@
 - Begin with one profile and 20 ordered links. Add entitlements centrally before expanding quotas. Defer aliases and username changes until names can be reserved across all routes.
 - Use private upload staging and server-validated raster derivatives for avatars. Plan durable jobs in Postgres for cleanup and provider reconciliation. No runtime disk, paid worker or Redis required.
 - Build for private GitHub and Render Free. Keep migrations under explicit release control. Launch checks must capture cold starts, project pauses, quota pressure and webhook recovery.
+- Check published profile existence in the proxy. Missing profiles return a real HTML 404 even with JavaScript disabled. Live profile rendering adds one indexed lookup before loading published content.

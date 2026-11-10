@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { anonymousClient, sessionClient } from "./supabase";
 import { canonicalUsername, draftProfile, publishedProfile, username } from "./profile";
 
@@ -21,9 +21,8 @@ export const readDraft = cache(async () => {
 
 export const readPublished = cache(async (name: string) => {
   const canonical = canonicalUsername(name);
-  if (!username.safeParse(canonical).success) notFound();
+  if (!username.safeParse(canonical).success) return null;
   const { data, error } = await anonymousClient().rpc("get_published_profile", { p_name: canonical });
   if (error) throw new Error("Couldn’t load this profile.");
-  if (!data) notFound();
-  return publishedProfile.parse(data);
+  return data === null ? null : publishedProfile.parse(data);
 });

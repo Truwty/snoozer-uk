@@ -15,6 +15,7 @@ function avatarPath(username: string, avatar: string | null) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!supabaseUrl || !supabaseKey) return { robots: { index: false, follow: false } };
   const profile = await readPublished((await params).username);
+  if (!profile) return { robots: { index: false, follow: false } };
   const url = new URL(`/${profile.username}`, siteUrl()).href;
   const description = profile.bio || `Links from @${profile.username} on Snoozer.`;
   const image = avatarPath(profile.username, profile.avatar);
@@ -32,6 +33,7 @@ export default async function Page({ params }: Props) {
   if (!supabaseUrl || !supabaseKey) notFound();
   const name = (await params).username;
   const profile = await readPublished(name);
+  if (!profile) notFound();
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   return <main className="public-page">
     <ProfileCard profile={profile} avatarSrc={avatarPath(profile.username, profile.avatar)} />

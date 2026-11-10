@@ -76,7 +76,8 @@ test("verify, claim, edit, upload, publish, unpublish, and reset", async ({ page
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
     const publicPage = await visitor.newPage();
-    await publicPage.goto(`/${name}`);
+    const unavailable = await publicPage.goto(`/${name}`);
+    expect(unavailable?.status()).toBe(404);
     await expect(publicPage.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();

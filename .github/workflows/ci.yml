@@ -35,8 +35,12 @@ jobs:
       - run: npm test
       - name: Start disposable local Supabase
         run: |
-          npx --yes supabase@3.1.0 start
+          if ! npx --yes supabase@3.1.0 start > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            echo "::error::The disposable Supabase stack could not start."
+            exit 1
+          fi
           eval "$(npx --yes supabase@3.1.0 status -o env)"
+          printf '::add-mask::%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
           {
             printf 'NEXT_PUBLIC_SITE_URL=http://localhost:3000\n'
             printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$API_URL"

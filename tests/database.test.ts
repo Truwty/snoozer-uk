@@ -26,7 +26,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       insert into auth.users values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
     `);
-    for (const filename of ["20261110000100_profiles.sql", "20261110000200_avatars.sql"]) {
+    for (const filename of ["20261110000100_profiles.sql", "20261110000200_avatars.sql", "20261110000300_published_lookup.sql"]) {
       await db.exec(await readFile(new URL(`../supabase/migrations/${filename}`, import.meta.url), "utf8"));
     }
   });
@@ -78,7 +78,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     await claim("alice");
     expect(await published("alice")).toBeNull();
+    expect(await result("select public.published_profile_exists('alice') as value")).toBe(false);
     await save(0, "Published Alice", links, true);
+    expect(await result("select public.published_profile_exists('alice') as value")).toBe(true);
     await save(1, "Private Alice", [...links].reverse(), false);
     await expect(save(1, "Stale write", links, true)).rejects.toMatchObject({ code: "40001" });
     expect(await draft()).toMatchObject({ display_name: "Private Alice", revision: 2, links: [...links].reverse() });

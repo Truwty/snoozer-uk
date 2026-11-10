@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
+import { anonymousClient } from "@/lib/supabase";
+import { canonicalUsername, username } from "@/lib/profile";
+
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "profile-not-found"]);
 
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -14,7 +18,17 @@ export async function proxy(request: NextRequest) {
   ].join("; ");
   const headers = new Headers(request.headers);
   headers.set("Content-Security-Policy", csp);
-  const response = NextResponse.next({ request: { headers } });
+  const slug = request.nextUrl.pathname.match(/^\/([a-zA-Z0-9-]+)\/?$/)?.[1];
+  let missing = false;
+  if (slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
+    && supabaseUrl && supabaseKey && ["GET", "HEAD"].includes(request.method)) {
+    // Next's async dynamic notFound fallback can be blank without JavaScript.
+    const { data, error } = await anonymousClient().rpc("published_profile_exists", { p_name: canonicalUsername(slug) });
+    missing = !error && data === false;
+  }
+  const response = missing
+    ? NextResponse.rewrite(new URL("/profile-not-found", request.url), { status: 404, request: { headers } })
+    : NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "no-referrer");
