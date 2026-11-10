@@ -49,7 +49,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
   async function discard() {
     setBusy(true);
     try {
-      const result = await discardAvatarUpload();
+      const result = await discardAvatarUpload(revision);
       setState(result.error ? { status: "error", message: result.error }
         : { status: "success", message: result.message ?? "Pending upload cleared." });
       if (input.current) input.current.value = "";

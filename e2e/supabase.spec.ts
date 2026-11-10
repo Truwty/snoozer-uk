@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type APIRequestContext } from "@playwright/test";
@@ -36,7 +38,7 @@ test.beforeEach(() => {
   }
 });
 
-test("verify, claim, edit, upload, publish, unpublish, and reset", async ({ page, browser, request }) => {
+test("verify, publish, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
   const email = `${name}@example.com`;
@@ -108,6 +110,61 @@ test("verify, claim, edit, upload, publish, unpublish, and reset", async ({ page
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Publish page" }).click();
+    await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
+
+    const tags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+    expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+    const liveAudit = await page.context().newPage();
+    await liveAudit.goto(`/${name}`);
+    expect((await new AxeBuilder({ page: liveAudit }).withTags(tags).analyze()).violations).toEqual([]);
+    await liveAudit.close();
+
+    const ownerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+    expect((await ownerClient.auth.signInWithPassword({ email, password: newPassword })).error).toBeNull();
+    const { data: oldDraft } = await ownerClient.rpc("get_draft");
+    const { data: oldScope } = await ownerClient.rpc("draft_media_scope", { p_expected: oldDraft.revision });
+    expect(oldScope).toMatch(/^[0-9a-f-]{36}$/);
+    const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+    const incoming = admin.storage.from("avatar-incoming");
+    const images = admin.storage.from("avatar-images");
+    const { data: lateUpload, error: signingError } = await incoming.createSignedUploadUrl(`${oldScope}/pending`);
+    expect(signingError).toBeNull();
+
+    await page.getByText("Review profile deletion").click();
+    await page.getByLabel(`Type ${name} to confirm`).fill("wrong-name");
+    await page.getByRole("button", { name: "Permanently delete profile" }).click();
+    await expect(page.getByRole("alert")).toContainText("exact username");
+    await page.getByLabel(`Type ${name} to confirm`).fill(name);
+    await page.getByRole("button", { name: "Permanently delete profile" }).click();
+    await expect(page.getByRole("status")).toContainText("Your profile was deleted");
+    expect((await publicPage.goto(`/${name}`))?.status()).toBe(404);
+    expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
+    expect((await ownerClient.rpc("claim_profile", { p_name: name })).error?.code).toBe("23505");
+
+    const replacement = `new-${name}`;
+    await page.getByLabel("Username").fill(replacement);
+    await page.getByRole("button", { name: "Claim address" }).click();
+    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    const { data: newDraft } = await ownerClient.rpc("get_draft");
+    const { data: newScope } = await ownerClient.rpc("draft_media_scope", { p_expected: newDraft.revision });
+    expect(newScope).not.toBe(oldScope);
+    expect((await ownerClient.storage.from("avatar-incoming").uploadToSignedUrl(
+      `${oldScope}/pending`, lateUpload!.token, image, { contentType: "image/png" },
+    )).error).toBeNull();
+    expect((await incoming.upload(`${newScope}/pending`, image, { contentType: "image/png" })).error).toBeNull();
+
+    // Move the clock forward for this one test job in the disposable Docker database.
+    execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres",
+      "-v", "ON_ERROR_STOP=1", "-c", `update snoozer.avatar_cleanup set available_at = now() where scope = '${oldScope}'`]);
+    const cleanup = execFileSync(process.execPath, ["scripts/cleanup-avatars.mjs"], { encoding: "utf8" });
+    expect(cleanup).toContain("completed: 1");
+    for (const bucket of [incoming, images]) {
+      const { data, error } = await bucket.list(oldScope);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    }
+    expect((await incoming.list(newScope)).data?.map(({ name }) => name)).toEqual(["pending"]);
   } finally {
     await visitor.close();
   }

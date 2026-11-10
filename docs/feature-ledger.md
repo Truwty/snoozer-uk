@@ -6,9 +6,9 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 4.1 | Email/Password With Modern Hashing | Implemented, provider E2E pending |
-| 4.2 | Email Verification | Implemented, provider E2E pending |
-| 4.3 | Password Reset | Implemented, provider E2E pending |
+| 4.1 | Email/Password With Modern Hashing | Tested against disposable Supabase in CI |
+| 4.2 | Email Verification | Tested against disposable Supabase in CI |
+| 4.3 | Password Reset | Tested against disposable Supabase in CI |
 | 4.4 | Passkeys/Webauthn Where Feasible | Deferred |
 | 4.5 | Oauth Google And Discord | Deferred |
 | 4.6 | Session Revocation | Partially implemented |
@@ -194,7 +194,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.5 | Gallery And Folders | Deferred |
 | 12.6 | Drag-And-Drop Uploads | Deferred |
 | 12.7 | Resumable Multipart Uploads | Deferred |
-| 12.8 | Presigned Urls | Implemented, provider E2E pending |
+| 12.8 | Presigned Urls | Tested against disposable Supabase in CI |
 | 12.9 | Image Transcoding | Partially implemented |
 | 12.10 | Thumbnail Variants | Deferred |
 | 12.11 | Video Poster Frames | Deferred |

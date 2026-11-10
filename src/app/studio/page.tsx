@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Brand } from "@/components/shell";
 import { ClaimForm } from "@/components/claim-form";
 import { CopyLink } from "@/components/copy-link";
+import { DeleteProfile } from "@/components/delete-profile";
 import { Editor } from "@/components/editor";
 import { Unpublish } from "@/components/unpublish";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -12,10 +13,10 @@ import { signOut } from "../auth/actions";
 
 export const metadata = { title: "Studio", robots: { index: false, follow: false } };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string; deleted?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const draft = await readDraft();
-  const { logout } = await searchParams;
+  const { logout, deleted } = await searchParams;
   return <main className="shell">
     <header className="nav"><Brand /><form action={signOut}><button className="button small">Sign out</button></form></header>
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
@@ -23,6 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
       <p className="eyebrow">STUDIO / ONBOARDING</p>
       <h1>Claim your address</h1>
       <p className="muted">Pick the username people will use to find your page.</p>
+      {deleted === "1" && <p role="status">Your profile was deleted. Its images are queued for removal.</p>}
       <ClaimForm />
     </section> : <>
       <header className="studio-heading">
@@ -42,6 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <AvatarUpload revision={draft.revision} />
       </section>
       <Editor draft={draft} />
+      <DeleteProfile username={draft.username} revision={draft.revision} />
     </>}
   </main>;
 }

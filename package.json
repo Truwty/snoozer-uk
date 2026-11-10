@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "cleanup:avatars": "node --env-file-if-exists=.env.local scripts/cleanup-avatars.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

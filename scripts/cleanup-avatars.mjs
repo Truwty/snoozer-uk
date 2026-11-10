@@ -1,0 +1,59 @@
+import { createClient } from "@supabase/supabase-js";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !key) throw new Error("Set the target Supabase URL and server credential.");
+const args = process.argv.slice(2);
+if (args.length > 1 || (args.length === 1 && args[0] !== "--retry-failed")) {
+  throw new Error("Usage: npm run cleanup:avatars -- [--retry-failed]");
+}
+
+const client = createClient(url, key, {
+  auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(10000) }) },
+});
+
+async function rpc(name, args) {
+  const { data, error } = await client.rpc(name, args);
+  if (error) throw new Error(`Cleanup database operation failed (${name}).`);
+  return data;
+}
+
+async function removeObjects(scope, bucketName, validName) {
+  const bucket = client.storage.from(bucketName);
+  const { data, error } = await bucket.list(scope, { limit: 100 });
+  if (error || !data || data.length >= 100 || data.some(({ name }) => !validName.test(name))) return false;
+  if (data.length === 0) return true;
+  const { error: removeError } = await bucket.remove(data.map(({ name }) => `${scope}/${name}`));
+  if (removeError) return false;
+  const { data: remaining, error: listError } = await bucket.list(scope, { limit: 1 });
+  return !listError && remaining?.length === 0;
+}
+
+if (args.includes("--retry-failed")) {
+  console.log(`Requeued ${await rpc("retry_avatar_cleanup")} failed jobs.`);
+}
+
+let completed = 0;
+let failed = 0;
+for (let index = 0; index < 10; index++) {
+  const job = await rpc("claim_avatar_cleanup");
+  if (!job) break;
+  let success = false;
+  try {
+    const results = await Promise.all([
+      removeObjects(job.scope, "avatar-incoming", /^pending$/),
+      removeObjects(job.scope, "avatar-images", /^[0-9a-f-]{36}\.webp$/),
+    ]);
+    success = results.every(Boolean);
+  } catch {
+    // A transient storage failure is retryable even if one bucket was already cleaned.
+  }
+  const recorded = await rpc("complete_avatar_cleanup", {
+    p_scope: job.scope, p_lease: job.lease_token, p_success: success,
+  });
+  if (recorded && success) completed++;
+  else failed++;
+}
+console.log(`Avatar cleanup completed: ${completed}; retry or operator attention required: ${failed}.`);
+if (failed) process.exitCode = 1;

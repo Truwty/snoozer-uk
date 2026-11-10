@@ -13,6 +13,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
   const { client } = await requireAccount();
   const { error } = await client.rpc("claim_profile", { p_name: name.data });
   if (error?.code === "23505") return { status: "error", message: "That address is unavailable. If you already claimed a page, reload Studio." };
+  if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours. Try again later." };
   if (error) return { status: "error", message: "Couldn’t claim your address. Try again." };
   redirect("/studio");
 }
