@@ -276,6 +276,8 @@ test("concurrent claims yield one winner and direct storage requests are denied"
 
 test("gallery images upload to private Storage and follow publication visibility", async ({ page, request }) => {
   test.setTimeout(90000);
+  const ready = await request.get("/health/ready");
+  expect(ready.status()).toBe(200);
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const name = "gallery-" + randomUUID().slice(0, 12);
   const email = name + "@example.com";
@@ -295,7 +297,7 @@ test("gallery images upload to private Storage and follow publication visibility
     name: "invalid.png", mimeType: "image/png", buffer: Buffer.from("<svg/>"),
   });
   await page.getByRole("button", { name: "Upload image" }).click();
-  await expect(page.getByRole("alert")).toContainText("Choose a single JPEG, PNG or WebP");
+  await expect(page.getByRole("alert").filter({ hasText: "Choose a single JPEG, PNG or WebP" })).toBeVisible();
   await expect(page.getByRole("img", { name: "A disguised file" })).toHaveCount(0);
 
   const image = await sharp({ create: { width: 60, height: 30, channels: 3, background: "blue" } }).png().toBuffer();
@@ -332,6 +334,20 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect((await page.request.get(privatePath)).status()).toBe(200);
+
+  // Locate the currently published image by its accessible name and use its public path.
+  await page.getByRole("link", { name: "View live page" }).click();
+  const openWaterPath = (await page.getByRole("img", { name: "Open water" }).getAttribute("src"))!;
+  const openWaterId = openWaterPath.split("/").at(-1)!;
+  expect((await request.get(openWaterPath)).status()).toBe(200);
+  const takedown = execFileSync(process.execPath, [
+    "scripts/take-down-gallery-image.mjs", name, openWaterId, "TEST-GALLERY-001",
+  ], { encoding: "utf8", timeout: 12000 });
+  expect(takedown).toContain("Image blocked");
+  expect((await request.get(openWaterPath)).status()).toBe(404);
+  expect((await page.request.get("/studio/gallery/image/" + openWaterId)).status()).toBe(404);
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Open water" })).toHaveCount(0);
 });
 
 test("autosave keeps the public page stable and recovers a stale tab", async ({ page, request }) => {

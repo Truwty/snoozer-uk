@@ -10,6 +10,6 @@ This deployment is gated on successful local-stack provider E2E, approval of pub
 6. Add `www.snoozer.uk` as the primary custom domain. Follow the record instructions shown by Render for both hostnames. Render documents redirecting the paired apex to `www` when `www` is added first. Wait for TLS, verify the apex redirect and canonical profile metadata, update the site origin and Auth settings, then redeploy.
 7. Use **Manual Deploy** for a known commit when troubleshooting. Roll back the service to a previously healthy deploy only if its code works with the live schema. Use forward-fix migrations after additive schema changes and test the rollback path before launch.
 
-Health liveness does not depend on Supabase. Readiness checks the public Data API and avatar bucket with a bounded request. Measure a real cold start and check both routes after release.
+Health liveness does not depend on Supabase. Readiness checks the public Data API and verifies that all four avatar and gallery buckets exist and are private. Measure a real cold start and check both routes after release.
 
 [Render web services](https://render.com/docs/web-services) · [Render custom domains](https://render.com/docs/custom-domains)

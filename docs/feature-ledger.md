@@ -344,7 +344,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 19.2 | User Lookup | Deferred |
 | 19.3 | Report Queues | Deferred |
 | 19.4 | Appeal Management | Deferred |
-| 19.5 | Media Takedown | Deferred |
+| 19.5 | Media Takedown | Operator takedown for gallery images implemented and verified locally; dashboard, notices and other media remain open |
 | 19.6 | Impersonation Handling | Deferred |
 | 19.7 | Phishing Detection | Deferred |
 | 19.8 | Malware Link Checks | Deferred |

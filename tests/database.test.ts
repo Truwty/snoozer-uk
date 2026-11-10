@@ -37,7 +37,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -161,6 +161,70 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.query("select public.restore_publication(4,6)");
     expect(await draft()).toMatchObject({ revision: 7, gallery: [{ id: second.id }, { id: first.id }] });
     expect(await published("alice")).toMatchObject({ gallery: [{ id: second.id }] });
+  });
+
+  it("limits gallery capacity and counts only new upload attempts against the daily allowance", async () => {
+    type Stage = { id: string };
+    const prepare = (revision: number, alt: string | null, id: string | null = null) =>
+      result<Stage>("select public.prepare_gallery_upload($1,$2,$3,$4) as value", [alice, revision, alt, id]);
+    await act("authenticated", alice);
+    await claim("alice");
+    await act("service_role");
+    let lastId = "";
+    for (let revision = 0; revision < 8; revision++) {
+      const stage = await prepare(revision, "Image");
+      lastId = stage.id;
+      expect(await prepare(revision, "Image")).toEqual(stage);
+      await prepare(revision, null, stage.id);
+      expect(await result(
+        "select public.commit_gallery_upload($1,$2,$3,gen_random_uuid(),200,100) as value",
+        [alice, revision, stage.id],
+      )).toBe(true);
+    }
+    await expect(prepare(8, "Ninth image")).rejects.toMatchObject({ code: "P1101" });
+    await act("authenticated", alice);
+    expect(await result("select public.edit_gallery(8,$1,'remove') as value", [lastId])).toBe(true);
+    await act("service_role");
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const stage = await prepare(9, "Retryable");
+      expect(await prepare(9, "Retryable")).toEqual(stage);
+      await result("select public.discard_gallery_upload($1,9,$2) as value", [alice, stage.id]);
+    }
+    await expect(prepare(9, "Over quota")).rejects.toMatchObject({ code: "P1103" });
+  });
+
+  it("audits gallery takedowns and prevents republishing a blocked image from history", async () => {
+    const takeDown = (name: string, id: string, ref: string) =>
+      result("select public.take_down_gallery_image($1,$2,$3) as value", [name, id, ref]);
+    await act("authenticated", alice);
+    await claim("alice");
+    await act("service_role");
+    const stage = await result<{ id: string }>("select public.prepare_gallery_upload($1,0,'Image') as value", [alice]);
+    await result("select public.prepare_gallery_upload($1,0,null,$2) as value", [alice, stage.id]);
+    await result("select public.commit_gallery_upload($1,0,$2,$3,200,100) as value", [alice, stage.id, avatar]);
+    await act("authenticated", alice);
+    await save(1, "Published", [], true);
+    await expect(takeDown("alice", stage.id, "CASE-123")).rejects.toMatchObject({ code: "42501" });
+
+    await act("service_role");
+    await expect(takeDown("alice", stage.id, "contains spaces")).rejects.toMatchObject({ code: "22023" });
+    expect(await takeDown("bobby", stage.id, "CASE-123")).toBe("not_found");
+    expect(await takeDown("alice", stage.id, "CASE-123")).toBe("blocked");
+    expect(await takeDown("alice", stage.id, "CASE-999")).toBe("already_blocked");
+    expect(await result("select public.gallery_object($1,'alice') as value", [stage.id])).toBeNull();
+    expect(await result("select public.gallery_object($1,null,$2) as value", [stage.id, alice])).toBeNull();
+    await act("anon");
+    expect(await published("alice")).toMatchObject({ gallery: [] });
+    await act("authenticated", alice);
+    expect(await draft()).toMatchObject({ gallery: [], revision: 3 });
+    expect(await result("select public.get_publication(2) as value")).toMatchObject({ gallery: [] });
+    await db.query("select public.restore_publication(2,3)");
+    await save(4, "Restored", [], true);
+    expect(await published("alice")).toMatchObject({ gallery: [] });
+
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.published_gallery")).toBe(1);
+    expect(await result("select case_reference as value from snoozer.gallery_takedowns")).toBe("CASE-123");
   });
 
   it("rejects unsafe links from direct RPC clients without changing the revision", async () => {
