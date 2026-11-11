@@ -78,7 +78,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.14 | Component Lock And Hide | Deferred |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
-| 7.17 | Contrast Inspector | Deferred |
+| 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit and SQL tests passed locally |
 | 7.18 | Performance Budget Warnings | Deferred |
 
 ## 8. LAYOUT AND THEME ENGINE
@@ -86,7 +86,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | ID | Capability | Status |
 | --- | --- | --- |
 | 8.1 | Minimal Centred Card | Partially implemented |
-| 8.2 | Portfolio Editorial | Editorial card implemented and tested locally; wider portfolio features remain open |
+| 8.2 | Portfolio Editorial | Editorial card verified in disposable Supabase CI. Wider portfolio features remain open |
 | 8.3 | Grid Dashboard | Deferred |
 | 8.4 | Streamer Overlay Style | Deferred |
 | 8.5 | Immersive Full-Screen | Deferred |
@@ -96,7 +96,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
 | 8.11 | Custom Sections | Text, callout and quote sections verified in disposable Supabase CI for preview, publication and restore |
-| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values verified in disposable Supabase CI. Further token families deferred |
+| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values verified in disposable Supabase CI. Link accent presets and layout verified locally |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
 | 8.15 | Borders And Radii | Partially implemented |

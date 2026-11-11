@@ -106,6 +106,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByLabel("Theme")).toHaveValue("lagoon");
+    await page.getByLabel("Link accent").selectOption("ink");
+    await expect(page.locator("#link-accent-contrast")).toContainText("Link text contrast");
     await page.getByLabel("Profile layout").selectOption("editorial");
     await expect(page.getByRole("region", { name: "Page preview" })).toHaveAttribute("data-layout", "editorial");
     await page.getByLabel("Card spacing").selectOption("compact");
@@ -143,6 +145,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects"]);
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-layout", "editorial");
+    await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("background-color", "rgb(37, 52, 95)");
+    await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("color", "rgb(255, 255, 255)");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("text-align", "start");
     await expect(publicPage.locator(".profile-inner")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-density", "compact");
@@ -178,6 +182,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await page.getByLabel("Display name").fill("Second publication");
     await page.getByLabel("Profile layout").selectOption("centred");
+    await page.getByLabel("Link accent").selectOption("theme");
     await page.getByLabel("Card spacing").selectOption("airy");
     await page.getByLabel("Card corners").selectOption("round");
     await page.getByRole("button", { name: "Remove section 3" }).click();
@@ -194,6 +199,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByLabel("Profile layout")).toHaveValue("editorial");
+    await expect(page.getByLabel("Link accent")).toHaveValue("ink");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
     await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");

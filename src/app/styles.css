@@ -130,7 +130,7 @@ textarea { resize: vertical; }
 .profile-quote blockquote { font-style: italic; }
 .profile-quote figcaption { color: var(--detail); margin-block-start: .45rem; font-size: .9rem; }
 .profile-links { display: grid; gap: .6rem; width: 100%; margin: .5rem 0 0; list-style: none; padding: 0; }
-.profile-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: start; min-height: 48px; border-radius: var(--block-radius); background: var(--chip); padding: .6rem .8rem; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.profile-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: start; min-height: 48px; border-radius: var(--block-radius); background: var(--link-background, var(--chip)); color: var(--link-foreground, var(--text)); padding: .6rem .8rem; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .profile-links a:hover { text-decoration: underline; }
 .profile-links a:focus-visible { outline-color: var(--text); }
 

@@ -16,4 +16,6 @@ Studio offers Centred card and Editorial layouts. Editorial places the avatar be
 
 Migration `20261110001300_appearance_tokens.sql` checks the token names and snapshots them with the rest of the profile. An old request that omits the optional appearance argument keeps the existing choices. A restore changes the draft. Publish to make it live. Migration 20261110001400 adds the layout choice and treats older appearance settings as Centred card.
 
+Studio's link accent control offers Mint, Rose and Ink. For these presets, the renderer selects black or white text and Studio reports the resulting contrast ratio. The presets meet the 4.5 to 1 minimum for normal link text. The default uses the active theme's link colours. Migration 20261110001500 accepts only the named accents. [WCAG 2.2 contrast minimum](https://www.w3.org/TR/WCAG22/#contrast-minimum)
+
 The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.

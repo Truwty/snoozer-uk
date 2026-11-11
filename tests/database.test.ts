@@ -509,7 +509,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   });
 
   it("accepts only built-in appearance tokens and restores the saved appearance", async () => {
-    const compact = { density: "compact", corners: "square", layout: "editorial" };
+    const compact = { density: "compact", corners: "square", layout: "editorial", accent: "ink" };
     const defaults = { density: "balanced", corners: "soft" };
     const write = (expected: number, publish: boolean, appearance: unknown) => result(
       "select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,null,$3) as value",
@@ -524,6 +524,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(write(0, true, { ...compact, layout: "arbitrary-grid" })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, { ...compact, layout: null })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, "editorial")).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, { ...compact, accent: "#010203" })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, { ...compact, accent: null })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, null)).rejects.toMatchObject({ code: "22023" });
     expect(await draft()).toMatchObject({ revision: 0 });
 

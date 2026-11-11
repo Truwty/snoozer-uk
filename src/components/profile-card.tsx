@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+import { linkAccentColours } from "@/lib/link-accent";
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
@@ -7,6 +9,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   preview?: boolean;
   previewLabel?: string;
 }) {
+  const linkColours = linkAccentColours(profile.appearance.accent);
+  const linkStyle = linkColours ? {
+    "--link-background": linkColours.background,
+    "--link-foreground": linkColours.foreground,
+  } as CSSProperties : undefined;
+
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
     data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}>
     <div className="profile-decoration" aria-hidden="true" />
@@ -30,7 +38,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             <p>{section.body}</p>
           </section>)}
       </div>}
-      {profile.links.length > 0 && <ul className="profile-links">
+      {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
           <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label} <span aria-hidden="true">↗</span></a></li>
         )}

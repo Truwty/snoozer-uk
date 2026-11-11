@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
@@ -18,6 +19,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
+  const linkColours = linkAccentColours(content.appearance.accent);
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
     edit((current) => ({ ...current, content: { ...current.content, [field]: value } }));
@@ -86,6 +88,16 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
         }}>
           {profileCorners.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
         </select></label>
+        <label>Link accent<select value={content.appearance.accent} aria-describedby="link-accent-contrast" onChange={(event) => {
+          const accent = linkAccents.find((value) => value === event.target.value);
+          if (accent) set("appearance", { ...content.appearance, accent });
+        }}>
+          {linkAccents.map((accent) => <option value={accent} key={accent}>{linkAccentLabels[accent]}</option>)}
+        </select></label>
+        <p id="link-accent-contrast" className="muted" aria-live="polite">
+          {linkColours ? "Link text contrast " + (Math.floor(linkColours.ratio * 10) / 10).toFixed(1) + " to 1."
+            : "Links use your theme colours."}
+        </p>
         <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
           onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
         {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}

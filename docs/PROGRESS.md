@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Fourteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Fifteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -37,6 +37,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - The Editorial layout uses a split avatar and title at wider card widths and a single column on phones. It uses the existing appearance save and restore flow.
 
+- Studio offers Mint, Rose and Ink link accents. It displays the measured contrast of the chosen link text and background. The shared renderer selects black or white text for each accent.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -63,6 +65,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | Local appearance verification | SQL rejects unknown keys and values, accepts old save requests, keeps draft choices private and restores snapshot values. | 24 unit/SQL tests passed locally |
 | [GitHub Actions 42928490301](https://github.com/Truwty/snoozer-uk/actions/runs/42928490301) | Appearance controls, phone preview parity, reduced motion and history restore against disposable Supabase. | 24 unit/SQL and 17 browser tests passed |
 | Local editorial layout | The migration accepts existing two-field appearance objects and rejects unknown or malformed layout values. SQL tests verify publication isolation and restore. | 24 unit/SQL tests passed locally |
+| [GitHub Actions 43024795782](https://github.com/Truwty/snoozer-uk/actions/runs/43024795782) | Editorial layout rendered in two columns on wider cards and matched Studio at 320 and 375 px. The layout was restored from publish history. | 24 unit/SQL and 17 browser tests passed |
+| Local link accent verification | Unit tests check known contrast ratios and the three preset pairs. SQL tests reject arbitrary colour values and verify draft isolation and restore. | 26 unit/SQL tests and 13 browser smoke tests passed locally |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
