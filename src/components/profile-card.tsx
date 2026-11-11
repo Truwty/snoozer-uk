@@ -11,6 +11,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   preview?: boolean;
   previewLabel?: string;
 }) {
+  const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
   const linkColours = linkAccentColours(profile.appearance.accent);
   const linkStyle = linkColours ? {
     "--link-background": linkColours.background,
@@ -29,8 +30,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       <p className="profile-handle">@{profile.username}</p>
       {preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
-      {profile.sections.length > 0 && <div className="profile-sections">
-        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => {
+      {visibleSections.length > 0 && <div className="profile-sections">
+        {visibleSections.map((section, index) => {
           const target = section.kind === "countdown" ? countdownTarget(section.target ?? "") : null;
           if (section.kind === "quote") return <figure className="profile-text-section profile-quote" key={index}>
             <blockquote><p>{section.body}</p></blockquote>

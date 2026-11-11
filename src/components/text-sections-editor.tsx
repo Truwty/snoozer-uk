@@ -56,6 +56,10 @@ export function TextSectionsEditor({ sections, onChange }: {
         <textarea required maxLength={textSectionLimits.body} rows={4} value={section.body}
           onChange={(event) => change(index, { body: event.target.value })} />
       </label>
+      <label className="check"><input type="checkbox" checked={section.hidden ?? false}
+        onChange={(event) => change(index, { hidden: event.target.checked || undefined })} />
+        Hide section {index + 1} from public profile
+      </label>
       <div className="actions">
         <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (section ${index + 1})`}
           onClick={() => move(index, index - 1)}>Move up</button>

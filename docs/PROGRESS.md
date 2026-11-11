@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Sixteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Seventeen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -41,6 +41,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio has a Countdown section with a UTC target, a readable date in server HTML and a minute-by-minute preview. The target is saved and restored with publish history.
 
+- Studio can hide any section from the public profile. The editor and owner history retain the content. The public profile response contains only visible sections from the active publication.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -72,6 +74,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 43025481392](https://github.com/Truwty/snoozer-uk/actions/runs/43025481392) | The browser test's Theme selector also matched the new Use theme colours option. A local Chromium check reproduced the ambiguity and confirmed the exact accessible combobox name identifies the intended control. | 26 unit/SQL and 16 of 17 browser tests passed |
 | [GitHub Actions 43026274391](https://github.com/Truwty/snoozer-uk/actions/runs/43026274391) | Full browser rerun verified computed link colours on published profiles, Studio contrast feedback and history restore. | 26 unit/SQL and 17 browser tests passed |
 | Local countdown verification | Unit tests cover leap dates, minute rounding and expiry. SQL tests reject invalid targets and preserve the target during publishing and restore. | 28 unit/SQL tests passed |
+| [GitHub Actions 43027685605](https://github.com/Truwty/snoozer-uk/actions/runs/43027685605) | Countdown preview and expiry, published UTC date with JavaScript disabled, and history restore verified on disposable Supabase. | 28 unit/SQL and 17 browser tests passed |
+| Local section visibility verification | SQL tests cover draft and public isolation, anonymous and cross-owner denial, boolean validation and history restore. | 29 unit/SQL tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

@@ -10,6 +10,12 @@ Migration 20261110000800 adds relational draft and publication section tables. T
 
 Migration `20261110001200_section_types.sql` adds an allowlisted type to draft and publication rows. Existing rows still render as plain text. A previous app build can read those rows, but may convert new section types to plain text if it saves the draft. Apply the migration before deploying the new editor and prefer a forward fix over rolling back to an editor that cannot save the type.
 
+## Section visibility
+
+Use **Hide section from public profile** to omit a section from the public preview and the next publication. The editor keeps the section available for editing, moving or showing again. Publish to apply the change to the live page. Restoring an earlier version restores that version's visibility settings in the draft.
+
+Migration 20261110001700 keeps hidden content in owner-only snapshots. The public profile endpoint excludes the entire hidden section, including its text and any countdown target. Hidden sections count towards the six-section limit. When a draft contains hidden sections, the save RPC rejects older clients that replace sections without explicit visibility settings.
+
 ## Countdown
 
 Add a section, choose **Countdown**, and enter its heading, description and target date and time in UTC. Countdown sections use one of the six existing section slots. A valid target appears as a date in Studio, history and the public page. The date is readable with JavaScript disabled. With JavaScript enabled, the timer rounds up to the next minute and shows **Countdown finished.** at the target. Past targets are supported.

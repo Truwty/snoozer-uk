@@ -48,6 +48,7 @@ export const sectionLabels: Record<typeof sectionKinds[number], string> = {
 const textSection = z.object({
   kind: z.enum(sectionKinds).optional(),
   target: z.string().optional(),
+  hidden: z.boolean().optional(),
   heading: z.string().trim().min(1, "Give each text section a heading.").refine(
     (value) => Array.from(value).length <= textSectionLimits.heading, "Section headings can be up to 80 characters."),
   body: z.string().trim().min(1, "Enter text for each section.").refine(

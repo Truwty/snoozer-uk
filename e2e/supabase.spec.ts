@@ -198,7 +198,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Card spacing").selectOption("airy");
     await page.getByLabel("Card corners").selectOption("round");
     await page.getByRole("button", { name: "Remove section 3" }).click();
-    await page.getByRole("button", { name: "Remove section 1" }).click();
+    await page.getByRole("checkbox", { name: "Hide section 1 from public profile" }).check();
+    await expect(preview.getByRole("heading", { name: "Notes" })).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
     await page.getByRole("link", { name: "Publish history" }).click();
@@ -214,12 +216,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link accent")).toHaveValue("ink");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
+    await expect(page.getByRole("checkbox", { name: "Hide section 1 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
     await expect(page.getByLabel("Section 4 target time")).toHaveValue("2096-02-29T18:15");
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
+    await expect(publicPage.getByRole("heading", { name: "Notes" })).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByText("Live · Up to date")).toBeVisible();
     await publicPage.reload();

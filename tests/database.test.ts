@@ -542,6 +542,38 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("appearance-alice")).not.toHaveProperty("appearance");
   });
 
+  it("retains hidden sections privately and excludes them from public responses", async () => {
+    const section = { heading: "Planning", body: "Owner-only draft notes." };
+    const hidden = { ...section, hidden: true };
+    const write = (revision: number, publish: boolean, sections: unknown) =>
+      result("select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,$3) as value",
+        [revision, publish, JSON.stringify(sections)]);
+    await act("authenticated", alice);
+    await claim("section-visibility");
+    await expect(write(0, true, [{ ...section, hidden: "true" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, [{ ...section, hidden: null }])).rejects.toMatchObject({ code: "22023" });
+    await write(0, true, [section]);
+    await write(1, false, [hidden]);
+    await expect(write(2, true, [section])).rejects.toMatchObject({ code: "22023" });
+    expect(await draft()).toMatchObject({ revision: 2, sections: [hidden] });
+    expect(await published("section-visibility")).toMatchObject({ sections: [section] });
+    await save(2, "Publish draft", [], true);
+    expect(await result("select public.get_publication(3) as value")).toMatchObject({ sections: [hidden] });
+    await act("anon");
+    expect(await published("section-visibility")).toMatchObject({ sections: [] });
+    await expect(db.query("select public.get_publication(3)")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect(await result("select public.get_publication(3) as value")).toBeNull();
+    await act("authenticated", alice);
+    await db.query("select public.restore_publication(1,3)");
+    expect(await draft()).toMatchObject({ revision: 4, sections: [section] });
+    await db.query("select public.restore_publication(3,4)");
+    expect(await draft()).toMatchObject({ revision: 5, sections: [hidden] });
+    expect(await published("section-visibility")).toMatchObject({ sections: [] });
+    await write(5, true, [{ ...section, hidden: false }]);
+    expect(await published("section-visibility")).toMatchObject({ sections: [section] });
+  });
+
   it("validates text sections and snapshots them only on publish", async () => {
     await act("authenticated", alice);
     await claim("sections-alice");

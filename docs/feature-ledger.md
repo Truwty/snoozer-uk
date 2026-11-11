@@ -75,7 +75,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.11 | Theme Presets | Partially implemented |
 | 7.12 | Copy And Paste Styles | Deferred |
 | 7.13 | Template Import With Asset Attribution | Deferred |
-| 7.14 | Component Lock And Hide | Deferred |
+| 7.14 | Component Lock And Hide | Section visibility implemented and tested in SQL. Locking remains open |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
@@ -172,7 +172,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 11.9 | Weather Opt-In Location | Deferred |
 | 11.10 | Time Zone Clock | Deferred |
 | 11.11 | Calendar Availability | Deferred |
-| 11.12 | Countdown | First-party countdown implemented. Unit and SQL tests passed locally |
+| 11.12 | Countdown | First-party countdown verified in disposable Supabase CI for preview, expiry, publication and restore |
 | 11.13 | Guestbook With Moderation | Deferred |
 | 11.14 | Testimonials | Deferred |
 | 11.15 | Poll | Deferred |

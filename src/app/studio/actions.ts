@@ -49,7 +49,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_appearance: appearance,
     p_indexable: content.indexable,
     p_links: links,
-    p_sections: content.sections,
+    p_sections: content.sections.map((section) => ({ ...section, hidden: section.hidden ?? false })),
     p_publish: intent === "publish",
     p_remove_avatar: removeAvatar,
   });
