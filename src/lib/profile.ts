@@ -5,6 +5,13 @@ export const profileRevisionNumber = z.number().int().nonnegative().max(21474836
 export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
 
 export const themes = ["midnight", "daybreak", "lagoon"] as const;
+export const profileDensities = ["compact", "balanced", "airy"] as const;
+export const profileCorners = ["square", "soft", "round"] as const;
+export const defaultAppearance = { density: "balanced", corners: "soft" } as const;
+export const profileAppearance = z.strictObject({
+  density: z.enum(profileDensities),
+  corners: z.enum(profileCorners),
+});
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 
 export function canonicalUsername(value: string) {
@@ -47,6 +54,7 @@ export const profileContent = z.object({
   display_name: z.string().trim().min(1, "Enter a display name.").max(60),
   bio: z.string().trim().max(280),
   theme: z.enum(themes),
+  appearance: profileAppearance.default(defaultAppearance),
   indexable: z.boolean(),
   links: z.array(link).max(20),
   sections: textSections.default([]),

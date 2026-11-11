@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Twelve SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Thirteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -33,6 +33,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio sections now support Text, Callout and Quote. Callouts and attributed quotes use the shared preview, public renderer and publication history. See [Studio sections and templates](studio-sections.md).
 
+- Card spacing and corners use built-in choices shared by Studio and public pages. Appearance settings are saved in drafts, included in immutable publications and restored with history.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -54,7 +56,9 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 42926076818](https://github.com/Truwty/snoozer-uk/actions/runs/42926076818) | Full suite on disposable Supabase verified signed uploads, private buckets and readiness, reorder and publish, retained history access, and the operator command blocking both public and owner image routes. | 22 unit/SQL and 17 browser tests passed |
 | Local folder verification | Embedded PostgreSQL checks validation, cross-owner access, stale folder revisions, profile replacement, unfiling on deletion, and unchanged public snapshots. | 23 unit/SQL tests passed locally |
 | [GitHub Actions 42927327264](https://github.com/Truwty/snoozer-uk/actions/runs/42927327264) | Private folders verified on disposable Supabase: create, move, filter after reload, rename and delete at phone width, axe scan and no change to public gallery order or metadata. | 23 unit/SQL and 17 browser tests passed |
-| Local section types | Real SQL rejects unknown types and preserves text, callout and quote order through draft changes, publish and restore. | 23 unit/SQL tests passed locally; provider browser verification pending |
+| Local section types | Real SQL rejects unknown types and preserves text, callout and quote order through draft changes, publish and restore. | 23 unit/SQL tests passed locally |
+| [GitHub Actions 42927900939](https://github.com/Truwty/snoozer-uk/actions/runs/42927900939) | Callouts and quotes preview, publish and restore against disposable Supabase, alongside the private folder regressions. | 23 unit/SQL and 17 browser tests passed |
+| Local appearance verification | SQL rejects unknown keys and values, accepts old save requests, keeps draft choices private and restores snapshot values. | 24 unit/SQL tests passed locally; provider browser verification pending |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
@@ -66,4 +70,4 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
-- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with safe theme customisation and interactive blocks. The wider moderation dashboard, notices and appeals remain open in the [feature ledger](feature-ledger.md).
+- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with more theme controls and interactive blocks. The wider moderation dashboard, notices and appeals remain open in the [feature ledger](feature-ledger.md).

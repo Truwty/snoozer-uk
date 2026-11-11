@@ -40,6 +40,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_name: content.display_name,
     p_bio: content.bio,
     p_theme: content.theme,
+    p_appearance: content.appearance,
     p_indexable: content.indexable,
     p_links: links,
     p_sections: content.sections,

@@ -95,8 +95,8 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.8 | Professional Business Card | Deferred |
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
-| 8.11 | Custom Sections | Text, callout and quote sections use the existing autosave, publish and restore flow; new types verified locally |
-| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Deferred |
+| 8.11 | Custom Sections | Text, callout and quote sections verified in disposable Supabase CI for preview, publication and restore |
+| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values implemented and tested locally; further token families deferred |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
 | 8.15 | Borders And Radii | Partially implemented |

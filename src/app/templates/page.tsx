@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Brand } from "@/components/shell";
 import { ProfileCard } from "@/components/profile-card";
+import { defaultAppearance } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 
 export const metadata = {
@@ -21,7 +22,7 @@ export default function Templates() {
         <p>{template.description}</p>
         <ProfileCard preview previewLabel={template.name + " preview"} profile={{
           username: "template-preview", display_name: template.name, bio: "", theme: template.theme,
-          indexable: false, avatar: null, gallery: [], links: [], sections: template.sections,
+          indexable: false, avatar: null, appearance: defaultAppearance, gallery: [], links: [], sections: template.sections,
         }} />
         <Link className="button" href={`/studio?template=${template.id}`}>Open {template.name} in Studio</Link>
       </li>)}

@@ -508,6 +508,35 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(open()).rejects.toMatchObject({ code: "P1003" });
   });
 
+  it("accepts only built-in appearance tokens and restores the saved appearance", async () => {
+    const compact = { density: "compact", corners: "square" };
+    const defaults = { density: "balanced", corners: "soft" };
+    const write = (expected: number, publish: boolean, appearance: unknown) => result(
+      "select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,null,$3) as value",
+      [expected, publish, JSON.stringify(appearance)],
+    );
+    await act("authenticated", alice);
+    await claim("appearance-alice");
+    await expect(write(0, true, { ...compact, corners: "url(https://example.org)" }))
+      .rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, { ...compact, color: "red" })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, { density: "airy" })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, null)).rejects.toMatchObject({ code: "22023" });
+    expect(await draft()).toMatchObject({ revision: 0 });
+
+    await write(0, false, compact);
+    expect(await draft()).toMatchObject({ appearance: compact });
+    expect(await published("appearance-alice")).toBeNull();
+    await save(1, "Compatible save", [], true);
+    await write(2, false, { density: "airy", corners: "round" });
+    expect(await published("appearance-alice")).toMatchObject({ appearance: compact });
+    await write(3, true, defaults);
+    expect(await published("appearance-alice")).not.toHaveProperty("appearance");
+    await db.query("select public.restore_publication(2,4)");
+    expect(await draft()).toMatchObject({ revision: 5, appearance: compact });
+    expect(await published("appearance-alice")).not.toHaveProperty("appearance");
+  });
+
   it("validates text sections and snapshots them only on publish", async () => {
     await act("authenticated", alice);
     await claim("sections-alice");

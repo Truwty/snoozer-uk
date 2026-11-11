@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { profileCorners, profileDensities, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
@@ -67,6 +67,18 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
           onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
           {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
         </select></label>
+        <label>Card spacing<select value={content.appearance.density} onChange={(event) => {
+          const density = profileDensities.find((value) => value === event.target.value);
+          if (density) set("appearance", { ...content.appearance, density });
+        }}>
+          {profileDensities.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
+        </select></label>
+        <label>Card corners<select value={content.appearance.corners} onChange={(event) => {
+          const corners = profileCorners.find((value) => value === event.target.value);
+          if (corners) set("appearance", { ...content.appearance, corners });
+        }}>
+          {profileCorners.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
+        </select></label>
         <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
           onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
         {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
@@ -129,7 +141,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
           <label>Unsaved profile content
             <textarea readOnly rows={6} value={JSON.stringify({
               display_name: content.display_name, bio: content.bio, theme: content.theme, indexable: content.indexable,
-              links: content.links, sections: content.sections, removeAvatar,
+              links: content.links, sections: content.sections, appearance: content.appearance, removeAvatar,
             }, null, 2)} />
           </label>
         </details>
