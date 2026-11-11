@@ -19,10 +19,15 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       {preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
       {profile.sections.length > 0 && <div className="profile-sections">
-        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => <section className="profile-text-section" key={index}>
-          {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
-          <p>{section.body}</p>
-        </section>)}
+        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => section.kind === "quote"
+          ? <figure className="profile-text-section profile-quote" key={index}>
+            <blockquote><p>{section.body}</p></blockquote>
+            <figcaption>{section.heading}</figcaption>
+          </figure>
+          : <section className={section.kind === "callout" ? "profile-text-section profile-callout" : "profile-text-section"} key={index}>
+            {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
+            <p>{section.body}</p>
+          </section>)}
       </div>}
       {profile.links.length > 0 && <ul className="profile-links">
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>

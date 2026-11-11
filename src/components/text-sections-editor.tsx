@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { textSectionLimits, type TextSection } from "@/lib/profile";
+import { sectionKinds, sectionLabels, textSectionLimits, type TextSection } from "@/lib/profile";
 
 export function TextSectionsEditor({ sections, onChange }: {
   sections: TextSection[];
@@ -23,23 +23,31 @@ export function TextSectionsEditor({ sections, onChange }: {
     focusHeading(to);
   }
 
-  function change(index: number, field: keyof TextSection, value: string) {
-    onChange(sections.map((section, position) => position === index ? { ...section, [field]: value } : section));
+  function change(index: number, update: Partial<TextSection>) {
+    onChange(sections.map((section, position) => position === index ? { ...section, ...update } : section));
   }
 
   return <fieldset className="stack">
     <legend className="section-title">Text sections <small>{sections.length}/{textSectionLimits.count}</small></legend>
-    <p className="muted">Add sections such as About or Current projects. Sections appear above your links.</p>
+    <p className="muted">Add text, highlight an update with a callout, or share a quote. Sections appear above your links.</p>
     <p className="sr-only" aria-live="polite">{announcement}</p>
     {sections.map((section, index) => <div key={index} className="link-editor stack">
-      <label>Section {index + 1} heading
+      <label>Section {index + 1} type
+        <select value={section.kind ?? "text"} onChange={(event) => {
+          const kind = sectionKinds.find((candidate) => candidate === event.target.value);
+          if (kind) change(index, { kind: kind === "text" ? undefined : kind });
+        }}>
+          {sectionKinds.map((kind) => <option value={kind} key={kind}>{sectionLabels[kind]}</option>)}
+        </select>
+      </label>
+      <label>Section {index + 1} {section.kind === "quote" ? "attribution" : "heading"}
         <input required maxLength={textSectionLimits.heading} value={section.heading}
           ref={(input) => { headings.current[index] = input; }}
-          onChange={(event) => change(index, "heading", event.target.value)} />
+          onChange={(event) => change(index, { heading: event.target.value })} />
       </label>
       <label>Section {index + 1} text
         <textarea required maxLength={textSectionLimits.body} rows={4} value={section.body}
-          onChange={(event) => change(index, "body", event.target.value)} />
+          onChange={(event) => change(index, { body: event.target.value })} />
       </label>
       <div className="actions">
         <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (section ${index + 1})`}

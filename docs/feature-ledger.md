@@ -95,7 +95,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.8 | Professional Business Card | Deferred |
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
-| 8.11 | Custom Sections | Tested for ordered text sections with autosave, publish and restore. Additional block types pending |
+| 8.11 | Custom Sections | Text, callout and quote sections use the existing autosave, publish and restore flow; new types verified locally |
 | 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Deferred |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
@@ -191,7 +191,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.2 | Background Image | Deferred |
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
-| 12.5 | Gallery And Folders | Image galleries verified in disposable Supabase CI; private folders implemented and verified locally |
+| 12.5 | Gallery And Folders | Image galleries and private folders verified in disposable Supabase CI |
 | 12.6 | Drag-And-Drop Uploads | Deferred |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |

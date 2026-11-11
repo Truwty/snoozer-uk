@@ -29,7 +29,12 @@ export const link = z.object({
 });
 
 export const textSectionLimits = { count: 6, heading: 80, body: 800 };
+export const sectionKinds = ["text", "callout", "quote"] as const;
+export const sectionLabels: Record<typeof sectionKinds[number], string> = {
+  text: "Text", callout: "Callout", quote: "Quote",
+};
 const textSection = z.object({
+  kind: z.enum(sectionKinds).optional(),
   heading: z.string().trim().min(1, "Give each text section a heading.").refine(
     (value) => Array.from(value).length <= textSectionLimits.heading, "Section headings can be up to 80 characters."),
   body: z.string().trim().min(1, "Enter text for each section.").refine(

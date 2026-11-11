@@ -106,6 +106,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByLabel("Theme")).toHaveValue("lagoon");
+    await page.getByLabel("Section 1 type").selectOption("callout");
+    await page.getByRole("button", { name: "Add text section" }).click();
+    await page.getByLabel("Section 3 type").selectOption("quote");
+    await page.getByLabel("Section 3 attribution").fill("Studio notebook");
+    await page.getByLabel("Section 3 text").fill("Stay curious.");
+    await expect(page.getByRole("region", { name: "Page preview" }).locator("blockquote")).toHaveText("Stay curious.");
     for (const [index, label] of ["First", "Second"].entries()) {
       await page.getByRole("button", { name: "Add link" }).click();
       await page.getByLabel(`Link ${index + 1} label`).fill(label);
@@ -132,6 +138,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects"]);
+    await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
+    await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
+    await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
     for (const [option, width] of [["narrow", 320], ["phone", 375]] as const) {
@@ -152,6 +161,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await visitor.request.get(avatarPath!)).headers()["content-type"]).toBe("image/webp");
 
     await page.getByLabel("Display name").fill("Second publication");
+    await page.getByRole("button", { name: "Remove section 3" }).click();
     await page.getByRole("button", { name: "Remove section 1" }).click();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
@@ -164,6 +174,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("Version restored");
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");
+    await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
+    await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
