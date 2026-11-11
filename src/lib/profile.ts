@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { galleryItem, galleryLimit } from "./gallery";
 import { linkAccents } from "./link-accent";
+import { countdownTarget } from "./countdown";
 
 export const profileRevisionNumber = z.number().int().nonnegative().max(2147483646);
 export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
@@ -40,16 +41,23 @@ export const link = z.object({
 });
 
 export const textSectionLimits = { count: 6, heading: 80, body: 800 };
-export const sectionKinds = ["text", "callout", "quote"] as const;
+export const sectionKinds = ["text", "callout", "quote", "countdown"] as const;
 export const sectionLabels: Record<typeof sectionKinds[number], string> = {
-  text: "Text", callout: "Callout", quote: "Quote",
+  text: "Text", callout: "Callout", quote: "Quote", countdown: "Countdown",
 };
 const textSection = z.object({
   kind: z.enum(sectionKinds).optional(),
+  target: z.string().optional(),
   heading: z.string().trim().min(1, "Give each text section a heading.").refine(
     (value) => Array.from(value).length <= textSectionLimits.heading, "Section headings can be up to 80 characters."),
   body: z.string().trim().min(1, "Enter text for each section.").refine(
     (value) => Array.from(value).length <= textSectionLimits.body, "Sections can be up to 800 characters."),
+}).superRefine((section, context) => {
+  if (section.kind === "countdown" && !countdownTarget(section.target ?? "")) {
+    context.addIssue({ code: "custom", path: ["target"], message: "Enter a valid countdown date and time in UTC." });
+  } else if (section.kind !== "countdown" && section.target !== undefined) {
+    context.addIssue({ code: "custom", path: ["target"], message: "Only countdown sections have a target time." });
+  }
 });
 export type TextSection = z.infer<typeof textSection>;
 export const textSections = z.array(textSection).max(textSectionLimits.count);

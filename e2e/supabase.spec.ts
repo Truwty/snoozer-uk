@@ -117,7 +117,15 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Section 3 type").selectOption("quote");
     await page.getByLabel("Section 3 attribution").fill("Studio notebook");
     await page.getByLabel("Section 3 text").fill("Stay curious.");
-    await expect(page.getByRole("region", { name: "Page preview" }).locator("blockquote")).toHaveText("Stay curious.");
+    const preview = page.getByRole("region", { name: "Page preview" });
+    await expect(preview.locator("blockquote")).toHaveText("Stay curious.");
+    await page.getByRole("button", { name: "Add text section" }).click();
+    await page.getByRole("combobox", { name: "Section 4 type", exact: true }).selectOption("countdown");
+    await page.getByLabel("Section 4 heading").fill("Launch");
+    await page.getByLabel("Section 4 text").fill("Save the date.");
+    await expect(preview.getByText("Choose a target time to preview the countdown.")).toBeVisible();
+    await page.getByLabel("Section 4 target time").fill("2096-02-29T18:15");
+    await expect(preview.locator(".countdown-remaining")).toContainText("remaining");
     for (const [index, label] of ["First", "Second"].entries()) {
       await page.getByRole("button", { name: "Add link" }).click();
       await page.getByLabel(`Link ${index + 1} label`).fill(label);
@@ -143,7 +151,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
-    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects"]);
+    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects", "Launch"]);
+    await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
+    await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-layout", "editorial");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("background-color", "rgb(37, 52, 95)");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("color", "rgb(255, 255, 255)");
@@ -181,6 +191,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await visitor.request.get(avatarPath!)).headers()["content-type"]).toBe("image/webp");
 
     await page.getByLabel("Display name").fill("Second publication");
+    await page.getByLabel("Section 4 target time").fill("2000-01-01T00:00");
+    await expect(preview.locator(".countdown-remaining")).toHaveText("Countdown finished.");
     await page.getByLabel("Profile layout").selectOption("centred");
     await page.getByLabel("Link accent").selectOption("theme");
     await page.getByLabel("Card spacing").selectOption("airy");
@@ -205,6 +217,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
+    await expect(page.getByLabel("Section 4 target time")).toHaveValue("2096-02-29T18:15");
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();

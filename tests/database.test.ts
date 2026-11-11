@@ -552,6 +552,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const first = { heading: "About", body: "One line.\nA second line." };
     const second = { heading: "Updates", body: "Plain text <strong>example</strong>.", kind: "callout" };
     const quote = { heading: "Project notebook", body: "Always leave a little room.", kind: "quote" };
+    const countdown = { heading: "Launch", body: "Save the date.", kind: "countdown", target: "2028-02-29T18:15" };
+    await expect(write(0, true, [{ ...countdown, target: "2027-02-29T18:15" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, [{ ...countdown, target: "2028-02-29T24:00" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, [{ ...countdown, target: null }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, [{ ...first, target: countdown.target }])).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, [{ ...first, kind: "raw-html" }])).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, [{ ...first, kind: null }])).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, [{ heading: 5, body: "Value" }])).rejects.toMatchObject({ code: "22023" });
@@ -560,11 +565,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await draft()).toMatchObject({ revision: 0, sections: [] });
     expect(await published("sections-alice")).toBeNull();
 
-    await write(0, true, [first, second, quote]);
-    await write(1, false, [quote, second, first]);
-    expect(await draft()).toMatchObject({ revision: 2, sections: [quote, second, first] });
+    await write(0, true, [first, second, quote, countdown]);
+    await write(1, false, [countdown, quote, second, first]);
+    expect(await draft()).toMatchObject({ revision: 2, sections: [countdown, quote, second, first] });
     await act("anon");
-    expect(await published("sections-alice")).toMatchObject({ sections: [first, second, quote] });
+    expect(await published("sections-alice")).toMatchObject({ sections: [first, second, quote, countdown] });
     await expect(db.query("select public.get_publication(1)")).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", bob);
     await claim("sections-bob");
@@ -572,10 +577,10 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select * from snoozer.sections")).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", alice);
     await save(2, "Legacy client", [], true); // An older client omits the new argument.
-    expect(await published("sections-alice")).toMatchObject({ sections: [quote, second, first] });
+    expect(await published("sections-alice")).toMatchObject({ sections: [countdown, quote, second, first] });
     await db.query("select public.restore_publication(1,3)");
-    expect(await draft()).toMatchObject({ revision: 4, sections: [first, second, quote] });
-    expect(await published("sections-alice")).toMatchObject({ sections: [quote, second, first] });
+    expect(await draft()).toMatchObject({ revision: 4, sections: [first, second, quote, countdown] });
+    expect(await published("sections-alice")).toMatchObject({ sections: [countdown, quote, second, first] });
     await write(4, true, []);
     expect(await published("sections-alice")).toMatchObject({ sections: [] });
   });

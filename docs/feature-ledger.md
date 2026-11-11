@@ -78,7 +78,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.14 | Component Lock And Hide | Deferred |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
-| 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit and SQL tests passed locally |
+| 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
 | 7.18 | Performance Budget Warnings | Deferred |
 
 ## 8. LAYOUT AND THEME ENGINE
@@ -96,7 +96,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
 | 8.11 | Custom Sections | Text, callout and quote sections verified in disposable Supabase CI for preview, publication and restore |
-| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values verified in disposable Supabase CI. Link accent presets and layout verified locally |
+| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing, corner, layout and link accent values verified in disposable Supabase CI |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
 | 8.15 | Borders And Radii | Partially implemented |
@@ -172,7 +172,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 11.9 | Weather Opt-In Location | Deferred |
 | 11.10 | Time Zone Clock | Deferred |
 | 11.11 | Calendar Availability | Deferred |
-| 11.12 | Countdown | Deferred |
+| 11.12 | Countdown | First-party countdown implemented. Unit and SQL tests passed locally |
 | 11.13 | Guestbook With Moderation | Deferred |
 | 11.14 | Testimonials | Deferred |
 | 11.15 | Poll | Deferred |

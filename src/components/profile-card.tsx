@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { countdownDate, countdownTarget } from "@/lib/countdown";
+import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 
@@ -28,15 +30,23 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       {preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
       {profile.sections.length > 0 && <div className="profile-sections">
-        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => section.kind === "quote"
-          ? <figure className="profile-text-section profile-quote" key={index}>
+        {profile.sections.filter(({ heading }) => heading.trim()).map((section, index) => {
+          const target = section.kind === "countdown" ? countdownTarget(section.target ?? "") : null;
+          if (section.kind === "quote") return <figure className="profile-text-section profile-quote" key={index}>
             <blockquote><p>{section.body}</p></blockquote>
             <figcaption>{section.heading}</figcaption>
-          </figure>
-          : <section className={section.kind === "callout" ? "profile-text-section profile-callout" : "profile-text-section"} key={index}>
+          </figure>;
+          return <section className={section.kind === "callout" ? "profile-text-section profile-callout" : "profile-text-section"} key={index}>
             {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
             <p>{section.body}</p>
-          </section>)}
+            {section.kind === "countdown" && <div className="countdown">
+              {target ? <>
+                <p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p>
+                <Countdown key={section.target} target={target.valueOf()} />
+              </> : <p>Choose a target time to preview the countdown.</p>}
+            </div>}
+          </section>;
+        })}
       </div>}
       {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>

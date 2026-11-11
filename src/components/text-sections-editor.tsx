@@ -29,13 +29,16 @@ export function TextSectionsEditor({ sections, onChange }: {
 
   return <fieldset className="stack">
     <legend className="section-title">Text sections <small>{sections.length}/{textSectionLimits.count}</small></legend>
-    <p className="muted">Add text, highlight an update with a callout, or share a quote. Sections appear above your links.</p>
+    <p className="muted">Add text, highlight an update with a callout, share a quote, or count down to an event. Sections appear above your links.</p>
     <p className="sr-only" aria-live="polite">{announcement}</p>
     {sections.map((section, index) => <div key={index} className="link-editor stack">
       <label>Section {index + 1} type
         <select value={section.kind ?? "text"} onChange={(event) => {
           const kind = sectionKinds.find((candidate) => candidate === event.target.value);
-          if (kind) change(index, { kind: kind === "text" ? undefined : kind });
+          if (kind) change(index, {
+            kind: kind === "text" ? undefined : kind,
+            target: kind === "countdown" ? section.target ?? "" : undefined,
+          });
         }}>
           {sectionKinds.map((kind) => <option value={kind} key={kind}>{sectionLabels[kind]}</option>)}
         </select>
@@ -45,6 +48,10 @@ export function TextSectionsEditor({ sections, onChange }: {
           ref={(input) => { headings.current[index] = input; }}
           onChange={(event) => change(index, { heading: event.target.value })} />
       </label>
+      {section.kind === "countdown" && <label>Section {index + 1} target time (UTC)
+        <input type="datetime-local" step={60} required value={section.target ?? ""}
+          onChange={(event) => change(index, { target: event.target.value })} />
+      </label>}
       <label>Section {index + 1} text
         <textarea required maxLength={textSectionLimits.body} rows={4} value={section.body}
           onChange={(event) => change(index, { body: event.target.value })} />

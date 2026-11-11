@@ -128,6 +128,8 @@ textarea { resize: vertical; }
 .profile-callout, .profile-quote { border-inline-start: 3px solid var(--detail); }
 .profile-quote, .profile-quote blockquote { margin: 0; }
 .profile-quote blockquote { font-style: italic; }
+.countdown { margin-block-start: .65rem; color: var(--detail); }
+.countdown-remaining { font-variant-numeric: tabular-nums; font-weight: 650; }
 .profile-quote figcaption { color: var(--detail); margin-block-start: .45rem; font-size: .9rem; }
 .profile-links { display: grid; gap: .6rem; width: 100%; margin: .5rem 0 0; list-style: none; padding: 0; }
 .profile-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: start; min-height: 48px; border-radius: var(--block-radius); background: var(--link-background, var(--chip)); color: var(--link-foreground, var(--text)); padding: .6rem .8rem; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
