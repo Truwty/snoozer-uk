@@ -166,7 +166,12 @@ textarea { resize: vertical; }
   .hero-break { display: none; }
   .nav .actions { justify-content: end; gap: .3rem; }
 }
+@keyframes profile-entrance {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (prefers-reduced-motion: no-preference) {
+  .profile-card[data-entrance="fade"] .profile-decoration { animation: profile-entrance .35s ease-out; }
   .button, .profile-links a { transition: background-color .18s ease, border-color .18s ease; }
 }
 @media print {

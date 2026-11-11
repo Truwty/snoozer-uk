@@ -46,4 +46,6 @@ Studio's link accent control offers Mint, Rose and Ink. For these presets, the r
 
 Use **Copy or paste appearance** in Studio to copy a version 1 code or select its text manually. Paste a code and choose **Apply appearance** to change the draft's theme, layout, spacing, corners and link accent in one undoable edit. Codes exclude profile content. Invalid or unsupported codes leave the draft unchanged.
 
+Choose **Fade in** under **Background entrance** to animate the decorative background when the card loads. The effect uses the browser's reduced-motion preference and leaves text readable throughout. The choice is saved with appearance settings and included in copied appearance codes.
+
 The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.

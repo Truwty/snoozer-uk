@@ -126,6 +126,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
+    await page.getByLabel("Background entrance").selectOption("fade");
     await page.getByLabel("Link accent").selectOption("ink");
     await expect(page.locator("#link-accent-contrast")).toContainText("Link text contrast");
     await page.getByLabel("Profile layout").selectOption("editorial");
@@ -247,7 +248,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
+    await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
     await publicPage.emulateMedia({ reducedMotion: "reduce" });
+    await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "none");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("transition-duration", "0s");
     for (const [option, width] of [["narrow", 320], ["phone", 375]] as const) {
       await page.getByLabel("Preview width").selectOption(option);

@@ -33,11 +33,12 @@ export async function save(input: unknown): Promise<SaveResult> {
   const request = saveRequest.safeParse(input);
   if (!request.success) return { status: "error", message: request.error.issues[0].message };
   const { content, intent, revision, removeAvatar } = request.data;
-  const { layout, accent, ...cardTokens } = content.appearance;
+  const { layout, accent, entrance, ...cardTokens } = content.appearance;
   const appearance = {
     ...cardTokens,
     ...(layout !== "centred" && { layout }),
     ...(accent !== "theme" && { accent }),
+    ...(entrance !== "none" && { entrance }),
   };
   const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
   const { client } = await requireAccount();

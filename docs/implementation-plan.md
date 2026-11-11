@@ -13,4 +13,6 @@ The numbered feature inventory is tracked in [feature-ledger.md](feature-ledger.
 | 6 | Workspace roles and approvals, API keys and webhooks, moderation, appeal and admin audit, directory/community, notifications, account export/deletion, operational dashboards, rate limits and load/recovery drills | Role matrix, staff step-up auth, privacy workflow, quota and backup restore evidence |
 | 7 | Owner-approved terms/privacy/tax, SMTP, production config, DNS/TLS, deployment and rollback, launch accessibility/performance/security gates | Real production smoke tests and verified deployment. Live payment activation requires approved legal/tax settings and secure live credentials |
 
+The Studio milestone checks cover revision conflicts, keyboard and touch reorder, undo and restore, preview widths of 320 and 375 pixels, validated appearance options, reduced motion, signed image uploads, gallery limits and moderation takedowns. The [feature ledger](feature-ledger.md) tracks additional presets, effects, layouts and media types as separate implementation work.
+
 Commerce payouts require a separate Stripe Connect design and approval before release. Advanced capability decisions and release dependencies remain visible in the ledger. Default to UK English, GBP, UTC storage and configurable Europe/London display.

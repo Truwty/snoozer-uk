@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Nineteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Twenty SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -55,6 +55,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Media folders can add an image retained in publish history back to the draft gallery. This reuses the existing file and respects the eight-image limit.
 
+- Studio offers a background entrance fade. Drafts and publications retain the choice. Reduced motion keeps the background static.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -97,6 +99,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | Local appearance transfer | Versioned code round trip and validation, including exclusion of profile content. | 34 unit/SQL tests passed locally |
 | [GitHub Actions 43032802421](https://github.com/Truwty/snoozer-uk/actions/runs/43032802421) | Clipboard copy, malformed code rejection, valid draft application and undo verified alongside the section lock regressions. | 34 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43033253649](https://github.com/Truwty/snoozer-uk/actions/runs/43033253649) | Gallery drop selection, multiple-file rejection and explicit signed upload alongside the file picker path. | 34 unit/SQL and 17 browser tests passed |
+| [GitHub Actions 43106675082](https://github.com/Truwty/snoozer-uk/actions/runs/43106675082) | Reused a retained image through Media folders, verified it stayed private until publishing, and checked stale revisions, the gallery limit, duplicates and ownership in SQL. | 34 unit/SQL and 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

@@ -83,6 +83,13 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
           <option value="centred">Centred card</option>
           <option value="editorial">Editorial</option>
         </select></label>
+        <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
+          const entrance = event.target.value;
+          if (entrance === "none" || entrance === "fade") set("appearance", { ...content.appearance, entrance });
+        }}>
+          <option value="none">None</option>
+          <option value="fade">Fade in</option>
+        </select></label>
         <label>Card spacing<select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });

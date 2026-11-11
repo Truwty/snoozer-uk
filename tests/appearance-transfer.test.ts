@@ -4,7 +4,7 @@ import { appearanceTransferLimit, exportAppearance, importAppearance } from "../
 it("round-trips validated appearance without exporting private profile content", () => {
   const settings = {
     theme: "daybreak",
-    appearance: { density: "airy", corners: "square", layout: "editorial", accent: "mint" },
+    appearance: { density: "airy", corners: "square", layout: "editorial", accent: "mint", entrance: "fade" },
   } as const;
   const profile = { ...settings, bio: "Private draft", sections: [] };
   const code = exportAppearance(profile);

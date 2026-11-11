@@ -77,7 +77,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.13 | Template Import With Asset Attribution | Deferred |
 | 7.14 | Component Lock And Hide | Section visibility and locking verified in disposable Supabase CI |
 | 7.15 | Bulk Edits | Deferred |
-| 7.16 | Asset Library Picker | Reuse of retained library images in the draft gallery implemented |
+| 7.16 | Asset Library Picker | Retained image reuse verified in disposable Supabase CI |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
 | 7.18 | Performance Budget Warnings | Studio gallery memory advisory verified in unit tests and disposable Supabase CI. Other budget metrics remain open |
 
@@ -121,7 +121,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 9.12 | Glitch Title | Deferred |
 | 9.13 | Neon Outline | Deferred |
 | 9.14 | Spotlight Cursor | Deferred |
-| 9.15 | Entrance Transitions | Deferred |
+| 9.15 | Entrance Transitions | Optional background fade implemented with a reduced-motion fallback |
 | 9.16 | Sound Effects Opt-In | Deferred |
 | 9.17 | Frame-Rate Adaptive Degradation | Deferred |
 | 9.18 | Prefers-Reduced-Motion Fallback | Partially implemented |
