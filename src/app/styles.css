@@ -128,6 +128,8 @@ textarea { resize: vertical; }
 .profile-callout, .profile-quote { border-inline-start: 3px solid var(--detail); }
 .profile-quote, .profile-quote blockquote { margin: 0; }
 .profile-quote blockquote { font-style: italic; }
+.gallery-budget { margin-block-end: .75rem; }
+.gallery-budget h2 { font-size: 1rem; }
 .reorder-handle { width: fit-content; min-height: 2.75rem; display: flex; align-items: center; padding-inline: .6rem; cursor: grab; touch-action: none; user-select: none; }
 .reorder-handle:active { cursor: grabbing; }
 [data-reorder-index][data-drop-target] { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -45,6 +45,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio sections and links have a drag handle for pointer reordering alongside the keyboard move buttons. A completed drag is a single undoable edit.
 
+- Studio warns when the draft gallery's estimated decoded memory exceeds 12 MiB and links to image management. The advisory leaves save and publish available.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -80,6 +82,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | Local section visibility verification | SQL tests cover draft and public isolation, anonymous and cross-owner denial, boolean validation and history restore. | 29 unit/SQL tests passed |
 | [GitHub Actions 43028391980](https://github.com/Truwty/snoozer-uk/actions/runs/43028391980) | Verified hidden sections leave the live page after publish, restore preserves visibility, and countdown still renders and expires correctly. | 29 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43029507928](https://github.com/Truwty/snoozer-uk/actions/runs/43029507928) | Section drag, cancellation outside the list, focus, undo and redo, published order and history restore. | 29 unit/SQL and 17 browser tests passed |
+| [GitHub Actions 43030266457](https://github.com/Truwty/snoozer-uk/actions/runs/43030266457) | Shared section and link reordering, including an emulated touch drag at phone width, focus and published link order. | 29 unit/SQL and 17 browser tests passed |
+| Local gallery budget verification | Estimates cover empty galleries, images below budget, the exact threshold and a gallery over budget. | 31 unit/SQL tests passed locally |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

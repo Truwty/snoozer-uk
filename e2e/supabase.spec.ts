@@ -410,7 +410,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("alert").filter({ hasText: "Choose a single JPEG, PNG or WebP" })).toBeVisible();
   await expect(page.getByRole("img", { name: "A disguised file" })).toHaveCount(0);
 
-  const image = await sharp({ create: { width: 60, height: 30, channels: 3, background: "blue" } }).png().toBuffer();
+  const image = await sharp({ create: { width: 1280, height: 1280, channels: 3, background: "blue" } }).png().toBuffer();
   for (const alt of ["Blue shoreline", "Open water"]) {
     await page.getByLabel("Image description").fill(alt);
     await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
@@ -427,6 +427,8 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
   await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
   await page.getByRole("link", { name: "Back to Studio" }).click();
+  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toContainText("12.5 MiB");
+  await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
   const liveImage = await request.get(publicPath);
@@ -435,6 +437,7 @@ test("gallery images upload to private Storage and follow publication visibility
   const html = await (await request.get("/" + name)).text();
   expect(html.indexOf('alt="Open water"')).toBeLessThan(html.indexOf('alt="Blue shoreline"'));
   expect(html).toContain('alt="Open water"');
+  expect(html).not.toContain("Gallery may use more memory");
 
   await page.goto("/studio/gallery/folders");
   await page.setViewportSize({ width: 375, height: 812 });
@@ -468,6 +471,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   expect((await request.get(publicPath)).status()).toBe(200);
   await page.getByRole("link", { name: "Back to Studio" }).click();
+  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toHaveCount(0);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect((await page.request.get(privatePath)).status()).toBe(200);

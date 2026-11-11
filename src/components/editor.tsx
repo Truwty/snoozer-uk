@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
+import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
@@ -21,6 +23,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
+  const galleryWarning = galleryMemoryWarning(saved.gallery);
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
@@ -188,6 +191,11 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
           </select>
         </label>
       </div>
+      {galleryWarning && <section className="panel stack gallery-budget" aria-labelledby="gallery-budget-title">
+        <h2 id="gallery-budget-title">Gallery may use more memory on phones</h2>
+        <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
+        <div><Link className="button small" href="/studio/gallery">Manage gallery images</Link></div>
+      </section>}
       <div className={"preview-card preview-" + previewSize}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme,
