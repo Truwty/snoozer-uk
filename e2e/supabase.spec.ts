@@ -126,6 +126,31 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(preview.getByText("Choose a target time to preview the countdown.")).toBeVisible();
     await page.getByLabel("Section 4 target time").fill("2096-02-29T18:15");
     await expect(preview.locator(".countdown-remaining")).toContainText("remaining");
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    const firstSection = page.locator('[data-section-index="0"]');
+    const nextSection = page.locator('[data-section-index="1"]');
+    await firstSection.evaluate((card) => card.scrollIntoView({ block: "start" }));
+    const handle = (await firstSection.locator(".section-drag-handle").boundingBox())!;
+    const target = (await nextSection.locator(".section-drag-handle").boundingBox())!;
+    const start = { x: handle.x + 15, y: handle.y + 20 };
+    const end = { x: target.x + 15, y: target.y + 20 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(1, end.y, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 10 });
+    await expect(nextSection).toHaveAttribute("data-drop-target", "true");
+    await page.mouse.up();
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 2 heading")).toBeFocused();
+    await page.getByRole("button", { name: "Undo edit" }).click();
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await page.getByRole("button", { name: "Redo edit" }).click();
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
     for (const [index, label] of ["First", "Second"].entries()) {
       await page.getByRole("button", { name: "Add link" }).click();
       await page.getByLabel(`Link ${index + 1} label`).fill(label);
@@ -151,7 +176,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
-    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects", "Launch"]);
+    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-layout", "editorial");
@@ -198,7 +223,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Card spacing").selectOption("airy");
     await page.getByLabel("Card corners").selectOption("round");
     await page.getByRole("button", { name: "Remove section 3" }).click();
-    await page.getByRole("checkbox", { name: "Hide section 1 from public profile" }).check();
+    await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
     await expect(preview.getByRole("heading", { name: "Notes" })).toHaveCount(0);
     await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
@@ -211,13 +236,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Restore to draft" }).click();
     await expect(page.getByRole("status")).toContainText("Version restored");
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
     await expect(page.getByLabel("Profile layout")).toHaveValue("editorial");
     await expect(page.getByLabel("Link accent")).toHaveValue("ink");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
-    await expect(page.getByRole("checkbox", { name: "Hide section 1 from public profile" })).not.toBeChecked();
-    await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");
+    await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
+    await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
     await expect(page.getByLabel("Section 4 target time")).toHaveValue("2096-02-29T18:15");

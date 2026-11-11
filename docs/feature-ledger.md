@@ -62,7 +62,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 7.1 | Drag-And-Drop Blocks | Deferred |
+| 7.1 | Drag-And-Drop Blocks | Studio section drag reordering implemented. Other block groups remain open |
 | 7.2 | Keyboard-Accessible Reorder | Partially implemented |
 | 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
@@ -75,7 +75,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.11 | Theme Presets | Partially implemented |
 | 7.12 | Copy And Paste Styles | Deferred |
 | 7.13 | Template Import With Asset Attribution | Deferred |
-| 7.14 | Component Lock And Hide | Section visibility implemented and tested in SQL. Locking remains open |
+| 7.14 | Component Lock And Hide | Section visibility verified in disposable Supabase CI. Locking remains open |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |

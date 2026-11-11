@@ -10,6 +10,10 @@ Migration 20261110000800 adds relational draft and publication section tables. T
 
 Migration `20261110001200_section_types.sql` adds an allowlisted type to draft and publication rows. Existing rows still render as plain text. A previous app build can read those rows, but may convert new section types to plain text if it saves the draft. Apply the migration before deploying the new editor and prefer a forward fix over rolling back to an editor that cannot save the type.
 
+## Section order
+
+Drag **Drag to move** onto another section to move it into that position. The page scrolls when you drag near the top or bottom edge. Releasing outside the section list cancels the move. **Move up** and **Move down** offer the same reorder operation through the keyboard or a single click or tap. Focus follows the moved heading. Dragging adds one undo step, and publishing saves the new order.
+
 ## Section visibility
 
 Use **Hide section from public profile** to omit a section from the public preview and the next publication. The editor keeps the section available for editing, moving or showing again. Publish to apply the change to the live page. Restoring an earlier version restores that version's visibility settings in the draft.

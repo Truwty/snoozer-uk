@@ -128,6 +128,9 @@ textarea { resize: vertical; }
 .profile-callout, .profile-quote { border-inline-start: 3px solid var(--detail); }
 .profile-quote, .profile-quote blockquote { margin: 0; }
 .profile-quote blockquote { font-style: italic; }
+.section-drag-handle { width: fit-content; min-height: 2.75rem; display: flex; align-items: center; padding-inline: .6rem; cursor: grab; touch-action: none; user-select: none; }
+.section-drag-handle:active { cursor: grabbing; }
+[data-section-index][data-drop-target] { outline: 2px solid var(--accent); outline-offset: 2px; }
 .countdown { margin-block-start: .65rem; color: var(--detail); }
 .countdown-remaining { font-variant-numeric: tabular-nums; font-weight: 650; }
 .profile-quote figcaption { color: var(--detail); margin-block-start: .45rem; font-size: .9rem; }

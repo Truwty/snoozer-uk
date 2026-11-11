@@ -43,6 +43,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio can hide any section from the public profile. The editor and owner history retain the content. The public profile response contains only visible sections from the active publication.
 
+- Studio sections have a drag handle for pointer reordering alongside the keyboard move buttons. A completed drag is a single undoable edit.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -76,6 +78,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | Local countdown verification | Unit tests cover leap dates, minute rounding and expiry. SQL tests reject invalid targets and preserve the target during publishing and restore. | 28 unit/SQL tests passed |
 | [GitHub Actions 43027685605](https://github.com/Truwty/snoozer-uk/actions/runs/43027685605) | Countdown preview and expiry, published UTC date with JavaScript disabled, and history restore verified on disposable Supabase. | 28 unit/SQL and 17 browser tests passed |
 | Local section visibility verification | SQL tests cover draft and public isolation, anonymous and cross-owner denial, boolean validation and history restore. | 29 unit/SQL tests passed |
+| [GitHub Actions 43028391980](https://github.com/Truwty/snoozer-uk/actions/runs/43028391980) | Verified hidden sections leave the live page after publish, restore preserves visibility, and countdown still renders and expires correctly. | 29 unit/SQL and 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
