@@ -67,7 +67,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | Local editorial layout | The migration accepts existing two-field appearance objects and rejects unknown or malformed layout values. SQL tests verify publication isolation and restore. | 24 unit/SQL tests passed locally |
 | [GitHub Actions 43024795782](https://github.com/Truwty/snoozer-uk/actions/runs/43024795782) | Editorial layout rendered in two columns on wider cards and matched Studio at 320 and 375 px. The layout was restored from publish history. | 24 unit/SQL and 17 browser tests passed |
 | Local link accent verification | Unit tests check known contrast ratios and the three preset pairs. SQL tests reject arbitrary colour values and verify draft isolation and restore. | 26 unit/SQL tests and 13 browser smoke tests passed locally |
-| [GitHub Actions 43025481392](https://github.com/Truwty/snoozer-uk/actions/runs/43025481392) | The browser test's Theme selector also matched the new Use theme colours option. The rerun uses the exact control label. | 26 unit/SQL and 16 of 17 browser tests passed |
+| [GitHub Actions 43025481392](https://github.com/Truwty/snoozer-uk/actions/runs/43025481392) | The browser test's Theme selector also matched the new Use theme colours option. A local Chromium check reproduced the ambiguity and confirmed the exact accessible combobox name identifies the intended control. | 26 unit/SQL and 16 of 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

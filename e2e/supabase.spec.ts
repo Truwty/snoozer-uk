@@ -90,12 +90,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await page.getByLabel("Display name").fill("Snoozer Creator");
     await page.getByLabel("Bio").fill("Private until I publish.");
-    await page.getByLabel("Theme", { exact: true }).selectOption("lagoon");
+    await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("lagoon");
     await page.getByLabel("Preview a template").selectOption("project-notebook");
     await expect(page.getByRole("heading", { name: "Current projects" })).toBeVisible();
-    await expect(page.getByLabel("Theme", { exact: true })).toHaveValue("lagoon");
+    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await page.getByRole("button", { name: "Apply with starter sections" }).click();
-    await expect(page.getByLabel("Theme", { exact: true })).toHaveValue("midnight");
+    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("midnight");
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Current projects");
     await page.getByLabel("Section 1 text").fill("First line.\nLiteral <em>markup</em>.");
     await page.getByRole("button", { name: "Move up (section 2)" }).press("Enter");
@@ -105,7 +105,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("button", { name: "Apply with starter sections" })).toHaveCount(0);
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
-    await expect(page.getByLabel("Theme", { exact: true })).toHaveValue("lagoon");
+    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await page.getByLabel("Link accent").selectOption("ink");
     await expect(page.locator("#link-accent-contrast")).toContainText("Link text contrast");
     await page.getByLabel("Profile layout").selectOption("editorial");
