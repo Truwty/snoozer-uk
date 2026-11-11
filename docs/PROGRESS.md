@@ -110,7 +110,7 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 ## Milestone 3 — Monetisation in progress
 
-- Migration 20261110002100 seeds version 1 of Free, Plus, Pro and Studio. The owner-only plan RPC resolves active grants by tier, version and expiry, falling back to Free. Grant records and provider references remain private.
+- Migration 20261110002100 seeds version 1 of Free, Plus, Pro and Studio in typed relational columns. The owner-only plan RPC resolves active grants by tier, version and expiry, falling back to Free. Grant records and provider references remain private.
 - Studio now displays the current tier, grant expiry when applicable, published profiles and draft links. The typed server-side policy checks ownership, grant expiry, feature access and quota boundaries.
 - Local lint, type checking, dependency audit and all 35 unit/SQL tests passed. The Edge smoke run passed 13 browser tests. Four Supabase-backed tests require the disposable CI stack.
 - Existing profile writes still enforce one profile and 20 links. Prices, Checkout, Billing Portal, webhook ingestion, reconciliation, Ko-fi and grant issuance remain open.

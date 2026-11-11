@@ -3,24 +3,33 @@
 create table snoozer.plan_versions (
   plan text not null check (plan in ('free', 'plus', 'pro', 'studio')),
   version integer not null check (version > 0),
-  quotas jsonb not null check (jsonb_typeof(quotas) = 'object'),
-  capabilities jsonb not null check (jsonb_typeof(capabilities) = 'object'),
+  profiles integer not null check (profiles >= 0),
+  links integer not null check (links >= 0),
+  media_bytes bigint not null check (media_bytes between 0 and 9007199254740991),
+  domains integer not null check (domains >= 0),
+  aliases integer not null check (aliases >= 0),
+  analytics_days integer not null check (analytics_days >= 0),
+  team_seats integer not null check (team_seats >= 0),
+  premium_layouts boolean not null,
+  advanced_effects boolean not null,
+  scheduled_publishing boolean not null,
+  ab_testing boolean not null,
+  remove_branding boolean not null,
+  advanced_seo boolean not null,
+  priority_support boolean not null,
+  api_access text not null check (api_access in ('read', 'limited', 'standard', 'extended')),
   primary key (plan, version)
 );
 
-insert into snoozer.plan_versions (plan, version, quotas, capabilities) values
-  ('free', 1,
-    '{"profiles":1,"links":20,"mediaBytes":100000000,"domains":0,"aliases":0,"analyticsDays":30,"teamSeats":1}',
-    '{"premiumLayouts":false,"advancedEffects":false,"scheduledPublishing":false,"abTesting":false,"removeBranding":false,"advancedSeo":false,"prioritySupport":false,"apiAccess":"read"}'),
-  ('plus', 1,
-    '{"profiles":3,"links":100,"mediaBytes":2000000000,"domains":1,"aliases":2,"analyticsDays":180,"teamSeats":1}',
-    '{"premiumLayouts":true,"advancedEffects":true,"scheduledPublishing":true,"abTesting":false,"removeBranding":true,"advancedSeo":true,"prioritySupport":false,"apiAccess":"limited"}'),
-  ('pro', 1,
-    '{"profiles":10,"links":500,"mediaBytes":10000000000,"domains":3,"aliases":10,"analyticsDays":730,"teamSeats":3}',
-    '{"premiumLayouts":true,"advancedEffects":true,"scheduledPublishing":true,"abTesting":true,"removeBranding":true,"advancedSeo":true,"prioritySupport":true,"apiAccess":"standard"}'),
-  ('studio', 1,
-    '{"profiles":50,"links":2000,"mediaBytes":50000000000,"domains":10,"aliases":50,"analyticsDays":1095,"teamSeats":15}',
-    '{"premiumLayouts":true,"advancedEffects":true,"scheduledPublishing":true,"abTesting":true,"removeBranding":true,"advancedSeo":true,"prioritySupport":true,"apiAccess":"extended"}');
+insert into snoozer.plan_versions (
+  plan, version, profiles, links, media_bytes, domains, aliases, analytics_days, team_seats,
+  premium_layouts, advanced_effects, scheduled_publishing, ab_testing, remove_branding,
+  advanced_seo, priority_support, api_access
+) values
+  ('free', 1, 1, 20, 100000000, 0, 0, 30, 1, false, false, false, false, false, false, false, 'read'),
+  ('plus', 1, 3, 100, 2000000000, 1, 2, 180, 1, true, true, true, false, true, true, false, 'limited'),
+  ('pro', 1, 10, 500, 10000000000, 3, 10, 730, 3, true, true, true, true, true, true, true, 'standard'),
+  ('studio', 1, 50, 2000, 50000000000, 10, 50, 1095, 15, true, true, true, true, true, true, true, 'extended');
 
 create table snoozer.entitlement_grants (
   id uuid primary key default gen_random_uuid(),
@@ -54,7 +63,18 @@ language sql stable security definer set search_path = '' as $$
       limit 1
     )
   select jsonb_build_object(
-    'plan', p.plan, 'version', p.version, 'quotas', p.quotas, 'capabilities', p.capabilities,
+    'plan', p.plan,
+    'version', p.version,
+    'quotas', jsonb_build_object(
+      'profiles', p.profiles, 'links', p.links, 'mediaBytes', p.media_bytes,
+      'domains', p.domains, 'aliases', p.aliases, 'analyticsDays', p.analytics_days, 'teamSeats', p.team_seats
+    ),
+    'capabilities', jsonb_build_object(
+      'premiumLayouts', p.premium_layouts, 'advancedEffects', p.advanced_effects,
+      'scheduledPublishing', p.scheduled_publishing, 'abTesting', p.ab_testing,
+      'removeBranding', p.remove_branding, 'advancedSeo', p.advanced_seo,
+      'prioritySupport', p.priority_support, 'apiAccess', p.api_access
+    ),
     'expiresAt', selected.expires_at,
     'usage', jsonb_build_object(
       'publishedProfiles', (select count(*) from snoozer.profiles where owner_id = actor.id and published_revision is not null),
