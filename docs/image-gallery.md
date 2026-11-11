@@ -8,6 +8,10 @@ Migration `20261110000900_image_gallery.sql` adds both private buckets and the g
 
 The existing [cleanup command](avatar-cleanup.md) now processes both gallery buckets on profile deletion. It also collects gallery registry entries older than 24 hours when neither a draft nor retained publication references them, then removes aged orphan files through the Storage API. Files left by interrupted processing or late signed uploads are eligible for this sweep. Apply the migration before running the updated worker. A hosted schedule, aggregate free-tier capacity monitoring and videos remain open.
 
+## Choosing an image
+
+Drop one JPEG, PNG or WebP image onto the upload area or choose it with the file picker. A drop selects the file locally. Enter its description and choose **Upload image** to send it through the existing signed upload flow. Invalid or multiple files show a validation message.
+
 ## Private folders
 
 Open **Image gallery → Organise media folders** to filter the library, create or rename a folder, or move an image by choosing a destination and saving its location. The library includes current draft images and images kept by publish history. Pending, blocked and unreferenced images do not appear. Each profile can create 12 folders. Names are case-insensitively unique per profile, and **Unfiled** is reserved. Deleting a folder moves its images to Unfiled.

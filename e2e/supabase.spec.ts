@@ -443,13 +443,32 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("img", { name: "A disguised file" })).toHaveCount(0);
 
   const image = await sharp({ create: { width: 1280, height: 1280, channels: 3, background: "blue" } }).png().toBuffer();
-  for (const alt of ["Blue shoreline", "Open water"]) {
-    await page.getByLabel("Image description").fill(alt);
-    await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
-    await page.getByRole("button", { name: "Upload image" }).click();
-    await expect(page.getByRole("status")).toContainText("Image added to your draft");
-    await expect(page.getByRole("img", { name: alt })).toBeVisible();
-  }
+  const dropZone = page.locator(".gallery-drop-zone");
+  const makeDrop = (names: string[]) => page.evaluateHandle(({ bytes, names }) => {
+    const transfer = new DataTransfer();
+    for (const name of names) {
+      transfer.items.add(new File([new Uint8Array(bytes)], name, { type: "image/png" }));
+    }
+    return transfer;
+  }, { bytes: Array.from(image), names });
+  const multiple = await makeDrop(["one.png", "two.png"]);
+  await dropZone.dispatchEvent("drop", { dataTransfer: multiple });
+  await expect(page.getByRole("alert").filter({ hasText: "Drop one image at a time." })).toBeVisible();
+  await multiple.dispose();
+  const single = await makeDrop(["shoreline.png"]);
+  await dropZone.dispatchEvent("drop", { dataTransfer: single });
+  await single.dispose();
+  await expect(dropZone).toContainText("Selected image: shoreline.png");
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
+  await page.getByLabel("Image description").fill("Blue shoreline");
+  await page.getByRole("button", { name: "Upload image" }).click();
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
+
+  await page.getByLabel("Image description").fill("Open water");
+  await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
+  await page.getByRole("button", { name: "Upload image" }).click();
+  await expect(page.getByRole("status")).toContainText("Image added to your draft");
+  await expect(page.getByRole("img", { name: "Open water" })).toBeVisible();
   const privatePath = (await page.getByRole("img", { name: "Blue shoreline" }).getAttribute("src"))!;
   const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
   expect((await page.request.get(privatePath)).headers()["content-type"]).toBe("image/webp");

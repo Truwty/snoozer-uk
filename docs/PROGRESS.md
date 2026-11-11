@@ -51,6 +51,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio can export and apply a versioned appearance code containing the theme, layout, spacing, corners and link accent. Applying a code is one undoable draft edit.
 
+- The gallery accepts a single image dropped onto the upload form. The file picker, image description, validation and explicit Upload action remain available.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -91,6 +93,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 43031015136](https://github.com/Truwty/snoozer-uk/actions/runs/43031015136) | Gallery memory advisory appears above the budget, clears after removal and stays out of public HTML. | 31 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43032220212](https://github.com/Truwty/snoozer-uk/actions/runs/43032220212) | Section locks verified for disabled fields, undo and redo, public projection and history restore. A README update superseded the first run. | 32 unit/SQL and 17 browser tests passed |
 | Local appearance transfer | Versioned code round trip and validation, including exclusion of profile content. | 34 unit/SQL tests passed locally |
+| [GitHub Actions 43032802421](https://github.com/Truwty/snoozer-uk/actions/runs/43032802421) | Clipboard copy, malformed code rejection, valid draft application and undo verified alongside the section lock regressions. | 34 unit/SQL and 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

@@ -73,7 +73,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.9 | Global Design Tokens | Partially implemented |
 | 7.10 | Per-Block Overrides | Deferred |
 | 7.11 | Theme Presets | Partially implemented |
-| 7.12 | Copy And Paste Styles | Appearance transfer implemented with local parser coverage |
+| 7.12 | Copy And Paste Styles | Versioned appearance transfer and undo verified in disposable Supabase CI |
 | 7.13 | Template Import With Asset Attribution | Deferred |
 | 7.14 | Component Lock And Hide | Section visibility and locking verified in disposable Supabase CI |
 | 7.15 | Bulk Edits | Deferred |
@@ -192,7 +192,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
 | 12.5 | Gallery And Folders | Image galleries and private folders verified in disposable Supabase CI |
-| 12.6 | Drag-And-Drop Uploads | Deferred |
+| 12.6 | Drag-And-Drop Uploads | Single-image drop selection implemented for Studio gallery uploads |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |
 | 12.9 | Image Transcoding | Avatar and gallery WebP conversion verified in disposable Supabase CI |
