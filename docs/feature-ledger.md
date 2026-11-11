@@ -121,7 +121,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 9.12 | Glitch Title | Deferred |
 | 9.13 | Neon Outline | Deferred |
 | 9.14 | Spotlight Cursor | Deferred |
-| 9.15 | Entrance Transitions | Optional background fade implemented with a reduced-motion fallback |
+| 9.15 | Entrance Transitions | Optional background fade and reduced-motion fallback verified in disposable Supabase CI |
 | 9.16 | Sound Effects Opt-In | Deferred |
 | 9.17 | Frame-Rate Adaptive Degradation | Deferred |
 | 9.18 | Prefers-Reduced-Motion Fallback | Partially implemented |

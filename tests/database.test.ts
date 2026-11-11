@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { accountPlan, can } from "../src/lib/entitlements";
 import { publicationList, publicationPreview } from "../src/lib/publication";
 
 const alice = "00000000-0000-4000-8000-000000000001";
@@ -37,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -54,6 +55,46 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const draft = () => result("select public.get_draft() as value");
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
+
+  it("resolves private, active plan grants and evaluates owner allowances", async () => {
+    const current = () => result("select public.get_my_plan() as value");
+    await act("anon");
+    await expect(current()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(current()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    const free = accountPlan.parse(await current());
+    expect(free).toMatchObject({ plan: "free", version: 1, expiresAt: null, usage: { publishedProfiles: 0, draftLinks: 0 } });
+    await claim("alice");
+    await save(0, "Published Alice", [{ label: "Work", url: "https://example.com" }], true);
+    await expect(db.query("select * from snoozer.entitlement_grants")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    await db.query(`
+      insert into snoozer.entitlement_grants (owner_id,plan,plan_version,source,source_ref,starts_at,expires_at,revoked_at)
+      values
+        ($1,'plus',1,'gift','alice-plus',now(),now()+interval '2 days',null),
+        ($1,'studio',1,'staff','expired',now()-interval '1 day',now(),null),
+        ($1,'studio',1,'staff','future',now()+interval '1 day',now()+interval '2 days',null),
+        ($1,'pro',1,'staff','revoked',now()-interval '1 day',now()+interval '1 day',now()),
+        ($2,'pro',1,'gift','bob-pro',now(),now()+interval '1 day',null),
+        ($2,'plus',1,'gift','bob-plus',now(),now()+interval '3 days',null)
+    `, [alice, bob]);
+    await act("authenticated", alice);
+    const plan = accountPlan.parse(await current());
+    expect(plan).toMatchObject({ plan: "plus", usage: { publishedProfiles: 1, draftLinks: 1 } });
+    const user = { id: alice, plan };
+    const resource = { ownerId: alice };
+    const feature = { feature: "premiumLayouts" } as const;
+    expect(can({ id: alice, plan: free }, feature, resource)).toBe(false);
+    expect(can(user, feature, resource)).toBe(true);
+    expect(can(user, feature, { ownerId: bob })).toBe(false);
+    expect(can(user, feature, resource, Date.parse(plan.expiresAt!))).toBe(false);
+    expect(can(user, { quota: "links", used: 99, increment: 1 }, resource)).toBe(true);
+    expect(can(user, { quota: "links", used: 100, increment: 1 }, resource)).toBe(false);
+    expect(can(user, { quota: "links", used: 100, increment: -1 }, resource)).toBe(false);
+    await act("authenticated", bob);
+    expect(accountPlan.parse(await current())).toMatchObject({ plan: "pro", usage: { publishedProfiles: 0, draftLinks: 0 } });
+  });
 
   it("protects reserved names and restricts claim to verified users", async () => {
     await act("anon");

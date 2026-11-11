@@ -1,6 +1,6 @@
 # Progress — 11 November 2026
 
-Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the repository. Hosted rollout and advanced abuse controls remain open.
+Milestones 0 and 1 and the core Studio and assets milestone have passed their verification checks. Milestone 3, monetisation, is next. Hosted rollout and advanced abuse controls remain open.
 
 ## Implemented
 
@@ -100,6 +100,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 43032802421](https://github.com/Truwty/snoozer-uk/actions/runs/43032802421) | Clipboard copy, malformed code rejection, valid draft application and undo verified alongside the section lock regressions. | 34 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43033253649](https://github.com/Truwty/snoozer-uk/actions/runs/43033253649) | Gallery drop selection, multiple-file rejection and explicit signed upload alongside the file picker path. | 34 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43106675082](https://github.com/Truwty/snoozer-uk/actions/runs/43106675082) | Reused a retained image through Media folders, verified it stayed private until publishing, and checked stale revisions, the gallery limit, duplicates and ownership in SQL. | 34 unit/SQL and 17 browser tests passed |
+| [GitHub Actions 43107185551](https://github.com/Truwty/snoozer-uk/actions/runs/43107185551) | Profile background fade, reduced motion and Studio regressions against disposable Supabase. | 34 unit/SQL and 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 
@@ -107,8 +108,15 @@ The embedded PostgreSQL tests execute the actual application migrations with sma
 
 The first deletion CI run caught accessible names on Studio reorder buttons that differed from their visible labels. The labels were corrected. A later run stalled on optional Ubuntu font downloads, so CI now installs only the headless Chromium binary on the hosted runner.
 
+## Milestone 3 — Monetisation in progress
+
+- Migration 20261110002100 seeds version 1 of Free, Plus, Pro and Studio. The owner-only plan RPC resolves active grants by tier, version and expiry, falling back to Free. Grant records and provider references remain private.
+- Studio now displays the current tier, grant expiry when applicable, published profiles and draft links. The typed server-side policy checks ownership, grant expiry, feature access and quota boundaries.
+- Local lint, type checking, dependency audit and all 35 unit/SQL tests passed. The Edge smoke run passed 13 browser tests. Four Supabase-backed tests require the disposable CI stack.
+- Existing profile writes still enforce one profile and 20 links. Prices, Checkout, Billing Portal, webhook ingestion, reconciliation, Ko-fi and grant issuance remain open.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
 - Hosted Supabase configuration, transactional email, Render Free deployment, restart testing, domain/TLS, capacity benchmarks and recovery rehearsal are unverified.
-- Configure hosted cleanup scheduling and extend abuse controls. Continue Milestone 2 with more theme controls and interactive blocks. The wider moderation dashboard, notices and appeals remain open in the [feature ledger](feature-ledger.md).
+- Configure hosted cleanup scheduling and extend abuse controls. Additional theme controls, interactive blocks and media types remain tracked in the feature ledger. The wider moderation dashboard, notices and appeals remain open in the [feature ledger](feature-ledger.md).

@@ -59,6 +59,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Username").fill(name.toUpperCase());
     await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
+    await expect(page.getByText("Free", { exact: true })).toBeVisible();
+    await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Back to Studio" }).click();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();
     const stageOwner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
