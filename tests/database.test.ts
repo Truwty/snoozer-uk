@@ -542,6 +542,28 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("appearance-alice")).not.toHaveProperty("appearance");
   });
 
+  it("restores private section locks and keeps them out of public profiles", async () => {
+    const section = { heading: "Projects", body: "Current work." };
+    const write = (expected: number, publish: boolean, item: unknown) =>
+      result("select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,$3) as value",
+        [expected, publish, JSON.stringify([item])]);
+    await act("authenticated", alice);
+    await claim("section-locks");
+    await expect(write(0, true, { ...section, locked: "true" })).rejects.toMatchObject({ code: "22023" });
+    await write(0, true, { ...section, locked: true });
+    await expect(write(1, false, section)).rejects.toMatchObject({ code: "22023" });
+    expect(await draft()).toMatchObject({ revision: 1, sections: [{ ...section, locked: true }] });
+    expect(await result("select public.get_publication(1) as value")).toMatchObject({ sections: [{ ...section, locked: true }] });
+    await act("anon");
+    expect((await published("section-locks"))).toMatchObject({ sections: [section] });
+    expect((await published("section-locks"))).not.toHaveProperty("sections.0.locked");
+    await act("authenticated", alice);
+    await write(1, false, { ...section, locked: false });
+    expect(await draft()).not.toHaveProperty("sections.0.locked");
+    await db.query("select public.restore_publication(1,2)");
+    expect(await draft()).toMatchObject({ revision: 3, sections: [{ ...section, locked: true }] });
+  });
+
   it("retains hidden sections privately and excludes them from public responses", async () => {
     const section = { heading: "Planning", body: "Owner-only draft notes." };
     const hidden = { ...section, hidden: true };

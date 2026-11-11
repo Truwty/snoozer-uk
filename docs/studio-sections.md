@@ -18,6 +18,12 @@ Studio shows a warning beside the preview when the draft gallery exceeds an esti
 
 Drag **Drag to move** onto another section or link in the same group to move it into that position. The page scrolls when you drag near the top or bottom edge. Releasing outside the section list cancels the move. **Move up** and **Move down** offer the same reorder operation through the keyboard or a single click or tap. Focus follows the moved heading or link label. Dragging adds one undo step, and publishing saves the new order.
 
+## Section locks
+
+Select **Lock section** on a valid section to protect its fields, visibility setting, move controls and remove button. Clear the checkbox to edit again. Other sections can still move around it. The lock is an editor safeguard for the profile owner. Undo and redo include lock changes, and publication history restores the lock as part of the draft. Publishing uses the existing visibility setting and keeps the lock private.
+
+Migration 20261110001800 stores the lock. The save RPC returns SQLSTATE 22023 for invalid lock values or if an older editor replaces sections without explicit lock settings while the draft contains a locked section.
+
 ## Section visibility
 
 Use **Hide section from public profile** to omit a section from the public preview and the next publication. The editor keeps the section available for editing, moving or showing again. Publish to apply the change to the live page. Restoring an earlier version restores that version's visibility settings in the draft.

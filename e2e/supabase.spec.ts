@@ -124,6 +124,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Section 4 heading").fill("Launch");
     await page.getByLabel("Section 4 text").fill("Save the date.");
     await expect(preview.getByText("Choose a target time to preview the countdown.")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Lock section 4" })).toBeDisabled();
     await page.getByLabel("Section 4 target time").fill("2096-02-29T18:15");
     await expect(preview.locator(".countdown-remaining")).toContainText("remaining");
     await page.setViewportSize({ width: 1440, height: 1100 });
@@ -190,6 +191,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1100 });
+    const lock = page.getByRole("checkbox", { name: "Lock section 2" });
+    await lock.check();
+    await expect(page.getByLabel("Section 2 heading")).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Remove section 2" })).toBeDisabled();
+    await page.getByRole("button", { name: "Undo edit" }).click();
+    await expect(page.getByLabel("Section 2 heading")).toBeEnabled();
+    await page.getByRole("button", { name: "Redo edit" }).click();
+    await expect(lock).toBeChecked();
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -250,6 +259,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Card spacing").selectOption("airy");
     await page.getByLabel("Card corners").selectOption("round");
     await page.getByRole("button", { name: "Remove section 3" }).click();
+    await lock.uncheck();
     await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
     await expect(preview.getByRole("heading", { name: "Notes" })).toHaveCount(0);
     await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
@@ -270,6 +280,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
     await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
+    await expect(lock).toBeChecked();
+    await expect(page.getByLabel("Section 2 heading")).toBeDisabled();
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
     await expect(page.getByLabel("Section 4 target time")).toHaveValue("2096-02-29T18:15");

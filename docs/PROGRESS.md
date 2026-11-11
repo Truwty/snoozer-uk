@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Seventeen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Eighteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -47,6 +47,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Studio warns when the draft gallery's estimated decoded memory exceeds 12 MiB and links to image management. The advisory leaves save and publish available.
 
+- Studio owners can lock a valid section to prevent accidental edits, dragging or removal. The lock is undoable and retained in private publish history.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -84,6 +86,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 43029507928](https://github.com/Truwty/snoozer-uk/actions/runs/43029507928) | Section drag, cancellation outside the list, focus, undo and redo, published order and history restore. | 29 unit/SQL and 17 browser tests passed |
 | [GitHub Actions 43030266457](https://github.com/Truwty/snoozer-uk/actions/runs/43030266457) | Shared section and link reordering, including an emulated touch drag at phone width, focus and published link order. | 29 unit/SQL and 17 browser tests passed |
 | Local gallery budget verification | Estimates cover empty galleries, images below budget, the exact threshold and a gallery over budget. | 31 unit/SQL tests passed locally |
+| [GitHub Actions 43031015136](https://github.com/Truwty/snoozer-uk/actions/runs/43031015136) | Gallery memory advisory appears above the budget, clears after removal and stays out of public HTML. | 31 unit/SQL and 17 browser tests passed |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

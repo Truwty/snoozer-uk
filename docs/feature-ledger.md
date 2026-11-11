@@ -75,11 +75,11 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.11 | Theme Presets | Partially implemented |
 | 7.12 | Copy And Paste Styles | Deferred |
 | 7.13 | Template Import With Asset Attribution | Deferred |
-| 7.14 | Component Lock And Hide | Section visibility verified in disposable Supabase CI. Locking remains open |
+| 7.14 | Component Lock And Hide | Section visibility verified in disposable Supabase CI. Section locking implemented with local SQL coverage |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
-| 7.18 | Performance Budget Warnings | Studio gallery memory advisory implemented and unit-tested. Other budget metrics remain open |
+| 7.18 | Performance Budget Warnings | Studio gallery memory advisory verified in unit tests and disposable Supabase CI. Other budget metrics remain open |
 
 ## 8. LAYOUT AND THEME ENGINE
 
