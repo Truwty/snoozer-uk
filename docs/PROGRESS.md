@@ -8,7 +8,7 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 - Supabase email/password signup, explicit verification, sign-in, reset and logout. Configured templates for the local CLI stack and hosted setup instructions.
 - Atomic username claim, availability lookup and reserved routes. One page per verified account and 20 ordered links per page.
 - Owner-only drafts, three themes, live responsive preview, optimistic revision checks, immutable published snapshots, unpublish, link sharing, canonical metadata and opt-in indexing.
-- Thirteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
+- Fourteen SQL migrations under `supabase/migrations`. Private avatar staging, signed direct upload, bounded raster decoding, WebP generation, private derivatives and active-publication checks.
 
 - Permanent profile deletion retires the username and queues media cleanup. Replacement profiles have separate storage and reject stale editor writes. See [avatar cleanup](avatar-cleanup.md).
 
@@ -35,6 +35,8 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 
 - Card spacing and corners use built-in choices shared by Studio and public pages. Appearance settings are saved in drafts, included in immutable publications and restored with history.
 
+- The Editorial layout uses a split avatar and title at wider card widths and a single column on phones. It uses the existing appearance save and restore flow.
+
 ## Verification evidence
 
 | Command | Evidence | Result |
@@ -58,7 +60,9 @@ Milestone 0 scaffolding and the Milestone 1 profile lifecycle are in the reposit
 | [GitHub Actions 42927327264](https://github.com/Truwty/snoozer-uk/actions/runs/42927327264) | Private folders verified on disposable Supabase: create, move, filter after reload, rename and delete at phone width, axe scan and no change to public gallery order or metadata. | 23 unit/SQL and 17 browser tests passed |
 | Local section types | Real SQL rejects unknown types and preserves text, callout and quote order through draft changes, publish and restore. | 23 unit/SQL tests passed locally |
 | [GitHub Actions 42927900939](https://github.com/Truwty/snoozer-uk/actions/runs/42927900939) | Callouts and quotes preview, publish and restore against disposable Supabase, alongside the private folder regressions. | 23 unit/SQL and 17 browser tests passed |
-| Local appearance verification | SQL rejects unknown keys and values, accepts old save requests, keeps draft choices private and restores snapshot values. | 24 unit/SQL tests passed locally; provider browser verification pending |
+| Local appearance verification | SQL rejects unknown keys and values, accepts old save requests, keeps draft choices private and restores snapshot values. | 24 unit/SQL tests passed locally |
+| [GitHub Actions 42928490301](https://github.com/Truwty/snoozer-uk/actions/runs/42928490301) | Appearance controls, phone preview parity, reduced motion and history restore against disposable Supabase. | 24 unit/SQL and 17 browser tests passed |
+| Local editorial layout | The migration accepts existing two-field appearance objects and rejects unknown or malformed layout values. SQL tests verify publication isolation and restore. | 24 unit/SQL tests passed locally |
 | Render JSON Schema | Validated the Blueprint against the public Render schema. | Passed. Render deployment remains unverified. |
 | `npx --yes supabase@3.1.0 start` | The local stack requires a container engine. | Blocked locally. Docker and Podman unavailable. |
 

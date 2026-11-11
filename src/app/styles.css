@@ -99,6 +99,22 @@ textarea { resize: vertical; }
 .profile-decoration { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 0%, var(--wash), transparent 62%); pointer-events: none; }
 .profile-inner { display: grid; justify-items: center; gap: var(--card-gap); padding: var(--card-pad); }
 .profile-inner > h1, .profile-inner > h2 { font-size: clamp(1.8rem, 11cqi - .6rem, 3.15rem); overflow-wrap: anywhere; }
+.profile-card[data-layout="editorial"] { text-align: start; }
+.profile-card[data-layout="editorial"] .profile-inner { justify-items: stretch; }
+.profile-card[data-layout="editorial"] .profile-inner > :is(h1, h2) {
+  border-block-end: 1px solid var(--chip);
+  padding-block-end: .45em;
+}
+.profile-card[data-layout="editorial"] .profile-bio { max-width: 52ch; }
+@container (min-width: 27rem) {
+  .profile-card[data-layout="editorial"] .profile-inner { grid-template-columns: 5.5rem minmax(0, 1fr); }
+  .profile-card[data-layout="editorial"] .avatar { grid-area: 1 / 1 / 3 / 2; align-self: center; }
+  .profile-card[data-layout="editorial"] .profile-handle { grid-area: 1 / 2; align-self: end; }
+  .profile-card[data-layout="editorial"] .profile-inner > :is(h1, h2) { grid-area: 2 / 2; }
+  .profile-card[data-layout="editorial"] :is(.profile-bio, .profile-sections, .profile-links, .profile-gallery) {
+    grid-column: 1 / -1;
+  }
+}
 .avatar { width: 5.5rem; height: 5.5rem; border-radius: 50%; object-fit: cover; border: 2px solid var(--detail); }
 .avatar-fallback { display: grid; place-items: center; background: var(--chip); font-size: 2rem; font-weight: 700; }
 .profile-handle { color: var(--detail); font-size: .9rem; overflow-wrap: anywhere; }

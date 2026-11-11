@@ -8,7 +8,7 @@ A personal page for the links, work and projects you want to share. This reposit
 2. Run `npm ci` and `npx --yes supabase@3.1.0 start` from the repository root. This starts the disposable Supabase database, Auth, Storage and email catcher.
 3. Copy `.env.example` to `.env.local`. Fill the values from `npx --yes supabase@3.1.0 status` in your own terminal. Keep the service credential private.
 4. Run `npm run dev`, visit [http://localhost:3000](http://localhost:3000), create an account and open the local [email catcher](http://127.0.0.1:54324) to verify it.
-5. Claim a username in Studio, add links, an avatar or [gallery images](docs/image-gallery.md), then publish your draft. Open the public URL in a private window to check visitor access.
+5. Claim a username in Studio, add links, [sections](docs/studio-sections.md), an avatar or [gallery images](docs/image-gallery.md), then publish your draft. Open the public URL in a private window to check visitor access.
 
 `npx --yes supabase@3.1.0 db reset` destroys and rebuilds the **local** database. The migration files remain the source of truth. See [Supabase setup](docs/setup-supabase.md) for hosted settings and migration safeguards.
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { profileCorners, profileDensities, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
@@ -66,6 +66,13 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
         <label>Theme<select name="theme" value={content.theme}
           onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
           {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
+        </select></label>
+        <label>Profile layout<select value={content.appearance.layout} onChange={(event) => {
+          const layout = profileLayouts.find((value) => value === event.target.value);
+          if (layout) set("appearance", { ...content.appearance, layout });
+        }}>
+          <option value="centred">Centred card</option>
+          <option value="editorial">Editorial</option>
         </select></label>
         <label>Card spacing<select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);

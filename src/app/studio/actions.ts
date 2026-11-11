@@ -33,6 +33,8 @@ export async function save(input: unknown): Promise<SaveResult> {
   const request = saveRequest.safeParse(input);
   if (!request.success) return { status: "error", message: request.error.issues[0].message };
   const { content, intent, revision, removeAvatar } = request.data;
+  const { layout, ...cardTokens } = content.appearance;
+  const appearance = layout === "centred" ? cardTokens : { ...cardTokens, layout };
   const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
   const { client } = await requireAccount();
   const { data, error } = await client.rpc("save_profile", {
@@ -40,7 +42,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_name: content.display_name,
     p_bio: content.bio,
     p_theme: content.theme,
-    p_appearance: content.appearance,
+    p_appearance: appearance,
     p_indexable: content.indexable,
     p_links: links,
     p_sections: content.sections,

@@ -106,6 +106,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByLabel("Theme")).toHaveValue("lagoon");
+    await page.getByLabel("Profile layout").selectOption("editorial");
+    await expect(page.getByRole("region", { name: "Page preview" })).toHaveAttribute("data-layout", "editorial");
     await page.getByLabel("Card spacing").selectOption("compact");
     await page.getByLabel("Card corners").selectOption("square");
     await page.getByLabel("Section 1 type").selectOption("callout");
@@ -140,6 +142,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Notes", "Current projects"]);
+    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-layout", "editorial");
+    await expect(publicPage.locator(".profile-card")).toHaveCSS("text-align", "start");
+    await expect(publicPage.locator(".profile-inner")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-density", "compact");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("border-radius", "0px");
     await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
@@ -157,10 +162,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
         fontSize: getComputedStyle(card.querySelector(".profile-inner > :is(h1,h2)")!).fontSize,
         gap: getComputedStyle(card.querySelector(".profile-inner")!).gap,
         radius: getComputedStyle(card).borderRadius,
+        align: getComputedStyle(card).textAlign,
+        columns: getComputedStyle(card.querySelector(".profile-inner")!).gridTemplateColumns.split(" ").length,
       });
       const studio = await page.getByRole("region", { name: "Page preview" }).evaluate(measure);
       const live = await publicPage.locator(".profile-card").evaluate(measure);
       expect(studio).toEqual(live);
+      expect(live.columns).toBe(1);
     }
     await page.getByLabel("Preview width").selectOption("wide");
     await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
@@ -169,6 +177,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await visitor.request.get(avatarPath!)).headers()["content-type"]).toBe("image/webp");
 
     await page.getByLabel("Display name").fill("Second publication");
+    await page.getByLabel("Profile layout").selectOption("centred");
     await page.getByLabel("Card spacing").selectOption("airy");
     await page.getByLabel("Card corners").selectOption("round");
     await page.getByRole("button", { name: "Remove section 3" }).click();
@@ -184,6 +193,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("Version restored");
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Profile layout")).toHaveValue("editorial");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
     await expect(page.getByLabel("Section 1 type")).toHaveValue("callout");

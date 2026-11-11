@@ -12,8 +12,8 @@ Migration `20261110001200_section_types.sql` adds an allowlisted type to draft a
 
 ## Appearance
 
-Studio offers Compact, Balanced and Airy spacing and Square, Soft and Round corners. The shared renderer applies the same named CSS values to previews and live pages. Balanced and Soft preserve the existing design. These choices change spacing and radii; profile colours and link target sizes are unaffected. The editor does not accept raw CSS or script.
+Studio offers Centred card and Editorial layouts. Editorial places the avatar beside the title on wider cards and stacks them on phones. Studio also offers Compact, Balanced and Airy spacing and Square, Soft and Round corners. The shared renderer applies the same named CSS values to previews and live pages. Balanced and Soft preserve the existing design. These choices change spacing and radii; profile colours and link target sizes are unaffected. The editor does not accept raw CSS or script.
 
-Migration `20261110001300_appearance_tokens.sql` checks the token names and snapshots them with the rest of the profile. An old request that omits the optional appearance argument keeps the existing choices. A restore changes the draft only; publish to make it live.
+Migration `20261110001300_appearance_tokens.sql` checks the token names and snapshots them with the rest of the profile. An old request that omits the optional appearance argument keeps the existing choices. A restore changes the draft. Publish to make it live. Migration 20261110001400 adds the layout choice and treats older appearance settings as Centred card.
 
 The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.

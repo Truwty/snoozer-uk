@@ -8,7 +8,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   previewLabel?: string;
 }) {
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
-    data-density={profile.appearance.density} data-corners={profile.appearance.corners}>
+    data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}>
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       {avatarSrc

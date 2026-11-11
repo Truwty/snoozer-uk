@@ -7,10 +7,12 @@ export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
 export const themes = ["midnight", "daybreak", "lagoon"] as const;
 export const profileDensities = ["compact", "balanced", "airy"] as const;
 export const profileCorners = ["square", "soft", "round"] as const;
-export const defaultAppearance = { density: "balanced", corners: "soft" } as const;
+export const profileLayouts = ["centred", "editorial"] as const;
+export const defaultAppearance = { density: "balanced", corners: "soft", layout: "centred" } as const;
 export const profileAppearance = z.strictObject({
   density: z.enum(profileDensities),
   corners: z.enum(profileCorners),
+  layout: z.enum(profileLayouts).default(defaultAppearance.layout),
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 

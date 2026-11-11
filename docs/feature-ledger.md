@@ -86,7 +86,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | ID | Capability | Status |
 | --- | --- | --- |
 | 8.1 | Minimal Centred Card | Partially implemented |
-| 8.2 | Portfolio Editorial | Deferred |
+| 8.2 | Portfolio Editorial | Editorial card implemented and tested locally; wider portfolio features remain open |
 | 8.3 | Grid Dashboard | Deferred |
 | 8.4 | Streamer Overlay Style | Deferred |
 | 8.5 | Immersive Full-Screen | Deferred |
@@ -96,7 +96,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
 | 8.11 | Custom Sections | Text, callout and quote sections verified in disposable Supabase CI for preview, publication and restore |
-| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values implemented and tested locally; further token families deferred |
+| 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing and corner values verified in disposable Supabase CI. Further token families deferred |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
 | 8.15 | Borders And Radii | Partially implemented |
