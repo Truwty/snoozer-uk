@@ -127,11 +127,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Section 4 target time").fill("2096-02-29T18:15");
     await expect(preview.locator(".countdown-remaining")).toContainText("remaining");
     await page.setViewportSize({ width: 1440, height: 1100 });
-    const firstSection = page.locator('[data-section-index="0"]');
-    const nextSection = page.locator('[data-section-index="1"]');
+    const sections = page.getByRole("group", { name: /^Text sections/ });
+    const firstSection = sections.locator('[data-reorder-index="0"]');
+    const nextSection = sections.locator('[data-reorder-index="1"]');
     await firstSection.evaluate((card) => card.scrollIntoView({ block: "start" }));
-    const handle = (await firstSection.locator(".section-drag-handle").boundingBox())!;
-    const target = (await nextSection.locator(".section-drag-handle").boundingBox())!;
+    const handle = (await firstSection.locator(".reorder-handle").boundingBox())!;
+    const target = (await nextSection.locator(".reorder-handle").boundingBox())!;
     const start = { x: handle.x + 15, y: handle.y + 20 };
     const end = { x: target.x + 15, y: target.y + 20 };
     await page.mouse.move(start.x, start.y);
@@ -163,6 +164,32 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await page.getByRole("button", { name: "Redo edit" }).press("Enter");
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const links = page.getByRole("group", { name: /^Links/ });
+    const topLink = links.locator('[data-reorder-index="0"] .reorder-handle');
+    const bottomLink = links.locator('[data-reorder-index="1"] .reorder-handle');
+    await topLink.evaluate((handle) => handle.scrollIntoView({ block: "center" }));
+    const topBox = (await topLink.boundingBox())!;
+    const bottomBox = (await bottomLink.boundingBox())!;
+    const touch = await page.context().newCDPSession(page);
+    try {
+      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+      const from = { x: bottomBox.x + 15, y: bottomBox.y + 20 };
+      const to = { x: topBox.x + 15, y: topBox.y + 20 };
+      await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
+      for (let step = 1; step <= 8; step++) {
+        const y = from.y + (to.y - from.y) * step / 8;
+        await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: to.x, y }] });
+      }
+      await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } finally {
+      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+      await touch.detach();
+    }
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
+    await expect(page.getByLabel("Link 1 label")).toBeFocused();
+    await page.setViewportSize({ width: 1440, height: 1100 });
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -175,7 +202,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["Second ↗", "First ↗"]);
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");

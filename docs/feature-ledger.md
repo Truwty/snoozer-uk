@@ -62,7 +62,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 7.1 | Drag-And-Drop Blocks | Studio section drag reordering implemented. Other block groups remain open |
+| 7.1 | Drag-And-Drop Blocks | Studio sections and links support drag reordering. Other block groups remain open |
 | 7.2 | Keyboard-Accessible Reorder | Partially implemented |
 | 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |

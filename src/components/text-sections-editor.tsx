@@ -1,18 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useRef, useState } from "react";
+import { usePointerReorder } from "./use-pointer-reorder";
 import { sectionKinds, sectionLabels, textSectionLimits, type TextSection } from "@/lib/profile";
-
-type SectionDrag = {
-  pointer: number;
-  from: number;
-  source: TextSection;
-  startY: number;
-  x: number;
-  y: number;
-  active: boolean;
-  frame: number;
-};
 
 export function TextSectionsEditor({ sections, onChange }: {
   sections: TextSection[];
@@ -20,13 +10,7 @@ export function TextSectionsEditor({ sections, onChange }: {
 }) {
   const headings = useRef<Record<number, HTMLInputElement | null>>({});
   const add = useRef<HTMLButtonElement>(null);
-  const list = useRef<HTMLFieldSetElement>(null);
-  const drag = useRef<SectionDrag | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
-
-  useEffect(() => () => {
-    if (drag.current) window.cancelAnimationFrame(drag.current.frame);
-  }, []);
+  const { list, dropIndex, handle } = usePointerReorder(sections, move);
   const [announcement, setAnnouncement] = useState("");
 
   function focusHeading(index: number) {
@@ -42,53 +26,6 @@ export function TextSectionsEditor({ sections, onChange }: {
     focusHeading(to);
   }
 
-  function sectionAt(x: number, y: number) {
-    const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-section-index]");
-    return card && list.current?.contains(card) ? Number(card.dataset.sectionIndex) : null;
-  }
-
-  function beginDrag(event: PointerEvent<HTMLSpanElement>, index: number) {
-    if (event.button !== 0 || !event.isPrimary || drag.current) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = {
-      pointer: event.pointerId, from: index, source: sections[index],
-      startY: event.clientY, x: event.clientX, y: event.clientY, active: false, frame: 0,
-    };
-  }
-
-  function updateDrop(active: SectionDrag) {
-    setDropIndex(sectionAt(active.x, active.y));
-    const edge = 56;
-    const direction = active.y < edge ? -1 : active.y > window.innerHeight - edge ? 1 : 0;
-    if (!direction || active.x < 0 || active.x >= window.innerWidth) return;
-    const previousScroll = window.scrollY;
-    window.scrollBy(0, direction * 12);
-    if (window.scrollY !== previousScroll) active.frame = window.requestAnimationFrame(() => updateDrop(active));
-  }
-
-  function moveDrag(event: PointerEvent<HTMLSpanElement>) {
-    const active = drag.current;
-    if (!active || active.pointer !== event.pointerId) return;
-    active.x = event.clientX;
-    active.y = event.clientY;
-    if (!active.active && Math.abs(active.y - active.startY) < 6) return;
-    active.active = true;
-    window.cancelAnimationFrame(active.frame);
-    updateDrop(active);
-  }
-
-  function finishDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
-    const active = drag.current;
-    if (!active || active.pointer !== event.pointerId) return;
-    drag.current = null;
-    window.cancelAnimationFrame(active.frame);
-    setDropIndex(null);
-    if (!commit || !active.active || sections[active.from] !== active.source) return;
-    const destination = sectionAt(event.clientX, event.clientY);
-    if (destination !== null) move(active.from, destination);
-  }
-
   function change(index: number, update: Partial<TextSection>) {
     onChange(sections.map((section, position) => position === index ? { ...section, ...update } : section));
   }
@@ -97,13 +34,10 @@ export function TextSectionsEditor({ sections, onChange }: {
     <legend className="section-title">Text sections <small>{sections.length}/{textSectionLimits.count}</small></legend>
     <p className="muted">Add text, highlight an update with a callout, share a quote, or count down to an event. Sections appear above your links. Drag a section or use its Move buttons.</p>
     <p className="sr-only" aria-live="polite">{announcement}</p>
-    {sections.map((section, index) => <div key={index} className="link-editor stack" data-section-index={index}
+    {sections.map((section, index) => <div key={index} className="link-editor stack" data-reorder-index={index}
       data-drop-target={dropIndex === index || undefined}>
-      {sections.length > 1 && <span className="section-drag-handle" aria-hidden="true"
-        onPointerDown={(event) => beginDrag(event, index)} onPointerMove={moveDrag}
-        onPointerUp={(event) => finishDrag(event, true)}
-        onPointerCancel={(event) => finishDrag(event, false)}
-        onLostPointerCapture={(event) => finishDrag(event, false)}>Drag to move</span>}
+      {sections.length > 1 && <span className="reorder-handle" aria-hidden="true"
+        {...handle}>Drag to move</span>}
       <label>Section {index + 1} type
         <select value={section.kind ?? "text"} onChange={(event) => {
           const kind = sectionKinds.find((candidate) => candidate === event.target.value);

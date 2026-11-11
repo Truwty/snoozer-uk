@@ -8,6 +8,7 @@ import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
 import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
+import { usePointerReorder } from "./use-pointer-reorder";
 
 export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
@@ -20,6 +21,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
+  const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
     edit((current) => ({ ...current, content: { ...current.content, [field]: value } }));
@@ -38,8 +40,9 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   }
 
   function move(from: number, to: number) {
+    if (from === to || !content.links[from] || !content.links[to]) return;
     const reordered = [...content.links];
-    [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
+    reordered.splice(to, 0, ...reordered.splice(from, 1));
     set("links", reordered);
     setAnnouncement(`Moved link to position ${to + 1} of ${reordered.length}.`);
     focusLink(to);
@@ -124,10 +127,12 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
         </>}
       </fieldset>
       <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
-      <fieldset className="stack">
+      <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
         <p className="sr-only" aria-live="polite">{announcement}</p>
-        {content.links.map((item, index) => <div className="link-editor stack" key={index}>
+        {content.links.map((item, index) => <div className="link-editor stack" key={index} data-reorder-index={index}
+          data-drop-target={linkDropIndex === index || undefined}>
+          {content.links.length > 1 && <span className="reorder-handle" aria-hidden="true" {...linkHandle}>Drag to move</span>}
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
             ref={(input) => { linkLabels.current[index] = input; }}
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
