@@ -91,6 +91,26 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Display name").fill("Snoozer Creator");
     await page.getByLabel("Bio").fill("Private until I publish.");
     await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("lagoon");
+    await page.getByText("Copy or paste appearance", { exact: true }).click();
+    await expect(page.getByLabel("Current appearance code")).toHaveValue(/"theme":"lagoon"/);
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.getByRole("button", { name: "Copy appearance", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('"theme":"lagoon"');
+    await page.getByLabel("Paste an appearance code").fill('{"version":2}');
+    await page.getByRole("button", { name: "Apply appearance" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Enter a valid Snoozer appearance code." })).toBeVisible();
+    await page.getByLabel("Paste an appearance code").fill(JSON.stringify({
+      version: 1, theme: "daybreak",
+      appearance: { density: "airy", corners: "round", layout: "editorial", accent: "rose" },
+    }));
+    await page.getByRole("button", { name: "Apply appearance" }).click();
+    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("daybreak");
+    await expect(page.getByLabel("Card corners")).toHaveValue("round");
+    await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
+    await page.getByRole("button", { name: "Undo edit" }).click();
+    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
+    await expect(page.getByLabel("Card corners")).toHaveValue("soft");
+    await page.getByText("Copy or paste appearance", { exact: true }).click();
     await page.getByLabel("Preview a template").selectOption("project-notebook");
     await expect(page.getByRole("heading", { name: "Current projects" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");

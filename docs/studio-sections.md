@@ -44,4 +44,6 @@ Migration `20261110001300_appearance_tokens.sql` checks the token names and snap
 
 Studio's link accent control offers Mint, Rose and Ink. For these presets, the renderer selects black or white text and Studio reports the resulting contrast ratio. The presets meet the 4.5 to 1 minimum for normal link text. The default uses the active theme's link colours. Migration 20261110001500 accepts only the named accents. [WCAG 2.2 contrast minimum](https://www.w3.org/TR/WCAG22/#contrast-minimum)
 
+Use **Copy or paste appearance** in Studio to copy a version 1 code or select its text manually. Paste a code and choose **Apply appearance** to change the draft's theme, layout, spacing, corners and link accent in one undoable edit. Codes exclude profile content. Invalid or unsupported codes leave the draft unchanged.
+
 The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.

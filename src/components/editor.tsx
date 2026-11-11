@@ -6,6 +6,7 @@ import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
+import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
 import { TextSectionsEditor } from "./text-sections-editor";
@@ -129,6 +130,10 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
           </div>
         </>}
       </fieldset>
+      <AppearanceTransfer settings={content} onApply={(settings) => {
+        edit((current) => ({ ...current, content: { ...current.content, ...settings } }));
+        setTemplateId("");
+      }} />
       <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/20</small></legend>

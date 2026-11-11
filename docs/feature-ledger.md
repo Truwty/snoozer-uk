@@ -73,9 +73,9 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.9 | Global Design Tokens | Partially implemented |
 | 7.10 | Per-Block Overrides | Deferred |
 | 7.11 | Theme Presets | Partially implemented |
-| 7.12 | Copy And Paste Styles | Deferred |
+| 7.12 | Copy And Paste Styles | Appearance transfer implemented with local parser coverage |
 | 7.13 | Template Import With Asset Attribution | Deferred |
-| 7.14 | Component Lock And Hide | Section visibility verified in disposable Supabase CI. Section locking implemented with local SQL coverage |
+| 7.14 | Component Lock And Hide | Section visibility and locking verified in disposable Supabase CI |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Deferred |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
