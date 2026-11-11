@@ -109,6 +109,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       result("select public.gallery_object($1,$2,$3) as value", [id, name, owner]);
     const commit = (revision: number, id: string, variant: string) =>
       result("select public.commit_gallery_upload($1,$2,$3,$4,200,100) as value", [alice, revision, id, variant]);
+    const add = (revision: number, id: string) => result("select public.add_library_image_to_gallery($1,$2) as value", [revision, id]);
     const edit = (revision: number, id: string, operation: string) =>
       result("select public.edit_gallery($1,$2,$3) as value", [revision, id, operation]);
 
@@ -158,9 +159,29 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.find_orphan_gallery_objects('gallery-incoming') as value")).toEqual([staleKey]);
 
     await act("authenticated", alice);
-    await db.query("select public.restore_publication(4,6)");
+    expect(await add(5, first.id)).toBe("changed");
+    await act("anon");
+    await expect(add(6, first.id)).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect(await add(0, first.id)).toBe("unavailable");
+    await act("authenticated", alice);
+    expect(await add(6, first.id)).toBe("added");
+    expect(await add(7, first.id)).toBe("unavailable");
     expect(await draft()).toMatchObject({ revision: 7, gallery: [{ id: second.id }, { id: first.id }] });
     expect(await published("alice")).toMatchObject({ gallery: [{ id: second.id }] });
+    await db.query("select public.restore_publication(4,7)");
+    expect(await draft()).toMatchObject({ revision: 8, gallery: [{ id: second.id }, { id: first.id }] });
+    expect(await edit(8, first.id, "remove")).toBe(true);
+    await act("service_role");
+    for (let revision = 9; revision < 16; revision++) {
+      const extra = await prepare(revision, "Extra " + revision);
+      await prepare(revision, null, extra.id);
+      const variant = await result<string>("select gen_random_uuid() as value");
+      expect(await commit(revision, extra.id, variant)).toBe(true);
+    }
+    await act("authenticated", alice);
+    expect(await add(16, first.id)).toBe("limit");
+    expect(await draft()).toMatchObject({ revision: 16 });
   });
 
   it("keeps folder edits private and protects cross-owner and retired media scopes", async () => {
@@ -287,6 +308,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toMatchObject({ gallery: [] });
     await act("authenticated", alice);
     expect(await draft()).toMatchObject({ gallery: [], revision: 3 });
+    expect(await result("select public.add_library_image_to_gallery(3,$1) as value", [stage.id])).toBe("unavailable");
     expect(await result("select public.get_publication(2) as value")).toMatchObject({ gallery: [] });
     await db.query("select public.restore_publication(2,3)");
     await save(4, "Restored", [], true);

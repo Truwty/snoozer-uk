@@ -526,6 +526,17 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect((await page.request.get(privatePath)).status()).toBe(200);
+  await page.goto("/studio/gallery/folders");
+  const retained = page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Blue shoreline" }) });
+  await expect(retained.getByText("In publish history")).toBeVisible();
+  await retained.getByRole("button", { name: "Add to draft gallery" }).click();
+  await expect(retained.getByText("In your draft")).toBeVisible();
+  expect((await request.get(publicPath)).status()).toBe(404);
+  await page.getByRole("link", { name: "Back to image gallery" }).click();
+  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
+  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("button", { name: "Publish page" }).click();
+  await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
 
   // The Studio preview also contains this image, but uses the owner-only URL.
   await page.goto("/" + name);

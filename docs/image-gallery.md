@@ -18,6 +18,8 @@ Open **Image gallery → Organise media folders** to filter the library, create 
 
 Migration `20261110001100_media_folders.sql` uses an owner-scoped reference and a folder revision separate from the profile draft. Moving or deleting a folder leaves published content, gallery order and storage cleanup rules unchanged. Folder names and IDs never appear on a public page. A folder cannot extend how long a removed image is retained.
 
+Use **Add to draft gallery** on a retained image in **Media folders** to append it to the draft. The image keeps its original file, description and folder. The gallery holds up to eight images. Publish to make the reused image visible. An image must still be referenced by a retained publication, and blocked images cannot be reused.
+
 ## Operator takedowns
 
 After migration `20261110001000_gallery_takedown.sql`, operators can run `npm run moderation:gallery -- <username> <image-id> <case-reference>` from an authorised environment. Set the intended project URL and service-role secret securely. The image ID is the UUID at the end of its media URL. Use an opaque case ID without personal information or report text.

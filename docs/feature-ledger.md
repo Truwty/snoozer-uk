@@ -77,7 +77,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 7.13 | Template Import With Asset Attribution | Deferred |
 | 7.14 | Component Lock And Hide | Section visibility and locking verified in disposable Supabase CI |
 | 7.15 | Bulk Edits | Deferred |
-| 7.16 | Asset Library Picker | Deferred |
+| 7.16 | Asset Library Picker | Reuse of retained library images in the draft gallery implemented |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
 | 7.18 | Performance Budget Warnings | Studio gallery memory advisory verified in unit tests and disposable Supabase CI. Other budget metrics remain open |
 
@@ -192,7 +192,7 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
 | 12.5 | Gallery And Folders | Image galleries and private folders verified in disposable Supabase CI |
-| 12.6 | Drag-And-Drop Uploads | Single-image drop selection implemented for Studio gallery uploads |
+| 12.6 | Drag-And-Drop Uploads | Single-image drop and picker paths verified in disposable Supabase CI |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |
 | 12.9 | Image Transcoding | Avatar and gallery WebP conversion verified in disposable Supabase CI |

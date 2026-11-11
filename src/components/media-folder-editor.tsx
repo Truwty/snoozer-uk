@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { addLibraryImage } from "@/app/studio/gallery/actions";
+import { galleryLimit } from "@/lib/gallery";
 import { changeMediaFolders } from "@/app/studio/gallery/folders/actions";
 import { initialState, type ActionState } from "@/lib/actions";
 import { mediaFolderLimit, type FolderEdit, type MediaLibrary } from "@/lib/media-folders";
@@ -11,7 +13,11 @@ function field(form: HTMLFormElement, name: string) {
   return typeof value === "string" ? value : "";
 }
 
-export function MediaFolderEditor({ library }: { library: MediaLibrary }) {
+export function MediaFolderEditor({ library, draftRevision, draftSize }: {
+  library: MediaLibrary;
+  draftRevision: number;
+  draftSize: number;
+}) {
   const [selection, setSelection] = useState("");
   const [state, setState] = useState<ActionState>(initialState);
   const [busy, setBusy] = useState(false);
@@ -34,6 +40,19 @@ export function MediaFolderEditor({ library }: { library: MediaLibrary }) {
     }
   }
 
+  async function addImage(id: string) {
+    setBusy(true);
+    setState(initialState);
+    try {
+      const result = await addLibraryImage(draftRevision, id);
+      setState(result.error ? { status: "error", message: result.error } : { status: "success", message: result.message ?? "Image added to your draft." });
+    } catch {
+      setState({ status: "error", message: "Couldn’t add the image. Try again." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -47,6 +66,7 @@ export function MediaFolderEditor({ library }: { library: MediaLibrary }) {
     </form>
     {folders.length >= mediaFolderLimit && <p>You have reached the 12 folder limit.</p>}
     <ActionMessage state={state} />
+    {draftSize >= galleryLimit && items.some((item) => !item.in_draft) && <p>Your draft gallery is full. Remove an image to add another.</p>}
     <label>Show images in
       <select value={filter} onChange={(event) => setSelection(event.target.value)}>
         <option value="">All images</option>
@@ -79,6 +99,8 @@ export function MediaFolderEditor({ library }: { library: MediaLibrary }) {
           width={item.width} height={item.height} loading="lazy" />
         <p>{item.alt}</p>
         <small>{item.in_draft ? "In your draft" : "In publish history"}</small>
+        {!item.in_draft && <div><button className="button small" type="button" disabled={busy || draftSize >= galleryLimit}
+          onClick={() => void addImage(item.id)}>Add to draft gallery</button></div>}
         <form className="stack" key={item.folder ?? "unfiled"} onSubmit={(event) => {
           event.preventDefault();
           void save({ operation: "move", id: item.id, folder: field(event.currentTarget, "folder") || null });

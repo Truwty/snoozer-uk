@@ -110,3 +110,16 @@ export async function editGallery(revision: number, id: string, operation: "earl
   refreshGallery();
   return { message: operation === "remove" ? "Image removed from your draft." : "Gallery order saved to your draft." };
 }
+
+export async function addLibraryImage(revision: number, id: string) {
+  if (!profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
+  const { client } = await requireAccount();
+  const { data, error } = await client.rpc("add_library_image_to_gallery", { p_expected: revision, p_id: id });
+  refreshGallery();
+  revalidatePath("/studio/gallery/folders");
+  if (error) return { error: "Couldn’t add the image. Try again." };
+  if (data === "limit") return { error: "Your draft gallery holds up to eight images." };
+  if (data === "unavailable") return { error: "That image is no longer available to add." };
+  if (data !== "added") return { error: changed };
+  return { message: "Image added to your draft. Publish in Studio to make it visible." };
+}
