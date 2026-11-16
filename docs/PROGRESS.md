@@ -195,3 +195,5 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 - [CI run 43977313274](https://github.com/Truwty/snoozer-uk/actions/runs/43977313274) passed on 9fee313. It ran 105 unit and SQL tests and 19 browser or HTTP checks against disposable Supabase, including the Plus claim, publish and switch journey and the full creator journey. The missing-Stripe-secret test was skipped because the fixture signing secret was configured.
 
 - Migration 20261110005300 lets the billing preflight verify the configured Stripe subscription and gift prices and the Billing Portal settings. The database test confirms retired prices are excluded and ordinary accounts cannot read the preflight catalogue. The local preflight stopped at missing isolated configuration before contacting providers.
+
+- [CI run 43978342636](https://github.com/Truwty/snoozer-uk/actions/runs/43978342636) applied migration 20261110005300 to disposable Supabase and passed on 29de544. It ran 105 unit and SQL tests and 19 browser or HTTP checks. One test that expects an unconfigured Stripe signing secret was skipped because CI used a fixture secret.

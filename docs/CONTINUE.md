@@ -42,3 +42,5 @@ The disposable browser run caught a draft inventory text assertion after the Edi
 The disposable Supabase suite passed on 9fee313 in GitHub Actions run 43977313274. The remaining Monetisation release gate is to run the Stripe sandbox and Ko-fi provider journeys. Set up the isolated environment using the billing runbooks and rerun npm run billing:preflight before starting. The local configuration preflight still exits for missing provider settings.
 
 Apply migration 20261110005300 to isolated Supabase before running the updated billing preflight. It verifies the configured Stripe prices and active Billing Portal. Record provider delivery and payment outcomes separately when Stripe sandbox, Ko-fi and isolated Supabase settings are available.
+
+The full CI run on 29de544 passed, including application of migration 20261110005300. Real delivery and Checkout verification still require an isolated environment with a Stripe sandbox and Ko-fi configuration. The latest local preflight exited before contacting providers, and the connected Stripe account exposed live mode only.
