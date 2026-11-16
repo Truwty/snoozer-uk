@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import { anonymousClient, sessionClient } from "./supabase";
 import { canonicalUsername, draftProfile, publishedProfile, username } from "./profile";
 
@@ -18,6 +19,21 @@ export const readDraft = cache(async (profileId?: string) => {
   if (error) throw new Error("Couldn’t load your draft.");
   return data === null ? null : draftProfile.parse(data);
 });
+
+export type StudioProfileQuery = { profile?: string | string[] };
+
+export async function readStudioDraft(profile: StudioProfileQuery["profile"]) {
+  if (profile === undefined) return readDraft();
+  const id = z.uuid().safeParse(profile);
+  if (!id.success) notFound();
+  const draft = await readDraft(id.data);
+  if (!draft) notFound();
+  return draft;
+}
+
+export function studioHref(path: string, profileId?: string) {
+  return profileId ? `${path}${path.includes("?") ? "&" : "?"}profile=${encodeURIComponent(profileId)}` : path;
+}
 
 export const readPublished = cache(async (name: string) => {
   const canonical = canonicalUsername(name);

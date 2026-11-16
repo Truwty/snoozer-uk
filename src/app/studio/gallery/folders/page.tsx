@@ -3,20 +3,22 @@ import { redirect } from "next/navigation";
 import { MediaFolderEditor } from "@/components/media-folder-editor";
 import { Brand } from "@/components/shell";
 import { mediaLibrary } from "@/lib/media-folders";
-import { readDraft, requireAccount } from "@/lib/profiles-server";
+import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 
 export const metadata = { title: "Media folders", robots: { index: false, follow: false } };
 
-export default async function MediaFoldersPage() {
+export default async function MediaFoldersPage({ searchParams }: { searchParams: Promise<StudioProfileQuery> }) {
   const { client } = await requireAccount();
-  const draft = await readDraft();
+  const { profile } = await searchParams;
+  const draft = await readStudioDraft(profile);
   if (!draft) redirect("/studio");
+  const selected = profile === undefined ? undefined : draft.profile_id;
   const library = await client.rpc("get_media_folders", { p_profile: draft.profile_id });
   if (library.error) throw new Error("Couldn’t load your media library.");
   if (!library.data) redirect("/studio");
 
   return <main className="shell stack">
-    <header className="nav"><Brand /><Link className="button small" href="/studio/gallery">Back to image gallery</Link></header>
+    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio/gallery", selected)}>Back to image gallery</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
       <h1>Media folders</h1>

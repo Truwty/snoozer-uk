@@ -8,7 +8,7 @@ import { Editor } from "@/components/editor";
 import { Unpublish } from "@/components/unpublish";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { supabaseUrl, supabaseKey } from "@/lib/env";
-import { readDraft } from "@/lib/profiles-server";
+import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
 import { accountPlan } from "@/lib/entitlements";
 import { freeProfileLinkLimit, maximumProfileLinkLimit } from "@/lib/profile";
@@ -17,13 +17,14 @@ import { signOut } from "../auth/actions";
 
 export const metadata = { title: "Studio", robots: { index: false, follow: false } };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string; deleted?: string; restored?: string; template?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<StudioProfileQuery & { logout?: string; deleted?: string; restored?: string; template?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
-  const draft = await readDraft();
+  const { profile, logout, deleted, restored, template } = await searchParams;
+  const draft = await readStudioDraft(profile);
+  const selected = profile === undefined ? undefined : draft?.profile_id;
   const response = draft && await (await sessionClient()).rpc("get_my_plan");
   const plan = accountPlan.safeParse(response?.data);
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
-  const { logout, deleted, restored, template } = await searchParams;
   return <main className="shell">
     <header className="nav"><Brand /><form action={signOut}><button className="button small">Sign out</button></form></header>
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
@@ -37,9 +38,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
       <header className="studio-heading">
         <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1><p className="muted">@{draft.username}</p></div>
         <div className="stack status-panel">
-          <Link className="button small" href="/studio/gallery">Image gallery</Link>
-          <Link className="button small" href="/studio/history">Publish history</Link>
-          <Link className="button small" href="/studio/plan">Plan and usage</Link>
+          <Link className="button small" href={studioHref("/studio/gallery", selected)}>Image gallery</Link>
+          <Link className="button small" href={studioHref("/studio/history", selected)}>Publish history</Link>
+          <Link className="button small" href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
           <p className="status-label">{draft.published_revision === null ? "Offline · Draft only"
             : draft.revision === draft.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p>
           {draft.published_revision !== null && <div className="actions">
@@ -54,7 +55,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <AvatarUpload profileId={draft.profile_id} revision={draft.revision} />
       </section>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
-      <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
+      <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
+        initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
       <DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} />
     </>}
   </main>;

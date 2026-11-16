@@ -65,6 +65,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
     await expect(page.getByText(`@${name} · Draft`, { exact: true })).toBeVisible();
+    const editProfile = page.getByRole("link", { name: `Edit @${name}` });
+    const profileHref = (await editProfile.getAttribute("href"))!;
+    expect(profileHref).toMatch(/^\/studio\?profile=[a-f0-9-]{36}$/);
+    await editProfile.click();
+    await expect(page.getByRole("link", { name: "Image gallery" })).toHaveAttribute("href", profileHref.replace("/studio?", "/studio/gallery?"));
+    await page.getByRole("link", { name: "Plan and usage" }).click();
     await page.getByText("Review a platform Ko-fi donation", { exact: true }).click();
     await page.getByLabel("Ko-fi transaction reference").fill("test-review-reference");
     await page.getByRole("button", { name: "Request donation review" }).click();

@@ -7,7 +7,7 @@ import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
 import { maximumProfileLinkLimit, username } from "@/lib/profile";
-import { requireAccount } from "@/lib/profiles-server";
+import { requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
 import { sandboxCheckoutKey } from "@/lib/stripe-sandbox-checkout-config";
@@ -46,7 +46,7 @@ async function sandboxOffers() {
   ))).filter((item) => item !== null);
 }
 
-export default async function PlanPage({ searchParams }: { searchParams: Promise<{ checkout?: string; portal?: string }> }) {
+export default async function PlanPage({ searchParams }: { searchParams: Promise<StudioProfileQuery & { checkout?: string; portal?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const { client } = await requireAccount();
   const { data, error } = await client.rpc("get_my_plan");
@@ -54,7 +54,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const plan = error || !result.success ? null : result.data;
   const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
-  const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess, profileResponse] = await Promise.all([
+  const [offers, { checkout, portal, profile: requested }, portalCustomer, reviewResponse, staffAccess, profileResponse] = await Promise.all([
     sandboxOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
     client.rpc("list_my_kofi_donation_reviews"),
@@ -64,9 +64,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
 
   const reviews = reviewList.safeParse(reviewResponse.data);
   const profiles = profileList.safeParse(profileResponse.data);
+  const selected = profiles.success ? profiles.data.find(({ id }) => id === requested)?.id : undefined;
 
   return <main className="shell">
-    <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
+    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
     <section className="panel stack">
       <h1>Plan and usage</h1>
       {sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
@@ -93,6 +94,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           profiles.data.length === 0 ? <Link href="/studio">Claim a profile in Studio</Link> :
           <ul>{profiles.data.map((profile) => <li key={profile.id}>
             {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> : `@${profile.username} · Draft`}
+            {" · "}<Link href={studioHref("/studio", profile.id)} aria-label={`Edit @${profile.username}`}>Edit</Link>
           </li>)}</ul>}
       </div>
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}

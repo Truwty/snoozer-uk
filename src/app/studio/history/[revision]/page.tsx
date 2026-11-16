@@ -4,17 +4,21 @@ import { Brand } from "@/components/shell";
 import { ProfileCard } from "@/components/profile-card";
 import { RestorePublication } from "@/components/restore-publication";
 import { profileRevision } from "@/lib/profile";
-import { readDraft, requireAccount } from "@/lib/profiles-server";
+import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { publicationDate, publicationPreview } from "@/lib/publication";
 
 export const metadata = { title: "Publication preview", robots: { index: false, follow: false } };
 
-export default async function Page({ params }: { params: Promise<{ revision: string }> }) {
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ revision: string }>;
+  searchParams: Promise<StudioProfileQuery>;
+}) {
   const { revision } = await params;
   const target = profileRevision.safeParse(revision);
   if (!/^\d+$/.test(revision) || !target.success) notFound();
   const { client } = await requireAccount();
-  const draft = await readDraft();
+  const { profile } = await searchParams;
+  const draft = await readStudioDraft(profile);
   if (!draft) notFound();
   const { data, error } = await client.rpc("get_publication", { p_profile: draft.profile_id, p_revision: target.data });
   if (error) throw new Error("Couldn’t load this version.");
@@ -23,7 +27,7 @@ export default async function Page({ params }: { params: Promise<{ revision: str
 
   return <main className="shell narrow stack">
     <Brand />
-    <Link href="/studio/history">← Publish history</Link>
+    <Link href={studioHref("/studio/history", profile === undefined ? undefined : draft.profile_id)}>← Publish history</Link>
     <section className="panel stack">
       <h1>Version {publication.revision}</h1>
       <p><time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}</p>

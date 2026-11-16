@@ -14,7 +14,7 @@ import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
-export function Editor({ draft, linkLimit, initialTemplateId = "" }: { draft: DraftProfile; linkLimit: number; initialTemplateId?: string }) {
+export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }: { draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
@@ -238,7 +238,7 @@ export function Editor({ draft, linkLimit, initialTemplateId = "" }: { draft: Dr
       {galleryWarning && <section className="panel stack gallery-budget" aria-labelledby="gallery-budget-title">
         <h2 id="gallery-budget-title">Gallery may use more memory on phones</h2>
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
-        <div><Link className="button small" href="/studio/gallery">Manage gallery images</Link></div>
+        <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
       <div className={"preview-card preview-" + previewSize}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
