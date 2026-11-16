@@ -2,8 +2,9 @@ import "server-only";
 import { createHash, createHmac } from "node:crypto";
 import type Stripe from "stripe";
 import { z } from "zod";
+import { sandboxCheckoutKey } from "./stripe-sandbox-checkout-config";
 import { storageAdmin } from "@/lib/supabase";
-import type { StripeReceipt } from "@/lib/stripe-webhook";
+import type { StripeReceipt } from "./stripe-webhook";
 
 const orderShape = z.object({
   order_id: z.uuid(), buyer_id: z.uuid(), stripe_price: z.string(), amount_pence: z.number().int().positive(),
@@ -15,11 +16,9 @@ export function sandboxPaidGiftSecret() {
 }
 
 export function sandboxPaidGiftConfiguration() {
-  const key = process.env.STRIPE_SANDBOX_API_KEY;
+  const key = sandboxCheckoutKey();
   const giftSecret = sandboxPaidGiftSecret();
-  if (key && /^(rk|sk)_test_/.test(key) && giftSecret && process.env.SUPABASE_SERVICE_ROLE_KEY
-      && process.env.STRIPE_SANDBOX_GRANTS_ENABLED === "true"
-      && process.env.STRIPE_SANDBOX_WEBHOOK_SECRET?.startsWith("whsec_")) return { key, giftSecret };
+  if (key && giftSecret) return { key, giftSecret };
   return null;
 }
 

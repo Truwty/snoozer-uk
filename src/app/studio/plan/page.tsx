@@ -9,6 +9,7 @@ import { accountPlan, can } from "@/lib/entitlements";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
+import { sandboxCheckoutKey } from "@/lib/stripe-sandbox-checkout-config";
 import { sandboxPortalConfiguration } from "@/lib/stripe-sandbox-portal";
 import { openSandboxPortal } from "./portal";
 import { startSandboxCheckout } from "./checkout";
@@ -23,9 +24,7 @@ const reviewLabels = { pending: "Pending review", confirmed: "Confirmed", declin
 const labels = { free: "Free", plus: "Plus", pro: "Pro", studio: "Studio" };
 
 async function sandboxOffers() {
-  if (!/^(rk|sk)_test_/.test(process.env.STRIPE_SANDBOX_API_KEY ?? "")
-      || !process.env.STRIPE_SANDBOX_WEBHOOK_SECRET?.startsWith("whsec_")
-      || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+  if (!sandboxCheckoutKey()) return [];
   const admin = storageAdmin();
   return (await Promise.all(Object.entries(labels).filter(([plan]) => plan !== "free").flatMap(([plan, label]) =>
     (["month", "year"] as const).map(async (interval) => {

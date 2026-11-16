@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { siteUrl } from "@/lib/env";
 import { requireAccount } from "@/lib/profiles-server";
+import { sandboxCheckoutKey } from "@/lib/stripe-sandbox-checkout-config";
 import { storageAdmin } from "@/lib/supabase";
 import { recoverUnsavedSandboxCheckout } from "@/lib/stripe-unsaved-checkout";
 
@@ -18,10 +19,9 @@ const attemptShape = z.object({
 
 export async function startSandboxCheckout(form: FormData) {
   const { user } = await requireAccount();
-  const key = process.env.STRIPE_SANDBOX_API_KEY;
+  const key = sandboxCheckoutKey();
   const selection = offer.safeParse({ plan: form.get("plan"), interval: form.get("interval") });
-  if (!key || !/^(rk|sk)_test_/.test(key) || !process.env.STRIPE_SANDBOX_WEBHOOK_SECRET?.startsWith("whsec_")
-      || !process.env.SUPABASE_SERVICE_ROLE_KEY || !selection.success) redirect("/studio/plan?checkout=unavailable");
+  if (!key || !selection.success) redirect("/studio/plan?checkout=unavailable");
 
   const stripe = new Stripe(key, { timeout: 8000, maxNetworkRetries: 1 });
   const admin = storageAdmin();
