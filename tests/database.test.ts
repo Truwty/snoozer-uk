@@ -152,6 +152,61 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
   });
 
+  it("restores a paid gift after a won dispute while preserving other holds and manual revocation", async () => {
+    const offer = await result<string>("insert into snoozer.stripe_sandbox_gift_offers(price_id,plan,plan_version,duration_days,amount_pence) values ('price_WonGift','plus',1,30,399) returning id as value");
+    await act("service_role");
+    const order = await result<string>("select order_id as value from public.prepare_stripe_sandbox_gift($1,$2,$1)", [alice,offer]);
+    await db.query("select public.bind_stripe_sandbox_gift_session($1,$2,'cs_test_WonGift')", [alice,order]);
+    const event = (id: string, kind: string, object: string) =>
+      db.query("select public.record_stripe_sandbox_event($1,$2,$3,now())", [id,kind,object]);
+    const hold = (id: string) => db.query("select public.hold_stripe_sandbox_gift_payment($1,'pi_WonGift')", [id]);
+    const release = (id: string, dispute: string) =>
+      db.query("select public.release_stripe_sandbox_gift_dispute($1,$2,'pi_WonGift')", [id,dispute]);
+    const plan = () => result("select public.get_my_plan() as value");
+
+    const code = "b".repeat(32);
+    await event("evt_GiftPaid", "checkout.session.completed", "cs_test_WonGift");
+    await db.query(
+      "select public.fulfill_stripe_sandbox_gift('evt_GiftPaid',$1,$2,'cs_test_WonGift','pi_WonGift','price_WonGift',399,sha256(convert_to($3,'UTF8')))",
+      [alice,order,code],
+    );
+    await event("evt_GiftOpened", "charge.dispute.created", "du_WonGift");
+    await hold("evt_GiftOpened");
+    await act("authenticated", bob);
+    expect(await result("select public.redeem_gift_code($1) as value", [code])).toBe(false);
+    await act("service_role");
+    await event("evt_GiftWon", "charge.dispute.closed", "du_WonGift");
+    await release("evt_GiftWon", "du_WonGift");
+    await hold("evt_GiftOpened");
+    await act("authenticated", bob);
+    expect(await result("select public.redeem_gift_code($1) as value", [code])).toBe(true);
+    expect(await plan()).toMatchObject({ plan: "plus" });
+
+    await act("service_role");
+    await event("evt_GiftOpenedAgain", "charge.dispute.created", "du_SecondGift");
+    await hold("evt_GiftOpenedAgain");
+    await act("authenticated", bob);
+    expect(await plan()).toMatchObject({ plan: "free" });
+    await act("service_role");
+    await event("evt_GiftWonAgain", "charge.dispute.closed", "du_SecondGift");
+    await release("evt_GiftWonAgain", "du_SecondGift");
+    await act("authenticated", bob);
+    expect(await plan()).toMatchObject({ plan: "plus" });
+
+    await act("service_role");
+    await event("evt_GiftStillRefunded", "charge.refunded", "ch_WonGift");
+    await hold("evt_GiftStillRefunded");
+    await release("evt_GiftWonAgain", "du_SecondGift");
+    await act("authenticated", bob);
+    expect(await plan()).toMatchObject({ plan: "free" });
+    await db.exec("reset role");
+    await db.query("select public.revoke_gift_code(gift_id) from snoozer.stripe_sandbox_gift_orders where id=$1", [order]);
+    await act("service_role");
+    await release("evt_GiftWonAgain", "du_SecondGift");
+    await act("authenticated", alice);
+    expect((await db.query("select status from public.list_my_stripe_sandbox_gifts()")).rows).toEqual([{ status: "revoked" }]);
+  });
+
   it("gives only the billing operator aggregate diagnostics", async () => {
     const summary = () => result("select public.get_billing_diagnostics() as value");
     await act("authenticated", alice);

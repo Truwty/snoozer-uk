@@ -150,6 +150,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Stripe sandbox now releases the matching subscription invoice hold when the provider confirms a won dispute. Independent refund and fraud holds remain active, and late or repeated events cannot recreate the released hold. Earlier invoice holds and paid gift disputes still require manual review. Stripe dispute IDs now use the provider's du_ prefix. Local verification passed 92 unit and SQL tests.
 
+- New Stripe sandbox gift disputes have separately tracked payment holds. A won outcome can restore the original code or its unexpired grant after checking the remaining holds. Replays preserve other refund and fraud holds and operator revocations. Legacy gift holds remain in manual review. Local verification passed 93 unit and SQL tests. Provider delivery remains unverified.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

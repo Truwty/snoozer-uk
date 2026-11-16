@@ -10,7 +10,14 @@ export async function recordSandboxInvoiceHolds(stripe: Stripe, receipt: { id: s
     if (dispute.livemode || dispute.id !== receipt.objectId) throw new Error("Unexpected Stripe dispute.");
     if (dispute.status === "won") {
       if (receipt.type !== "charge.dispute.closed") return [];
-      const { data, error } = await storageAdmin().rpc("release_stripe_sandbox_invoice_dispute", {
+      const admin = storageAdmin();
+      if (typeof dispute.payment_intent === "string") {
+        const gift = await admin.rpc("release_stripe_sandbox_gift_dispute", {
+          p_event: receipt.id, p_dispute: dispute.id, p_payment: dispute.payment_intent,
+        });
+        if (gift.error) throw new Error("Gift dispute release could not be saved.");
+      }
+      const { data, error } = await admin.rpc("release_stripe_sandbox_invoice_dispute", {
         p_event: receipt.id, p_dispute: dispute.id,
       });
       if (error) throw new Error("Dispute release could not be saved.");

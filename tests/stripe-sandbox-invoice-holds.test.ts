@@ -43,15 +43,18 @@ describe("Stripe sandbox invoice holds", () => {
     });
   });
 
-  it("uses the current Stripe dispute outcome and releases only invoice disputes", async () => {
+  it("uses the current Stripe dispute outcome for linked gifts and invoices", async () => {
     const { stripe, retrieveCharge } = provider();
     vi.mocked(stripe.disputes.retrieve).mockResolvedValue({
-      id: event.objectId, livemode: false, status: "won", charge: "ch_Linked",
+      id: event.objectId, livemode: false, status: "won", charge: "ch_Linked", payment_intent: "pi_Linked",
     } as Stripe.Response<Stripe.Dispute>);
-    rpc.mockResolvedValueOnce({ data: [{ subscription_id: "sub_Linked" }], error: null });
+    rpc.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ data: [{ subscription_id: "sub_Linked" }], error: null });
     await expect(recordSandboxInvoiceHolds(stripe, { ...event, type: "charge.dispute.closed" })).resolves.toEqual(["sub_Linked"]);
     expect(retrieveCharge).not.toHaveBeenCalled();
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("release_stripe_sandbox_invoice_dispute", {
+    expect(rpc).toHaveBeenNthCalledWith(1, "release_stripe_sandbox_gift_dispute", {
+      p_event: event.id, p_dispute: event.objectId, p_payment: "pi_Linked",
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "release_stripe_sandbox_invoice_dispute", {
       p_event: event.id, p_dispute: event.objectId,
     });
   });

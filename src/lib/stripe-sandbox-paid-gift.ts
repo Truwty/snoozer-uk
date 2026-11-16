@@ -51,7 +51,12 @@ export async function fulfillSandboxGift(stripe: Stripe, receipt: StripeReceipt,
   const charge = intent.latest_charge;
   if (typeof charge !== "object" || !charge || charge.livemode || !charge.paid || !charge.captured
       || charge.payment_intent !== intent.id) throw new Error("Stripe gift charge is unavailable.");
-  if (charge.amount_refunded > 0 || charge.disputed) return;
+  if (charge.amount_refunded > 0) return;
+  if (charge.disputed) {
+    const disputes = await stripe.disputes.list({ charge: charge.id, limit: 10 });
+    if (disputes.has_more || !disputes.data.length
+        || disputes.data.some((dispute) => dispute.livemode || dispute.status !== "won")) return;
+  }
 
   const lines = await stripe.checkout.sessions.listLineItems(session.id, { limit: 2 });
   const [line] = lines.data;

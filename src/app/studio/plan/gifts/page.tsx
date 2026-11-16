@@ -14,7 +14,7 @@ const offersShape = z.array(z.object({
   id: z.uuid(), plan, duration_days: z.number().int().positive(), amount_pence: z.number().int().positive(),
 }));
 const ordersShape = z.array(z.object({
-  order_id: z.uuid(), plan, status: z.enum(["ready", "revoked", "redeemed", "expired"]), code_hash: z.string().nullable(),
+  order_id: z.uuid(), plan, status: z.enum(["ready", "revoked", "held", "redeemed", "expired"]), code_hash: z.string().nullable(),
 }));
 const labels = { plus: "Plus", pro: "Pro", studio: "Studio" };
 const price = new Intl.NumberFormat("en-GB", { currency: "GBP", style: "currency" });
