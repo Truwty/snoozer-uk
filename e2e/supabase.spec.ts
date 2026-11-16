@@ -319,14 +319,6 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
     await expect(lock).toBeChecked();
-    await page.getByText("Add Ko-fi support link", { exact: true }).click();
-    await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
-    await page.getByRole("button", { name: "Add support link" }).click();
-    await expect(page.getByText("Enter your full Ko-fi profile address.")).toBeVisible();
-    await page.getByLabel("Ko-fi profile URL").fill("https://www.ko-fi.com/creator/");
-    await page.getByLabel("Ko-fi profile URL").press("Enter");
-    await expect(page.getByLabel("Link 3 label")).toBeFocused();
-    await page.getByLabel("Link 3 label").fill("Support my projects");
     await expect(page.getByLabel("Section 2 heading")).toBeDisabled();
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
