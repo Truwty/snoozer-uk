@@ -15,3 +15,4 @@ Start in this source directory. Read [PROGRESS.md](PROGRESS.md), [implementation
 - Use STRIPE_SANDBOX_GRANTS_ENABLED only with disposable Supabase. Local npm test passed 94 tests covering signed intake, ownership, stale writes, active paid periods and revocation. Verify a real Stripe sandbox purchase, renewal and cancellation before milestone exit. Complete quota enforcement before live activation.
 
 No hosted project secrets were used during this milestone. No payment or hosting resources were provisioned.
+Migration 20261110004200 separates gift fulfillment from unlinked receipts in billing diagnostics. Provider preflight still requires the isolated deployment settings.

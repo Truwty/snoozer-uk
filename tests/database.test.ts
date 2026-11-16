@@ -133,10 +133,17 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.exec("select public.record_stripe_sandbox_event('evt_Gift','checkout.session.completed','cs_test_Gift',now()); select public.record_stripe_sandbox_event('evt_Held','checkout.session.completed','cs_test_Held',now()); select public.record_stripe_sandbox_event('evt_GiftRefund','charge.refunded','ch_Gift',now());");
     expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift", 398)).toBe("unmatched");
     expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift", 399, bob)).toBe("unmatched");
+    const diagnostics = () => result("select public.get_billing_diagnostics() as value");
+    expect(await diagnostics()).toMatchObject({
+      stripeSandbox: { unboundCompletionReceipts: 0, giftsAwaitingFulfillment: 2 },
+    });
     await refund("pi_Held");
     expect(await complete("evt_Held", held, "cs_test_Held", "pi_Held")).toBe("held");
     expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("fulfilled");
     expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("fulfilled");
+    expect(await diagnostics()).toMatchObject({
+      stripeSandbox: { unboundCompletionReceipts: 0, giftsAwaitingFulfillment: 1 },
+    });
     await act("authenticated", alice);
     expect((await db.query("select status from public.list_my_stripe_sandbox_gifts()")).rows).toEqual([{ status: "ready" }]);
     await act("authenticated", bob);
@@ -233,7 +240,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await summary()).toEqual({
       stripeSandbox: {
         linkedSubscriptions: 0, staleUnboundAttempts: 0, unboundCompletionReceipts: 1,
-        heldInvoices: 0, endedSubscriptions: 0,
+        heldInvoices: 0, endedSubscriptions: 0, giftsAwaitingFulfillment: 0,
       },
       kofi: { unclaimedReceipts: 0, pendingReviews: 1 },
       gifts: { redeemableCodes: 1, activeGrants: 0 },

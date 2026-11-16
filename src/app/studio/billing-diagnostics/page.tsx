@@ -11,7 +11,7 @@ const count = z.number().int().nonnegative();
 const diagnostics = z.object({
   stripeSandbox: z.object({
     linkedSubscriptions: count, staleUnboundAttempts: count, unboundCompletionReceipts: count,
-    heldInvoices: count, endedSubscriptions: count,
+    heldInvoices: count, endedSubscriptions: count, giftsAwaitingFulfillment: count,
   }),
   kofi: z.object({ unclaimedReceipts: count, pendingReviews: count }),
   gifts: z.object({ redeemableCodes: count, activeGrants: count }),
@@ -20,7 +20,8 @@ const diagnostics = z.object({
 const sections = {
   stripeSandbox: ["Stripe sandbox", {
     linkedSubscriptions: "Linked subscriptions", staleUnboundAttempts: "Stale Checkout attempts without a session",
-    unboundCompletionReceipts: "Checkout receipts awaiting a subscription link",
+    unboundCompletionReceipts: "Checkout receipts without a subscription or gift link",
+    giftsAwaitingFulfillment: "Gift orders with a Checkout receipt awaiting fulfillment",
     heldInvoices: "Held invoices", endedSubscriptions: "Ended subscriptions",
   }],
   kofi: ["Ko-fi", { unclaimedReceipts: "Unclaimed receipts", pendingReviews: "Pending reviews" }],
