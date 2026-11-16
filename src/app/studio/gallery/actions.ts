@@ -17,15 +17,15 @@ function refreshGallery() {
   revalidatePath("/studio/gallery");
 }
 
-export async function startGalleryUpload(revision: number, description: string) {
+export async function startGalleryUpload(profileId: string, revision: number, description: string) {
   const alt = galleryAlt.safeParse(description);
-  if (!profileRevisionNumber.safeParse(revision).success || !alt.success) {
+  if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success || !alt.success) {
     return { error: "Enter an image description between 1 and 180 characters." };
   }
   const { user } = await requireAccount();
   const admin = storageAdmin();
-  const { data, error } = await admin.rpc("prepare_gallery_upload", {
-    p_owner: user.id, p_expected: revision, p_alt: alt.data,
+  const { data, error } = await admin.rpc("prepare_gallery_upload_for_profile", {
+    p_owner: user.id, p_profile: profileId, p_expected: revision, p_alt: alt.data,
   });
   if (error?.code === "P1101") return { error: "The gallery holds up to eight images. Remove one before adding another." };
   if (error?.code === "P1102") return { error: "Your media storage is full. Older images are cleared as their publications expire." };
@@ -49,12 +49,12 @@ export async function startGalleryUpload(revision: number, description: string) 
   return { path, id, token: signed.token };
 }
 
-export async function finishGalleryUpload(revision: number, id: string) {
-  if (!profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
+export async function finishGalleryUpload(profileId: string, revision: number, id: string) {
+  if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
   const { user } = await requireAccount();
   const admin = storageAdmin();
-  const { data, error } = await admin.rpc("prepare_gallery_upload", {
-    p_owner: user.id, p_expected: revision, p_alt: null, p_id: id,
+  const { data, error } = await admin.rpc("prepare_gallery_upload_for_profile", {
+    p_owner: user.id, p_profile: profileId, p_expected: revision, p_alt: null, p_id: id,
   });
   if (error) return { error: "Couldn’t prepare the image. Try again." };
   const stage = galleryStage.safeParse(data);
@@ -68,7 +68,7 @@ export async function finishGalleryUpload(revision: number, id: string) {
     if (file.size > galleryMaxBytes) throw new Error("Invalid file size.");
     encoded = await encodeGalleryImage(new Uint8Array(await file.arrayBuffer()));
   } catch {
-    await discardGalleryUpload(revision, id);
+    await discardGalleryUpload(profileId, revision, id);
     return { error: "Choose a single JPEG, PNG or WebP image under 4 MB and 16 megapixels." };
   }
   const variant = randomUUID();
@@ -77,7 +77,7 @@ export async function finishGalleryUpload(revision: number, id: string) {
   const { error: writeError } = await final.upload(destination, encoded.data, { contentType: "image/webp", upsert: false });
   if (writeError) return { error: "Couldn’t store the processed image. Retry in a moment." };
   const { data: saved, error: commitError } = await admin.rpc("commit_gallery_upload", {
-    p_owner: user.id, p_expected: revision, p_id: id, p_variant: variant,
+    p_owner: user.id, p_profile: profileId, p_expected: revision, p_id: id, p_variant: variant,
     p_width: encoded.info.width, p_height: encoded.info.height,
   });
   if (commitError?.code === "P1104") {
@@ -94,12 +94,12 @@ export async function finishGalleryUpload(revision: number, id: string) {
   return { message: "Image added to your draft. Publish in Studio to make it visible." };
 }
 
-export async function discardGalleryUpload(revision: number, id: string) {
-  if (!profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
+export async function discardGalleryUpload(profileId: string, revision: number, id: string) {
+  if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
   const { user } = await requireAccount();
   const admin = storageAdmin();
   const { data, error } = await admin.rpc("discard_gallery_upload", {
-    p_owner: user.id, p_expected: revision, p_id: id,
+    p_owner: user.id, p_profile: profileId, p_expected: revision, p_id: id,
   });
   if (error || !z.uuid().safeParse(data).success) return { error: changed };
   await admin.storage.from(galleryIncoming).remove([stagePath(data, id)]);
@@ -107,20 +107,20 @@ export async function discardGalleryUpload(revision: number, id: string) {
   return { message: "Pending upload discarded." };
 }
 
-export async function editGallery(revision: number, id: string, operation: "earlier" | "later" | "remove") {
-  if (!profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success
+export async function editGallery(profileId: string, revision: number, id: string, operation: "earlier" | "later" | "remove") {
+  if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success
     || !["earlier", "later", "remove"].includes(operation)) return { error: changed };
   const { client } = await requireAccount();
-  const { data, error } = await client.rpc("edit_gallery", { p_expected: revision, p_id: id, p_operation: operation });
+  const { data, error } = await client.rpc("edit_gallery", { p_profile: profileId, p_expected: revision, p_id: id, p_operation: operation });
   if (error || !data) return { error: changed };
   refreshGallery();
   return { message: operation === "remove" ? "Image removed from your draft." : "Gallery order saved to your draft." };
 }
 
-export async function addLibraryImage(revision: number, id: string) {
-  if (!profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
+export async function addLibraryImage(profileId: string, revision: number, id: string) {
+  if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success || !z.uuid().safeParse(id).success) return { error: changed };
   const { client } = await requireAccount();
-  const { data, error } = await client.rpc("add_library_image_to_gallery", { p_expected: revision, p_id: id });
+  const { data, error } = await client.rpc("add_library_image_to_gallery", { p_profile: profileId, p_expected: revision, p_id: id });
   refreshGallery();
   revalidatePath("/studio/gallery/folders");
   if (error) return { error: "Couldn’t add the image. Try again." };

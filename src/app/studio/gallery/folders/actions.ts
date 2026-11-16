@@ -11,14 +11,14 @@ const nameError = "Enter a folder name between 1 and 60 characters. Unfiled is r
 const staleError = "This media library changed. Review the latest version before trying again.";
 const errorState = (message: string): ActionState => ({ status: "error", message });
 
-export async function changeMediaFolders(scope: string, revision: number, input: FolderEdit): Promise<ActionState> {
+export async function changeMediaFolders(profileId: string, scope: string, revision: number, input: FolderEdit): Promise<ActionState> {
   const edit = folderEdit.safeParse(input);
   if (!edit.success) return errorState(edit.error.issues[0]?.path[0] === "name" ? nameError : "Invalid folder change.");
-  if (!z.uuid().safeParse(scope).success || !profileRevisionNumber.safeParse(revision).success) return errorState(staleError);
+  if (!z.uuid().safeParse(profileId).success || !z.uuid().safeParse(scope).success || !profileRevisionNumber.safeParse(revision).success) return errorState(staleError);
   const { client } = await requireAccount();
   const change = edit.data;
-  const { data, error } = await client.rpc("edit_media_folders", {
-    p_scope: scope, p_expected: revision, p_operation: change.operation,
+  const { data, error } = await client.rpc("edit_media_folders_for_profile", {
+    p_profile: profileId, p_scope: scope, p_expected: revision, p_operation: change.operation,
     p_id: "id" in change ? change.id : null,
     p_name: "name" in change ? change.name : null,
     p_folder: "folder" in change ? change.folder : null,

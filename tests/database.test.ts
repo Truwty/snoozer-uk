@@ -814,6 +814,37 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toMatchObject({ display_name: "Published Alice" });
   });
 
+  it("binds gallery stages and media folders to the selected profile", async () => {
+    await act("authenticated", alice);
+    await claim("gallery-id-alice");
+    const { profile_id: profile } = (await result<{ profile_id: string }>("select public.get_draft() as value"))!;
+    const pending = () => result("select public.pending_gallery_upload($1) as value", [profile]);
+    const folders = () => result("select public.get_media_folders($1) as value", [profile]);
+    const prepare = (owner: string) => result<{ id: string; scope: string }>(
+      "select public.prepare_gallery_upload_for_profile($1,$2,0,'Lunar shore') as value", [profile, owner]);
+    await expect(prepare(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect(await prepare(bob)).toBeNull();
+    const stage = (await prepare(alice))!;
+    await act("authenticated", bob);
+    expect(await pending()).toBeNull();
+    expect(await folders()).toBeNull();
+    const createFolder = () => result("select public.edit_media_folders_for_profile($1,$2,0,'create',null,'Shore') as value",
+      [profile, stage.scope]);
+    expect(await createFolder()).toBe("changed");
+    await act("authenticated", alice);
+    expect(await pending()).toEqual({ id: stage.id, alt: "Lunar shore" });
+    expect(await createFolder()).toBe("saved");
+    expect(await folders()).toMatchObject({ revision: 1, folders: [{ name: "Shore" }] });
+    await act("service_role");
+    await result("select public.prepare_gallery_upload_for_profile($1,$2,0,null,$3) as value", [profile, alice, stage.id]);
+    expect(await result("select public.commit_gallery_upload($1,$2,0,$3,$4,10,10) as value",
+      [profile, alice, stage.id, avatar])).toBe(true);
+    await act("authenticated", alice);
+    expect(await pending()).toBeNull();
+    expect(await folders()).toMatchObject({ items: [{ id: stage.id, in_draft: true }] });
+  });
+
   it("binds avatar staging and deletion to the selected profile", async () => {
     await act("authenticated", alice);
     await claim("avatar-id-alice");

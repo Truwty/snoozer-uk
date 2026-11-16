@@ -11,7 +11,7 @@ export default async function GalleryPage() {
   const draft = await readDraft();
   if (!draft) redirect("/studio");
   const { client } = await requireAccount();
-  const { data, error } = await client.rpc("pending_gallery_upload");
+  const { data, error } = await client.rpc("pending_gallery_upload", { p_profile: draft.profile_id });
   if (error) throw new Error("Couldn’t load pending gallery uploads.");
   const pending = data ? pendingGalleryItem.parse(data) : null;
 
@@ -22,7 +22,7 @@ export default async function GalleryPage() {
       <h1>Image gallery</h1>
       <p className="muted">Add up to eight images. Your changes stay in your draft until you publish in Studio.</p>
       <div><Link className="button small" href="/studio/gallery/folders">Organise media folders</Link></div>
-      <GalleryEditor revision={draft.revision} items={draft.gallery} pending={pending} />
+      <GalleryEditor profileId={draft.profile_id} revision={draft.revision} items={draft.gallery} pending={pending} />
     </section>
   </main>;
 }

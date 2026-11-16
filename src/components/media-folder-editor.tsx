@@ -13,7 +13,8 @@ function field(form: HTMLFormElement, name: string) {
   return typeof value === "string" ? value : "";
 }
 
-export function MediaFolderEditor({ library, draftRevision, draftSize }: {
+export function MediaFolderEditor({ profileId, library, draftRevision, draftSize }: {
+  profileId: string;
   library: MediaLibrary;
   draftRevision: number;
   draftSize: number;
@@ -30,7 +31,7 @@ export function MediaFolderEditor({ library, draftRevision, draftSize }: {
     setBusy(true);
     setState(initialState);
     try {
-      const next = await changeMediaFolders(library.scope, library.revision, edit);
+      const next = await changeMediaFolders(profileId, library.scope, library.revision, edit);
       if (next.status === "success") onSuccess?.();
       setState(next);
     } catch {
@@ -44,7 +45,7 @@ export function MediaFolderEditor({ library, draftRevision, draftSize }: {
     setBusy(true);
     setState(initialState);
     try {
-      const result = await addLibraryImage(draftRevision, id);
+      const result = await addLibraryImage(profileId, draftRevision, id);
       setState(result.error ? { status: "error", message: result.error } : { status: "success", message: result.message ?? "Image added to your draft." });
     } catch {
       setState({ status: "error", message: "Couldn’t add the image. Try again." });

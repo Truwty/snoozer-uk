@@ -16,7 +16,8 @@ function isGalleryFile(file: File) {
 }
 
 type Result = { message?: string; error?: string };
-export function GalleryEditor({ revision, items, pending }: {
+export function GalleryEditor({ profileId, revision, items, pending }: {
+  profileId: string;
   revision: number;
   items: GalleryItem[];
   pending: Pick<GalleryItem, "id" | "alt"> | null;
@@ -65,14 +66,14 @@ export function GalleryEditor({ revision, items, pending }: {
     const file = droppedFile ?? fileInput.current?.files?.[0];
     if (!file) return { error: "Choose an image first." };
     if (!isGalleryFile(file)) return { error: invalidFileMessage };
-    const result = await startGalleryUpload(revision, pending?.alt ?? altInput.current?.value ?? "");
+    const result = await startGalleryUpload(profileId, revision, pending?.alt ?? altInput.current?.value ?? "");
     if (result.error || !result.id || !result.path || !result.token) return { error: result.error ?? "Couldn’t open the upload." };
     const { url, key } = supabaseConfig();
     const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
     const { error } = await client.storage.from(galleryIncoming)
       .uploadToSignedUrl(result.path, result.token, file, { contentType: file.type });
     if (error) return { error: "Couldn’t upload the image. Try again or finish the pending upload." };
-    return finishGalleryUpload(revision, result.id);
+    return finishGalleryUpload(profileId, revision, result.id);
   }
 
   return <div className="stack">
@@ -85,11 +86,11 @@ export function GalleryEditor({ revision, items, pending }: {
         <p>{item.alt}</p>
         <div className="actions" role="group" aria-label={"Actions for " + item.alt}>
           <button type="button" className="button small" disabled={busy || index === 0}
-            onClick={() => run(() => editGallery(revision, item.id, "earlier"))}>Move earlier</button>
+            onClick={() => run(() => editGallery(profileId, revision, item.id, "earlier"))}>Move earlier</button>
           <button type="button" className="button small" disabled={busy || index === items.length - 1}
-            onClick={() => run(() => editGallery(revision, item.id, "later"))}>Move later</button>
+            onClick={() => run(() => editGallery(profileId, revision, item.id, "later"))}>Move later</button>
           <button type="button" className="button small" disabled={busy}
-            onClick={() => run(() => editGallery(revision, item.id, "remove"))}>Remove from draft</button>
+            onClick={() => run(() => editGallery(profileId, revision, item.id, "remove"))}>Remove from draft</button>
         </div>
       </li>)}
     </ol> : <p>Your draft gallery is empty.</p>}
@@ -116,9 +117,9 @@ export function GalleryEditor({ revision, items, pending }: {
         <button className="button small" disabled={busy}>{busy ? "Working…" : "Upload image"}</button>
         {pending && <>
           <button type="button" className="button small" disabled={busy}
-            onClick={() => run(() => finishGalleryUpload(revision, pending.id))}>Finish pending upload</button>
+            onClick={() => run(() => finishGalleryUpload(profileId, revision, pending.id))}>Finish pending upload</button>
           <button type="button" className="button small" disabled={busy}
-            onClick={() => run(() => discardGalleryUpload(revision, pending.id))}>Discard pending upload</button>
+            onClick={() => run(() => discardGalleryUpload(profileId, revision, pending.id))}>Discard pending upload</button>
         </>}
       </div>
     </form>}
