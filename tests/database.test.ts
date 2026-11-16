@@ -56,6 +56,43 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  it("resolves the current sandbox offer and preserves retired prices", async () => {
+    await db.exec(`insert into snoozer.stripe_sandbox_prices
+      (price_id,plan,plan_version,billing_interval,currency,unit_amount,retired_at)
+      values ('price_Old','plus',1,'month','gbp',399,now()),
+        ('price_Current','plus',1,'month','gbp',499,null)`);
+    const resolve = (plan: string) => db.query(
+      "select * from public.resolve_stripe_sandbox_price($1,'month')", [plan],
+    );
+    await act("authenticated", alice);
+    await expect(resolve("plus")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect((await resolve("plus")).rows).toEqual([
+      { price_id: "price_Current", plan_version: 1, currency: "gbp", unit_amount: 499 },
+    ]);
+    expect((await resolve("free")).rows).toEqual([]);
+    await db.exec("reset role");
+    expect((await db.query("select price_id from snoozer.stripe_sandbox_prices where retired_at is not null")).rows)
+      .toEqual([{ price_id: "price_Old" }]);
+  });
+
+  it("records Stripe receipts once through the service role and keeps them private", async () => {
+    const write = (id: string, object: string) => db.query(
+      "select public.record_stripe_sandbox_event($1,'checkout.session.completed',$2,'2026-11-10T20:00:00Z')",
+      [id, object],
+    );
+    await act("authenticated", alice);
+    await expect(write("evt_TestReceipt", "cs_test_First")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(write("evt_RejectLive", "cs_live_First")).rejects.toMatchObject({ code: "22023" });
+    await write("evt_TestReceipt", "cs_test_First");
+    await write("evt_TestReceipt", "cs_test_Second");
+    await expect(db.query("select * from snoozer.stripe_webhook_receipts")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    expect((await db.query("select event_id, object_id from snoozer.stripe_webhook_receipts")).rows)
+      .toEqual([{ event_id: "evt_TestReceipt", object_id: "cs_test_First" }]);
+  });
+
   it("resolves private, active plan grants and evaluates owner allowances", async () => {
     const current = () => result("select public.get_my_plan() as value");
     await act("anon");

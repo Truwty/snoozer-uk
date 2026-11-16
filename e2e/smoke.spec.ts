@@ -26,3 +26,9 @@ test("an anonymous visitor cannot open Studio", async ({ page }) => {
   await page.goto("/studio");
   await expect(page).toHaveURL("/sign-in");
 });
+
+test("Stripe intake is unavailable without server configuration", async ({ request }) => {
+  test.skip(Boolean(process.env.STRIPE_SANDBOX_WEBHOOK_SECRET), "A sandbox signing secret is configured");
+  const response = await request.post("/api/v1/billing/stripe/webhook");
+  expect(response.status()).toBe(503);
+});
