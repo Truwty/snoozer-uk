@@ -901,25 +901,29 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     await claim("sibling-primary");
     const { profile_id: first } = (await result<{ profile_id: string }>("select public.get_draft() as value"))!;
-    await db.exec("reset role");
-    const second = await result<string>(`insert into snoozer.profiles(owner_id, username, display_name)
-      values ($1, 'sibling-secondary', 'Second') returning id as value`, [alice]);
+    const additional = (name: string) => result<string>("select public.claim_additional_profile($1) as value", [name]);
+    await expect(additional("sibling-secondary")).rejects.toMatchObject({ code: "P1005" });
     const publish = (id: string, revision: number, label: string) => result(
       "select public.save_profile($1,$2,$3,'Bio','lagoon',false,$4,true,false) as value",
       [id, revision, label, JSON.stringify([{ label, url: "https://example.com" }])]);
-    await act("authenticated", alice);
     expect(await publish(first, 0, "First")).toBe(1);
-    await expect(publish(second!, 0, "Second")).rejects.toMatchObject({ code: "P1005" });
     await db.exec("reset role");
     await db.query(`insert into snoozer.entitlement_grants(owner_id, plan, plan_version, source, source_ref, starts_at, expires_at)
       values ($1,'plus',1,'staff','sibling-allowance',now(),now()+interval '1 day')`, [alice]);
     await act("authenticated", alice);
+    const second = await additional("sibling-secondary");
+    expect(second).toMatch(/^[a-f0-9-]{36}$/);
+    expect(await draft()).toMatchObject({ profile_id: first });
+    await expect(save(1, "Legacy request", [], false)).rejects.toMatchObject({ code: "40001" });
+    await additional("sibling-third");
+    await expect(additional("sibling-fourth")).rejects.toMatchObject({ code: "P1005" });
     expect(await publish(second!, 0, "Second")).toBe(1);
     expect(await published("sibling-primary")).toMatchObject({ links: [{ label: "First" }] });
     expect(await published("sibling-secondary")).toMatchObject({ links: [{ label: "Second" }] });
     await db.exec("reset role");
     await db.exec("update snoozer.entitlement_grants set payment_held = true where source_ref = 'sibling-allowance'");
     await act("authenticated", alice);
+    await expect(additional("sibling-fourth")).rejects.toMatchObject({ code: "P1005" });
     await expect(publish(second!, 1, "Blocked change")).rejects.toMatchObject({ code: "P1005" });
     expect(await published("sibling-secondary")).toMatchObject({ links: [{ label: "Second" }] });
     await result("select public.unpublish_profile($1,1) as value", [first]);

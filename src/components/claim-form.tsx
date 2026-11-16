@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { claim } from "@/app/studio/actions";
+import { claim, claimAdditional } from "@/app/studio/actions";
 import { initialState } from "@/lib/actions";
 import { canonicalUsername, username } from "@/lib/profile";
 import { ActionMessage } from "./action-message";
 
-export function ClaimForm() {
-  const [state, submit, pending] = useActionState(claim, initialState);
+export function ClaimForm({ additional = false }: { additional?: boolean }) {
+  const [state, submit, pending] = useActionState(additional ? claimAdditional : claim, initialState);
   const [name, setName] = useState("");
   const [availability, setAvailability] = useState<{ name: string; message: string }>();
   const [checking, setChecking] = useState(false);

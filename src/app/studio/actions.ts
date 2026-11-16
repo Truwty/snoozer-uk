@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
 import { canonicalUsername, profileContent, profileRevisionNumber, textSections, username, type ProfileContent } from "@/lib/profile";
-import { readDraft, requireAccount } from "@/lib/profiles-server";
+import { readDraft, requireAccount, studioHref } from "@/lib/profiles-server";
 
 export async function claim(_: ActionState, form: FormData): Promise<ActionState> {
   const name = username.safeParse(canonicalUsername(String(form.get("username") ?? "")));
@@ -16,6 +16,19 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours. Try again later." };
   if (error) return { status: "error", message: "Couldn’t claim your address. Try again." };
   redirect("/studio");
+}
+
+export async function claimAdditional(_: ActionState, form: FormData): Promise<ActionState> {
+  const name = username.safeParse(canonicalUsername(String(form.get("username") ?? "")));
+  if (!name.success) return { status: "error", message: name.error.issues[0].message };
+  const { client } = await requireAccount();
+  const { data, error } = await client.rpc("claim_additional_profile", { p_name: name.data });
+  if (error?.code === "23505") return { status: "error", message: "That address is unavailable." };
+  if (error?.code === "P1005") return { status: "error", message: "Your plan’s profile allowance has been reached." };
+  if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours." };
+  const profile = z.uuid().safeParse(data);
+  if (error || !profile.success) return { status: "error", message: "Couldn’t claim your address. Try again." };
+  redirect(studioHref("/studio", profile.data));
 }
 
 const saveRequest = z.object({

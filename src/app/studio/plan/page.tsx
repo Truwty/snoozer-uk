@@ -2,12 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { GiftCodeForm } from "@/components/gift-code-form";
+import { ClaimForm } from "@/components/claim-form";
 import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
 import { maximumProfileLinkLimit, username } from "@/lib/profile";
-import { requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
+import { readDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
 import { sandboxCheckoutKey } from "@/lib/stripe-sandbox-checkout-config";
@@ -65,6 +66,8 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const reviews = reviewList.safeParse(reviewResponse.data);
   const profiles = profileList.safeParse(profileResponse.data);
   const selected = profiles.success ? profiles.data.find(({ id }) => id === requested)?.id : undefined;
+  const draft = await readDraft(selected);
+  const linksUsed = draft?.links.length ?? 0;
 
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
@@ -77,13 +80,12 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         {plan.expiresAt && <p>Plan access ends on <time dateTime={plan.expiresAt}>
           {new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(plan.expiresAt))}
         </time>.</p>}
-        {plan.plan !== "free" && <p>Higher profile allowances are pending.</p>}
         <dl className="stack">
-          <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of 1</dd></div>
-          <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {linkLimit}</dd></div>
+          <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of {plan.quotas.profiles}</dd></div>
+          <div><dt>{draft ? `Draft links for @${draft.username}` : "Draft links"}</dt><dd>{linksUsed} of {linkLimit}</dd></div>
           <div><dt>Media storage</dt><dd>{formatMediaBytes(plan.usage.mediaBytes)} of {formatMediaBytes(plan.quotas.mediaBytes)}</dd></div>
         </dl>
-        {plan.usage.draftLinks >= linkLimit && <p>Your draft has reached the Studio link limit.</p>}
+        {draft && linksUsed >= linkLimit && <p>Your draft has reached the Studio link limit.</p>}
         {plan.usage.mediaBytes >= plan.quotas.mediaBytes
           ? <p>Your plan’s media storage is full. Stored images remain available.</p>
           : plan.usage.mediaBytes >= plan.quotas.mediaBytes * 0.85 && <p>You’re close to your plan’s media storage limit.</p>}
@@ -96,6 +98,11 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
             {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> : `@${profile.username} · Draft`}
             {" · "}<Link href={studioHref("/studio", profile.id)} aria-label={`Edit @${profile.username}`}>Edit</Link>
           </li>)}</ul>}
+        {plan && !profileResponse.error && profiles.success && profiles.data.length > 0
+          && profiles.data.length < plan.quotas.profiles && <details>
+          <summary>Claim another profile</summary>
+          <ClaimForm additional />
+        </details>}
       </div>
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}

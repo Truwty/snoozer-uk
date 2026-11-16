@@ -39,6 +39,46 @@ test.beforeEach(() => {
   }
 });
 
+test("Plus can claim and switch between independent profiles", async ({ page, request }) => {
+  const name = `multi-${randomUUID().slice(0, 8)}`;
+  const second = `${name}-second`;
+  const email = `${name}@example.com`;
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(error).toBeNull();
+  try {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByLabel("Username").fill(name);
+    await page.getByRole("button", { name: "Claim address" }).click();
+    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await expect(page.getByText("Claim another profile", { exact: true })).toHaveCount(0);
+    const gift = await admin.rpc("issue_gift_code", {
+      p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
+    }).single<{ code: string }>();
+    expect(gift.error).toBeNull();
+    await page.getByText("Redeem a plan gift", { exact: true }).click();
+    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
+    await page.getByRole("button", { name: "Redeem gift code" }).click();
+    await page.getByText("Claim another profile", { exact: true }).click();
+    await page.getByLabel("Username").fill(second);
+    await page.getByRole("button", { name: "Claim address" }).click();
+    await expect(page.getByText(`@${second}`, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Publish page" }).click();
+    await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
+    expect((await request.get(`/${name}`)).status()).toBe(404);
+    expect((await request.get(`/${second}`)).status()).toBe(200);
+    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
+    await expect(page.getByText(`@${name}`, { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
+  } finally {
+    if (data.user) await admin.auth.admin.deleteUser(data.user.id);
+  }
+});
+
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
