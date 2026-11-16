@@ -225,6 +225,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 2 heading")).toBeEnabled();
     await page.getByRole("button", { name: "Redo edit" }).click();
     await expect(lock).toBeChecked();
+    await page.getByText("Add Ko-fi support link", { exact: true }).click();
+    await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
+    await page.getByRole("button", { name: "Add support link" }).click();
+    await expect(page.getByText("Enter your full Ko-fi profile address.")).toBeVisible();
+    await page.getByLabel("Ko-fi profile URL").fill("https://www.ko-fi.com/creator/");
+    await page.getByLabel("Ko-fi profile URL").press("Enter");
+    await expect(page.getByLabel("Link 3 label")).toBeFocused();
+    await page.getByLabel("Link 3 label").fill("Support my projects");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -237,7 +245,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗", "Support my projects · Ko-fi ↗"]);
+    await expect(publicPage.getByRole("link", { name: "Support my projects · Ko-fi" })).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
@@ -310,6 +319,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
     await expect(lock).toBeChecked();
+    await page.getByText("Add Ko-fi support link", { exact: true }).click();
+    await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
+    await page.getByRole("button", { name: "Add support link" }).click();
+    await expect(page.getByText("Enter your full Ko-fi profile address.")).toBeVisible();
+    await page.getByLabel("Ko-fi profile URL").fill("https://www.ko-fi.com/creator/");
+    await page.getByLabel("Ko-fi profile URL").press("Enter");
+    await expect(page.getByLabel("Link 3 label")).toBeFocused();
+    await page.getByLabel("Link 3 label").fill("Support my projects");
     await expect(page.getByLabel("Section 2 heading")).toBeDisabled();
     await expect(page.getByLabel("Section 3 type")).toHaveValue("quote");
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");

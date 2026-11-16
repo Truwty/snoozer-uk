@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
+import { kofiProfileUrl } from "@/lib/kofi-link";
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
@@ -51,7 +52,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       </div>}
       {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
-          <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label} <span aria-hidden="true">↗</span></a></li>
+          <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a></li>
         )}
       </ul>}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">

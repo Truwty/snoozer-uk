@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Brand } from "@/components/shell";
+import { kofiProfileUrl } from "@/lib/kofi-link";
 
 export default function Home() {
+  const support = kofiProfileUrl(process.env.KOFI_PLATFORM_PROFILE_URL);
   return <main className="shell home">
     <header className="nav">
       <Brand />
@@ -33,6 +35,6 @@ export default function Home() {
       <article><p className="eyebrow">02 / CREATE</p><h2>Make it personal.</h2><p>Add a photo, a short bio and links. Try a theme in the live preview.</p></article>
       <article><p className="eyebrow">03 / SHARE</p><h2>Take it live.</h2><p>Publish when you’re ready and use the same link wherever you show up.</p></article>
     </section>
-    <footer className="home-footer"><Brand /><span>A little more you.</span></footer>
+    <footer className="home-footer"><Brand />{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
   </main>;
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { kofiProfileUrl } from "@/lib/kofi-link";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
@@ -18,6 +19,8 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
+  const [kofiUrl, setKofiUrl] = useState("");
+  const [kofiError, setKofiError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
@@ -50,6 +53,20 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
     set("links", reordered);
     setAnnouncement(`Moved link to position ${to + 1} of ${reordered.length}.`);
     focusLink(to);
+  }
+
+  function addKofiLink() {
+    if (content.links.length >= 20) return;
+    const url = kofiProfileUrl(kofiUrl);
+    if (!url) {
+      setKofiError(true);
+      return;
+    }
+    set("links", [...content.links, { label: "Support me", url }]);
+    setKofiUrl("");
+    setKofiError(false);
+    setAnnouncement("Ko-fi support link added.");
+    focusLink(content.links.length);
   }
 
   function focusLink(index: number) {
@@ -168,6 +185,20 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
             set("links", [...content.links, { label: "", url: "" }]);
             focusLink(content.links.length);
           }}>Add link</button>
+        {content.links.length < 20 && <details>
+          <summary>Add Ko-fi support link</summary>
+          <div className="stack">
+            <label>Ko-fi profile URL<input type="text" inputMode="url" maxLength={100}
+              value={kofiUrl} placeholder="https://ko-fi.com/yourname"
+              aria-invalid={kofiError} aria-describedby={kofiError ? "kofi-url-error" : undefined}
+              onChange={(event) => { setKofiUrl(event.target.value); setKofiError(false); }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") { event.preventDefault(); addKofiLink(); }
+              }} /></label>
+            {kofiError && <p id="kofi-url-error" role="alert">Enter your full Ko-fi profile address.</p>}
+            <button type="button" className="button small" onClick={addKofiLink}>Add support link</button>
+          </div>
+        </details>}
       </fieldset>
       <div className="actions">
         <button className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>

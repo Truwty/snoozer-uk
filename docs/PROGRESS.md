@@ -138,6 +138,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Stripe sandbox reconciliation now archives canceled and incomplete-expired subscriptions, revokes their grants and allows a replacement Checkout with the same customer. Billing Portal remains available to the owner for previous invoices. Local verification passed 76 unit and SQL tests. Real provider cancellation and resubscription remain unverified.
 
+- Studio supports adding direct Ko-fi profiles as ordered support links with an editable label. The shared profile renderer identifies Ko-fi in preview and publication, and the home footer can link to the platform Ko-fi profile. Local verification passed 83 unit and SQL tests. A disposable Supabase browser scenario now checks the Studio-to-public flow.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
