@@ -9,6 +9,7 @@ export async function reconcileSandboxSubscription(
   stripe: Stripe,
   receipt: { type: string; objectId: string },
   checkoutSubscription?: string,
+  reportDrift = false,
 ) {
   let subscriptionId = checkoutSubscription;
   if (receipt.type.startsWith("customer.subscription.")) subscriptionId = receipt.objectId;
@@ -42,12 +43,16 @@ export async function reconcileSandboxSubscription(
     && invoice.parent?.subscription_details?.subscription === subscriptionId;
   const end = paid ? Math.min(item.current_period_end, subscription.cancel_at ?? item.current_period_end) : null;
 
-  const applied = await admin.rpc("apply_stripe_sandbox_reconciliation", {
+  const operation = reportDrift ? "sweep_stripe_sandbox_grant" : "apply_stripe_sandbox_reconciliation";
+  const applied = await admin.rpc(operation, {
     p_subscription: subscriptionId, p_customer: mapping.customer_id, p_price: mapping.price_id,
     p_revision: mapping.revision,
     p_invoice: paid ? invoice.id : null,
     p_starts: paid ? new Date(item.current_period_start * 1000).toISOString() : null,
     p_ends: end === null ? null : new Date(end * 1000).toISOString(),
   });
-  if (applied.error || applied.data !== true) throw new Error("Stripe reconciliation must be retried.");
+  if (!applied.error && (applied.data === true || applied.data === "changed" || applied.data === "unchanged")) {
+    return applied.data === "changed";
+  }
+  throw new Error("Stripe reconciliation must be retried.");
 }

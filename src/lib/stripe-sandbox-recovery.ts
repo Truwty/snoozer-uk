@@ -4,15 +4,20 @@ import { stripeSandboxReceipt, type StripeReceipt } from "./stripe-webhook";
 
 const digest = (value: string) => createHash("sha256").update(value).digest();
 
+export function stripeOperatorStatus(request: Request, token: string | undefined) {
+  if (!token || token.length < 32) return 503;
+  const authorization = request.headers.get("authorization") ?? "";
+  return timingSafeEqual(digest(authorization), digest("Bearer " + token)) ? 200 : 401;
+}
+
 export async function recoverStripeSandboxEvent(
   request: Request,
   token: string | undefined,
   retrieve: (id: string) => Promise<unknown>,
   process: (receipt: StripeReceipt) => Promise<void>,
 ) {
-  if (!token || token.length < 32) return new Response(null, { status: 503 });
-  const authorization = request.headers.get("authorization") ?? "";
-  if (!timingSafeEqual(digest(authorization), digest("Bearer " + token))) return new Response(null, { status: 401 });
+  const status = stripeOperatorStatus(request, token);
+  if (status !== 200) return new Response(null, { status });
   let eventId: string;
   try {
     const body = await boundedBody(request, 1024);

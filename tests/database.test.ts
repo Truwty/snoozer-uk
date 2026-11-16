@@ -116,6 +116,32 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await customer()).toBe("cus_Portal");
   });
 
+  it("claims bounded sweep batches and reports only actual grant changes", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Sweep','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_Sweep','cus_Sweep','cs_test_Sweep','sub_Sweep'), ($2,'price_Sweep','cus_Unbound',null,null)", [alice,bob],
+    );
+    const claimSweep = () => db.query("select subscription_id from public.claim_stripe_sandbox_sweep()");
+    await act("authenticated", alice);
+    await expect(claimSweep()).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect((await claimSweep()).rows).toEqual([{ subscription_id: "sub_Sweep" }]);
+    expect((await claimSweep()).rows).toEqual([]);
+
+    const revision = () => result<number>("select revision as value from public.start_stripe_sandbox_reconciliation('sub_Sweep')");
+    const sweep = (rev: number) => result(
+      "select public.sweep_stripe_sandbox_grant('sub_Sweep','cus_Sweep','price_Sweep',$1,date_trunc('day',now()),date_trunc('day',now())+interval '2 days','in_Sweep') as value", [rev],
+    );
+    const first = (await revision())!;
+    expect(await sweep(first)).toBe("changed");
+    expect(await sweep(first)).toBe("retry");
+    expect(await sweep((await revision())!)).toBe("unchanged");
+
+    await db.exec("reset role; update snoozer.stripe_sandbox_checkout_attempts set next_sweep_at = now()-interval '1 minute'");
+    await act("service_role");
+    expect((await claimSweep()).rows).toEqual([{ subscription_id: "sub_Sweep" }]);
+  });
+
   it("applies only the latest sandbox reconciliation and revokes its own grant", async () => {
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Paid','plus',1,'month','gbp',399,null)");
     await db.query(

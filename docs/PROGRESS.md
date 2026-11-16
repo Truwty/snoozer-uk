@@ -132,6 +132,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 - Added operator recovery of missed Stripe sandbox events by ID. The endpoint retrieves the canonical event directly from Stripe and uses the same validation and reconciliation path as webhook delivery. Automated event discovery and sandbox verification remain open.
 - A verified Stripe expiry now lets an account replace a bound, unpaid Checkout attempt, preserving the prior session in history and reusing its customer. Completed subscriptions and attempts without a saved session are outside this replacement flow. Local verification passed 69 unit and SQL tests.
 
+- Added an opt-in Stripe sandbox subscription sweep with bounded leases, aggregate drift reporting and a GitHub Actions schedule. It corrects grant drift from current Stripe state for linked subscriptions. The configured provider run and recovery of unreceived refund, dispute and Checkout events still need verification or replay. Local verification passed 70 unit and SQL tests.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

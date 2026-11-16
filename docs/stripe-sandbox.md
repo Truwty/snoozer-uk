@@ -27,3 +27,9 @@ Enable charge.refunded, charge.dispute.created and radar.early_fraud_warning.cre
 ## Missed events
 
 To recover an event, give the restricted sandbox API key Events read permission. Configure STRIPE_SANDBOX_RECOVERY_TOKEN with a separately generated high-entropy secret. Use that bearer token to POST a JSON object with the Stripe event ID in the id field to /api/v1/billing/stripe/recover over HTTPS. Keep the token in the operator secret store. An HTTP 204 means the verified provider event went through normal receipt handling. Resolve 503 errors before retrying. Resolve the Checkout binding and retry if the session was missing. Stripe makes the most recent 30 days of events available for retrieval. Run replay for checkout.session.expired if a missed expiry leaves an account unable to start another attempt. Automated discovery and scheduled reconciliation remain open. [Stripe event retrieval](https://docs.stripe.com/api/events/retrieve)
+
+## Scheduled reconciliation
+
+The Stripe sandbox reconciliation workflow is opt-in. In GitHub Actions set STRIPE_SANDBOX_SWEEP_ENABLED to true, STRIPE_SANDBOX_SWEEP_ORIGIN to the isolated HTTPS deployment origin, and the STRIPE_SANDBOX_RECOVERY_TOKEN secret to the same token configured on that deployment. Run it manually once to verify the connection. It is scheduled every six hours. Increase the schedule frequency within the repository's CI and sandbox API budget when five subscriptions per run is insufficient.
+
+The workflow checks up to five linked subscriptions each run and reports only the number checked, changed and failed. It repairs grant drift using current Stripe subscription and invoice state. Failed or interrupted checks become eligible again after 15 minutes. Use event replay for missed Checkout, refund and dispute events. The sweep currently covers linked subscriptions and stored invoice holds.

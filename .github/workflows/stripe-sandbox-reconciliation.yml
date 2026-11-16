@@ -1,0 +1,32 @@
+name: Stripe sandbox reconciliation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '27 */6 * * *'
+
+permissions: {}
+
+concurrency:
+  group: stripe-sandbox-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: vars.STRIPE_SANDBOX_SWEEP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      STAGING_ORIGIN: ${{ vars.STRIPE_SANDBOX_SWEEP_ORIGIN }}
+      OPERATOR_TOKEN: ${{ secrets.STRIPE_SANDBOX_RECOVERY_TOKEN }}
+    steps:
+      - name: Reconcile one batch
+        shell: bash
+        run: |
+          if [[ ! "$STAGING_ORIGIN" =~ ^https://[a-zA-Z0-9.-]+$ || ${#OPERATOR_TOKEN} -lt 32 ]]; then
+            echo "Sandbox sweep origin or recovery token is missing or invalid."
+            exit 1
+          fi
+          curl --silent --show-error --fail-with-body --max-time 60 \
+            --request POST --header "Authorization: Bearer $OPERATOR_TOKEN" \
+            "$STAGING_ORIGIN/api/v1/billing/stripe/sweep"
