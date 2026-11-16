@@ -6,7 +6,7 @@ import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
-import { maximumProfileLinkLimit } from "@/lib/profile";
+import { maximumProfileLinkLimit, username } from "@/lib/profile";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
@@ -21,6 +21,7 @@ const reviewList = z.array(z.object({
   reference: z.string(), status: z.enum(["pending", "confirmed", "declined"]),
 }));
 const reviewLabels = { pending: "Pending review", confirmed: "Confirmed", declined: "Declined" };
+const profileList = z.array(z.object({ id: z.uuid(), username, published: z.boolean() }));
 
 const labels = { free: "Free", plus: "Plus", pro: "Pro", studio: "Studio" };
 const mediaAmount = new Intl.NumberFormat("en-GB", { style: "unit", unit: "megabyte", maximumFractionDigits: 3 });
@@ -53,14 +54,16 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const plan = error || !result.success ? null : result.data;
   const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
-  const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess] = await Promise.all([
+  const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess, profileResponse] = await Promise.all([
     sandboxOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
     client.rpc("list_my_kofi_donation_reviews"),
     client.rpc("can_read_billing_diagnostics"),
+    client.rpc("list_my_profiles"),
   ]);
 
   const reviews = reviewList.safeParse(reviewResponse.data);
+  const profiles = profileList.safeParse(profileResponse.data);
 
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
@@ -84,6 +87,14 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           ? <p>Your plan’s media storage is full. Stored images remain available.</p>
           : plan.usage.mediaBytes >= plan.quotas.mediaBytes * 0.85 && <p>You’re close to your plan’s media storage limit.</p>}
       </> : <p role="alert">Plan and usage are temporarily unavailable.</p>}
+      <div className="stack">
+        <h2>Your profiles</h2>
+        {profileResponse.error || !profiles.success ? <p>Couldn’t load your profiles.</p> :
+          profiles.data.length === 0 ? <Link href="/studio">Claim a profile in Studio</Link> :
+          <ul>{profiles.data.map((profile) => <li key={profile.id}>
+            {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> : `@${profile.username} · Draft`}
+          </li>)}</ul>}
+      </div>
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
       {portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}

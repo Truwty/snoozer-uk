@@ -64,6 +64,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
+    await expect(page.getByText(`@${name} · Draft`, { exact: true })).toBeVisible();
     await page.getByText("Review a platform Ko-fi donation", { exact: true }).click();
     await page.getByLabel("Ko-fi transaction reference").fill("test-review-reference");
     await page.getByRole("button", { name: "Request donation review" }).click();

@@ -749,6 +749,25 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(claim("Alice")).rejects.toMatchObject({ code: "23505" });
   });
 
+  it("lists stable profile IDs only for the verified owner", async () => {
+    const list = () => result<{ id: string; username: string; published: boolean }[]>("select public.list_my_profiles() as value");
+    await act("anon");
+    await expect(list()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(list()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    expect(await list()).toEqual([]);
+    await claim("alice");
+    const [profile] = (await list())!;
+    expect(profile).toEqual({ id: expect.any(String), username: "alice", published: false });
+    await save(0, "Alice live", [], true);
+    expect(await list()).toEqual([{ ...profile, published: true }]);
+    await act("authenticated", bob);
+    await claim("bob");
+    expect(await list()).toEqual([{ id: expect.any(String), username: "bob", published: false }]);
+    expect((await list())![0].id).not.toBe(profile.id);
+  });
+
   it("enforces global uniqueness and one address per owner", async () => {
     await act("authenticated", alice);
     await claim("alice");
