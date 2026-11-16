@@ -43,7 +43,7 @@ describe("Stripe sandbox subscription reconciliation", () => {
     });
   });
 
-  it.each([["canceled", "paid"], ["active", "open"], ["past_due", "paid"], ["trialing", "paid"]])(
+  it.each([["active", "open"], ["past_due", "paid"], ["trialing", "paid"]])(
     "does not extend access with status %s and invoice %s", async (status, invoiceStatus) => {
       const { stripe } = configure(status, invoiceStatus);
       await reconcileSandboxSubscription(stripe, receipt);
@@ -51,6 +51,17 @@ describe("Stripe sandbox subscription reconciliation", () => {
         expect.objectContaining({ p_starts: null, p_ends: null }));
     },
   );
+
+  it.each(["canceled", "incomplete_expired"])("archives only terminal status %s", async (status) => {
+    const { stripe } = configure(status, "paid");
+    rpc.mockReset().mockReturnValueOnce({ maybeSingle: async () => ({
+      data: { customer_id: "cus_Owner", price_id: "price_Stored", revision: 7 }, error: null,
+    }) }).mockResolvedValueOnce({ data: "changed", error: null });
+    await expect(reconcileSandboxSubscription(stripe, receipt)).resolves.toBe(true);
+    expect(rpc).toHaveBeenLastCalledWith("end_stripe_sandbox_subscription", {
+      p_subscription: "sub_Stored", p_customer: "cus_Owner", p_revision: 7, p_status: status,
+    });
+  });
 
   it("rejects a provider ownership mismatch without applying a grant update", async () => {
     const { stripe } = configure("active", "paid", "cus_Other");

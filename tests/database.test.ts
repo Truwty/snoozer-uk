@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -114,6 +114,43 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await customer()).toBeNull();
     await act("authenticated", alice);
     expect(await customer()).toBe("cus_Portal");
+  });
+
+  it("archives ended Stripe subscriptions, revokes their grant and permits a new Checkout", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_End','plus',1,'month','gbp',399,null), ('price_New','pro',1,'month','gbp',799,null)");
+    const original = await result<string>(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_End','cus_End','cs_test_End','sub_End') returning id as value", [alice],
+    );
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'stripe','sandbox:sub_End',now()-interval '1 day',now()+interval '1 day')", [alice]);
+    const start = () => result<number>("select revision as value from public.start_stripe_sandbox_reconciliation('sub_End')");
+    const end = (revision: number, status = "canceled", customer = "cus_End") => result(
+      "select public.end_stripe_sandbox_subscription('sub_End',$1,$2,$3) as value", [customer, revision, status],
+    );
+    const prepare = () => result("select public.prepare_stripe_sandbox_checkout($1,'pro','month') as value", [alice]);
+
+    await act("authenticated", alice);
+    await expect(end(1)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const stale = (await start())!;
+    const current = (await start())!;
+    expect(await end(stale)).toBe("retry");
+    expect(await end(current, "unpaid")).toBe("retry");
+    expect(await end(current, "canceled", "cus_Other")).toBe("retry");
+    expect(await prepare()).toBeNull();
+    expect(await end(current)).toBe("changed");
+    expect(await start()).toBeUndefined();
+    expect(await end(current)).toBe("retry");
+    expect(await prepare()).toMatchObject({ priceId: "price_New", customerId: "cus_End", sessionId: null });
+    expect(await prepare()).not.toMatchObject({ id: original });
+
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+    expect(await result("select public.get_my_stripe_sandbox_customer() as value")).toBe("cus_End");
+    await act("authenticated", bob);
+    expect(await result("select public.get_my_stripe_sandbox_customer() as value")).toBeNull();
+    await db.exec("reset role");
+    expect((await db.query("select subscription_id,attempt_id,terminal_status from snoozer.stripe_sandbox_ended_subscriptions")).rows)
+      .toEqual([{ subscription_id: "sub_End", attempt_id: original, terminal_status: "canceled" }]);
   });
 
   it("claims bounded sweep batches and reports only actual grant changes", async () => {

@@ -8,7 +8,7 @@ Sources: https://docs.stripe.com/webhooks and https://docs.stripe.com/products-p
 
 Use an isolated Stripe sandbox and a disposable Supabase project. Give the restricted sandbox API key permission to create Customers, read Prices, and create and retrieve Checkout Sessions. Store it in STRIPE_SANDBOX_API_KEY on the server. The account must have confirmed its email.
 
-Each account can have one current sandbox Checkout attempt. The database pins the original offer and binds one Stripe customer and session. A failed create can be retried with the original offer for 30 minutes. Once the session is bound, the app reopens it only while Stripe marks it open. After Stripe confirms an unpaid session has expired, the next Checkout request starts a new attempt with the same customer and preserves the expired attempt in history. An attempt without a saved session becomes eligible for recovery two hours and five minutes after it started. A completed subscription still blocks replacement.
+Each account can have one current sandbox Checkout attempt. The database pins the original offer and binds one Stripe customer and session. A failed create can be retried with the original offer for 30 minutes. Once the session is bound, the app reopens it only while Stripe marks it open. After Stripe confirms an unpaid session has expired, the next Checkout request starts a new attempt with the same customer and preserves the expired attempt in history. An attempt without a saved session becomes eligible for recovery two hours and five minutes after it started. A linked subscription blocks replacement until Stripe reports it canceled or incomplete_expired.
 
 The return page displays a pending message. The Plan and usage page reflects a sandbox grant once reconciliation succeeds. For a real sandbox run, confirm Stripe sends a signed event to the receipt endpoint and that the signed event references the session stored for the account.
 
@@ -37,3 +37,7 @@ The workflow checks up to five linked subscriptions each run and reports only th
 ## Checkout sessions missing from Snoozer
 
 When a user tries Checkout again after the recovery window, Snoozer looks for sandbox sessions for the saved customer and matches the account reference and fixed expiry. A completed match is saved and the user returns to Studio with confirmation pending. If the completion webhook already ran without a saved session, replay it by event ID after this recovery. A confirmed expired match, or a complete lookup with no matching session, retires the old attempt and allows a replacement. Ambiguous Stripe results and API failures preserve the current attempt for retry. The sandbox API key needs read access to list Checkout Sessions.
+
+## Starting again after a subscription ends
+
+A sandbox subscription that Stripe reports as canceled or incomplete_expired is archived by webhook reconciliation or the sweep. Snoozer withdraws its grant in the same transaction and allows a new Checkout using the same Stripe customer. The Billing Portal remains available for invoice history. Recoverable payment states and active subscriptions scheduled to cancel continue to reserve the current Checkout until Stripe confirms a terminal state.

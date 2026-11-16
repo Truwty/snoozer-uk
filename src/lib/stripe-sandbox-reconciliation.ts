@@ -33,6 +33,16 @@ export async function reconcileSandboxSubscription(
   if (subscription.livemode || subscription.id !== subscriptionId || subscription.customer !== mapping.customer_id) {
     throw new Error("Stripe subscription ownership changed.");
   }
+  if (subscription.status === "canceled" || subscription.status === "incomplete_expired") {
+    const ended = await admin.rpc("end_stripe_sandbox_subscription", {
+      p_subscription: subscriptionId, p_customer: mapping.customer_id,
+      p_revision: mapping.revision, p_status: subscription.status,
+    });
+    if (ended.error || (ended.data !== "changed" && ended.data !== "unchanged")) {
+      throw new Error("Stripe subscription closure must be retried.");
+    }
+    return ended.data === "changed";
+  }
   const [item] = subscription.items.data;
   const invoice = subscription.latest_invoice;
   const paid = subscription.status === "active" && subscription.pause_collection === null

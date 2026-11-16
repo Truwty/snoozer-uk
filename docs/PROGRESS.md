@@ -136,6 +136,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Added recovery for Checkout attempts without a saved Stripe session. After the recovery window, Snoozer looks up any matching session. A completed match is rebound for webhook replay. A confirmed expiry or a complete lookup with no match permits replacement. The database rejects late writes to retired attempts. All 74 local unit and SQL tests passed. Real Stripe recovery remains unverified.
 
+- Stripe sandbox reconciliation now archives canceled and incomplete-expired subscriptions, revokes their grants and allows a replacement Checkout with the same customer. Billing Portal remains available to the owner for previous invoices. Local verification passed 76 unit and SQL tests. Real provider cancellation and resubscription remain unverified.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.
