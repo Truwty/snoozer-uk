@@ -27,33 +27,37 @@ const snapshot = z.object({
   data: z.object({ object: z.object({ id: z.string() }) }),
 });
 
-type Receipt = { id: string; type: string; objectId: string; occurredAt: string };
-type RecordReceipt = (receipt: Receipt) => Promise<void>;
+export type StripeReceipt = { id: string; type: string; objectId: string; occurredAt: string };
+type RecordReceipt = (receipt: StripeReceipt) => Promise<void>;
+
+export function stripeSandboxReceipt(event: unknown): StripeReceipt | null {
+  const parsed = snapshot.safeParse(event);
+  if (!parsed.success) throw new Error("Invalid sandbox event.");
+  const { id, type, created, data } = parsed.data;
+  if (!Object.hasOwn(prefixes, type)) return null;
+  const prefix = prefixes[type as keyof typeof prefixes];
+  const objectId = data.object.id;
+  if (!objectId.startsWith(prefix) || !/^[A-Za-z0-9]{1,128}$/.test(objectId.slice(prefix.length))) {
+    throw new Error("Invalid sandbox event object.");
+  }
+  return { id, type, objectId, occurredAt: new Date(created * 1000).toISOString() };
+}
 
 export async function receiveStripeWebhook(request: Request, secret: string | undefined, record: RecordReceipt) {
   if (!secret?.startsWith("whsec_")) return new Response(null, { status: 503 });
   const signature = request.headers.get("stripe-signature");
   if (!signature) return new Response(null, { status: 400 });
-  let parsed;
+  let receipt;
   try {
     const body = await boundedBody(request, 256 * 1024);
     if (!body) return new Response(null, { status: 413 });
-    parsed = snapshot.safeParse(Stripe.webhooks.constructEvent(body, signature, secret));
+    receipt = stripeSandboxReceipt(Stripe.webhooks.constructEvent(body, signature, secret));
   } catch {
     return new Response(null, { status: 400 });
   }
-  if (!parsed.success) return new Response(null, { status: 400 });
-
-  const { id, type, created, data } = parsed.data;
-  if (!Object.hasOwn(prefixes, type)) return new Response(null, { status: 204 });
-  const prefix = prefixes[type as keyof typeof prefixes];
-  const objectId = data.object.id;
-  if (!objectId.startsWith(prefix) || !/^[A-Za-z0-9]{1,128}$/.test(objectId.slice(prefix.length))) {
-    return new Response(null, { status: 400 });
-  }
-
+  if (!receipt) return new Response(null, { status: 204 });
   try {
-    await record({ id, type, objectId, occurredAt: new Date(created * 1000).toISOString() });
+    await record(receipt);
   } catch {
     return new Response(null, { status: 503 });
   }

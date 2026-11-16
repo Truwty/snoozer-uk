@@ -129,6 +129,9 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Stripe sandbox refund, dispute and early fraud warning events now create invoice holds through verified provider relationships. The current held invoice cannot sustain a plan grant. Duplicate events and older held invoices do not prevent a later eligible renewal. The conservative sandbox policy holds partial refunds and retains holds after disputes. Provider delivery and automatic release after dispute resolution remain unverified or pending. Local verification passed 65 unit and SQL tests.
 
+- Added operator recovery of missed Stripe sandbox events by ID. The endpoint retrieves the canonical event directly from Stripe and uses the same validation and reconciliation path as webhook delivery. Automated event discovery and sandbox verification remain open.
+- A verified Stripe expiry now lets an account replace a bound, unpaid Checkout attempt, preserving the prior session in history and reusing its customer. Completed subscriptions and attempts without a saved session are outside this replacement flow. Local verification passed 69 unit and SQL tests.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

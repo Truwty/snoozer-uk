@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -156,6 +156,37 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await apply((await start())!, false)).toBe(true);
     await act("authenticated", alice);
     expect(await plan()).toMatchObject({ plan: "free" });
+  });
+
+  it("replaces only verified expired sandbox sessions while retaining customer and history", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Original','plus',1,'month','gbp',399,null), ('price_Next','pro',1,'month','gbp',799,null)");
+    await act("service_role");
+    const prepare = (plan: string) => result<{ id: string; customerId: string | null; sessionId: string | null }>(
+      "select public.prepare_stripe_sandbox_checkout($1,$2,'month') as value", [alice, plan],
+    );
+    const expire = (owner: string) => db.query(
+      "select public.mark_stripe_sandbox_checkout_expired('evt_Expired','cs_test_Original','cus_Original',$1)",
+      [owner],
+    );
+    const original = (await prepare("plus"))!;
+    await db.query("select public.bind_stripe_sandbox_checkout($1,$2,'cus_Original',null)", [alice, original.id]);
+    await db.query("select public.bind_stripe_sandbox_checkout($1,$2,'cus_Original','cs_test_Original')", [alice, original.id]);
+    await expire(alice);
+    expect(await prepare("pro")).toBeNull();
+    await db.query("select public.record_stripe_sandbox_event('evt_Expired','checkout.session.expired','cs_test_Original',now())");
+    await expire(bob);
+    expect(await prepare("pro")).toBeNull();
+    await expire(alice);
+    const replacement = (await prepare("pro"))!;
+    expect(replacement).toMatchObject({ customerId: "cus_Original", sessionId: null });
+    expect(replacement.id).not.toBe(original.id);
+    await expire(alice);
+    expect(await prepare("pro")).toEqual(replacement);
+    expect(await result("select public.bind_stripe_sandbox_checkout($1,$2,'cus_Original','cs_test_Original') as value",
+      [alice, original.id])).toBe(false);
+    await db.exec("reset role");
+    expect((await db.query("select session_id,attempt_id from snoozer.stripe_sandbox_expired_checkouts")).rows)
+      .toEqual([{ session_id: "cs_test_Original", attempt_id: original.id }]);
   });
 
   it("pins one sandbox Checkout attempt to a verified owner and its original payment objects", async () => {

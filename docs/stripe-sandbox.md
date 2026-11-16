@@ -8,7 +8,7 @@ Sources: https://docs.stripe.com/webhooks and https://docs.stripe.com/products-p
 
 Use an isolated Stripe sandbox and a disposable Supabase project. Give the restricted sandbox API key permission to create Customers, read Prices, and create and retrieve Checkout Sessions. Store it in STRIPE_SANDBOX_API_KEY on the server. The account must have confirmed its email.
 
-Each account can open one sandbox Checkout attempt. The database pins the original offer and binds one Stripe customer and session. A failed create can be retried with the original offer for 30 minutes. Once the session is bound, the app reopens it only while Stripe marks it open. Use a new disposable account for another checkout scenario until terminal-attempt handling is implemented.
+Each account can have one current sandbox Checkout attempt. The database pins the original offer and binds one Stripe customer and session. A failed create can be retried with the original offer for 30 minutes. Once the session is bound, the app reopens it only while Stripe marks it open. After Stripe confirms an unpaid session has expired, the next Checkout request starts a new attempt with the same customer and preserves the expired attempt in history. A completed subscription and an attempt that never bound to a Stripe session still require separate handling.
 
 The return page displays a pending message. The Plan and usage page reflects a sandbox grant once reconciliation succeeds. For a real sandbox run, confirm Stripe sends a signed event to the receipt endpoint and that the signed event references the session stored for the account.
 
@@ -23,3 +23,7 @@ Create a Billing Portal configuration in the same Stripe sandbox as Checkout and
 ## Refunds and disputes
 
 Enable charge.refunded, charge.dispute.created and radar.early_fraud_warning.created in the sandbox destination. Give the sandbox key read access to Charges, Disputes, Radar early fraud warnings, and Invoice Payments. Stripe objects are resolved through the charge and payment intent. A positive partial or full refund, dispute or early fraud warning places a hold on the affected sandbox invoice. A current held invoice loses access on reconciliation, and a later eligible paid invoice can restore it. Automatic dispute resolution and hold release remain pending. Test these flows with real sandbox events before using billing outside development.
+
+## Missed events
+
+To recover an event, give the restricted sandbox API key Events read permission. Configure STRIPE_SANDBOX_RECOVERY_TOKEN with a separately generated high-entropy secret. Use that bearer token to POST a JSON object with the Stripe event ID in the id field to /api/v1/billing/stripe/recover over HTTPS. Keep the token in the operator secret store. An HTTP 204 means the verified provider event went through normal receipt handling. Resolve 503 errors before retrying. Resolve the Checkout binding and retry if the session was missing. Stripe makes the most recent 30 days of events available for retrieval. Run replay for checkout.session.expired if a missed expiry leaves an account unable to start another attempt. Automated discovery and scheduled reconciliation remain open. [Stripe event retrieval](https://docs.stripe.com/api/events/retrieve)
