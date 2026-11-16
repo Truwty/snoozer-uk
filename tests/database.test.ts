@@ -32,7 +32,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     `);
     const migrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
     for (const filename of migrations.filter((entry) => entry.endsWith(".sql")).sort()) {
+      if (filename.startsWith("20261110004600")) {
+        await act("authenticated", alice);
+        await claim("legacy");
+        await save(0, "Legacy profile", [{ label: "Work", url: "https://example.com" }], true);
+        await db.exec("reset role");
+      }
       await db.exec(await readFile(new URL(`../supabase/migrations/${filename}`, import.meta.url), "utf8"));
+      if (filename.startsWith("20261110004600")) {
+        expect(await result(`select p.id = l.profile_id and p.id = s.profile_id and p.id = pl.profile_id as value
+          from snoozer.profiles p join snoozer.links l using (owner_id)
+          join snoozer.published_profiles s on s.owner_id = p.owner_id and s.revision = p.published_revision
+          join snoozer.published_links pl on pl.owner_id = s.owner_id and pl.revision = s.revision
+          where p.username = 'legacy'`)).toBe(true);
+        expect(await published("legacy")).toMatchObject({ display_name: "Legacy profile", links: [{ label: "Work" }] });
+      }
     }
   });
 
@@ -766,6 +780,17 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await claim("bob");
     expect(await list()).toEqual([{ id: expect.any(String), username: "bob", published: false }]);
     expect((await list())![0].id).not.toBe(profile.id);
+  });
+
+  it("rejects a child row with another account’s profile ID", async () => {
+    await act("authenticated", alice);
+    await claim("alice");
+    await act("authenticated", bob);
+    await claim("bob");
+    await db.exec("reset role");
+    await expect(db.query(`insert into snoozer.links(owner_id, profile_id, position, label, url)
+      select $1, id, 1, 'Wrong owner', 'https://example.com' from snoozer.profiles where owner_id = $2`,
+    [alice, bob])).rejects.toMatchObject({ code: "23503" });
   });
 
   it("enforces global uniqueness and one address per owner", async () => {
