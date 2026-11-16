@@ -95,7 +95,8 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         {profileResponse.error || !profiles.success ? <p>Couldn’t load your profiles.</p> :
           profiles.data.length === 0 ? <Link href="/studio">Claim a profile in Studio</Link> :
           <ul>{profiles.data.map((profile) => <li key={profile.id}>
-            {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> : `@${profile.username} · Draft`}
+            {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> :
+              <span>@{profile.username} · Draft</span>}
             {" · "}<Link href={studioHref("/studio", profile.id)} aria-label={`Edit @${profile.username}`}>Edit</Link>
           </li>)}</ul>}
         {plan && !profileResponse.error && profiles.success && profiles.data.length > 0

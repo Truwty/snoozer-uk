@@ -65,14 +65,15 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByText("Claim another profile", { exact: true }).click();
     await page.getByLabel("Username").fill(second);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await expect(page.getByText(`@${second}`, { exact: true })).toBeVisible();
+    const preview = page.getByRole("region", { name: "Page preview" });
+    await expect(preview.getByText(`@${second}`, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
     expect((await request.get(`/${second}`)).status()).toBe(200);
     await page.getByRole("link", { name: "Plan and usage" }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
-    await expect(page.getByText(`@${name}`, { exact: true })).toBeVisible();
+    await expect(preview.getByText(`@${name}`, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
   } finally {
     if (data.user) await admin.auth.admin.deleteUser(data.user.id);
