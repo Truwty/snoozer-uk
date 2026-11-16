@@ -8,6 +8,7 @@ import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan, can } from "@/lib/entitlements";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
+import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
 import { sandboxPortalConfiguration } from "@/lib/stripe-sandbox-portal";
 import { openSandboxPortal } from "./portal";
 import { startSandboxCheckout } from "./checkout";
@@ -60,6 +61,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
     <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
     <section className="panel stack">
       <h1>Plan and usage</h1>
+      {sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
       {!staffAccess.error && staffAccess.data === true && <Link href="/studio/billing-diagnostics" prefetch={false}>Billing diagnostics</Link>}
       {plan ? <>
         <p>Current plan: <strong>{labels[plan.plan]}</strong></p>

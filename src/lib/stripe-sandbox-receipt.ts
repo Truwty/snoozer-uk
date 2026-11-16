@@ -4,6 +4,7 @@ import { storageAdmin } from "@/lib/supabase";
 import { recordSandboxInvoiceHolds } from "@/lib/stripe-sandbox-invoice-holds";
 import { reconcileSandboxSubscription } from "@/lib/stripe-sandbox-reconciliation";
 import { bindSubscriptionFromReceipt } from "@/lib/stripe-subscription-binding";
+import { fulfillSandboxGift, sandboxPaidGiftSecret } from "@/lib/stripe-sandbox-paid-gift";
 import type { StripeReceipt } from "@/lib/stripe-webhook";
 
 export async function processStripeSandboxReceipt(receipt: StripeReceipt, stripe?: Stripe) {
@@ -31,6 +32,8 @@ export async function processStripeSandboxReceipt(receipt: StripeReceipt, stripe
   const subscription = checkout ? await bindSubscriptionFromReceipt(receipt.id, stripe) : undefined;
   if (process.env.STRIPE_SANDBOX_GRANTS_ENABLED !== "true") return;
 
+  const giftSecret = sandboxPaidGiftSecret();
+  if (checkout && giftSecret) await fulfillSandboxGift(stripe, receipt, giftSecret);
   const affected = await recordSandboxInvoiceHolds(stripe, receipt);
   if (affected.length === 0) {
     await reconcileSandboxSubscription(stripe, receipt, subscription);

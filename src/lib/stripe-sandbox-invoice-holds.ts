@@ -21,10 +21,15 @@ export async function recordSandboxInvoiceHolds(stripe: Stripe, receipt: { id: s
     throw new Error("Unexpected Stripe charge.");
   }
   if (receipt.type === "charge.refunded" && charge.amount_refunded <= 0) return [];
-  if (typeof charge.payment_intent !== "string" || typeof charge.customer !== "string") return [];
+  if (typeof charge.payment_intent !== "string") return [];
 
   const subscriptions = new Set<string>();
   const admin = storageAdmin();
+  const giftHold = await admin.rpc("hold_stripe_sandbox_gift_payment", {
+    p_event: receipt.id, p_payment: charge.payment_intent,
+  });
+  if (giftHold.error) throw new Error("Gift payment hold could not be saved.");
+  if (typeof charge.customer !== "string") return [];
   for await (const payment of stripe.invoicePayments.list({
     payment: { type: "payment_intent", payment_intent: charge.payment_intent },
     status: "paid", expand: ["data.invoice"],

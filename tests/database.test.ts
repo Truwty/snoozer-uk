@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -106,6 +106,50 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     expect(await canRead()).toBe(false);
     await expect(read()).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("fulfills paid sandbox gifts once and applies refunds before or after redemption", async () => {
+    const offerId = await result<string>("insert into snoozer.stripe_sandbox_gift_offers(price_id,plan,plan_version,duration_days,amount_pence) values ('price_Gift','plus',1,30,399) returning id as value");
+    const prepare = (request: string) => result<string>(
+      "select order_id as value from public.prepare_stripe_sandbox_gift($1,$2,$3)", [alice,offerId,request],
+    );
+    const bind = (order: string, session: string) => result(
+      "select public.bind_stripe_sandbox_gift_session($1,$2,$3) as value", [alice,order,session],
+    );
+    const complete = (event: string, order: string, session: string, payment: string, amount = 399, owner = alice) =>
+      result("select public.fulfill_stripe_sandbox_gift($1,$2,$3,$4,$5,'price_Gift',$6,sha256(convert_to($7,'UTF8'))) as value",
+        [event, owner, order, session, payment, amount, "a".repeat(32)]);
+    const refund = (payment: string) => db.query("select public.hold_stripe_sandbox_gift_payment('evt_GiftRefund',$1)", [payment]);
+
+    await act("authenticated", alice);
+    await expect(prepare(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const original = (await prepare(alice))!;
+    expect(await prepare(alice)).toBe(original);
+    const held = (await prepare(bob))!;
+    expect(await bind(original, "cs_test_Gift")).toBe(true);
+    expect(await bind(held, "cs_test_Held")).toBe(true);
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("unmatched");
+    await db.exec("select public.record_stripe_sandbox_event('evt_Gift','checkout.session.completed','cs_test_Gift',now()); select public.record_stripe_sandbox_event('evt_Held','checkout.session.completed','cs_test_Held',now()); select public.record_stripe_sandbox_event('evt_GiftRefund','charge.refunded','ch_Gift',now());");
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift", 398)).toBe("unmatched");
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift", 399, bob)).toBe("unmatched");
+    await refund("pi_Held");
+    expect(await complete("evt_Held", held, "cs_test_Held", "pi_Held")).toBe("held");
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("fulfilled");
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("fulfilled");
+    await act("authenticated", alice);
+    expect((await db.query("select status from public.list_my_stripe_sandbox_gifts()")).rows).toEqual([{ status: "ready" }]);
+    await act("authenticated", bob);
+    expect((await db.query("select status from public.list_my_stripe_sandbox_gifts()")).rows).toEqual([]);
+    await act("authenticated", bob);
+    expect(await result("select public.redeem_gift_code($1) as value", ["a".repeat(32)])).toBe(true);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "plus" });
+    await act("service_role");
+    await refund("pi_Gift");
+    await refund("pi_Gift");
+    expect(await complete("evt_Gift", original, "cs_test_Gift", "pi_Gift")).toBe("held");
+    await act("authenticated", bob);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
   });
 
   it("gives only the billing operator aggregate diagnostics", async () => {

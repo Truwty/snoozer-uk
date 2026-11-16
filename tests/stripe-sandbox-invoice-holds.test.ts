@@ -35,7 +35,10 @@ describe("Stripe sandbox invoice holds", () => {
     expect(list).toHaveBeenCalledWith(expect.objectContaining({
       payment: { type: "payment_intent", payment_intent: "pi_Linked" },
     }));
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("record_stripe_sandbox_invoice_hold", {
+    expect(rpc).toHaveBeenNthCalledWith(1, "hold_stripe_sandbox_gift_payment", {
+      p_event: event.id, p_payment: "pi_Linked",
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "record_stripe_sandbox_invoice_hold", {
       p_event: event.id, p_invoice: "in_Linked", p_subscription: "sub_Linked", p_customer: "cus_Owner",
     });
   });
