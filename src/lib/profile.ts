@@ -36,6 +36,8 @@ export function safeLink(value: string) {
   }
 }
 
+export const profileLinkLimit = 20;
+
 export const link = z.object({
   label: z.string().trim().min(1, "Give each link a label.").max(80),
   url: z.string().trim().max(2048).refine(safeLink, "Enter an HTTP or HTTPS address with a public domain."),
@@ -71,7 +73,7 @@ export const profileContent = z.object({
   theme: z.enum(themes),
   appearance: profileAppearance.default(defaultAppearance),
   indexable: z.boolean(),
-  links: z.array(link).max(20),
+  links: z.array(link).max(profileLinkLimit),
   sections: textSections.default([]),
 });
 

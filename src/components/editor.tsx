@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { profileCorners, profileDensities, profileLayouts, profileLinkLimit, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
 import { AppearanceTransfer } from "./appearance-transfer";
@@ -56,7 +56,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   }
 
   function addKofiLink() {
-    if (content.links.length >= 20) return;
+    if (content.links.length >= profileLinkLimit) return;
     const url = kofiProfileUrl(kofiUrl);
     if (!url) {
       setKofiError(true);
@@ -160,7 +160,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
       }} />
       <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
       <fieldset className="stack" ref={linkList}>
-        <legend className="section-title">Links <small>{content.links.length}/20</small></legend>
+        <legend className="section-title">Links <small>{content.links.length}/{profileLinkLimit}</small></legend>
         <p className="sr-only" aria-live="polite">{announcement}</p>
         {content.links.map((item, index) => <div className="link-editor stack" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
@@ -180,12 +180,12 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
             }}>Remove</button>
           </div>
         </div>)}
-        <button className="button" type="button" ref={addLink} disabled={content.links.length >= 20}
+        <button className="button" type="button" ref={addLink} disabled={content.links.length >= profileLinkLimit}
           onClick={() => {
             set("links", [...content.links, { label: "", url: "" }]);
             focusLink(content.links.length);
           }}>Add link</button>
-        {content.links.length < 20 && <details>
+        {content.links.length < profileLinkLimit && <details>
           <summary>Add Ko-fi support link</summary>
           <div className="stack">
             <label>Ko-fi profile URL<input type="text" inputMode="url" maxLength={100}

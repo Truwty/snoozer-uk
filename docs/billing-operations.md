@@ -23,3 +23,5 @@ Verify a sandbox purchase, delayed payment confirmation, redemption by a differe
 Run npm run billing:diagnostics -- --legacy-holds against the isolated database to list up to 50 unresolved holds recorded before hold reasons were separated. Continue with the last returned cursor as the next argument. The output contains provider object references and belongs in the operator workspace. Compare each reference with Stripe sandbox payment history, including refunds, disputes and fraud events. Legacy holds stay in place until a case-specific decision is verified. The command is read-only.
 
 The sandbox diagnostics distinguish Checkout receipts that match neither billing workflow from known gift orders awaiting fulfillment. The latter count includes orders with an unpaid or held Checkout receipt. Inspect the payment status in Stripe before replaying a receipt.
+
+The Plan and usage screen shows the limits currently enforced by Studio. The proposed paid profile and link allowances require implementation of tier-specific enforcement before activation.

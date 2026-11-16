@@ -5,7 +5,8 @@ import { GiftCodeForm } from "@/components/gift-code-form";
 import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
-import { accountPlan, can } from "@/lib/entitlements";
+import { accountPlan } from "@/lib/entitlements";
+import { profileLinkLimit } from "@/lib/profile";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
@@ -40,12 +41,10 @@ async function sandboxOffers() {
 
 export default async function PlanPage({ searchParams }: { searchParams: Promise<{ checkout?: string; portal?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
-  const { client, user } = await requireAccount();
+  const { client } = await requireAccount();
   const { data, error } = await client.rpc("get_my_plan");
   const result = accountPlan.safeParse(data);
   const plan = error || !result.success ? null : result.data;
-  const hasLinkCapacity = plan && can({ id: user.id, plan },
-    { quota: "links", used: plan.usage.draftLinks, increment: 1 }, { ownerId: user.id });
 
   const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess] = await Promise.all([
     sandboxOffers(), searchParams,
@@ -67,11 +66,12 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         {plan.expiresAt && <p>Plan access ends on <time dateTime={plan.expiresAt}>
           {new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(plan.expiresAt))}
         </time>.</p>}
+        {plan.plan !== "free" && <p>Higher profile and link allowances are pending.</p>}
         <dl className="stack">
-          <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of {plan.quotas.profiles}</dd></div>
-          <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {plan.quotas.links}</dd></div>
+          <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of 1</dd></div>
+          <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {profileLinkLimit}</dd></div>
         </dl>
-        {!hasLinkCapacity && <p>Your draft has reached its plan’s link allowance.</p>}
+        {plan.usage.draftLinks >= profileLinkLimit && <p>Your draft has reached the Studio link limit.</p>}
       </> : <p role="alert">Plan and usage are temporarily unavailable.</p>}
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}

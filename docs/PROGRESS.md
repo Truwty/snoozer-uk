@@ -160,6 +160,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Billing diagnostics now distinguish known gifts awaiting fulfillment from receipts without a billing link. Completed gifts no longer appear in the unresolved receipt count.
 
+- Plan and usage displays the current Studio limits even when a paid grant is active. The paid-grant browser journey checks the enforced link count. Tier-specific quotas remain a release dependency.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

@@ -79,6 +79,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Redeem gift code" }).click();
     await expect(page.getByText("Gift redeemed.")).toBeVisible();
     await expect(page.getByText("Plus", { exact: true })).toBeVisible();
+    await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Back to Studio" }).click();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();
