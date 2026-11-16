@@ -17,3 +17,4 @@ Start in this source directory. Read [PROGRESS.md](PROGRESS.md), [implementation
 No hosted project secrets were used during this milestone. No payment or hosting resources were provisioned.
 Migration 20261110004200 separates gift fulfillment from unlinked receipts in billing diagnostics. Provider preflight still requires the isolated deployment settings.
 Plan and usage shows the current Studio limits of one published profile and 20 links. Implement paid quota enforcement before live activation. The provider preflight still reports missing isolated deployment settings.
+Migration 20261110004300 enforces active-plan link allowances. Next implement multi-profile and paid media limits, and verify the provider journeys when isolated staging is configured.

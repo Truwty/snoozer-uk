@@ -54,6 +54,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_publish: intent === "publish",
     p_remove_avatar: removeAvatar,
   });
+  if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };
   if (error?.code === "40001") {
     return { status: "error", conflict: true, message: "Your draft changed elsewhere. Copy your edits or load the saved draft." };
   }

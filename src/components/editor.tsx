@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { profileCorners, profileDensities, profileLayouts, profileLinkLimit, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
 import { AppearanceTransfer } from "./appearance-transfer";
@@ -14,7 +14,7 @@ import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
-export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile; initialTemplateId?: string }) {
+export function Editor({ draft, linkLimit, initialTemplateId = "" }: { draft: DraftProfile; linkLimit: number; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
@@ -56,7 +56,7 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
   }
 
   function addKofiLink() {
-    if (content.links.length >= profileLinkLimit) return;
+    if (content.links.length >= linkLimit) return;
     const url = kofiProfileUrl(kofiUrl);
     if (!url) {
       setKofiError(true);
@@ -160,8 +160,9 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
       }} />
       <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
       <fieldset className="stack" ref={linkList}>
-        <legend className="section-title">Links <small>{content.links.length}/{profileLinkLimit}</small></legend>
+        <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
         <p className="sr-only" aria-live="polite">{announcement}</p>
+        {content.links.length > linkLimit && <p>Remove links until you reach your current allowance before saving link edits or publishing.</p>}
         {content.links.map((item, index) => <div className="link-editor stack" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
           {content.links.length > 1 && <span className="reorder-handle" aria-hidden="true" {...linkHandle}>Drag to move</span>}
@@ -180,12 +181,12 @@ export function Editor({ draft, initialTemplateId = "" }: { draft: DraftProfile;
             }}>Remove</button>
           </div>
         </div>)}
-        <button className="button" type="button" ref={addLink} disabled={content.links.length >= profileLinkLimit}
+        <button className="button" type="button" ref={addLink} disabled={content.links.length >= linkLimit}
           onClick={() => {
             set("links", [...content.links, { label: "", url: "" }]);
             focusLink(content.links.length);
           }}>Add link</button>
-        {content.links.length < profileLinkLimit && <details>
+        {content.links.length < linkLimit && <details>
           <summary>Add Ko-fi support link</summary>
           <div className="stack">
             <label>Ko-fi profile URL<input type="text" inputMode="url" maxLength={100}

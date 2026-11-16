@@ -24,4 +24,4 @@ Run npm run billing:diagnostics -- --legacy-holds against the isolated database 
 
 The sandbox diagnostics distinguish Checkout receipts that match neither billing workflow from known gift orders awaiting fulfillment. The latter count includes orders with an unpaid or held Checkout receipt. Inspect the payment status in Stripe before replaying a receipt.
 
-The Plan and usage screen shows the limits currently enforced by Studio. The proposed paid profile and link allowances require implementation of tier-specific enforcement before activation.
+The Plan and usage screen shows the limits currently enforced by Studio. Studio enforces link allowances of 20 for Free, 100 for Plus, 500 for Pro and 2,000 for Studio. Publishing and restoring an over-limit revision are blocked. After a downgrade, the current public page and draft links remain intact. A draft can retain its exact existing list while editing other fields. Bring the link count under the limit before saving changes to the list or publishing. Multiple profiles and paid storage allowances remain pending.

@@ -9,6 +9,9 @@ import { Unpublish } from "@/components/unpublish";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { supabaseUrl, supabaseKey } from "@/lib/env";
 import { readDraft } from "@/lib/profiles-server";
+import { sessionClient } from "@/lib/supabase";
+import { accountPlan } from "@/lib/entitlements";
+import { freeProfileLinkLimit, maximumProfileLinkLimit } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { signOut } from "../auth/actions";
 
@@ -17,6 +20,9 @@ export const metadata = { title: "Studio", robots: { index: false, follow: false
 export default async function Page({ searchParams }: { searchParams: Promise<{ logout?: string; deleted?: string; restored?: string; template?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const draft = await readDraft();
+  const response = draft && await (await sessionClient()).rpc("get_my_plan");
+  const plan = accountPlan.safeParse(response?.data);
+  const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
   const { logout, deleted, restored, template } = await searchParams;
   return <main className="shell">
     <header className="nav"><Brand /><form action={signOut}><button className="button small">Sign out</button></form></header>
@@ -48,7 +54,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <AvatarUpload revision={draft.revision} />
       </section>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
-      <Editor key={draft.username} draft={draft} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
+      <Editor key={draft.username} draft={draft} linkLimit={linkLimit} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
       <DeleteProfile username={draft.username} revision={draft.revision} />
     </>}
   </main>;

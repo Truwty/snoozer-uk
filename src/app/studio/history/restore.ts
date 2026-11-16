@@ -12,6 +12,7 @@ export async function restorePublication(_: ActionState, form: FormData): Promis
 
   const { client } = await requireAccount();
   const { error } = await client.rpc("restore_publication", { p_revision: revision.data, p_expected: expected.data });
+  if (error?.code === "P1004") return { status: "error", message: "This version has more links than your current allowance." };
   if (error) return { status: "error", message: error.code === "40001"
     ? "The draft changed in another tab. Reload this preview before restoring."
     : "Couldn’t restore this version. It may no longer be in your publish history." };

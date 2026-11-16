@@ -23,9 +23,9 @@ describe("profile validation", () => {
     ]) expect(safeLink(url), url).toBe(false);
   });
 
-  it("enforces the 20-link limit and the fixed theme catalogue", () => {
+  it("enforces the supported link ceiling and the fixed theme catalogue", () => {
     const page = { display_name: "  Creator ", bio: "", theme: "midnight", indexable: false };
-    const links = Array.from({ length: 20 }, (_, i) => ({ label: `Link ${i}`, url: "https://example.com/" }));
+    const links = Array.from({ length: 2000 }, (_, i) => ({ label: `Link ${i}`, url: "https://example.com/" }));
     expect(profileContent.parse({ ...page, links }).display_name).toBe("Creator");
     expect(profileContent.safeParse({ ...page, links: [...links, links[0]] }).success).toBe(false);
     expect(profileContent.safeParse({ ...page, links, theme: "malicious" }).success).toBe(false);

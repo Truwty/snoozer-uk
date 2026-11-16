@@ -6,7 +6,7 @@ import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
-import { profileLinkLimit } from "@/lib/profile";
+import { maximumProfileLinkLimit } from "@/lib/profile";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
@@ -45,6 +45,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const { data, error } = await client.rpc("get_my_plan");
   const result = accountPlan.safeParse(data);
   const plan = error || !result.success ? null : result.data;
+  const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
   const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess] = await Promise.all([
     sandboxOffers(), searchParams,
@@ -66,12 +67,12 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         {plan.expiresAt && <p>Plan access ends on <time dateTime={plan.expiresAt}>
           {new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(plan.expiresAt))}
         </time>.</p>}
-        {plan.plan !== "free" && <p>Higher profile and link allowances are pending.</p>}
+        {plan.plan !== "free" && <p>Higher profile allowances are pending.</p>}
         <dl className="stack">
           <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of 1</dd></div>
-          <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {profileLinkLimit}</dd></div>
+          <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {linkLimit}</dd></div>
         </dl>
-        {plan.usage.draftLinks >= profileLinkLimit && <p>Your draft has reached the Studio link limit.</p>}
+        {plan.usage.draftLinks >= linkLimit && <p>Your draft has reached the Studio link limit.</p>}
       </> : <p role="alert">Plan and usage are temporarily unavailable.</p>}
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}

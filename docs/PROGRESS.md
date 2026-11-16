@@ -162,6 +162,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Plan and usage displays the current Studio limits even when a paid grant is active. The paid-grant browser journey checks the enforced link count. Tier-specific quotas remain a release dependency.
 
+- Added plan-specific link limits at draft save, publication and history restore. A downgrade preserves existing links and publications. The app supports up to 2,000 links per profile, and the Server Action body limit now accommodates larger drafts.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

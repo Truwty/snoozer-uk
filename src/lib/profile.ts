@@ -36,7 +36,8 @@ export function safeLink(value: string) {
   }
 }
 
-export const profileLinkLimit = 20;
+export const freeProfileLinkLimit = 20;
+export const maximumProfileLinkLimit = 2000;
 
 export const link = z.object({
   label: z.string().trim().min(1, "Give each link a label.").max(80),
@@ -73,7 +74,7 @@ export const profileContent = z.object({
   theme: z.enum(themes),
   appearance: profileAppearance.default(defaultAppearance),
   indexable: z.boolean(),
-  links: z.array(link).max(profileLinkLimit),
+  links: z.array(link).max(maximumProfileLinkLimit),
   sections: textSections.default([]),
 });
 

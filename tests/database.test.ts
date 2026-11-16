@@ -56,6 +56,28 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  it("enforces plan link limits without deleting links after a downgrade", async () => {
+    const links = Array.from({ length: 21 }, (_, index) => ({ label: "Link " + index, url: "https://example.com/" + index }));
+    await act("authenticated", alice);
+    await claim("quota-alice");
+    await expect(save(0, "Test", links, false)).rejects.toMatchObject({ code: "P1004" });
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'gift','link-test',now()-interval '1 day',now()+interval '1 day')", [alice]);
+    await act("authenticated", alice);
+    expect(await save(0, "Test", links, true)).toBe(1);
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='link-test'");
+    await act("authenticated", alice);
+    expect(await draft()).toMatchObject({ links });
+    expect(await published("quota-alice")).toMatchObject({ links });
+    expect(await save(1, "Bio updated", links, false)).toBe(2);
+    await expect(save(2, "Bio updated", links, true)).rejects.toMatchObject({ code: "P1004" });
+    const changed = links.map((link, index) => index === 20 ? { ...link, label: "Edited" } : link);
+    await expect(save(2, "Bio updated", changed, false)).rejects.toMatchObject({ code: "P1004" });
+    await expect(db.query("select public.restore_publication(1,2)")).rejects.toMatchObject({ code: "P1004" });
+    expect(await save(2, "Reduced", links.slice(0, 20), true)).toBe(3);
+    expect(await published("quota-alice")).toMatchObject({ links: links.slice(0, 20) });
+  });
+
   it("binds a stored completion receipt only to its original sandbox customer and owner", async () => {
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Binding','plus',1,'month','gbp',399,null)");
     await db.query(
