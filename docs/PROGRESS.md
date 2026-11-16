@@ -118,7 +118,9 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 - Added a Stripe sandbox webhook with the official SDK, bounded raw request handling, signature verification and private deduplicated receipts. The receipt stores IDs and timestamps for later reconciliation. Added a private versioned GBP Stripe price catalogue with retirement and current-offer lookup.
 - Local checks passed 40 unit and SQL tests and 14 browser or HTTP tests. Four browser cases require disposable Supabase. Lint, type checks and the production build passed. A Stripe sandbox delivery and end-to-end purchase remain unverified. See [Stripe sandbox setup](stripe-sandbox.md).
 
-- The authenticated Plan and usage page can start sandbox Checkout for configured offers. It verifies the Stripe price against the catalogue, binds the customer and session to one verified account, and reuses idempotency keys on creation retries. Signed receipt processing, attempt replacement, and the provider round trip remain pending. The local unit and SQL suite passed 41 tests.
+- The authenticated Plan and usage page can start sandbox Checkout for configured offers. It verifies the Stripe price against the catalogue, binds the customer and session to one verified account, and reuses idempotency keys on creation retries. Attempt replacement and the provider round trip remain pending. The local unit and SQL suite passed 41 tests.
+
+- Verified sandbox Checkout completion receipts now resolve to a saved session, and the server checks the session, customer and account against Stripe before storing the subscription binding. The binding and receipt marker are committed together. Unmatched receipts remain available for replay. All 42 local unit and SQL tests passed. Subscription state reconciliation and access changes remain pending.
 
 ## Remaining
 

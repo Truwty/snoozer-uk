@@ -11,7 +11,7 @@ Start in this source directory. Read [PROGRESS.md](PROGRESS.md), [implementation
 ## Next Stripe increment
 
 - Migrations 20261110002200 and 20261110002300 add verified receipt intake and a versioned price mapping. Follow [Stripe sandbox setup](stripe-sandbox.md). Local npm test passed 40 tests, local Edge passed 14 with four Supabase cases skipped, and lint, type checks and build passed. No Stripe sandbox credentials were used.
-- Migration 20261110002400 adds one durable sandbox attempt per verified account. The Studio action uses stable Stripe idempotency keys and checks the Stripe Price and session before redirecting. Next resolve verified events through the stored session and customer IDs, retrieve current subscription state, and hold ambiguous events for reconciliation.
+- Migration 20261110002400 adds one durable sandbox attempt per verified account. The Studio action uses stable Stripe idempotency keys and checks the Stripe Price and session before redirecting. Migration 20261110002500 resolves signed Checkout completion receipts through the stored session and customer IDs, verifies the relationship through Stripe, and binds the subscription atomically. Next retrieve authoritative subscription and invoice state for mapped subscriptions and apply grants under a concurrency guard.
 - Keep the purchase pending until the signed raw-body webhook is validated and durable receipt processing resolves the subscription. Test replay, out-of-order events, invalid signatures, mismatched ownership and a returning browser before provider confirmation. Enable purchasing only after the grant lifecycle and quota writes are covered.
 
 No hosted project secrets were used during this milestone. No payment or hosting resources were provisioned.

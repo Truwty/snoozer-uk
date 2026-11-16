@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -55,6 +55,33 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const draft = () => result("select public.get_draft() as value");
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
+
+  it("binds a stored completion receipt only to its original sandbox customer and owner", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Binding','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id) values ($1,'price_Binding','cus_Owner','cs_test_Bound')",
+      [alice],
+    );
+    const bind = (owner: string, customer = "cus_Owner", subscription = "sub_Original") => result(
+      "select public.bind_stripe_sandbox_subscription('evt_Binding','cs_test_Bound',$1,$2,$3) as value",
+      [customer, owner, subscription],
+    );
+    const lookup = () => db.query("select * from public.stripe_sandbox_checkout_for_receipt('evt_Binding')");
+    await act("authenticated", alice);
+    await expect(bind(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect(await bind(alice)).toBe(false);
+    await db.query("select public.record_stripe_sandbox_event('evt_Binding','checkout.session.completed','cs_test_Bound',now())");
+    expect((await lookup()).rows).toEqual([{ session_id: "cs_test_Bound", customer_id: "cus_Owner", owner_id: alice }]);
+    expect(await bind(bob)).toBe(false);
+    expect(await bind(alice, "cus_Other")).toBe(false);
+    expect(await bind(alice)).toBe(true);
+    expect(await bind(alice)).toBe(true);
+    expect(await bind(alice, "cus_Owner", "sub_Other")).toBe(false);
+    expect((await lookup()).rows).toEqual([]);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+  });
 
   it("pins one sandbox Checkout attempt to a verified owner and its original payment objects", async () => {
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Checkout','plus',1,'month','gbp',399,null)");
