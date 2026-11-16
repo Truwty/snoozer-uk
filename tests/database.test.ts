@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -350,6 +350,50 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.exec("reset role; update snoozer.stripe_sandbox_checkout_attempts set next_sweep_at = now()-interval '1 minute'");
     await act("service_role");
     expect((await claimSweep()).rows).toEqual([{ subscription_id: "sub_Sweep" }]);
+  });
+
+  it("releases a won invoice dispute without clearing a refund or recreating the dispute on replay", async () => {
+    const receipt = (id: string, type: string, object: string) =>
+      db.query("select public.record_stripe_sandbox_event($1,$2,$3,now())", [id,type,object]);
+    const hold = (event: string, invoice = "in_Disputed") =>
+      db.query("select public.record_stripe_sandbox_invoice_hold($1,$2,'sub_Disputed','cus_Disputed')", [event,invoice]);
+    const release = (event: string, dispute: string) =>
+      db.query("select * from public.release_stripe_sandbox_invoice_dispute($1,$2)", [event,dispute]);
+
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Dispute','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_Dispute','cus_Disputed','cs_test_Disputed','sub_Disputed')", [alice],
+    );
+    const apply = async (invoice: string) => {
+      const revision = await result<number>("select revision as value from public.start_stripe_sandbox_reconciliation('sub_Disputed')");
+      return result(
+        "select public.apply_stripe_sandbox_reconciliation('sub_Disputed','cus_Disputed','price_Dispute',$1,now()-interval '1 hour',now()+interval '1 day',$2) as value",
+        [revision,invoice],
+      );
+    };
+    await act("authenticated", alice);
+    await expect(release("evt_Won", "du_Disputed")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await receipt("evt_Open", "charge.dispute.created", "du_Disputed");
+    await receipt("evt_Won", "charge.dispute.closed", "du_Disputed");
+    await receipt("evt_RefundSeparate", "charge.refunded", "ch_Disputed");
+    await hold("evt_Open");
+    await hold("evt_Open", "in_OnlyDispute");
+    await hold("evt_RefundSeparate");
+    expect((await release("evt_Won", "du_Other")).rows).toEqual([]);
+    expect((await release("evt_Won", "du_Disputed")).rows).toEqual([{ subscription_id: "sub_Disputed" }]);
+    await hold("evt_Open", "in_Late");
+    expect((await release("evt_Won", "du_Disputed")).rows).toEqual([{ subscription_id: "sub_Disputed" }]);
+    expect(await apply("in_Disputed")).toBe(true);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+    await act("service_role");
+    expect(await apply("in_OnlyDispute")).toBe(true);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "plus" });
+    await db.exec("reset role");
+    expect((await db.query("select event_id from snoozer.stripe_sandbox_invoice_holds where released_at is null")).rows)
+      .toEqual([{ event_id: "evt_RefundSeparate" }]);
   });
 
   it("applies only the latest sandbox reconciliation and revokes its own grant", async () => {

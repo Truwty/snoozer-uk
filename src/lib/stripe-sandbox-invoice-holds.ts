@@ -1,12 +1,21 @@
 import "server-only";
 import type Stripe from "stripe";
+import { z } from "zod";
 import { storageAdmin } from "@/lib/supabase";
 
 export async function recordSandboxInvoiceHolds(stripe: Stripe, receipt: { id: string; type: string; objectId: string }) {
   let chargeId: string | Stripe.Charge = receipt.objectId;
-  if (receipt.type === "charge.dispute.created") {
+  if (receipt.type === "charge.dispute.created" || receipt.type === "charge.dispute.closed") {
     const dispute = await stripe.disputes.retrieve(receipt.objectId);
     if (dispute.livemode || dispute.id !== receipt.objectId) throw new Error("Unexpected Stripe dispute.");
+    if (dispute.status === "won") {
+      if (receipt.type !== "charge.dispute.closed") return [];
+      const { data, error } = await storageAdmin().rpc("release_stripe_sandbox_invoice_dispute", {
+        p_event: receipt.id, p_dispute: dispute.id,
+      });
+      if (error) throw new Error("Dispute release could not be saved.");
+      return z.array(z.object({ subscription_id: z.string() })).parse(data).map(({ subscription_id }) => subscription_id);
+    }
     chargeId = dispute.charge;
   } else if (receipt.type === "radar.early_fraud_warning.created") {
     const warning = await stripe.radar.earlyFraudWarnings.retrieve(receipt.objectId);

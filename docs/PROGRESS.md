@@ -148,6 +148,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Added one-time GBP sandbox gift Checkout, verified fulfillment, owner-only gift retrieval and payment holds. Refund or dispute events can block issuance or revoke an issued gift and its grant. The purchaser sees the code only after payment confirmation. Local verification passed 90 unit and SQL tests. The real Stripe sandbox purchase, refund and cross-account redemption need provider verification.
 
+- Stripe sandbox now releases the matching subscription invoice hold when the provider confirms a won dispute. Independent refund and fraud holds remain active, and late or repeated events cannot recreate the released hold. Earlier invoice holds and paid gift disputes still require manual review. Stripe dispute IDs now use the provider's du_ prefix. Local verification passed 92 unit and SQL tests.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

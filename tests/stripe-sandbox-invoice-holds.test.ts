@@ -6,7 +6,7 @@ const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase", () => ({ storageAdmin: () => ({ rpc }) }));
 
-const event = { id: "evt_Risk", type: "charge.dispute.created", objectId: "dp_Risk" };
+const event = { id: "evt_Risk", type: "charge.dispute.created", objectId: "du_Risk" };
 const invoice = {
   id: "in_Linked", livemode: false, customer: "cus_Owner",
   parent: { subscription_details: { subscription: "sub_Linked" } },
@@ -40,6 +40,19 @@ describe("Stripe sandbox invoice holds", () => {
     });
     expect(rpc).toHaveBeenNthCalledWith(2, "record_stripe_sandbox_invoice_hold", {
       p_event: event.id, p_invoice: "in_Linked", p_subscription: "sub_Linked", p_customer: "cus_Owner",
+    });
+  });
+
+  it("uses the current Stripe dispute outcome and releases only invoice disputes", async () => {
+    const { stripe, retrieveCharge } = provider();
+    vi.mocked(stripe.disputes.retrieve).mockResolvedValue({
+      id: event.objectId, livemode: false, status: "won", charge: "ch_Linked",
+    } as Stripe.Response<Stripe.Dispute>);
+    rpc.mockResolvedValueOnce({ data: [{ subscription_id: "sub_Linked" }], error: null });
+    await expect(recordSandboxInvoiceHolds(stripe, { ...event, type: "charge.dispute.closed" })).resolves.toEqual(["sub_Linked"]);
+    expect(retrieveCharge).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("release_stripe_sandbox_invoice_dispute", {
+      p_event: event.id, p_dispute: event.objectId,
     });
   });
 

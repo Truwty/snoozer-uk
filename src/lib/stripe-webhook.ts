@@ -12,7 +12,8 @@ const prefixes = {
   "invoice.paid": "in_",
   "invoice.payment_failed": "in_",
   "charge.refunded": "ch_",
-  "charge.dispute.created": "dp_",
+  "charge.dispute.created": "du_",
+  "charge.dispute.closed": "du_",
   "radar.early_fraud_warning.created": "issfr_",
 } as const;
 
