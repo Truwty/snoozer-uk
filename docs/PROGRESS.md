@@ -142,6 +142,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Verified users can request and track a platform Ko-fi donation review. The queue is private and submission does not reveal whether a receipt exists. An authorised operator can confirm after independently verifying the payer, or decline. Confirmation locks the receipt against reuse, persists its use marker after account deletion, and leaves plan access unchanged. Local verification passed 84 unit and SQL tests. The disposable Supabase browser scenario also includes submission and pending status.
 
+- Added operator-issued single-use gift codes, authenticated redemption and service-only revocation. Codes are stored as hashes and grants expire after the configured duration. Added aggregate billing diagnostics for authorised operators. Local verification passed 86 unit and SQL tests. A disposable Supabase browser scenario covers redemption. Paid gift Checkout and a staff web dashboard remain open. See [Billing operations](billing-operations.md).
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

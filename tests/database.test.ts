@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -81,6 +81,62 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await lookup()).rows).toHaveLength(1);
     await act("authenticated", alice);
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+  });
+
+  it("gives only the billing operator aggregate diagnostics", async () => {
+    const summary = () => result("select public.get_billing_diagnostics() as value");
+    await act("authenticated", alice);
+    await expect(summary()).rejects.toMatchObject({ code: "42501" });
+    await db.query("select public.request_kofi_donation_review('diagnostics-review')");
+    await act("service_role");
+    await db.query("select public.issue_gift_code('plus',1,1,now()+interval '1 day')");
+    await db.query("select public.record_stripe_sandbox_event('evt_Diagnostics','checkout.session.completed','cs_test_Diagnostics',now())");
+    expect(await summary()).toEqual({
+      stripeSandbox: {
+        linkedSubscriptions: 0, staleUnboundAttempts: 0, unboundCompletionReceipts: 1,
+        heldInvoices: 0, endedSubscriptions: 0,
+      },
+      kofi: { unclaimedReceipts: 0, pendingReviews: 1 },
+      gifts: { redeemableCodes: 1, activeGrants: 0 },
+    });
+  });
+
+  it("redeems gifts once for verified accounts and revokes only the associated grant", async () => {
+    const issue = () => db.query<{ gift_id: string; code: string }>(
+      "select * from public.issue_gift_code('plus',1,30,now()+interval '1 day')",
+    );
+    const redeem = (code: string) => result("select public.redeem_gift_code($1) as value", [code]);
+    const revoke = (id: string) => result("select public.revoke_gift_code($1) as value", [id]);
+    const plan = () => result("select public.get_my_plan() as value");
+
+    await act("authenticated", alice);
+    await expect(issue()).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const [gift] = (await issue()).rows;
+    const [expired] = (await issue()).rows;
+    const [revoked] = (await issue()).rows;
+    expect(gift.code).toMatch(/^[a-f0-9]{32}$/);
+    expect(await revoke(revoked.gift_id)).toBe(true);
+    await db.exec("reset role");
+    await db.query("update snoozer.gift_codes set issued_at = now()-interval '2 days', expires_at = now()-interval '1 day' where id=$1", [expired.gift_id]);
+    await act("anon");
+    await expect(redeem(gift.code)).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(redeem(gift.code)).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await expect(revoke(gift.gift_id)).rejects.toMatchObject({ code: "42501" });
+    expect(await redeem(expired.code)).toBe(false);
+    expect(await redeem(revoked.code)).toBe(false);
+    expect(await redeem(" " + gift.code.toUpperCase() + " ")).toBe(true);
+    expect(await plan()).toMatchObject({ plan: "plus" });
+    await act("authenticated", bob);
+    expect(await redeem(gift.code)).toBe(false);
+    expect(await plan()).toMatchObject({ plan: "free" });
+    await act("service_role");
+    expect(await revoke(gift.gift_id)).toBe(true);
+    expect(await revoke(gift.gift_id)).toBe(false);
+    await act("authenticated", alice);
+    expect(await plan()).toMatchObject({ plan: "free" });
   });
 
   it("queues Ko-fi reviews without exposing receipt matches or granting access", async () => {

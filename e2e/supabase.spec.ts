@@ -68,6 +68,16 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Request donation review" }).click();
     await expect(page.getByText("Your review request is recorded.")).toBeVisible();
     await expect(page.getByText("test-review-reference · Pending review")).toBeVisible();
+    const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+    const gift = await giftAdmin.rpc("issue_gift_code", {
+      p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
+    }).single<{ code: string }>();
+    expect(gift.error).toBeNull();
+    await page.getByText("Redeem a plan gift", { exact: true }).click();
+    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
+    await page.getByRole("button", { name: "Redeem gift code" }).click();
+    await expect(page.getByText("Gift redeemed.")).toBeVisible();
+    await expect(page.getByText("Plus", { exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Back to Studio" }).click();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();

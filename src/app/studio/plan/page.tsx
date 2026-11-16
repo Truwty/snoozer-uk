@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { GiftCodeForm } from "@/components/gift-code-form";
 import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
@@ -83,6 +84,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <button className="button small" type="submit">{label} · {amount} per {interval} · Test checkout</button>
         </form>)}
       </div>}
+      <details>
+        <summary>Redeem a plan gift</summary>
+        <GiftCodeForm />
+      </details>
       <details>
         <summary>Review a platform Ko-fi donation</summary>
         <div className="stack">
