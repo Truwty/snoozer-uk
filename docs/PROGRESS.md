@@ -193,3 +193,5 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 - Run 43976779652 reached the new Plus journey and confirmed the second profile appeared in Studio. The browser assertion matched both the header and preview. The test now checks the handle inside the Page preview region.
 
 - [CI run 43977313274](https://github.com/Truwty/snoozer-uk/actions/runs/43977313274) passed on 9fee313. It ran 105 unit and SQL tests and 19 browser or HTTP checks against disposable Supabase, including the Plus claim, publish and switch journey and the full creator journey. The missing-Stripe-secret test was skipped because the fixture signing secret was configured.
+
+- Migration 20261110005300 lets the billing preflight verify the configured Stripe subscription and gift prices and the Billing Portal settings. The database test confirms retired prices are excluded and ordinary accounts cannot read the preflight catalogue. The local preflight stopped at missing isolated configuration before contacting providers.

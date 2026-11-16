@@ -38,17 +38,36 @@ const database = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
   global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000), redirect: "error" }) },
 });
 const stripe = new Stripe(process.env.STRIPE_SANDBOX_API_KEY, { timeout: 8000, maxNetworkRetries: 0 });
-const probes = await Promise.allSettled([
-  database.rpc("get_billing_diagnostics").then(({ data, error }) => !error && Boolean(data?.stripeSandbox)),
-  stripe.prices.list({ active: true, limit: 1 }).then(({ data }) => data.length === 1 && !data[0].livemode),
-]);
+async function catalogueMatches() {
+  const { data, error } = await database.rpc("list_stripe_sandbox_preflight_offers");
+  if (error || !Array.isArray(data)) return false;
+  if (!data.some(({ billing_interval }) => billing_interval === null)
+    || !data.some(({ billing_interval }) => billing_interval !== null)) return false;
+  // Verify configured offers sequentially to avoid a burst against the sandbox API.
+  for (const { price_id, amount_pence, billing_interval } of data) {
+    const price = await stripe.prices.retrieve(price_id);
+    if (price.livemode || !price.active || price.currency !== "gbp" || price.unit_amount !== amount_pence) return false;
+    if (billing_interval === null ? price.type !== "one_time" :
+      price.recurring?.interval !== billing_interval || price.recurring.interval_count !== 1
+      || price.recurring.usage_type !== "licensed") return false;
+  }
+  return true;
+}
+
 const expectations = [
-  "Supabase service credential and billing diagnostics",
-  "Stripe sandbox key and an active sandbox price",
+  ["Supabase service credential and billing diagnostics",
+    database.rpc("get_billing_diagnostics").then(({ data, error }) => !error && Boolean(data?.stripeSandbox))],
+  ["Active Snoozer subscription and gift prices match the Stripe sandbox", catalogueMatches()],
+  ["Active sandbox Billing Portal with invoice history, payment updates and cancellation",
+    stripe.billingPortal.configurations.retrieve(process.env.STRIPE_SANDBOX_PORTAL_CONFIGURATION)
+      .then(({ active, livemode, features }) => active && !livemode && features.invoice_history.enabled
+        && features.payment_method_update.enabled && features.subscription_cancel.enabled
+        && !features.subscription_update.enabled)],
 ];
+const probes = await Promise.allSettled(expectations.map(([, probe]) => probe));
 for (const [index, probe] of probes.entries()) {
   const passed = probe.status === "fulfilled" && probe.value === true;
-  console.log((passed ? "PASS " : "FAIL ") + expectations[index]);
+  console.log((passed ? "PASS " : "FAIL ") + expectations[index][0]);
   if (!passed) process.exitCode = 1;
 }
 if (!process.exitCode) console.log("Run the provider journeys to verify webhook delivery, fulfillment and plan access.");

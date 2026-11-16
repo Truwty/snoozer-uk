@@ -40,3 +40,5 @@ Migration 20261110005200 enables additional profile claims through Plan and usag
 The disposable browser run caught a draft inventory text assertion after the Edit link was introduced. The Plan and usage markup now separates the draft label from the link. Verify the follow-up run on private main. The billing operations guide now describes the current profile, link and storage quotas.
 
 The disposable Supabase suite passed on 9fee313 in GitHub Actions run 43977313274. The remaining Monetisation release gate is to run the Stripe sandbox and Ko-fi provider journeys. Set up the isolated environment using the billing runbooks and rerun npm run billing:preflight before starting. The local configuration preflight still exits for missing provider settings.
+
+Apply migration 20261110005300 to isolated Supabase before running the updated billing preflight. It verifies the configured Stripe prices and active Billing Portal. Record provider delivery and payment outcomes separately when Stripe sandbox, Ko-fi and isolated Supabase settings are available.

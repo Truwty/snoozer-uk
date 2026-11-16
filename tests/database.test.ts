@@ -639,16 +639,25 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       (price_id,plan,plan_version,billing_interval,currency,unit_amount,retired_at)
       values ('price_Old','plus',1,'month','gbp',399,now()),
         ('price_Current','plus',1,'month','gbp',499,null)`);
+    await db.exec(`insert into snoozer.stripe_sandbox_gift_offers
+      (price_id,plan,plan_version,duration_days,amount_pence,retired_at)
+      values ('price_ActiveGift','plus',1,30,499,null), ('price_OldGift','plus',1,30,399,now())`);
+    const preflight = () => db.query("select * from public.list_stripe_sandbox_preflight_offers() order by price_id");
     const resolve = (plan: string) => db.query(
       "select * from public.resolve_stripe_sandbox_price($1,'month')", [plan],
     );
     await act("authenticated", alice);
     await expect(resolve("plus")).rejects.toMatchObject({ code: "42501" });
+    await expect(preflight()).rejects.toMatchObject({ code: "42501" });
     await act("service_role");
     expect((await resolve("plus")).rows).toEqual([
       { price_id: "price_Current", plan_version: 1, currency: "gbp", unit_amount: 499 },
     ]);
     expect((await resolve("free")).rows).toEqual([]);
+    expect((await preflight()).rows).toEqual([
+      { price_id: "price_ActiveGift", amount_pence: 499, billing_interval: null },
+      { price_id: "price_Current", amount_pence: 499, billing_interval: "month" },
+    ]);
     await db.exec("reset role");
     expect((await db.query("select price_id from snoozer.stripe_sandbox_prices where retired_at is not null")).rows)
       .toEqual([{ price_id: "price_Old" }]);
