@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import sharp from "sharp";
+import Stripe from "stripe";
 
 const mailOrigin = "http://127.0.0.1:54324";
 const password = randomUUID();
@@ -671,4 +672,44 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await expect(stale.getByRole("status")).toHaveText("Draft saved.");
   await stale.reload();
   await expect(stale.getByLabel("Bio")).toHaveValue("Edit made during the save");
+});
+
+test("sandbox payment webhook fixtures verify signatures and store a single receipt", async ({ request }) => {
+  const stripeSecret = process.env.STRIPE_SANDBOX_WEBHOOK_SECRET;
+  const kofiToken = process.env.KOFI_WEBHOOK_TOKEN;
+  test.skip(!stripeSecret || !kofiToken || Boolean(process.env.STRIPE_SANDBOX_API_KEY), "Requires local fixture secrets only.");
+  const operator = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const diagnostics = async () => {
+    const { data, error } = await operator.rpc("get_billing_diagnostics");
+    expect(error).toBeNull();
+    return data;
+  };
+  const before = await diagnostics();
+  const nonce = randomUUID();
+  const stripeEvent = JSON.stringify({
+    id: "evt_" + nonce.replaceAll("-", ""), type: "checkout.session.completed", object: "event",
+    created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: "cs_test_Fixture" } },
+  });
+  const signature = Stripe.webhooks.generateTestHeaderString({ payload: stripeEvent, secret: stripeSecret! });
+  const stripePath = "/api/v1/billing/stripe/webhook";
+  const sendStripe = (body: string) => request.post(stripePath, {
+    data: body, headers: { "Content-Type": "application/json", "Stripe-Signature": signature },
+  });
+  expect((await sendStripe(stripeEvent + " ")).status()).toBe(400);
+  expect((await sendStripe(stripeEvent)).status()).toBe(204);
+  expect((await sendStripe(stripeEvent)).status()).toBe(204);
+
+  const sendKofi = (token: string) => request.post("/api/v1/billing/kofi/webhook", { form: {
+    data: JSON.stringify({
+      verification_token: token, type: "Donation", message_id: nonce, kofi_transaction_id: "fixture-" + nonce,
+      timestamp: new Date().toISOString(), amount: "3.50", currency: "GBP",
+    }),
+  } });
+  expect((await sendKofi("invalid")).status()).toBe(401);
+  expect((await sendKofi(kofiToken!)).status()).toBe(200);
+  expect((await sendKofi(kofiToken!)).status()).toBe(200);
+
+  const after = await diagnostics();
+  expect(after.stripeSandbox.unboundCompletionReceipts).toBe(before.stripeSandbox.unboundCompletionReceipts + 1);
+  expect(after.kofi.unclaimedReceipts).toBe(before.kofi.unclaimedReceipts + 1);
 });

@@ -152,6 +152,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - New Stripe sandbox gift disputes have separately tracked payment holds. A won outcome can restore the original code or its unexpired grant after checking the remaining holds. Replays preserve other refund and fraud holds and operator revocations. Legacy gift holds remain in manual review. Local verification passed 93 unit and SQL tests. Provider delivery remains unverified.
 
+- Added a service-only, paginated legacy hold report and disposable CI fixtures for signed Stripe and Ko-fi requests against the application routes. Local verification passed 94 unit and SQL tests. The connected Stripe account list exposes no sandbox account, and the local host lacks Docker, Podman and provider environment configuration. Real provider verification remains open.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

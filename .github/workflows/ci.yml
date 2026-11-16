@@ -40,12 +40,17 @@ jobs:
             exit 1
           fi
           eval "$(npx --yes supabase@3.1.0 status -o env)"
+          kofi_fixture_token="$(openssl rand -hex 32)"
+          stripe_fixture_secret="whsec_$(openssl rand -hex 32)"
+          printf '::add-mask::%s\n' "$kofi_fixture_token" "$stripe_fixture_secret"
           printf '::add-mask::%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
           {
             printf 'NEXT_PUBLIC_SITE_URL=http://localhost:3000\n'
             printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$API_URL"
             printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "${PUBLISHABLE_KEY:-$ANON_KEY}"
             printf 'SUPABASE_SERVICE_ROLE_KEY=%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+            printf 'KOFI_WEBHOOK_TOKEN=%s\n' "$kofi_fixture_token"
+            printf 'STRIPE_SANDBOX_WEBHOOK_SECRET=%s\n' "$stripe_fixture_secret"
             printf 'SNOOZER_TEST_LOCAL_SUPABASE=1\n'
           } >> "$GITHUB_ENV"
       - run: npm run build

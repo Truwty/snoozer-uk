@@ -41,3 +41,9 @@ When a user tries Checkout again after the recovery window, Snoozer looks for sa
 ## Starting again after a subscription ends
 
 A sandbox subscription that Stripe reports as canceled or incomplete_expired is archived by webhook reconciliation or the sweep. Snoozer withdraws its grant in the same transaction and allows a new Checkout using the same Stripe customer. The Billing Portal remains available for invoice history. Recoverable payment states and active subscriptions scheduled to cancel continue to reserve the current Checkout until Stripe confirms a terminal state.
+
+## Local webhook fixtures
+
+The disposable Supabase browser suite posts fabricated Stripe snapshot and Ko-fi donation payloads to the actual Next.js webhook endpoints. CI generates dedicated fixture signing values and does not use a Stripe API key. The test checks invalid proofs, duplicate requests and a single durable receipt for each provider.
+
+To run the fixture locally, start disposable Supabase as described in the continuation guide. Set STRIPE_SANDBOX_WEBHOOK_SECRET to a fixture value beginning with whsec_, KOFI_WEBHOOK_TOKEN to a random fixture token, and SNOOZER_TEST_LOCAL_SUPABASE to 1. Leave STRIPE_SANDBOX_API_KEY unset. Rebuild, then run npm run test:e2e -- -g "sandbox payment webhook fixtures". Complete separate real Stripe sandbox and Ko-fi dashboard delivery tests for the milestone exit.

@@ -207,6 +207,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await db.query("select status from public.list_my_stripe_sandbox_gifts()")).rows).toEqual([{ status: "revoked" }]);
   });
 
+  it("lists only unresolved legacy billing holds for authorised operators", async () => {
+    const list = (after = "") => db.query("select cursor,event_id from public.list_legacy_billing_holds($1)", [after]);
+    await db.exec("insert into snoozer.stripe_webhook_receipts(event_id,event_type,object_id,occurred_at) values ('evt_Legacy','charge.refunded','ch_Legacy',now());");
+    await db.exec("insert into snoozer.stripe_sandbox_invoice_holds(invoice_id,subscription_id,customer_id,event_id,legacy) values ('in_Legacy','sub_Legacy','cus_Legacy','evt_Legacy',true), ('in_New','sub_Legacy','cus_Legacy','evt_Legacy',false);");
+    await db.exec("insert into snoozer.stripe_sandbox_gift_payment_holds(payment_id,event_id,legacy,released_at) values ('pi_Legacy','evt_Legacy',true,null), ('pi_Released','evt_Legacy',true,now());");
+    await act("authenticated", alice);
+    await expect(list()).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect((await list()).rows).toEqual([
+      { cursor: "gift:pi_Legacy", event_id: "evt_Legacy" },
+      { cursor: "invoice:in_Legacy", event_id: "evt_Legacy" },
+    ]);
+    expect((await list("gift:pi_Legacy")).rows).toEqual([{ cursor: "invoice:in_Legacy", event_id: "evt_Legacy" }]);
+  });
+
   it("gives only the billing operator aggregate diagnostics", async () => {
     const summary = () => result("select public.get_billing_diagnostics() as value");
     await act("authenticated", alice);
