@@ -9,7 +9,7 @@ const checkoutBinding = z.object({
   owner_id: z.uuid(),
 });
 
-export async function bindSubscriptionFromReceipt(eventId: string, key: string) {
+export async function bindSubscriptionFromReceipt(eventId: string, stripe: Stripe) {
   const admin = storageAdmin();
   const { data, error } = await admin.rpc("stripe_sandbox_checkout_for_receipt", { p_event: eventId }).maybeSingle();
   if (error) throw new Error("Checkout binding lookup failed.");
@@ -17,7 +17,6 @@ export async function bindSubscriptionFromReceipt(eventId: string, key: string) 
   // The operator can redeliver an unbound receipt after the attempt is recovered.
   if (!data) return;
   const binding = checkoutBinding.parse(data);
-  const stripe = new Stripe(key, { timeout: 5000, maxNetworkRetries: 0 });
   const session = await stripe.checkout.sessions.retrieve(binding.session_id);
   if (session.livemode || session.mode !== "subscription" || session.status !== "complete"
       || session.id !== binding.session_id || session.customer !== binding.customer_id
@@ -30,4 +29,5 @@ export async function bindSubscriptionFromReceipt(eventId: string, key: string) 
     p_owner: binding.owner_id, p_subscription: session.subscription,
   });
   if (result.error || result.data !== true) throw new Error("Could not bind Stripe subscription.");
+  return session.subscription;
 }

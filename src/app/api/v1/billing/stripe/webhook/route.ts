@@ -1,3 +1,5 @@
+import Stripe from "stripe";
+import { reconcileSandboxSubscription } from "@/lib/stripe-sandbox-reconciliation";
 import { bindSubscriptionFromReceipt } from "@/lib/stripe-subscription-binding";
 import { receiveStripeWebhook } from "@/lib/stripe-webhook";
 import { storageAdmin as serviceClient } from "@/lib/supabase";
@@ -14,9 +16,14 @@ export function POST(request: Request) {
     });
     if (error) throw new Error("Stripe receipt could not be saved.");
     const key = process.env.STRIPE_SANDBOX_API_KEY;
-    if (key && /^(rk|sk)_test_/.test(key)
-        && ["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(receipt.type)) {
-      await bindSubscriptionFromReceipt(receipt.id, key);
+    if (!key || !/^(rk|sk)_test_/.test(key)) return;
+
+    const stripe = new Stripe(key, { timeout: 5000, maxNetworkRetries: 0 });
+    const checkout = receipt.type === "checkout.session.completed"
+      || receipt.type === "checkout.session.async_payment_succeeded";
+    const subscription = checkout ? await bindSubscriptionFromReceipt(receipt.id, stripe) : undefined;
+    if (process.env.STRIPE_SANDBOX_GRANTS_ENABLED === "true") {
+      await reconcileSandboxSubscription(stripe, receipt, subscription);
     }
   });
 }

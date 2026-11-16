@@ -78,9 +78,39 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await bind(alice)).toBe(true);
     expect(await bind(alice)).toBe(true);
     expect(await bind(alice, "cus_Owner", "sub_Other")).toBe(false);
-    expect((await lookup()).rows).toEqual([]);
+    expect((await lookup()).rows).toHaveLength(1);
     await act("authenticated", alice);
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+  });
+
+  it("applies only the latest sandbox reconciliation and revokes its own grant", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Paid','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_Paid','cus_Paid','cs_test_Paid','sub_Paid')", [alice],
+    );
+    const start = () => result<number>("select revision as value from public.start_stripe_sandbox_reconciliation('sub_Paid')");
+    const apply = (revision: number, paid: boolean, customer = "cus_Paid") => result(
+      "select public.apply_stripe_sandbox_reconciliation('sub_Paid',$1,'price_Paid',$2,case when $3 then now()-interval '1 hour' end,case when $3 then now()+interval '1 day' end) as value",
+      [customer, revision, paid],
+    );
+    const plan = () => result("select public.get_my_plan() as value");
+    await act("authenticated", alice);
+    await expect(start()).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const stale = (await start())!;
+    const current = (await start())!;
+    expect(await apply(stale, true)).toBe(false);
+    expect(await apply(current, true, "cus_Other")).toBe(false);
+    expect(await apply(current, true)).toBe(true);
+    expect(await apply(current, false)).toBe(false);
+    await act("authenticated", alice);
+    expect(await plan()).toMatchObject({ plan: "plus" });
+    await act("authenticated", bob);
+    expect(await plan()).toMatchObject({ plan: "free" });
+    await act("service_role");
+    expect(await apply((await start())!, false)).toBe(true);
+    await act("authenticated", alice);
+    expect(await plan()).toMatchObject({ plan: "free" });
   });
 
   it("pins one sandbox Checkout attempt to a verified owner and its original payment objects", async () => {
