@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -81,6 +81,54 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await lookup()).rows).toHaveLength(1);
     await act("authenticated", alice);
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+  });
+
+  it("queues Ko-fi reviews without exposing receipt matches or granting access", async () => {
+    const submit = (reference: string) => result("select public.request_kofi_donation_review($1) as value", [reference]);
+    const mine = () => db.query("select reference,status from public.list_my_kofi_donation_reviews()");
+    const queue = () => db.query<{ review_id: string; owner_id: string; reference: string }>(
+      "select * from public.list_pending_kofi_donation_reviews()",
+    );
+    const resolve = (id: string, confirmed: boolean) =>
+      result("select public.resolve_kofi_donation_review($1,$2) as value", [id,confirmed]);
+
+    await act("anon");
+    await expect(submit("receipt")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(submit("receipt")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    expect(await submit("review-receipt")).toBe("received");
+    expect(await submit("review-receipt")).toBe("received");
+    expect(await submit("missing-review")).toBe("received");
+    expect(await submit("other-review")).toBe("received");
+    expect(await submit("fourth-review")).toBe("limited");
+    await expect(queue()).rejects.toMatchObject({ code: "42501" });
+    expect((await mine()).rows).toHaveLength(3);
+    await act("authenticated", bob);
+    expect((await mine()).rows).toEqual([]);
+    expect(await submit("review-receipt")).toBe("received");
+    await act("service_role");
+    const queued = (await queue()).rows;
+    const first = queued.find((row) => row.owner_id === alice && row.reference === "review-receipt")!;
+    const other = queued.find((row) => row.owner_id === bob && row.reference === "review-receipt")!;
+    expect(await resolve(first.review_id, true)).toBe(false);
+    await db.query("select public.record_kofi_donation($1,'review-receipt',now(),350)", [alice]);
+    expect(await resolve(first.review_id, true)).toBe(true);
+    expect(await resolve(first.review_id, false)).toBe(false);
+    expect(await resolve(other.review_id, true)).toBe(false);
+    expect(await resolve(other.review_id, false)).toBe(true);
+    await act("authenticated", bob);
+    expect((await mine()).rows).toEqual([{ reference: "review-receipt", status: "declined" }]);
+    await act("authenticated", alice);
+    expect((await mine()).rows).toContainEqual({ reference: "review-receipt", status: "confirmed" });
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+    await db.exec("reset role; begin");
+    try {
+      await db.query("delete from auth.users where id=$1", [alice]);
+      expect(await result("select claimed_at is not null as value from snoozer.kofi_donation_receipts where message_id=$1", [alice])).toBe(true);
+    } finally {
+      await db.exec("rollback");
+    }
   });
 
   it("keeps Ko-fi donations private and deduplicates message and transaction IDs", async () => {

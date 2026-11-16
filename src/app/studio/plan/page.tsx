@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { z } from "zod";
+import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan, can } from "@/lib/entitlements";
@@ -10,6 +12,11 @@ import { openSandboxPortal } from "./portal";
 import { startSandboxCheckout } from "./checkout";
 
 export const metadata = { title: "Plan and usage", robots: { index: false, follow: false } };
+
+const reviewList = z.array(z.object({
+  reference: z.string(), status: z.enum(["pending", "confirmed", "declined"]),
+}));
+const reviewLabels = { pending: "Pending review", confirmed: "Confirmed", declined: "Declined" };
 
 const labels = { free: "Free", plus: "Plus", pro: "Pro", studio: "Studio" };
 
@@ -39,10 +46,13 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const hasLinkCapacity = plan && can({ id: user.id, plan },
     { quota: "links", used: plan.usage.draftLinks, increment: 1 }, { ownerId: user.id });
 
-  const [offers, { checkout, portal }, portalCustomer] = await Promise.all([
+  const [offers, { checkout, portal }, portalCustomer, reviewResponse] = await Promise.all([
     sandboxOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
+    client.rpc("list_my_kofi_donation_reviews"),
   ]);
+
+  const reviews = reviewList.safeParse(reviewResponse.data);
 
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
@@ -73,6 +83,17 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <button className="button small" type="submit">{label} · {amount} per {interval} · Test checkout</button>
         </form>)}
       </div>}
+      <details>
+        <summary>Review a platform Ko-fi donation</summary>
+        <div className="stack">
+          <p>Use the transaction reference from your donation to Snoozer. Reviews confirm donations and do not change your plan.</p>
+          <KofiReviewForm />
+          {reviews.success && reviews.data.length > 0 && <ul>
+            {reviews.data.map(({ reference, status }) => <li key={reference}>{reference} · {reviewLabels[status]}</li>)}
+          </ul>}
+          {!reviews.success && <p>Your previous review requests are temporarily unavailable.</p>}
+        </div>
+      </details>
     </section>
   </main>;
 }

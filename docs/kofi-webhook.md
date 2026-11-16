@@ -8,4 +8,10 @@ Snoozer stores only the message and transaction IDs, timestamps and integer penc
 
 In Studio, open Add Ko-fi support link, paste the direct HTTPS address for your Ko-fi profile and add it. Edit the link label and order in the Links section. The link follows the same draft, undo, publish and history workflow as other links. Visitors see Ko-fi in the link label and navigate there to make a payment. Set KOFI_PLATFORM_PROFILE_URL on the server to enable the separate platform support link in the home page footer.
 
-Creator links do not route payments through Snoozer. The platform donation webhook remains separate. A safe authenticated review workflow for unclaimed donations is still pending.
+Creator links do not route payments through Snoozer. The platform donation webhook remains separate. Unclaimed platform donations can be queued for manual review below.
+
+## Manual donation review
+
+A verified account can request a review in Studio under Plan and usage. Ask the donor for the Ko-fi transaction reference from their own receipt. The same response is returned for existing and missing receipts. Duplicate requests for the same account and reference reuse the original review. Reviews only confirm that a donation was associated with the requester. They leave plan access unchanged.
+
+An authorised billing operator can run the service-role RPC list_pending_kofi_donation_reviews and independently verify the claimant and payment against the platform Ko-fi account. A matching reference is a lookup aid. Verify purchaser ownership through the payment provider or a trusted support channel before confirming. Call resolve_kofi_donation_review with the review UUID and true after independent confirmation, or false when declining. A delayed webhook leaves the claim pending until its receipt arrives. A confirmed receipt stays marked as used even if the requester deletes their account. Keep the service credential in the operator secret store. A staff application screen remains pending.
