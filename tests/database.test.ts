@@ -793,6 +793,27 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     [alice, bob])).rejects.toMatchObject({ code: "23503" });
   });
 
+  it("scopes explicit draft and history reads to the profile owner", async () => {
+    await act("authenticated", alice);
+    await claim("alice");
+    const [profile] = (await result<{ id: string }[]>("select public.list_my_profiles() as value"))!;
+    await save(0, "Published Alice", [], true);
+    await save(1, "Private draft", [], false);
+    const selectedDraft = () => result("select public.get_draft($1) as value", [profile.id]);
+    const selectedHistory = () => result("select public.list_publications($1) as value", [profile.id]);
+    const selectedVersion = () => result("select public.get_publication(1,$1) as value", [profile.id]);
+    expect(await selectedDraft()).toEqual(await draft());
+    expect(await selectedVersion()).toMatchObject({ display_name: "Published Alice", draft_revision: 2, live: true });
+    expect(await selectedHistory()).toEqual([expect.objectContaining({ revision: 1 })]);
+    await act("authenticated", bob);
+    expect(await selectedDraft()).toBeNull();
+    expect(await selectedHistory()).toEqual([]);
+    expect(await selectedVersion()).toBeNull();
+    await act("anon");
+    await expect(selectedDraft()).rejects.toMatchObject({ code: "42501" });
+    expect(await published("alice")).toMatchObject({ display_name: "Published Alice" });
+  });
+
   it("enforces global uniqueness and one address per owner", async () => {
     await act("authenticated", alice);
     await claim("alice");
