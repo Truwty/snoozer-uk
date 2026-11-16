@@ -45,7 +45,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
           {draft.published_revision !== null && <div className="actions">
             <Link className="button small" href={`/${draft.username}`}>View live page ↗</Link>
             <CopyLink path={`/${draft.username}`} />
-            <Unpublish revision={draft.revision} />
+            <Unpublish profileId={draft.profile_id} revision={draft.revision} />
           </div>}
         </div>
       </header>
@@ -54,7 +54,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
         <AvatarUpload revision={draft.revision} />
       </section>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
-      <Editor key={draft.username} draft={draft} linkLimit={linkLimit} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
+      <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
       <DeleteProfile username={draft.username} revision={draft.revision} />
     </>}
   </main>;

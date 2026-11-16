@@ -85,6 +85,7 @@ export const publishedProfile = profileContent.extend({
 });
 
 export const draftProfile = publishedProfile.extend({
+  profile_id: z.uuid(),
   revision: z.number().int().nonnegative(),
   published_revision: z.number().int().nonnegative().nullable(),
 });

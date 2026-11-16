@@ -19,6 +19,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
 }
 
 const saveRequest = z.object({
+  profileId: z.uuid(),
   revision: profileRevisionNumber,
   content: profileContent.extend({ sections: textSections }),
   intent: z.enum(["draft", "publish"]),
@@ -32,7 +33,7 @@ type SaveResult =
 export async function save(input: unknown): Promise<SaveResult> {
   const request = saveRequest.safeParse(input);
   if (!request.success) return { status: "error", message: request.error.issues[0].message };
-  const { content, intent, revision, removeAvatar } = request.data;
+  const { profileId, content, intent, revision, removeAvatar } = request.data;
   const { layout, accent, entrance, ...cardTokens } = content.appearance;
   const appearance = {
     ...cardTokens,
@@ -43,6 +44,7 @@ export async function save(input: unknown): Promise<SaveResult> {
   const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
   const { client } = await requireAccount();
   const { data, error } = await client.rpc("save_profile", {
+    p_profile: profileId,
     p_expected: revision,
     p_name: content.display_name,
     p_bio: content.bio,
@@ -55,6 +57,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_remove_avatar: removeAvatar,
   });
   if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };
+  if (error?.code === "P1005") return { status: "error", message: "You’ve reached your plan’s published profile limit." };
   if (error?.code === "40001") {
     return { status: "error", conflict: true, message: "Your draft changed elsewhere. Copy your edits or load the saved draft." };
   }
@@ -63,6 +66,6 @@ export async function save(input: unknown): Promise<SaveResult> {
   return { status: "success", revision: data, content: { ...content, links } };
 }
 
-export async function loadSavedDraft() {
-  return readDraft();
+export async function loadSavedDraft(profileId: string) {
+  return readDraft(z.uuid().parse(profileId));
 }

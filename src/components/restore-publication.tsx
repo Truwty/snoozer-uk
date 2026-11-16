@@ -5,9 +5,10 @@ import { restorePublication } from "@/app/studio/history/restore";
 import { initialState } from "@/lib/actions";
 import { ActionMessage } from "./action-message";
 
-export function RestorePublication({ revision, draftRevision }: { revision: number; draftRevision: number }) {
+export function RestorePublication({ profileId, revision, draftRevision }: { profileId: string; revision: number; draftRevision: number }) {
   const [state, submit, pending] = useActionState(restorePublication, initialState);
   return <form className="stack" action={submit}>
+    <input type="hidden" name="profileId" value={profileId} />
     <input type="hidden" name="revision" value={revision} />
     <input type="hidden" name="draftRevision" value={draftRevision} />
     <p>This replaces your current draft. Publish the restored draft when you’re ready to update the live page.</p>

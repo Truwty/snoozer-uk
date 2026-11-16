@@ -814,6 +814,30 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toMatchObject({ display_name: "Published Alice" });
   });
 
+  it("binds save, restore and unpublish to the explicitly selected profile", async () => {
+    await act("authenticated", alice);
+    await claim("alice");
+    await save(0, "Live Alice", [], true);
+    const { profile_id: id } = (await result<{ profile_id: string }>("select public.get_draft() as value"))!;
+    const selectedSave = () => result("select public.save_profile($1,1,'New draft','Bio','lagoon',false,'[]',false,false) as value", [id]);
+    const restore = () => result("select public.restore_publication($1,1,2) as value", [id]);
+    const unpublish = () => result("select public.unpublish_profile($1,3) as value", [id]);
+
+    await act("authenticated", bob);
+    await claim("bob");
+    await expect(selectedSave()).rejects.toMatchObject({ code: "40001" });
+    await expect(restore()).rejects.toMatchObject({ code: "40001" });
+    await expect(unpublish()).rejects.toMatchObject({ code: "40001" });
+    await act("authenticated", alice);
+    expect(await selectedSave()).toBe(2);
+    await expect(selectedSave()).rejects.toMatchObject({ code: "40001" });
+    await restore();
+    expect(await draft()).toMatchObject({ display_name: "Live Alice", revision: 3 });
+    await unpublish();
+    expect(await published("alice")).toBeNull();
+    expect(await draft()).toMatchObject({ revision: 4, published_revision: null });
+  });
+
   it("enforces global uniqueness and one address per owner", async () => {
     await act("authenticated", alice);
     await claim("alice");

@@ -77,6 +77,7 @@ export function useDraftEditor(draft: DraftProfile) {
     setMessage(initialState);
     try {
       const result = await save({
+        profileId: saved.profile_id,
         revision: snapshot.revision, intent, removeAvatar: snapshot.removeAvatar, content: content.data,
       });
       if (result.status === "error") {
@@ -131,9 +132,10 @@ export function useDraftEditor(draft: DraftProfile) {
     busy.current = true;
     setPending(true);
     try {
-      const latest = await loadSavedDraft();
-      setConfirmed(latest ?? undefined);
-      setEditor((current) => current.edits === edits ? emptyEditor(latest?.revision ?? saved.revision) : current);
+      const latest = await loadSavedDraft(saved.profile_id);
+      if (!latest) throw new Error("Profile unavailable.");
+      setConfirmed(latest);
+      setEditor((current) => current.edits === edits ? emptyEditor(latest.revision) : current);
       setConflicted(false);
       failed.current = null;
       setMessage({ status: "success", message: "Loaded your saved draft." });

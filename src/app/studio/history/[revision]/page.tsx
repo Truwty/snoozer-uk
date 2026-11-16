@@ -4,7 +4,7 @@ import { Brand } from "@/components/shell";
 import { ProfileCard } from "@/components/profile-card";
 import { RestorePublication } from "@/components/restore-publication";
 import { profileRevision } from "@/lib/profile";
-import { requireAccount } from "@/lib/profiles-server";
+import { readDraft, requireAccount } from "@/lib/profiles-server";
 import { publicationDate, publicationPreview } from "@/lib/publication";
 
 export const metadata = { title: "Publication preview", robots: { index: false, follow: false } };
@@ -14,7 +14,9 @@ export default async function Page({ params }: { params: Promise<{ revision: str
   const target = profileRevision.safeParse(revision);
   if (!/^\d+$/.test(revision) || !target.success) notFound();
   const { client } = await requireAccount();
-  const { data, error } = await client.rpc("get_publication", { p_revision: target.data });
+  const draft = await readDraft();
+  if (!draft) notFound();
+  const { data, error } = await client.rpc("get_publication", { p_profile: draft.profile_id, p_revision: target.data });
   if (error) throw new Error("Couldn’t load this version.");
   if (!data) notFound();
   const publication = publicationPreview.parse(data);
@@ -26,7 +28,7 @@ export default async function Page({ params }: { params: Promise<{ revision: str
       <h1>Version {publication.revision}</h1>
       <p><time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}</p>
       <ProfileCard profile={publication} preview galleryBase="/studio/gallery/image" avatarSrc={publication.avatar ? `/studio/avatar/${publication.avatar}` : undefined} />
-      <RestorePublication revision={publication.revision} draftRevision={publication.draft_revision} />
+      <RestorePublication profileId={draft.profile_id} revision={publication.revision} draftRevision={publication.draft_revision} />
     </section>
   </main>;
 }

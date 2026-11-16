@@ -12,9 +12,9 @@ export async function requireAccount() {
   return { client, user: data.user };
 }
 
-export const readDraft = cache(async () => {
+export const readDraft = cache(async (profileId?: string) => {
   const { client } = await requireAccount();
-  const { data, error } = await client.rpc("get_draft");
+  const { data, error } = await client.rpc("get_draft", profileId ? { p_profile: profileId } : undefined);
   if (error) throw new Error("Couldn’t load your draft.");
   return data === null ? null : draftProfile.parse(data);
 });
