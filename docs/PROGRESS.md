@@ -113,10 +113,12 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 - Migration 20261110002100 seeds version 1 of Free, Plus, Pro and Studio in typed relational columns. The owner-only plan RPC resolves active grants by tier, version and expiry, falling back to Free. Grant records and provider references remain private.
 - Studio now displays the current tier, grant expiry when applicable, published profiles and draft links. The typed server-side policy checks ownership, grant expiry, feature access and quota boundaries.
 - Local lint, type checking, dependency audit and all 35 unit/SQL tests passed. The Edge smoke run passed 13 browser tests. The [private main CI run](https://github.com/Truwty/snoozer-uk/actions/runs/43108591062) passed all 35 unit/SQL and 17 browser tests, including the private Free tier and usage page against disposable Supabase. CI also passed the source secret scan, dependency audit, lint, type checks and production build.
-- Existing profile writes still enforce one profile and 20 links. Checkout, Billing Portal, reconciliation, Ko-fi and grant issuance remain open.
+- Existing profile writes still enforce one profile and 20 links. Billing Portal, subscription reconciliation, Ko-fi and grant issuance remain open.
 
 - Added a Stripe sandbox webhook with the official SDK, bounded raw request handling, signature verification and private deduplicated receipts. The receipt stores IDs and timestamps for later reconciliation. Added a private versioned GBP Stripe price catalogue with retirement and current-offer lookup.
 - Local checks passed 40 unit and SQL tests and 14 browser or HTTP tests. Four browser cases require disposable Supabase. Lint, type checks and the production build passed. A Stripe sandbox delivery and end-to-end purchase remain unverified. See [Stripe sandbox setup](stripe-sandbox.md).
+
+- The authenticated Plan and usage page can start sandbox Checkout for configured offers. It verifies the Stripe price against the catalogue, binds the customer and session to one verified account, and reuses idempotency keys on creation retries. Signed receipt processing, attempt replacement, and the provider round trip remain pending. The local unit and SQL suite passed 41 tests.
 
 ## Remaining
 

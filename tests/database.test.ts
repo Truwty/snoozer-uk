@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -55,6 +55,36 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const draft = () => result("select public.get_draft() as value");
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
+
+  it("pins one sandbox Checkout attempt to a verified owner and its original payment objects", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Checkout','plus',1,'month','gbp',399,null)");
+    const prepare = (account: string, plan = "plus") => result<{ id: string }>(
+      "select public.prepare_stripe_sandbox_checkout($1,$2,'month') as value", [account, plan],
+    );
+    const bind = (owner: string, attempt: string, customer: string, session: string | null = null) =>
+      result("select public.bind_stripe_sandbox_checkout($1,$2,$3,$4) as value", [owner, attempt, customer, session]);
+    await act("authenticated", alice);
+    await expect(prepare(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(prepare(unverified)).rejects.toMatchObject({ code: "42501" });
+    const attempt = (await prepare(alice))!;
+    const other = (await prepare(bob))!;
+    expect(await prepare(alice)).toEqual(attempt);
+    expect(await prepare(alice, "pro")).toBeNull();
+    expect(attempt.id).not.toBe(other.id);
+    expect(await bind(bob, attempt.id, "cus_Bob")).toBe(false);
+    expect(await bind(alice, attempt.id, "cus_Alice", "cs_test_Alice")).toBe(false);
+    expect(await bind(alice, attempt.id, "cus_Alice")).toBe(true);
+    expect(await bind(alice, attempt.id, "cus_Bob")).toBe(false);
+    expect(await bind(alice, attempt.id, "cus_Alice", "cs_test_Alice")).toBe(true);
+    expect(await bind(alice, attempt.id, "cus_Alice", "cs_test_Alice")).toBe(true);
+    expect(await bind(alice, attempt.id, "cus_Alice", "cs_test_Other")).toBe(false);
+    await expect(bind(bob, other.id, "cus_Alice")).rejects.toMatchObject({ code: "23505" });
+    await db.exec("reset role");
+    await db.query("update snoozer.stripe_sandbox_checkout_attempts set created_at=now()-interval '31 minutes' where owner_id=$1", [bob]);
+    await act("service_role");
+    expect(await prepare(bob)).toBeNull();
+  });
 
   it("resolves the current sandbox offer and preserves retired prices", async () => {
     await db.exec(`insert into snoozer.stripe_sandbox_prices
