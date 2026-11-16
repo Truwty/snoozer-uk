@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -122,9 +122,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_Paid','cus_Paid','cs_test_Paid','sub_Paid')", [alice],
     );
     const start = () => result<number>("select revision as value from public.start_stripe_sandbox_reconciliation('sub_Paid')");
-    const apply = (revision: number, paid: boolean, customer = "cus_Paid") => result(
-      "select public.apply_stripe_sandbox_reconciliation('sub_Paid',$1,'price_Paid',$2,case when $3 then now()-interval '1 hour' end,case when $3 then now()+interval '1 day' end) as value",
-      [customer, revision, paid],
+    const apply = (revision: number, paid: boolean, customer = "cus_Paid", invoice = "in_Paid") => result(
+      "select public.apply_stripe_sandbox_reconciliation('sub_Paid',$1,'price_Paid',$2,case when $3 then now()-interval '1 hour' end,case when $3 then now()+interval '1 day' end,$4) as value",
+      [customer, revision, paid, invoice],
     );
     const plan = () => result("select public.get_my_plan() as value");
     await act("authenticated", alice);
@@ -140,6 +140,18 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await plan()).toMatchObject({ plan: "plus" });
     await act("authenticated", bob);
     expect(await plan()).toMatchObject({ plan: "free" });
+    await act("service_role");
+    await db.query("select public.record_stripe_sandbox_event('evt_Refund','charge.refunded','ch_Refund',now())");
+    const hold = () => db.query("select public.record_stripe_sandbox_invoice_hold('evt_Refund','in_Paid','sub_Paid','cus_Paid')");
+    await hold();
+    await hold();
+    expect(await apply((await start())!, true)).toBe(true);
+    await act("authenticated", alice);
+    expect(await plan()).toMatchObject({ plan: "free" });
+    await act("service_role");
+    expect(await apply((await start())!, true, "cus_Paid", "in_Renewed")).toBe(true);
+    await act("authenticated", alice);
+    expect(await plan()).toMatchObject({ plan: "plus" });
     await act("service_role");
     expect(await apply((await start())!, false)).toBe(true);
     await act("authenticated", alice);

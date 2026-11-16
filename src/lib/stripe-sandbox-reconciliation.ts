@@ -45,6 +45,7 @@ export async function reconcileSandboxSubscription(
   const applied = await admin.rpc("apply_stripe_sandbox_reconciliation", {
     p_subscription: subscriptionId, p_customer: mapping.customer_id, p_price: mapping.price_id,
     p_revision: mapping.revision,
+    p_invoice: paid ? invoice.id : null,
     p_starts: paid ? new Date(item.current_period_start * 1000).toISOString() : null,
     p_ends: end === null ? null : new Date(end * 1000).toISOString(),
   });

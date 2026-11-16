@@ -1,3 +1,4 @@
+import { recordSandboxInvoiceHolds } from "@/lib/stripe-sandbox-invoice-holds";
 import Stripe from "stripe";
 import { reconcileSandboxSubscription } from "@/lib/stripe-sandbox-reconciliation";
 import { bindSubscriptionFromReceipt } from "@/lib/stripe-subscription-binding";
@@ -23,7 +24,11 @@ export function POST(request: Request) {
       || receipt.type === "checkout.session.async_payment_succeeded";
     const subscription = checkout ? await bindSubscriptionFromReceipt(receipt.id, stripe) : undefined;
     if (process.env.STRIPE_SANDBOX_GRANTS_ENABLED === "true") {
-      await reconcileSandboxSubscription(stripe, receipt, subscription);
+      const affected = await recordSandboxInvoiceHolds(stripe, receipt);
+      for (const affectedSubscription of affected) {
+        await reconcileSandboxSubscription(stripe, receipt, affectedSubscription);
+      }
+      if (affected.length === 0) await reconcileSandboxSubscription(stripe, receipt, subscription);
     }
   });
 }

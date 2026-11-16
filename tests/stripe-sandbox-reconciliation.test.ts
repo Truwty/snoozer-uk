@@ -38,7 +38,7 @@ describe("Stripe sandbox subscription reconciliation", () => {
     await reconcileSandboxSubscription(stripe, receipt);
     expect(retrieve).toHaveBeenCalledWith("sub_Stored", { expand: ["latest_invoice"] });
     expect(rpc).toHaveBeenLastCalledWith("apply_stripe_sandbox_reconciliation", {
-      p_subscription: "sub_Stored", p_customer: "cus_Owner", p_price: "price_Stored", p_revision: 7,
+      p_subscription: "sub_Stored", p_customer: "cus_Owner", p_price: "price_Stored", p_revision: 7, p_invoice: linkedInvoice.id,
       p_starts: new Date(1794300000000).toISOString(), p_ends: new Date(1797000000000).toISOString(),
     });
   });
