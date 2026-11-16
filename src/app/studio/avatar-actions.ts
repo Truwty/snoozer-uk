@@ -11,10 +11,12 @@ import { storageAdmin } from "@/lib/supabase";
 
 const staging = z.object({ scope: z.uuid(), key: z.string().nullable() });
 const changed = "The draft changed. Reload Studio and try again.";
+const quotaReached = "Your plan’s media storage limit has been reached.";
 
 async function prepare(admin: ReturnType<typeof storageAdmin>, owner: string, revision: number, open: boolean) {
   const { data, error } = await admin.rpc("prepare_avatar_upload", { p_owner: owner, p_expected: revision, p_open: open });
   if (error?.code === "P1003") return { error: "You’ve started 12 avatar uploads today. Try again after midnight UTC." };
+  if (error?.code === "P1104") return { error: quotaReached };
   if (error) return { error: "Couldn’t prepare the upload. Try again." };
   const result = staging.safeParse(data);
   return result.success ? { stage: result.data } : { error: changed };
@@ -83,6 +85,10 @@ export async function finishAvatarUpload(revision: number, expectedUploadKey: st
   const { data: saved, error: commitError } = await admin.rpc("commit_avatar_upload", {
     p_owner: user.id, p_expected: revision, p_key: uploadKey, p_avatar: id,
   });
+  if (commitError?.code === "P1104") {
+    await final.remove([key]);
+    return { error: quotaReached };
+  }
   if (commitError) return { error: "Couldn’t confirm the save. Reload Studio before retrying." };
   if (!saved) {
     await final.remove([key]);

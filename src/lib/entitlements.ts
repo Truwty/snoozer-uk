@@ -14,7 +14,7 @@ export const accountPlan = z.strictObject({
     apiAccess: z.enum(["read", "limited", "standard", "extended"]),
   }),
   expiresAt: z.iso.datetime({ offset: true }).nullable(),
-  usage: z.strictObject({ publishedProfiles: quota, draftLinks: quota }),
+  usage: z.strictObject({ publishedProfiles: quota, draftLinks: quota, mediaBytes: quota }),
 });
 export type AccountPlan = z.infer<typeof accountPlan>;
 

@@ -27,6 +27,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       create schema storage;
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       create table storage.objects(bucket_id text, name text, created_at timestamptz);
+      alter table storage.objects add column metadata jsonb;
       insert into auth.users values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
     `);
     const migrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
@@ -694,6 +695,47 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(can(user, { quota: "links", used: 100, increment: -1 }, resource)).toBe(false);
     await act("authenticated", bob);
     expect(accountPlan.parse(await current())).toMatchObject({ plan: "pro", usage: { publishedProfiles: 0, draftLinks: 0 } });
+  });
+
+  it("uses the active plan to limit retained media without removing stored files after a downgrade", async () => {
+    const current = () => result("select public.get_my_plan() as value");
+    const openAvatar = () => result("select public.prepare_avatar_upload($1,0,true) as value", [alice]);
+    const openGallery = () => result("select public.prepare_gallery_upload($1,0,'Example') as value", [alice]);
+    const avatar = "7516e521-2a51-487a-a6ec-132df3aee350";
+    await act("authenticated", alice);
+    await claim("alice");
+    await expect(openGallery()).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    await db.query(`
+      insert into storage.objects (bucket_id,name,created_at,metadata)
+      select bucket, media_scope::text || '/' || filename, now(), jsonb_build_object('size', size)
+      from snoozer.profiles
+      cross join (
+        select 'gallery-images' as bucket, n::text || '.webp' as filename, 1000000 as size
+        from generate_series(1,101) n
+        union all select 'gallery-incoming','pending.upload',2000000
+      ) objects
+      where owner_id = $1
+    `, [alice]);
+    await db.query(`insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at)
+      values ($1,'plus',1,'staff','media-quota',now(),now()+interval '1 day')`, [alice]);
+    await act("authenticated", alice);
+    expect(accountPlan.parse(await current())).toMatchObject({ plan: "plus", usage: { mediaBytes: 101000000 } });
+    await act("service_role");
+    const stage = await openAvatar() as { key: string; scope: string };
+    expect(await openGallery()).toMatchObject({ scope: stage.scope });
+    await db.exec("reset role");
+    await db.exec("update snoozer.entitlement_grants set payment_held = true where source_ref = 'media-quota'");
+    await act("service_role");
+    await expect(openGallery()).rejects.toMatchObject({ code: "P1104" });
+    await expect(openAvatar()).rejects.toMatchObject({ code: "P1104" });
+    await expect(result("select public.commit_avatar_upload($1,0,$2,$3) as value", [alice, stage.key, avatar]))
+      .rejects.toMatchObject({ code: "P1104" });
+    await act("authenticated", alice);
+    expect(accountPlan.parse(await current())).toMatchObject({ plan: "free", usage: { mediaBytes: 101000000 } });
+    expect(await draft()).toMatchObject({ revision: 0, avatar: null });
+    await act("authenticated", bob);
+    expect(accountPlan.parse(await current())).toMatchObject({ usage: { mediaBytes: 0 } });
   });
 
   it("protects reserved names and restricts claim to verified users", async () => {

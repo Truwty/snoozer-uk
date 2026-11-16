@@ -23,6 +23,12 @@ const reviewList = z.array(z.object({
 const reviewLabels = { pending: "Pending review", confirmed: "Confirmed", declined: "Declined" };
 
 const labels = { free: "Free", plus: "Plus", pro: "Pro", studio: "Studio" };
+const mediaAmount = new Intl.NumberFormat("en-GB", { style: "unit", unit: "megabyte", maximumFractionDigits: 3 });
+
+function formatMediaBytes(bytes: number) {
+  if (bytes > 0 && bytes < 1000) return `${bytes} B`;
+  return mediaAmount.format(bytes / 1_000_000);
+}
 
 async function sandboxOffers() {
   if (!sandboxCheckoutKey()) return [];
@@ -71,8 +77,12 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         <dl className="stack">
           <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of 1</dd></div>
           <div><dt>Draft links</dt><dd>{plan.usage.draftLinks} of {linkLimit}</dd></div>
+          <div><dt>Media storage</dt><dd>{formatMediaBytes(plan.usage.mediaBytes)} of {formatMediaBytes(plan.quotas.mediaBytes)}</dd></div>
         </dl>
         {plan.usage.draftLinks >= linkLimit && <p>Your draft has reached the Studio link limit.</p>}
+        {plan.usage.mediaBytes >= plan.quotas.mediaBytes
+          ? <p>Your plan’s media storage is full. Stored images remain available.</p>
+          : plan.usage.mediaBytes >= plan.quotas.mediaBytes * 0.85 && <p>You’re close to your plan’s media storage limit.</p>}
       </> : <p role="alert">Plan and usage are temporarily unavailable.</p>}
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}

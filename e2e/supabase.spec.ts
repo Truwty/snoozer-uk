@@ -527,6 +527,11 @@ test("gallery images upload to private Storage and follow publication visibility
   expect((await request.get(privatePath)).status()).toBe(404);
   expect((await request.get(publicPath)).status()).toBe(404);
 
+  await page.goto("/studio/plan");
+  await expect(page.getByText("Media storage", { exact: true }).locator("..").locator("dd")).toHaveText(/^[1-9]\d* B of 100 MB$|^[\d.]+ MB of 100 MB$/);
+  await expect(page.getByText("0 MB of 100 MB", { exact: true })).toHaveCount(0);
+  await page.goto("/studio/gallery");
+
   await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
   await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
   await page.getByRole("link", { name: "Back to Studio" }).click();

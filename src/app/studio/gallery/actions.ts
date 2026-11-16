@@ -11,6 +11,7 @@ import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 
 const changed = "The draft or pending upload changed. Refresh and try again.";
+const quotaReached = "Your plan’s media storage limit has been reached.";
 function refreshGallery() {
   revalidatePath("/studio");
   revalidatePath("/studio/gallery");
@@ -29,6 +30,7 @@ export async function startGalleryUpload(revision: number, description: string) 
   if (error?.code === "P1101") return { error: "The gallery holds up to eight images. Remove one before adding another." };
   if (error?.code === "P1102") return { error: "Your media storage is full. Older images are cleared as their publications expire." };
   if (error?.code === "P1103") return { error: "You’ve started 12 gallery uploads today. Try again after midnight UTC." };
+  if (error?.code === "P1104") return { error: quotaReached };
   if (error) return { error: "Couldn’t prepare the upload. Try again." };
   const stage = galleryStage.safeParse(data);
   if (!stage.success) return { error: changed };
@@ -78,6 +80,10 @@ export async function finishGalleryUpload(revision: number, id: string) {
     p_owner: user.id, p_expected: revision, p_id: id, p_variant: variant,
     p_width: encoded.info.width, p_height: encoded.info.height,
   });
+  if (commitError?.code === "P1104") {
+    await final.remove([destination]);
+    return { error: quotaReached };
+  }
   if (commitError) return { error: "Couldn’t confirm the save. Refresh the gallery before retrying." };
   if (!saved) {
     await final.remove([destination]);
