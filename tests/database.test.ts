@@ -814,6 +814,34 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toMatchObject({ display_name: "Published Alice" });
   });
 
+  it("binds avatar staging and deletion to the selected profile", async () => {
+    await act("authenticated", alice);
+    await claim("avatar-id-alice");
+    const { profile_id: id } = (await result<{ profile_id: string }>("select public.get_draft() as value"))!;
+    const prepare = (owner: string) => result<{ scope: string; key: string }>(
+      "select public.prepare_avatar_upload($1,$2,0,true) as value", [owner, id]);
+    const remove = (revision: number) => result("select public.delete_profile($1,$2,'avatar-id-alice') as value", [id, revision]);
+    await expect(prepare(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    expect(await prepare(bob)).toBeNull();
+    const stage = (await prepare(alice))!;
+    const commit = (owner: string) => result("select public.commit_avatar_upload($1,$2,0,$3,$4) as value",
+      [owner, id, stage.key, avatar]);
+    expect(await commit(bob)).toBe(false);
+    expect(await commit(alice)).toBe(true);
+
+    await act("authenticated", bob);
+    await expect(remove(1)).rejects.toMatchObject({ code: "40001" });
+    expect(await result("select public.draft_avatar_scope($1) as value", [avatar])).toBeNull();
+    await act("authenticated", alice);
+    expect(await result("select public.draft_avatar_scope($1) as value", [avatar])).toBe(stage.scope);
+    await expect(remove(0)).rejects.toMatchObject({ code: "40001" });
+    await remove(1);
+    expect(await draft()).toBeNull();
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.avatar_cleanup where scope = $1", [stage.scope])).toBe(1);
+  });
+
   it("binds save, restore and unpublish to the explicitly selected profile", async () => {
     await act("authenticated", alice);
     await claim("alice");

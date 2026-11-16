@@ -5,11 +5,11 @@ export const incomingBucket = "avatar-incoming";
 export const imagesBucket = "avatar-images";
 export const avatarKey = (scope: string, avatar: string) => `${scope}/${avatar}.webp`;
 
-export async function pruneAvatars(admin: ReturnType<typeof storageAdmin>, owner: string, scope: string) {
+export async function pruneAvatars(admin: ReturnType<typeof storageAdmin>, owner: string, profileId: string, scope: string) {
   const bucket = admin.storage.from(imagesBucket);
   const { data: files, error: listError } = await bucket.list(scope, { limit: 40 });
   if (listError || !files) return false;
-  const { data: referenced, error } = await admin.rpc("avatar_references", { p_owner: owner });
+  const { data: referenced, error } = await admin.rpc("avatar_references", { p_owner: owner, p_profile: profileId });
   if (error || !Array.isArray(referenced)) return false;
   const referencedNames = new Set(referenced.map((id: string) => `${id}.webp`));
   // A freshly uploaded derivative can be between Storage and the database commit.

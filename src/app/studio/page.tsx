@@ -51,11 +51,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
       </header>
       <section className="panel avatar-panel">
         <h2>Avatar</h2>
-        <AvatarUpload revision={draft.revision} />
+        <AvatarUpload profileId={draft.profile_id} revision={draft.revision} />
       </section>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
-      <DeleteProfile username={draft.username} revision={draft.revision} />
+      <DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} />
     </>}
   </main>;
 }

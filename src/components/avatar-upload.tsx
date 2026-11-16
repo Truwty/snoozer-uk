@@ -9,7 +9,7 @@ import { initialState, type ActionState } from "@/lib/actions";
 
 const maxBytes = 2 * 1024 * 1024;
 
-export function AvatarUpload({ revision }: { revision: number }) {
+export function AvatarUpload({ profileId, revision }: { profileId: string; revision: number }) {
   const [state, setState] = useState<ActionState>(initialState);
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -23,7 +23,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
     setBusy(true);
     setState(initialState);
     try {
-      const intent = await requestAvatarUpload(revision, Boolean(file));
+      const intent = await requestAvatarUpload(profileId, revision, Boolean(file));
       if (intent.error) throw new Error(intent.error);
       if (!intent.staged) {
         if (!file) throw new Error("Choose an image to upload.");
@@ -35,7 +35,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
       } else if (file) {
         throw new Error("An image is already pending. Clear the file selection to finish it, or discard it before uploading a new image.");
       }
-      const result = await finishAvatarUpload(revision, intent.uploadKey!);
+      const result = await finishAvatarUpload(profileId, revision, intent.uploadKey!);
       if (result.error) throw new Error(result.error);
       if (input.current) input.current.value = "";
       setState({ status: "success", message: result.message ?? "Avatar saved." });
@@ -49,7 +49,7 @@ export function AvatarUpload({ revision }: { revision: number }) {
   async function discard() {
     setBusy(true);
     try {
-      const result = await discardAvatarUpload(revision);
+      const result = await discardAvatarUpload(profileId, revision);
       setState(result.error ? { status: "error", message: result.error }
         : { status: "success", message: result.message ?? "Pending upload cleared." });
       if (input.current) input.current.value = "";

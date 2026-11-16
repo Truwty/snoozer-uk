@@ -5,7 +5,7 @@ import { deleteProfile } from "@/app/studio/delete";
 import { initialState } from "@/lib/actions";
 import { ActionMessage } from "./action-message";
 
-export function DeleteProfile({ username, revision }: { username: string; revision: number }) {
+export function DeleteProfile({ profileId, username, revision }: { profileId: string; username: string; revision: number }) {
   const [state, submit, pending] = useActionState(deleteProfile, initialState);
 
   return <section className="panel stack">
@@ -14,6 +14,7 @@ export function DeleteProfile({ username, revision }: { username: string; revisi
     <details>
       <summary>Review profile deletion</summary>
       <form className="stack" action={submit}>
+        <input type="hidden" name="profileId" value={profileId} />
         <input type="hidden" name="username" value={username} />
         <input type="hidden" name="revision" value={revision} />
         <label>Type {username} to confirm
