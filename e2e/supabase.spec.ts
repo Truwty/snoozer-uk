@@ -84,6 +84,23 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const stageOwner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
     const stageLogin = await stageOwner.auth.signInWithPassword({ email, password });
     expect(stageLogin.error).toBeNull();
+    const billingStaff = stageLogin.data.user!.id;
+    expect(billingStaff).toMatch(/^[a-f0-9-]{36}$/);
+    const staffSql = (statement: string) => execFileSync("docker", [
+      "exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", statement,
+    ]);
+    await page.goto("/studio/plan");
+    await expect(page.getByRole("link", { name: "Billing diagnostics" })).toHaveCount(0);
+    staffSql("insert into snoozer.staff_roles(owner_id,role) values ('" + billingStaff + "','billing_diagnostics')");
+    try {
+      await page.reload();
+      await page.getByRole("link", { name: "Billing diagnostics" }).click();
+      await expect(page.getByRole("heading", { name: "Billing diagnostics" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Stripe sandbox" })).toBeVisible();
+    } finally {
+      staffSql("delete from snoozer.staff_roles where owner_id = '" + billingStaff + "'");
+    }
+    await page.goto("/studio");
     const stageAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const { data: abandonedStage, error: stageError } = await stageAdmin.rpc("prepare_avatar_upload", {
       p_owner: stageLogin.data.user!.id, p_expected: 0, p_open: true,

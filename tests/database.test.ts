@@ -38,7 +38,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -81,6 +81,31 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await lookup()).rows).toHaveLength(1);
     await act("authenticated", alice);
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
+  });
+
+  it("checks current billing staff roles and audits every authorised read", async () => {
+    const canRead = () => result("select public.can_read_billing_diagnostics() as value");
+    const read = () => result("select public.read_staff_billing_diagnostics() as value");
+    await db.query("insert into snoozer.staff_roles(owner_id,role) values ($1,'billing_diagnostics'),($2,'billing_diagnostics')", [alice,unverified]);
+    await act("anon");
+    await expect(read()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(read()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect(await canRead()).toBe(false);
+    await expect(read()).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.billing_diagnostics_access")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    expect(await canRead()).toBe(true);
+    expect(await read()).toMatchObject({ kofi: { pendingReviews: 0 } });
+    await act("service_role");
+    await expect(db.query("delete from snoozer.billing_diagnostics_access")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    expect((await db.query("select actor_id from snoozer.billing_diagnostics_access")).rows).toEqual([{ actor_id: alice }]);
+    await db.query("delete from snoozer.staff_roles where owner_id=$1", [alice]);
+    await act("authenticated", alice);
+    expect(await canRead()).toBe(false);
+    await expect(read()).rejects.toMatchObject({ code: "42501" });
   });
 
   it("gives only the billing operator aggregate diagnostics", async () => {

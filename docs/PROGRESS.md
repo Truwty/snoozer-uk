@@ -142,7 +142,9 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Verified users can request and track a platform Ko-fi donation review. The queue is private and submission does not reveal whether a receipt exists. An authorised operator can confirm after independently verifying the payer, or decline. Confirmation locks the receipt against reuse, persists its use marker after account deletion, and leaves plan access unchanged. Local verification passed 84 unit and SQL tests. The disposable Supabase browser scenario also includes submission and pending status.
 
-- Added operator-issued single-use gift codes, authenticated redemption and service-only revocation. Codes are stored as hashes and grants expire after the configured duration. Added aggregate billing diagnostics for authorised operators. Local verification passed 86 unit and SQL tests. A disposable Supabase browser scenario covers redemption. Paid gift Checkout and a staff web dashboard remain open. See [Billing operations](billing-operations.md).
+- Added operator-issued single-use gift codes, authenticated redemption and service-only revocation. Codes are stored as hashes and grants expire after the configured duration. Added aggregate billing diagnostics for authorised operators. Local verification passed 86 unit and SQL tests. A disposable Supabase browser scenario covers redemption. Paid gift Checkout remains open. See [Billing operations](billing-operations.md).
+
+- Added a read-only staff billing diagnostics page. The database verifies the current staff role and records successful web reads. SQL tests cover anonymous and ordinary-account denial, access logging and immediate revocation. Local verification passed 87 unit and SQL tests. Disposable Supabase browser coverage was added.
 
 ## Remaining
 

@@ -47,10 +47,11 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const hasLinkCapacity = plan && can({ id: user.id, plan },
     { quota: "links", used: plan.usage.draftLinks, increment: 1 }, { ownerId: user.id });
 
-  const [offers, { checkout, portal }, portalCustomer, reviewResponse] = await Promise.all([
+  const [offers, { checkout, portal }, portalCustomer, reviewResponse, staffAccess] = await Promise.all([
     sandboxOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
     client.rpc("list_my_kofi_donation_reviews"),
+    client.rpc("can_read_billing_diagnostics"),
   ]);
 
   const reviews = reviewList.safeParse(reviewResponse.data);
@@ -59,6 +60,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
     <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
     <section className="panel stack">
       <h1>Plan and usage</h1>
+      {!staffAccess.error && staffAccess.data === true && <Link href="/studio/billing-diagnostics" prefetch={false}>Billing diagnostics</Link>}
       {plan ? <>
         <p>Current plan: <strong>{labels[plan.plan]}</strong></p>
         {plan.expiresAt && <p>Plan access ends on <time dateTime={plan.expiresAt}>
