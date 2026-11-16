@@ -5,6 +5,8 @@ import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan, can } from "@/lib/entitlements";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
+import { sandboxPortalConfiguration } from "@/lib/stripe-sandbox-portal";
+import { openSandboxPortal } from "./portal";
 import { startSandboxCheckout } from "./checkout";
 
 export const metadata = { title: "Plan and usage", robots: { index: false, follow: false } };
@@ -28,7 +30,7 @@ async function sandboxOffers() {
   ))).filter((item) => item !== null);
 }
 
-export default async function PlanPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
+export default async function PlanPage({ searchParams }: { searchParams: Promise<{ checkout?: string; portal?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const { client, user } = await requireAccount();
   const { data, error } = await client.rpc("get_my_plan");
@@ -37,7 +39,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const hasLinkCapacity = plan && can({ id: user.id, plan },
     { quota: "links", used: plan.usage.draftLinks, increment: 1 }, { ownerId: user.id });
 
-  const [offers, { checkout }] = await Promise.all([sandboxOffers(), searchParams]);
+  const [offers, { checkout, portal }, portalCustomer] = await Promise.all([
+    sandboxOffers(), searchParams,
+    sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
+  ]);
 
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href="/studio">Back to Studio</Link></header>
@@ -56,6 +61,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
       </> : <p role="alert">Plan and usage are temporarily unavailable.</p>}
       {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
+      {portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}
+      {!portalCustomer?.error && typeof portalCustomer?.data === "string" && <form action={openSandboxPortal}>
+        <button className="button small" type="submit">Manage sandbox billing</button>
+      </form>}
       {offers.length > 0 && <div className="stack">
         <h2>Stripe sandbox offers</h2>
         {offers.map(({ plan, label, interval, amount }) => <form key={plan + interval} action={startSandboxCheckout}>

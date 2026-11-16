@@ -83,6 +83,39 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ plan: "free" });
   });
 
+  it("keeps Ko-fi donations private and deduplicates message and transaction IDs", async () => {
+    const submit = (message: string, transaction: string) => db.query(
+      "select public.record_kofi_donation($1,$2,now(),350)", [message, transaction],
+    );
+    await act("authenticated", alice);
+    await expect(submit(alice, "first")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await submit(alice, "first");
+    await submit(alice, "second");
+    await submit(bob, "first");
+    await expect(db.query("select * from snoozer.kofi_donation_receipts")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    expect((await db.query("select message_id,transaction_id,amount_pence from snoozer.kofi_donation_receipts")).rows)
+      .toEqual([{ message_id: alice, transaction_id: "first", amount_pence: 350 }]);
+  });
+
+  it("exposes the sandbox portal customer only to the verified subscription owner", async () => {
+    const customer = () => result("select public.get_my_stripe_sandbox_customer() as value");
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Portal','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,session_id,subscription_id) values ($1,'price_Portal','cus_Portal','cs_test_Portal','sub_Portal'), ($2,'price_Portal','cus_Pending',null,null)",
+      [alice, bob],
+    );
+    await act("anon");
+    await expect(customer()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(customer()).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect(await customer()).toBeNull();
+    await act("authenticated", alice);
+    expect(await customer()).toBe("cus_Portal");
+  });
+
   it("applies only the latest sandbox reconciliation and revokes its own grant", async () => {
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Paid','plus',1,'month','gbp',399,null)");
     await db.query(

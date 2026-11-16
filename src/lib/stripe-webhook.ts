@@ -1,3 +1,4 @@
+import { boundedBody } from "./bounded-request";
 import Stripe from "stripe";
 import { z } from "zod";
 
@@ -29,35 +30,13 @@ const snapshot = z.object({
 type Receipt = { id: string; type: string; objectId: string; occurredAt: string };
 type RecordReceipt = (receipt: Receipt) => Promise<void>;
 
-async function boundedBody(request: Request) {
-  const maxBytes = 256 * 1024;
-  if (!request.body || Number(request.headers.get("content-length")) > maxBytes) return null;
-  const reader = request.body.getReader();
-  const parts: Uint8Array[] = [];
-  let size = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) return Buffer.concat(parts, size);
-      size += value.byteLength;
-      if (size > maxBytes) {
-        void reader.cancel().catch(() => undefined);
-        return null;
-      }
-      parts.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
 export async function receiveStripeWebhook(request: Request, secret: string | undefined, record: RecordReceipt) {
   if (!secret?.startsWith("whsec_")) return new Response(null, { status: 503 });
   const signature = request.headers.get("stripe-signature");
   if (!signature) return new Response(null, { status: 400 });
   let parsed;
   try {
-    const body = await boundedBody(request);
+    const body = await boundedBody(request, 256 * 1024);
     if (!body) return new Response(null, { status: 413 });
     parsed = snapshot.safeParse(Stripe.webhooks.constructEvent(body, signature, secret));
   } catch {
