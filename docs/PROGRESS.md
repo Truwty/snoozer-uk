@@ -152,7 +152,9 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - New Stripe sandbox gift disputes have separately tracked payment holds. A won outcome can restore the original code or its unexpired grant after checking the remaining holds. Replays preserve other refund and fraud holds and operator revocations. Legacy gift holds remain in manual review. Local verification passed 93 unit and SQL tests. Provider delivery remains unverified.
 
-- Added a service-only, paginated legacy hold report and disposable CI fixtures for signed Stripe and Ko-fi requests against the application routes. Local verification passed 94 unit and SQL tests. The connected Stripe account list exposes no sandbox account, and the local host lacks Docker, Podman and provider environment configuration. Real provider verification remains open.
+- Added a service-only, paginated legacy hold report and disposable CI fixtures for signed Stripe and Ko-fi requests against the application routes. The [disposable CI run](https://github.com/Truwty/snoozer-uk/actions/runs/43929950654) passed 94 unit and SQL tests and 18 browser or HTTP checks, including both payment webhook fixtures. The no-secrets Stripe smoke case was skipped because fixture signing values were configured. The connected Stripe account list exposes no sandbox account, and the local host lacks Docker, Podman and provider environment configuration. Real provider verification remains open.
+
+- Added a provider preflight for the isolated billing environment. It validates required settings and probes Stripe sandbox and Supabase using read-only calls. In the current workspace it correctly stopped at the missing configuration check without contacting either provider.
 
 ## Remaining
 

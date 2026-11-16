@@ -47,3 +47,7 @@ A sandbox subscription that Stripe reports as canceled or incomplete_expired is 
 The disposable Supabase browser suite posts fabricated Stripe snapshot and Ko-fi donation payloads to the actual Next.js webhook endpoints. CI generates dedicated fixture signing values and does not use a Stripe API key. The test checks invalid proofs, duplicate requests and a single durable receipt for each provider.
 
 To run the fixture locally, start disposable Supabase as described in the continuation guide. Set STRIPE_SANDBOX_WEBHOOK_SECRET to a fixture value beginning with whsec_, KOFI_WEBHOOK_TOKEN to a random fixture token, and SNOOZER_TEST_LOCAL_SUPABASE to 1. Leave STRIPE_SANDBOX_API_KEY unset. Rebuild, then run npm run test:e2e -- -g "sandbox payment webhook fixtures". Complete separate real Stripe sandbox and Ko-fi dashboard delivery tests for the milestone exit.
+
+## Provider verification preflight
+
+Run npm run billing:preflight with the environment for the isolated deployment. The command lists missing or malformed configuration by name, then checks access to the Supabase billing RPC and an active Stripe sandbox Price. It prints no credentials or provider object IDs. Stripe and Supabase probes are read-only. A successful run is a setup check. Use the provider dashboards to verify delivered events and complete the checkout, renewal, cancellation, gift refund and Ko-fi delivery scenarios.
