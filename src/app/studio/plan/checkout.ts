@@ -6,6 +6,9 @@ import { z } from "zod";
 import { siteUrl } from "@/lib/env";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
+import { recoverUnsavedSandboxCheckout } from "@/lib/stripe-unsaved-checkout";
+
+class RecoveredCheckout extends Error {}
 
 const offer = z.object({ plan: z.enum(["plus", "pro", "studio"]), interval: z.enum(["month", "year"]) });
 const attemptShape = z.object({
@@ -25,11 +28,18 @@ export async function startSandboxCheckout(form: FormData) {
   const { plan, interval } = selection.data;
   let checkoutUrl: string;
   try {
-    const { data, error } = await admin.rpc("prepare_stripe_sandbox_checkout", {
+    const prepare = () => admin.rpc("prepare_stripe_sandbox_checkout", {
       p_owner: user.id, p_plan: plan, p_interval: interval,
     });
-    if (error) throw error;
-    const attempt = attemptShape.parse(data);
+    let prepared = await prepare();
+    if (prepared.error) throw prepared.error;
+    if (prepared.data === null) {
+      const recovered = await recoverUnsavedSandboxCheckout(stripe, user.id);
+      if (recovered === "complete") throw new RecoveredCheckout();
+      if (recovered === "retired") prepared = await prepare();
+    }
+    if (prepared.error) throw prepared.error;
+    const attempt = attemptShape.parse(prepared.data);
     const bind = async (customer: string, session?: string) => {
       const binding = await admin.rpc("bind_stripe_sandbox_checkout", {
         p_owner: user.id, p_attempt: attempt.id, p_customer: customer, p_session: session ?? null,
@@ -72,7 +82,8 @@ export async function startSandboxCheckout(form: FormData) {
     const target = new URL(session.url);
     if (target.origin !== "https://checkout.stripe.com") throw new Error("Unexpected Checkout origin.");
     checkoutUrl = target.href;
-  } catch {
+  } catch (error) {
+    if (error instanceof RecoveredCheckout) redirect("/studio/plan?checkout=pending");
     redirect("/studio/plan?checkout=unavailable");
   }
   redirect(checkoutUrl);

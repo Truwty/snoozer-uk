@@ -134,6 +134,8 @@ The first deletion CI run caught accessible names on Studio reorder buttons that
 
 - Added an opt-in Stripe sandbox subscription sweep with bounded leases, aggregate drift reporting and a GitHub Actions schedule. It corrects grant drift from current Stripe state for linked subscriptions. The configured provider run and recovery of unreceived refund, dispute and Checkout events still need verification or replay. Local verification passed 70 unit and SQL tests.
 
+- Added recovery for Checkout attempts without a saved Stripe session. After the recovery window, Snoozer looks up any matching session. A completed match is rebound for webhook replay. A confirmed expiry or a complete lookup with no match permits replacement. The database rejects late writes to retired attempts. All 74 local unit and SQL tests passed. Real Stripe recovery remains unverified.
+
 ## Remaining
 
 - The private `Truwty/snoozer-uk` repository was created and the source was pushed. The first CI run passed concurrent claims and cross-user storage denial. Its full browser journey reached avatar upload and draft save, then caught a blank HTTP 404 for unpublished profiles with JavaScript disabled. The fix returned a readable 404 in a local HTTP regression check and passed the full CI rerun.

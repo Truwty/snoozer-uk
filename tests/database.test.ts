@@ -184,6 +184,27 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await plan()).toMatchObject({ plan: "free" });
   });
 
+  it("retires only old unbound Checkout attempts for the matching owner and customer", async () => {
+    await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Stale','plus',1,'month','gbp',399,null)");
+    await db.query(
+      "insert into snoozer.stripe_sandbox_checkout_attempts(owner_id,price_id,customer_id,created_at) values ($1,'price_Stale','cus_Stale',now()-interval '3 hours')", [alice],
+    );
+    const stale = (owner: string) => result<string>("select id as value from public.get_stale_stripe_sandbox_checkout($1)", [owner]);
+    const retire = (owner: string, id: string, customer: string) => result(
+      "select public.retire_unsaved_stripe_sandbox_checkout($1,$2,$3,null) as value", [owner,id,customer],
+    );
+    await act("authenticated", alice);
+    await expect(stale(alice)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const id = (await stale(alice))!;
+    expect(await retire(bob, id, "cus_Stale")).toBe(false);
+    expect(await retire(alice, id, "cus_Other")).toBe(false);
+    expect(await retire(alice, id, "cus_Stale")).toBe(true);
+    expect(await result("select public.bind_stripe_sandbox_checkout($1,$2,'cus_Stale','cs_test_Stale') as value", [alice,id])).toBe(false);
+    expect(await result("select public.prepare_stripe_sandbox_checkout($1,'plus','month') as value", [alice]))
+      .toMatchObject({ customerId: "cus_Stale", sessionId: null });
+  });
+
   it("replaces only verified expired sandbox sessions while retaining customer and history", async () => {
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Original','plus',1,'month','gbp',399,null), ('price_Next','pro',1,'month','gbp',799,null)");
     await act("service_role");
