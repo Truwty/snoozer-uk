@@ -6,7 +6,7 @@ Stage 4 increment, 17 November 2026. Accessible from the selected profile's Stud
 
 Public pages render normal links and readable content without JavaScript. No analytics event is sent until the visitor explicitly allows analytics. The choice is stored as `snoozer-analytics-consent` in this browser's localStorage and applies across Snoozer profiles. Storage failure keeps the choice only in memory. The preference is available on every public page, can be withdrawn, and syncs across tabs. GPC and Do Not Track disable collection. Withdrawing stops future collection; aggregate counts already recorded cannot identify the visitor.
 
-The application stores profile ID, UTC day, integer view/click totals and random per-event UUIDs for daily replay prevention. It stores no IP address, user agent, referrer, visitor identifier or clicked URL in the analytics tables. Request logs at Render/Supabase have separate provider retention; this is not a claim about all infrastructure logs. The account ID used to exclude signed-in owners comes from server-validated Supabase Auth, is passed only through the trusted service RPC, and is not retained in analytics.
+The application stores profile ID, UTC day, integer view/click totals and random per-event UUIDs for daily replay prevention. It stores no IP address, user agent, referrer or visitor identifier in the analytics tables. Per-link reporting also stores the creator's published label, destination, revision and position; visitor-supplied URLs must exactly match that publication. Request logs at Render/Supabase have separate provider retention; this is not a claim about all infrastructure logs. The account ID used to exclude signed-in owners comes from server-validated Supabase Auth, is passed only through the trusted service RPC, and is not retained in analytics.
 
 `POST /api/v1/analytics/view` accepts a strict JSON event (`kind: view | click`, username, UUID id, consent:true; click also includes one-based position and published URL). The server checks the exact configured origin, body/content-type limits, known crawler user agents, privacy headers and schema. Cross-origin calls cannot write via a browser. Origin and user agent checks do not prove a human visitor; raw HTTP clients can spoof them.
 
@@ -28,6 +28,20 @@ Daily bar charts and a semantic data table show the same validated totals. Silve
 
 ## Verification and remaining work
 
+### Per-link increment
+
+Migration 20261110005600 adds daily click totals by immutable publication position, label and destination. Reports combine matching published label/destination pairs across revisions and return the top 100 within the owner's current retention window. Counts already recorded before this migration remain daily-only; no data is fabricated to backfill attribution. A profile share lock prevents publication changes/pruning racing with link validation and recording. The daily row lock and event receipt still guard duplicates and the daily cap.
+
+Per-link data cascades with daily retention and profile deletion. Read access remains verified-owner only with no direct table grants. The authenticated `breakdown=links` export uses the same permission boundary as daily CSV. Creator text fields are CSV quoted and formula-leading characters are neutralised; URL schemes are validated before rendering or exporting. Daily and per-link report failures are shown independently.
+
+The per-link increment passes local lint, typecheck, 141 Vitest tests, two audit-policy tests and production build. Updated disposable browser tests cover the attributed Work link and the real link CSV download. Hosted migration 56 and its CI/staging verification are pending.
+
+### Hosted evidence
+
+Migration 55 is applied on snoozer-staging with RLS enabled, anonymous write execution denied and service-role write execution allowed. Render deploy `dep-dbubvic9v7es7383j7sg` reached Live on app commit 984261c. A labelled staging fixture confirmed signed-in owner opt-in left the dashboard empty; replaying one anonymous view and click HTTP fixture twice each produced exactly one view and one click. A wrong-origin request returned 403. Liveness and readiness returned 200. The actual authenticated CSV download contained those exact counts and date. The optional YouTube frame loaded its documented sample video UI and was removed with Hide; playback itself was not started.
+
+[CI 44173960711](https://github.com/Truwty/snoozer-uk/actions/runs/44173960711) passed 126 Vitest, two audit-policy and 21 browser/HTTP tests (one expected missing-secret case skipped). Following run 44174839516 passed the additionally tracked 14 YouTube URL tests (140 total) but failed while starting the disposable Supabase stack before browser execution. Its startup log was redirected and no underlying cause was exposed; do not call that run passed. The next per-link run must verify the whole provider suite.
+
 `tests/analytics.test.ts` checks consent, origin, bot/privacy signals, bounded bodies, strict fields, media types, durable failure handling and safe CSV values. `tests/database.test.ts` runs real migrations and verifies deduplication, published-link matching, owner exclusion, role denial, cross-owner isolation, retention, daily cap and deletion. All 125 unit/SQL tests pass locally with lint, typecheck and build.
 
-`e2e/supabase.spec.ts` adds the real browser consent/click/export/owner-exclusion journey and an axe dashboard check. Pending disposable CI and hosted staging verification. This increment does not complete Stage 4: per-link breakdown, attribution, unique visitor methodology, CTR, custom retention/timezones, scheduled reports, experiments, stronger anti-abuse controls and provider integrations remain open.
+`e2e/supabase.spec.ts` verifies the real consent/click/export/owner-exclusion journey and an axe dashboard check. This increment does not complete Stage 4: referrer/campaign attribution, unique visitor methodology, CTR, custom retention/timezones, scheduled reports, experiments, stronger anti-abuse controls and further provider integrations remain open.

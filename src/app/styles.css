@@ -187,9 +187,18 @@ textarea { resize: vertical; }
 .analytics-preference { width: min(100%, 30rem); margin-inline: auto; color: var(--muted); font-size: .875rem; }
 .analytics-preference summary { cursor: pointer; }
 .analytics-chart { display: flex; align-items: end; gap: 2px; height: 10rem; border-bottom: 1px solid var(--muted); overflow-x: auto; }
-.analytics-chart-day { height: 100%; flex: 1 0 5px; display: flex; align-items: end; gap: 1px; }
+.analytics-chart-day { height: 100%; flex: 1 0 1.4rem; max-width: 2.5rem; display: flex; align-items: end; gap: 1px; }
 .analytics-bar { display: block; flex: 1; background: #d1d5db; }
 .analytics-bar.clicks { background: #55c799; }
+.analytics-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.analytics-summary p { display: grid; gap: .3rem; }
+.analytics-summary strong { font-size: 2.5rem; line-height: 1.1; }
+.analytics-summary span { font-size: .875rem; color: var(--muted); }
+.analytics-links { width: 100%; table-layout: fixed; }
+.analytics-links th { text-align: start; }
+.analytics-links th, .analytics-links td { overflow-wrap: anywhere; padding-block: .7rem; border-bottom: 1px solid var(--edge); }
+.analytics-links th:first-child { width: 78%; }
+.analytics-links small { display: block; font-weight: 400; }
 .youtube-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; }
 .youtube-widget iframe { width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 1px solid var(--edge); border-radius: .7rem; }
 .analytics-preference p { margin-block: .5rem; }

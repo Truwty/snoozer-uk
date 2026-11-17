@@ -93,12 +93,16 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     const rows = (await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows;
     expect(rows).toEqual([{ day: expect.any(Date), views: 1, clicks: 1 }]);
+    expect((await db.query("select * from public.get_my_profile_link_totals($1)", [profile])).rows)
+      .toEqual([{ label: "Work", url: "https://example.com", clicks: 1 }]);
     await expect(record()).rejects.toMatchObject({ code: "42501" });
     await expect(db.query("select public.purge_profile_analytics()")).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", bob);
     expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toEqual([]);
+    expect((await db.query("select * from public.get_my_profile_link_totals($1)", [profile])).rows).toEqual([]);
     await act("anon");
     await expect(db.query("select * from public.get_my_profile_view_days($1)", [profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from public.get_my_profile_link_totals($1)", [profile])).rejects.toMatchObject({ code: "42501" });
   });
 
   it("enforces analytics retention, bounded intake and cascading profile deletion", async () => {
@@ -134,16 +138,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       ($1,(now() at time zone 'UTC')::date - 10,5)`, [profile]);
     await db.query(`insert into snoozer.profile_view_receipts(profile_id,day,event_id,kind)
       values ($1,(now() at time zone 'UTC')::date - 100,$2,'view')`, [profile, avatar]);
+    await db.query(`insert into snoozer.profile_link_days(profile_id,day,revision,position,label,url,clicks)
+      values ($1,(now() at time zone 'UTC')::date - 100,1,1,'Work','https://example.com',2)`, [profile]);
     await act("authenticated", alice);
     expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toHaveLength(2);
+    expect((await db.query("select * from public.get_my_profile_link_totals($1)", [profile])).rows).toHaveLength(1);
     await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='analytics-plan'");
     await act("authenticated", alice);
     expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toHaveLength(1);
+    expect((await db.query("select * from public.get_my_profile_link_totals($1)", [profile])).rows).toHaveLength(0);
     await act("service_role");
     expect(await result("select public.purge_profile_analytics() as value")).toBe(1);
     await db.exec("reset role");
     expect(await result("select count(*)::int as value from snoozer.profile_view_receipts")).toBe(0);
     expect(await result("select sum(views)::int as value from snoozer.profile_view_days")).toBe(5);
+    expect(await result("select count(*)::int as value from snoozer.profile_link_days")).toBe(0);
   });
 
   it("enforces plan link limits without deleting links after a downgrade", async () => {

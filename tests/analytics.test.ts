@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyticsCsv, dailyAnalytics, receiveAnalytics } from "../src/lib/analytics";
+import { analyticsCsv, dailyAnalytics, linkAnalytics, linkAnalyticsCsv, receiveAnalytics } from "../src/lib/analytics";
 
 const origin = "https://snoozer.uk";
 const event = { username: "creator", kind: "view", consent: true, id: "00000000-0000-4000-8000-000000000011" };
@@ -46,5 +46,14 @@ describe("consent-aware analytics boundary", () => {
     const rows = dailyAnalytics.parse([{ day: "2026-11-17", views: 2, clicks: 3 }]);
     expect(analyticsCsv(rows)).toBe("date_utc,views,clicks\r\n2026-11-17,2,3\r\n");
     expect(dailyAnalytics.safeParse([{ day: "=FORMULA", views: 1, clicks: 1 }]).success).toBe(false);
+  });
+  it("quotes per-link CSV and neutralises spreadsheet formulas in creator labels", () => {
+    const rows = linkAnalytics.parse([
+      { label: '=HYPERLINK("https://evil.com")', url: "https://example.com", clicks: 2 },
+      { label: 'Notes, "work"', url: "https://example.com/notes", clicks: 1 },
+    ]);
+    expect(linkAnalyticsCsv(rows)).toContain(`"'=HYPERLINK(""https://evil.com"")","https://example.com",2\r\n`);
+    expect(linkAnalyticsCsv(rows)).toContain(`"Notes, ""work""","https://example.com/notes",1\r\n`);
+    expect(linkAnalytics.safeParse([{ label: "Unsafe", url: "javascript:alert(1)", clicks: 1 }]).success).toBe(false);
   });
 });
