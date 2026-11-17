@@ -147,6 +147,7 @@ textarea { resize: vertical; }
 .profile-links { display: grid; gap: .6rem; width: 100%; margin: .5rem 0 0; list-style: none; padding: 0; }
 .profile-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: start; min-height: 48px; border-radius: var(--block-radius); background: var(--link-background, var(--chip)); color: var(--link-foreground, var(--text)); padding: .6rem .8rem; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .profile-links a:hover { text-decoration: underline; }
+.profile-links > li { min-width: 0; }
 .profile-links a:focus-visible { outline-color: var(--text); }
 
 .profile-gallery { display: grid; gap: .65rem; width: 100%; text-align: start; }
@@ -204,4 +205,11 @@ textarea { resize: vertical; }
 .analytics-context-wrap th, .analytics-context-wrap td { text-align: start; padding: .5rem; overflow-wrap: anywhere; }
 .youtube-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; }
 .youtube-widget iframe { width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 1px solid var(--edge); border-radius: .7rem; }
+.public-widget, .twitch-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; min-width: 0; }
+.provider-summary { display: grid; gap: .7rem; padding: .85rem; background: var(--chip); border-radius: var(--block-radius); overflow-wrap: anywhere; }
+.provider-summary dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; margin: 0; }
+.provider-summary dd { margin: 0; font-weight: 700; font-size: 1.4rem; }
+.twitch-widget iframe { width: 100%; min-height: 300px; aspect-ratio: 16 / 9; border: 1px solid var(--detail); border-radius: .7rem; }
+.widget-preview-note { color: var(--detail); font-size: .875rem; padding-block: .6rem; }
+.youtube-widget .muted, .public-widget .muted, .twitch-widget .muted { color: var(--detail); }
 .analytics-preference p { margin-block: .5rem; }

@@ -16,3 +16,7 @@ The browser handles input and signed avatar and gallery uploads. Next.js Server 
 ## Release risks still open
 
 Add spam controls, moderation, phishing reports, account recovery monitoring, permissioned staff actions, retention/deletion, durable orphan cleanup, quota alarms and infrastructure incident handling. Review content and privacy policies with the owner. Payments must add verified event receipts, replay protection, reconciliation and audited entitlements before they can be offered. Future URL fetchers require DNS/IP and redirect checks at every hop.
+# Public widget boundary
+
+An HTTP client can forge Origin or a consent field, so neither proves a human. Public-widget lookups must also resolve the current published link, derive an allowlisted resource, bound the body/response/timeout, disallow redirects, and obey database-backed budgets/backoff. Cache writes are service-only and lease-guarded; no visitor headers, provider tokens, Discord members or private GitHub fields are projected. Provider visibility changes can lag cache expiry by one hour. Removing a publication link blocks later summary lookups but cannot erase content already downloaded.
+

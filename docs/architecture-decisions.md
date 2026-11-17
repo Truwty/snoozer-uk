@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- Public provider summaries are optional, origin-checked and bound to current published links. Fetch fixed provider API hosts without credentials/visitor headers, retain only versioned minimal projections, and use PostgreSQL refresh leases, hourly budgets and provider backoff. Keep provider failure independent of outbound navigation. Twitch players require a real parent hostname and 400×300 space; smaller views keep the outbound link.
+
 - Analytics starts with consented anonymous event totals, never fingerprinted visitors. Use daily PostgreSQL aggregates with expiring per-event receipts and service-only writes. Exclude owners with server-validated Auth; owner-scoped RPCs and CSV exports enforce plan retention. Keep direct link navigation independent of analytics availability. Do not label event ratios as CTR or event IDs as unique people.
 
 - Start from an empty workspace. Use one stateless Next.js App Router service with React, strict TypeScript, Tailwind and npm. Organise server modules by domain as the application expands.

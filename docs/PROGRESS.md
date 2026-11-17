@@ -2,7 +2,8 @@
 
 ## Current checkpoint
 
-- The next analytics increment implements generated campaign links, owner-only pause/resume, coarse source/device reports and traffic CSV, with fresh v2 consent. Migration 57 is not applied to staging yet. Local lint, typecheck, 163 Vitest tests, two audit-policy tests and build pass; disposable CI and hosted verification are pending. See [campaigns](analytics-campaigns.md).
+- Generated campaign links, pause/resume, coarse source/device reports and traffic CSV passed CI 44180646763 and are verified on staging app 80ce59c, migration 57. Replayed events deduplicate; pause/resume attribution and real traffic CSV match. The QA campaign is left paused. See [campaigns](analytics-campaigns.md).
+- The next [public widgets](public-widgets.md) increment adds cached GitHub/Discord summaries, bounded provider backoff, Twitch embed sizing/consent, validated Roblox outbound links and publication-revocation checks. Local lint, typecheck, 185 Vitest tests, two audit-policy tests and build pass. Migration 58 and disposable CI/hosted verification are pending.
 
 - [CI run 44173960711](https://github.com/Truwty/snoozer-uk/actions/runs/44173960711) passed the analytics and optional YouTube widget journeys: 126 Vitest, two audit-policy and 21 browser/HTTP tests; one expected missing-secret test skipped. The following test-only run passed all 140 Vitest tests but failed during disposable Supabase startup before browser execution.
 - Migration 55 and app 984261c are deployed to the existing free staging services. The labelled analytics fixture verified owner exclusion, view/click replay deduplication, wrong-origin denial, live/readiness HTTP 200, actual CSV download and optional YouTube frame loading/removal. See [analytics evidence](analytics.md) and [YouTube widget](youtube-widget.md).

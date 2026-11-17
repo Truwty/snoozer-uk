@@ -1,4 +1,4 @@
-export async function boundedBody(request: Request, maxBytes: number) {
+export async function boundedBody(request: Pick<Request, "body" | "headers">, maxBytes: number) {
   if (!request.body || Number(request.headers.get("content-length")) > maxBytes) return null;
   const reader = request.body.getReader();
   const parts: Uint8Array[] = [];

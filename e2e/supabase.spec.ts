@@ -40,9 +40,17 @@ test.beforeEach(() => {
 });
 
 test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
-  test.setTimeout(60000);
+  test.setTimeout(90000);
   const name = "analytics-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
+  const profileLinks = [
+    { label: "Work", url: "https://example.com/" },
+    { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
+    { label: "Repository", url: "https://github.com/snoozer-fixtures/public-example" },
+    { label: "Community", url: "https://discord.gg/SnoozerFixture" },
+    { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
+    { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
+  ];
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(account.error).toBeNull();
@@ -56,11 +64,25 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
     expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
     expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Analytics fixture", p_bio: "",
-      p_theme: "midnight", p_indexable: false, p_links: [{ label: "Work", url: "https://example.com/" },
-        { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" }],
+      p_theme: "midnight", p_indexable: false, p_links: profileLinks,
       p_publish: true, p_remove_avatar: false })).error).toBeNull();
     const draft = await owner.rpc("get_draft");
     const id = draft.data.profile_id;
+    // Provider responses are isolated, explicit fixtures in the disposable stack.
+    // No GitHub or Discord credentials or network calls are needed in CI.
+    const githubClaim = await admin.rpc("claim_public_widget", { p_provider: "github", p_resource: "snoozer-fixtures/public-example" });
+    expect(githubClaim.data.state).toBe("refresh");
+    expect((await admin.rpc("complete_public_widget", {
+      p_provider: "github", p_resource: "snoozer-fixtures/public-example", p_lease: githubClaim.data.lease,
+      p_payload: { version: 1, provider: "github", resource: "snoozer-fixtures/public-example", title: "Disposable repository fixture",
+        description: "Public metadata test fixture", stats: [{ label: "Stars", value: 7 }, { label: "Forks", value: 2 }],
+        fetchedAt: new Date().toISOString() }, p_retry_after: 0,
+    })).data).toBe(true);
+    const discordClaim = await admin.rpc("claim_public_widget", { p_provider: "discord", p_resource: "i:SnoozerFixture" });
+    expect(discordClaim.data.state).toBe("refresh");
+    expect((await admin.rpc("complete_public_widget", {
+      p_provider: "discord", p_resource: "i:SnoozerFixture", p_lease: discordClaim.data.lease, p_payload: null, p_retry_after: 0,
+    })).data).toBe(true);
     const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
     const publicPage = await visitor.newPage();
     const events: string[] = [];
@@ -159,6 +181,43 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(trafficCsv.status()).toBe(200);
     expect(await trafficCsv.text()).toContain('"Newsletter",email,desktop,2,0');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+    await publicPage.getByRole("button", { name: "Load GitHub summary", exact: true }).click();
+    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toBeVisible();
+    await expect(publicPage.getByText("Stars", { exact: true })).toBeVisible();
+    await publicPage.getByRole("button", { name: "Hide GitHub summary", exact: true }).click();
+    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toHaveCount(0);
+    await publicPage.getByRole("button", { name: "Load Discord summary", exact: true }).click();
+    await expect(publicPage.getByText("Summary unavailable or temporarily rate limited. Use the original link above, or try again later.", { exact: true })).toBeVisible();
+    await expect(publicPage.getByRole("link", { name: "Community", exact: true })).toHaveAttribute("href", "https://discord.gg/SnoozerFixture");
+    await publicPage.route("https://player.twitch.tv/**", (route) => route.abort());
+    await publicPage.getByRole("button", { name: "Load Twitch player", exact: true }).click();
+    const stream = publicPage.getByTitle("Twitch: Stream");
+    const embed = new URL((await stream.getAttribute("src"))!);
+    expect(embed.searchParams.get("parent")).toBe("localhost");
+    expect(embed.searchParams.get("autoplay")).toBe("false");
+    expect(embed.searchParams.get("muted")).toBe("true");
+    const box = (await stream.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(400);
+    expect(box.height).toBeGreaterThanOrEqual(300);
+    await publicPage.setViewportSize({ width: 375, height: 812 });
+    await expect(stream).toHaveCount(0);
+    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    await publicPage.getByRole("button", { name: "Hide Twitch player", exact: true }).click();
+    await publicPage.setViewportSize({ width: 1280, height: 720 });
+    await expect(stream).toHaveCount(0);
+    await expect(publicPage.getByRole("link", { name: "Game · Roblox", exact: true })).toHaveAttribute("href", profileLinks[5].url);
+    expect((await new AxeBuilder({ page: publicPage }).analyze()).violations).toEqual([]);
+    expect((await owner.rpc("save_profile", { p_expected: 1, p_name: "Analytics fixture", p_bio: "", p_theme: "midnight",
+      p_indexable: false, p_links: profileLinks.filter((item) => item.label !== "Repository"),
+      p_publish: true, p_remove_avatar: false })).error).toBeNull();
+    const revoked = await visitor.request.post("/api/v1/widgets/public", {
+      headers: { Origin: "http://localhost:3000" }, data: { username: name, position: 3, provider: "github", consent: true },
+    });
+    expect(revoked.status()).toBe(400);
+    expect(await revoked.text()).toBe("");
+    await publicPage.reload();
+    await expect(publicPage.getByRole("button", { name: "Load GitHub summary", exact: true })).toHaveCount(0);
   } finally {
     await visitor.close();
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);

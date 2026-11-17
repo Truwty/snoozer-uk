@@ -143,11 +143,11 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 10.10 | Broken-Link Checker | Deferred |
 | 10.11 | Safe Redirects | Deferred |
 | 10.12 | Platform Username Validation | Deferred |
-| 10.13 | Discord Invite Preview | Deferred |
-| 10.14 | Roblox Profile And Game Links | Deferred |
-| 10.15 | Github Repositories | Deferred |
+| 10.13 | Discord Invite Preview | Implemented public summary and typed cached adapter; local unit/SQL tests pass, disposable CI and staging pending. See public-widgets.md |
+| 10.14 | Roblox Profile And Game Links | Validated Roblox game links; no API statistics. Cookie-based legacy integration not used. See public-widgets.md |
+| 10.15 | Github Repositories | Implemented public summary and typed cached adapter; local unit/SQL tests pass, disposable CI and staging pending. See public-widgets.md |
 | 10.16 | Youtube | Deferred |
-| 10.17 | Twitch | Deferred |
+| 10.17 | Twitch | Partial: optional Twitch player with sizing/parent/mute controls, local tests pass; no first-party live-status API. See public-widgets.md |
 | 10.18 | Spotify | Deferred |
 | 10.19 | Tiktok | Deferred |
 | 10.20 | Instagram | Deferred |
@@ -162,11 +162,11 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | ID | Capability | Status |
 | --- | --- | --- |
 | 11.1 | Discord Presence With Consent | Deferred |
-| 11.2 | Discord Server Preview | Deferred |
+| 11.2 | Discord Server Preview | Implemented public summary and typed cached adapter; local unit/SQL tests pass, disposable CI and staging pending. See public-widgets.md |
 | 11.3 | Github Contribution Summary | Deferred |
-| 11.4 | Roblox Game Showcase | Deferred |
+| 11.4 | Roblox Game Showcase | Deferred API showcase: stable API/OAuth design required; validated outbound game links work. See public-widgets.md |
 | 11.5 | Youtube Video Embed | Tested in disposable CI 44173960711 and hosted staging for opt-in, provider fallback and removal. See youtube-widget.md |
-| 11.6 | Twitch Live Status | Deferred |
+| 11.6 | Twitch Live Status | Partial: optional Twitch player with sizing/parent/mute controls, local tests pass; no first-party live-status API. See public-widgets.md |
 | 11.7 | Spotify Currently Playing Where Authorised | Deferred |
 | 11.8 | Music Playlist | Deferred |
 | 11.9 | Weather Opt-In Location | Deferred |
@@ -240,12 +240,12 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 14.2 | Unique Visitors With Privacy-Conscious Methodology | Deferred |
 | 14.3 | Link Clicks | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.4 | Ctr | Deferred |
-| 14.5 | Referrers | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
-| 14.6 | Device Class | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
+| 14.5 | Referrers | Tested coarse consented reports and registered campaign attribution in CI 44180646763 and hosted staging. See analytics-campaigns.md |
+| 14.6 | Device Class | Tested coarse consented reports and registered campaign attribution in CI 44180646763 and hosted staging. See analytics-campaigns.md |
 | 14.7 | Country-Level Aggregates | Deferred |
 | 14.8 | Time-Series Charts | Core tested in disposable CI and hosted staging. See analytics.md |
-| 14.9 | Utm Attribution | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
-| 14.10 | Campaign Comparisons | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
+| 14.9 | Utm Attribution | Tested coarse consented reports and registered campaign attribution in CI 44180646763 and hosted staging. See analytics-campaigns.md |
+| 14.10 | Campaign Comparisons | Tested coarse consented reports and registered campaign attribution in CI 44180646763 and hosted staging. See analytics-campaigns.md |
 | 14.11 | Bot Filtering | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.12 | Event Deduplication | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.13 | Csv Export | Core tested in disposable CI and hosted staging. See analytics.md |

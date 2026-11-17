@@ -6,6 +6,9 @@ import { kofiProfileUrl } from "@/lib/kofi-link";
 import { safeLink, type PublishedProfile } from "@/lib/profile";
 import { youtubeVideoId } from "@/lib/youtube";
 import { YouTubeWidget } from "./youtube-widget";
+import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
+import { PublicMetadataWidget } from "./public-metadata-widget";
+import { TwitchWidget } from "./twitch-widget";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
   profile: PublishedProfile;
@@ -53,13 +56,20 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         })}
       </div>}
       {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
-        {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
-          <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer"
+        {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) => {
+          const video = youtubeVideoId(url);
+          const metadata = metadataWidget(url);
+          const channel = twitchChannel(url);
+          const place = robloxPlace(url);
+          return <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer"
             data-analytics-profile={preview ? undefined : profile.username}
-            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a>
-            {youtubeVideoId(url) && <YouTubeWidget key={youtubeVideoId(url)} videoId={youtubeVideoId(url)!} label={label} />}
-          </li>
-        )}
+            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>
+            {video && <YouTubeWidget key={video} videoId={video} label={label} />}
+            {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
+              : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
+            {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
+          </li>;
+        })}
       </ul>}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}

@@ -53,7 +53,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -70,6 +70,55 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const draft = () => result("select public.get_draft() as value");
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
+
+  it("leases public widget refreshes and refuses stale completions or direct cache access", async () => {
+    await act("service_role");
+    const claimed = await result<{ state: string; lease: string }>("select public.claim_public_widget('github','example/repo') as value");
+    expect(claimed?.state).toBe("refresh");
+    expect(await result("select public.claim_public_widget('github','example/repo') as value")).toMatchObject({ state: "pending" });
+    expect(await result("select public.complete_public_widget('github','example/repo',$1,'{}',0) as value", [avatar])).toBe(false);
+    await db.exec("reset role; update snoozer.public_widget_cache set lease_until=now()-interval '1 second'; update snoozer.public_widget_limits set next_allowed=now()-interval '1 second'");
+    await act("service_role");
+    const replacement = await result<{ state: string; lease: string }>("select public.claim_public_widget('github','example/repo') as value");
+    expect(replacement?.state).toBe("refresh");
+    expect(replacement?.lease).not.toBe(claimed?.lease);
+    expect(await result("select public.complete_public_widget('github','example/repo',$1,'{}',0) as value", [claimed?.lease])).toBe(false);
+    expect(await result("select public.complete_public_widget('github','example/repo',$1,'{}',0) as value", [replacement?.lease])).toBe(true);
+    expect(await result("select public.claim_public_widget('github','example/repo') as value")).toEqual({ state: "cached", payload: {} });
+    await expect(db.query("select * from snoozer.public_widget_cache")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await expect(db.query("select public.claim_public_widget('github','example/repo')")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(db.query("select public.complete_public_widget('github','example/repo',$1,'{}',0)", [replacement?.lease])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("bounds provider requests without allocating unlimited cache keys and preserves provider backoff across hour rollover", async () => {
+    await db.exec("insert into snoozer.public_widget_limits(provider,window_start,used) values('github',date_trunc('hour',now()),39)");
+    await act("service_role");
+    const claimed = await result<{ lease: string }>("select public.claim_public_widget('github','example/last') as value");
+    expect(claimed?.lease).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await result("select public.claim_public_widget('github','example/limited') as value")).toMatchObject({ state: "limited" });
+    expect(await result("select public.complete_public_widget('github','example/last',$1,null,3600) as value", [claimed?.lease])).toBe(true);
+    expect(await result("select public.claim_public_widget('github','example/last') as value")).toEqual({ state: "unavailable" });
+    await db.exec("reset role; update snoozer.public_widget_limits set window_start=now()-interval '1 hour',used=0,next_allowed=now()-interval '1 second'");
+    await act("service_role");
+    expect(await result("select public.claim_public_widget('github','example/after-rollover') as value")).toMatchObject({ state: "limited" });
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.public_widget_cache")).toBe(1);
+  });
+
+  it("rejects unsupported provider cache keys and sweeps expired public metadata opportunistically", async () => {
+    await act("service_role");
+    await expect(db.query("select public.claim_public_widget('github','../private')")).rejects.toMatchObject({ code: "22023" });
+    await expect(db.query("select public.claim_public_widget('unsupported','resource')")).rejects.toMatchObject({ code: "22023" });
+    const claimed = await result<{ lease: string }>("select public.claim_public_widget('discord','i:Example') as value");
+    expect(await result("select public.complete_public_widget('discord','i:Example',$1,'{}',0) as value", [claimed?.lease])).toBe(true);
+    await db.exec("reset role; update snoozer.public_widget_cache set expires_at=now()-interval '8 days'; update snoozer.public_widget_limits set next_allowed=now()-interval '1 second'");
+    await act("service_role");
+    expect(await result("select public.claim_public_widget('discord','i:Another') as value")).toMatchObject({ state: "refresh" });
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.public_widget_cache where resource='i:Example'")).toBe(0);
+  });
 
   it("binds campaign attribution to the published profile and stops new attribution when paused", async () => {
     await act("authenticated", alice);
