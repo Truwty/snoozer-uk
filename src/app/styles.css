@@ -28,7 +28,7 @@ small { color: var(--muted); }
 .narrow { width: min(100% - 2rem, 31rem); padding-block: 2rem; }
 .nav { min-height: 5rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-block: .7rem; }
 .brand { display: inline-flex; align-items: center; gap: .18rem; text-decoration: none; font-weight: 800; letter-spacing: -.06em; font-size: 1.4rem; min-height: 44px; }
-.brand-mark { color: var(--accent); font-size: 1.6rem; margin-inline-end: .35rem; }
+.brand-mark { display: inline-block; width: 1.8rem; height: 1.8rem; flex: none; margin-inline-end: .45rem; vertical-align: middle; }
 .brand-domain { color: var(--muted); }
 .actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 .button { display: inline-flex; justify-content: center; align-items: center; gap: .7rem; min-height: 44px; border-radius: 999px; padding: .58rem 1.15rem; background: var(--surface); border: 1px solid var(--edge); color: var(--ink); font-weight: 640; text-decoration: none; line-height: 1.15; text-align: center; }
