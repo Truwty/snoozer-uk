@@ -240,12 +240,12 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 14.2 | Unique Visitors With Privacy-Conscious Methodology | Deferred |
 | 14.3 | Link Clicks | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.4 | Ctr | Deferred |
-| 14.5 | Referrers | Deferred |
-| 14.6 | Device Class | Deferred |
+| 14.5 | Referrers | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
+| 14.6 | Device Class | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
 | 14.7 | Country-Level Aggregates | Deferred |
 | 14.8 | Time-Series Charts | Core tested in disposable CI and hosted staging. See analytics.md |
-| 14.9 | Utm Attribution | Deferred |
-| 14.10 | Campaign Comparisons | Deferred |
+| 14.9 | Utm Attribution | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
+| 14.10 | Campaign Comparisons | Implemented coarse, consented campaign/source/device reports; local tests pass, disposable CI and staging verification pending. See analytics-campaigns.md |
 | 14.11 | Bot Filtering | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.12 | Event Deduplication | Core tested in disposable CI and hosted staging. See analytics.md |
 | 14.13 | Csv Export | Core tested in disposable CI and hosted staging. See analytics.md |

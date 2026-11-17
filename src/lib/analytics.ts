@@ -1,17 +1,25 @@
 import { z } from "zod";
 import { boundedBody } from "./bounded-request";
 import { username, safeLink, link } from "./profile";
+import { trafficDevices, trafficSources } from "./analytics-context";
+
+const attribution = { version: z.literal(2).optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional() };
 
 export const analyticsEvent = z.discriminatedUnion("kind", [
-  z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("view") }).strict(),
+  z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("view"), ...attribution }).strict(),
   z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("click"),
-    position: z.number().int().min(1).max(2000), url: z.string().max(2048).refine(safeLink) }).strict(),
+    position: z.number().int().min(1).max(2000), url: z.string().max(2048).refine(safeLink), ...attribution }).strict(),
 ]);
 export type AnalyticsEvent = z.infer<typeof analyticsEvent>;
 export const dailyAnalytics = z.array(z.object({
   day: z.iso.date(), views: z.number().int().min(0).max(10000), clicks: z.number().int().min(0).max(10000),
 }));
 export const linkAnalytics = z.array(link.extend({ clicks: z.number().int().nonnegative().safe() })).max(100);
+export const analyticsCampaigns = z.array(z.object({ id: z.uuid(), label: z.string().min(1).max(80), active: z.boolean() })).max(20);
+export const trafficAnalytics = z.array(z.object({
+  campaign: z.uuid().nullable(), label: z.string().min(1).max(80), source: z.enum(trafficSources), device: z.enum(trafficDevices),
+  views: z.number().int().nonnegative().safe(), clicks: z.number().int().nonnegative().safe(),
+})).max(1000);
 
 export async function receiveAnalytics(request: Request, origin: string, record: (event: AnalyticsEvent) => Promise<void>) {
   const reply = (status: number) => new Response(null, { status, headers: { "Cache-Control": "no-store" } });
@@ -45,4 +53,9 @@ function csvText(value: string) {
 export function linkAnalyticsCsv(rows: z.infer<typeof linkAnalytics>) {
   return "label,url,clicks\r\n" + rows.map(({ label, url, clicks }) =>
     `${csvText(label)},${csvText(url)},${clicks}\r\n`).join("");
+}
+
+export function trafficAnalyticsCsv(rows: z.infer<typeof trafficAnalytics>) {
+  return "campaign,source,device,views,clicks\r\n" + rows.map((row) =>
+    `${csvText(row.label)},${row.source},${row.device},${row.views},${row.clicks}\r\n`).join("");
 }

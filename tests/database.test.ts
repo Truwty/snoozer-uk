@@ -71,6 +71,64 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  it("binds campaign attribution to the published profile and stops new attribution when paused", async () => {
+    await act("authenticated", alice);
+    await claim("traffic-alice");
+    await save(0, "Traffic", [{ label: "Work", url: "https://example.com" }], true);
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    const campaign = await result<string>("select public.create_analytics_campaign($1,'Newsletter') as value", [profile]);
+    expect(campaign).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await result("select public.create_analytics_campaign($1,'Newsletter') as value", [profile])).toBe(campaign);
+    await act("authenticated", bob);
+    await claim("traffic-bob");
+    const other = (await draft() as { profile_id: string }).profile_id;
+    const otherCampaign = await result<string>("select public.create_analytics_campaign($1,'Other') as value", [other]);
+    await expect(db.query("select public.create_analytics_campaign($1,'Denied')", [profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.set_analytics_campaign_active($1,$2,false)", [other, campaign])).rejects.toMatchObject({ code: "42501" });
+    expect((await db.query("select * from public.get_my_analytics_campaigns($1)", [profile])).rows).toEqual([]);
+    await act("service_role");
+    const record = (code: string, id: string) => db.query(
+      "select public.record_profile_event_with_context('traffic-alice',$1,'view',null,null,null,'email',$2,'mobile')", [id, code]);
+    await record(campaign!, avatar);
+    await record(campaign!, avatar);
+    await record(otherCampaign!, bob); // a foreign code must not attribute to either creator's campaign
+    await act("authenticated", alice);
+    const totals = () => db.query("select * from public.get_my_profile_traffic_totals($1)", [profile]);
+    expect((await totals()).rows).toEqual(expect.arrayContaining([
+      { campaign, label: "Newsletter", source: "email", device: "mobile", views: 1, clicks: 0 },
+      { campaign: null, label: "No campaign", source: "email", device: "mobile", views: 1, clicks: 0 },
+    ]));
+    await db.query("select public.set_analytics_campaign_active($1,$2,false)", [profile, campaign]);
+    await act("service_role");
+    await record(campaign!, alice);
+    await act("authenticated", alice);
+    expect((await totals()).rows).toEqual(expect.arrayContaining([
+      { campaign, label: "Newsletter", source: "email", device: "mobile", views: 1, clicks: 0 },
+      { campaign: null, label: "No campaign", source: "email", device: "mobile", views: 2, clicks: 0 },
+    ]));
+    await db.query("select public.set_analytics_campaign_active($1,$2,true)", [profile, campaign]);
+    expect((await db.query("select * from public.get_my_analytics_campaigns($1)", [profile])).rows).toEqual([
+      { id: campaign, label: "Newsletter", active: true },
+    ]);
+    await act("authenticated", bob);
+    expect((await totals()).rows).toEqual([]);
+    await act("anon");
+    await expect(totals()).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("bounds saved campaigns, validates input and denies direct campaign access", async () => {
+    await act("authenticated", alice);
+    await claim("campaign-quota");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await expect(db.query("select public.create_analytics_campaign($1,'  ')", [profile])).rejects.toMatchObject({ code: "22023" });
+    for (let index = 0; index < 20; index++) await db.query("select public.create_analytics_campaign($1,$2)", [profile, "Campaign " + index]);
+    await expect(db.query("select public.create_analytics_campaign($1,'Over capacity')", [profile])).rejects.toMatchObject({ code: "P1006" });
+    await expect(db.query("select * from snoozer.analytics_campaigns")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(db.query("select public.create_analytics_campaign($1,'Denied')", [profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.profile_traffic_days")).rejects.toMatchObject({ code: "42501" });
+  });
+
   it("counts only published profiles, deduplicates events and isolates owner analytics", async () => {
     await act("authenticated", alice);
     await claim("analytics-alice");

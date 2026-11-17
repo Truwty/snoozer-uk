@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { browserAttribution } from "@/lib/analytics-context";
 
-const preferenceKey = "snoozer-analytics-consent";
+// Expanded attribution requires a fresh opt-in; never reuse the old view-only choice.
+const preferenceKey = "snoozer-analytics-consent-v2";
 
 export function ProfileAnalyticsConsent({ username }: { username: string }) {
   const [allowed, setAllowed] = useState(false);
@@ -10,10 +12,13 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
   const [privacySignal, setPrivacySignal] = useState(false);
 
   useEffect(() => {
-    function syncPreference() {
+    function syncPreference(event?: StorageEvent) {
       const signal = navigator.doNotTrack === "1" || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
       setPrivacySignal(signal);
       try {
+        if (event?.key === "snoozer-analytics-consent" && event.newValue === "no") {
+          localStorage.setItem(preferenceKey, "no");
+        }
         setAllowed(!signal && localStorage.getItem(preferenceKey) === "yes");
       } catch {
         setAllowed(false);
@@ -29,7 +34,7 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
     function send(payload: object) {
       void fetch("/api/v1/analytics/view", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, consent: true, id: crypto.randomUUID(), ...payload }), keepalive: true,
+        body: JSON.stringify({ ...browserAttribution(window.location.href, document.referrer), version: 2, username, consent: true, id: crypto.randomUUID(), ...payload }), keepalive: true,
       }).catch(() => undefined);
     }
     if (counted.current !== username) {
@@ -53,6 +58,7 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
   function changePreference(next: boolean) {
     try {
       localStorage.setItem(preferenceKey, next ? "yes" : "no");
+      if (!next) localStorage.setItem("snoozer-analytics-consent", "no");
     } catch {
       // The choice stays in memory if the browser blocks storage.
     }
@@ -61,7 +67,7 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
 
   return <details className="analytics-preference">
     <summary>Analytics preferences</summary>
-    <p>Help creators see page views and link clicks. This optional choice applies across Snoozer profiles on this browser. We store daily counts and short-lived random event receipts, without your IP address or a visitor ID. Turning off stops future collection.</p>
+    <p>Help creators see page views, link clicks, coarse traffic-source and device groups, and Snoozer campaign codes. This optional choice applies across Snoozer profiles on this browser. We store daily counts and short-lived random event receipts, without your IP address, full referrer, full user agent or a visitor ID. Turning off stops future collection.</p>
     {privacySignal && <p>Your browser privacy signal has disabled analytics.</p>}
     <button className="button small" type="button" disabled={privacySignal} onClick={() => changePreference(!allowed)}>
       {allowed ? "Turn off profile analytics" : "Allow profile analytics"}

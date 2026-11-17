@@ -2,6 +2,8 @@
 
 ## Current checkpoint
 
+- The next analytics increment implements generated campaign links, owner-only pause/resume, coarse source/device reports and traffic CSV, with fresh v2 consent. Migration 57 is not applied to staging yet. Local lint, typecheck, 163 Vitest tests, two audit-policy tests and build pass; disposable CI and hosted verification are pending. See [campaigns](analytics-campaigns.md).
+
 - [CI run 44173960711](https://github.com/Truwty/snoozer-uk/actions/runs/44173960711) passed the analytics and optional YouTube widget journeys: 126 Vitest, two audit-policy and 21 browser/HTTP tests; one expected missing-secret test skipped. The following test-only run passed all 140 Vitest tests but failed during disposable Supabase startup before browser execution.
 - Migration 55 and app 984261c are deployed to the existing free staging services. The labelled analytics fixture verified owner exclusion, view/click replay deduplication, wrong-origin denial, live/readiness HTTP 200, actual CSV download and optional YouTube frame loading/removal. See [analytics evidence](analytics.md) and [YouTube widget](youtube-widget.md).
 - The per-link reporting increment adds migration 56, retained publication label/destination counts, a top-100 owner report and formula-safe CSV. [CI 44176380200](https://github.com/Truwty/snoozer-uk/actions/runs/44176380200) passed lint, typecheck, 141 Vitest, two audit-policy and 21 browser/HTTP tests plus build, with one expected missing-secret test skipped. Migration 56 is applied on staging and app d861c1c is Live on deploy dep-dbuc6oek1f9s739r0b5g. Hosted replay/forged-destination checks produced the expected per-link counts; the real link CSV download matched them. Anonymous export returned 401.

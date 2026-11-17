@@ -199,6 +199,9 @@ textarea { resize: vertical; }
 .analytics-links th, .analytics-links td { overflow-wrap: anywhere; padding-block: .7rem; border-bottom: 1px solid var(--edge); }
 .analytics-links th:first-child { width: 78%; }
 .analytics-links small { display: block; font-weight: 400; }
+.analytics-context-wrap { overflow-x: auto; }
+.analytics-context-wrap table { min-width: 34rem; width: 100%; }
+.analytics-context-wrap th, .analytics-context-wrap td { text-align: start; padding: .5rem; overflow-wrap: anywhere; }
 .youtube-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; }
 .youtube-widget iframe { width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 1px solid var(--edge); border-radius: .7rem; }
 .analytics-preference p { margin-block: .5rem; }

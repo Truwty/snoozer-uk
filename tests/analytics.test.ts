@@ -29,6 +29,8 @@ describe("consent-aware analytics boundary", () => {
     { ...event, consent: false }, { ...event, consent: undefined }, { ...event, actor: "spoofed" },
     { ...event, id: "bad" }, { ...event, kind: "click", position: 0, url: "https://example.com" },
     { ...event, kind: "click", position: 1, url: "javascript:alert(1)" },
+    { ...event, referrer: "https://example.com/private" }, { ...event, version: 1 },
+    { ...event, source: "arbitrary private text" },
   ])("rejects invalid or forged fields: %s", async (payload) => {
     const record = vi.fn();
     expect((await receiveAnalytics(request(payload), origin, record)).status).toBe(400);

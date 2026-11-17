@@ -40,6 +40,7 @@ test.beforeEach(() => {
 });
 
 test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
+  test.setTimeout(60000);
   const name = "analytics-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
@@ -48,6 +49,9 @@ test("profile analytics requires consent, counts published link clicks and expor
   const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
   const visitor = await browser.newContext({ baseURL: "http://localhost:3000",
     userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36" });
+  await visitor.addInitScript(() => {
+    try { localStorage.setItem("snoozer-analytics-consent", "yes"); } catch { /* Some third-party frames block storage. */ }
+  });
   try {
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
     expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
@@ -118,6 +122,43 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
     expect((await selfView).status()).toBe(204);
     expect(await read()).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
+
+    await page.goto("/studio/analytics?profile=" + id);
+    await page.getByText("Campaign links (0/20)", { exact: true }).click();
+    await page.getByLabel("Campaign name", { exact: true }).fill("Newsletter");
+    await page.getByRole("button", { name: "Create campaign link", exact: true }).click();
+    await expect(page.getByText("Campaign link ready.", { exact: true })).toBeVisible();
+    const campaignUrl = new URL(await page.getByLabel("Campaign link: Newsletter", { exact: true }).inputValue());
+    campaignUrl.searchParams.set("utm_source", "newsletter");
+    const traffic = async () => (await owner.rpc("get_my_profile_traffic_totals", { p_profile: id })).data;
+    await publicPage.goto(campaignUrl.href);
+    await publicPage.getByText("Analytics preferences", { exact: true }).click();
+    await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
+    await expect.poll(traffic).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "Newsletter", source: "email", device: "desktop", views: 1, clicks: 0 }),
+    ]));
+    await page.getByRole("button", { name: "Pause campaign", exact: true }).click();
+    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(false);
+    await publicPage.reload();
+    await expect.poll(traffic).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "Newsletter", source: "email", views: 1 }),
+      expect.objectContaining({ campaign: null, source: "email", views: 1 }),
+    ]));
+    await page.getByRole("button", { name: "Resume campaign", exact: true }).click();
+    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(true);
+    await publicPage.reload();
+    await expect.poll(traffic).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "Newsletter", source: "email", views: 2 }),
+    ]));
+    await page.reload();
+    await expect(page.getByRole("table", { name: "Campaign, source and device event totals" })).toContainText("Newsletter");
+    const trafficDownload = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download traffic CSV", exact: true }).click();
+    expect((await trafficDownload).suggestedFilename()).toBe("snoozer-traffic-analytics.csv");
+    const trafficCsv = await page.request.get("/api/v1/analytics/export?breakdown=traffic&profile=" + id);
+    expect(trafficCsv.status()).toBe(200);
+    expect(await trafficCsv.text()).toContain('"Newsletter",email,desktop,2,0');
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
     await visitor.close();
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);

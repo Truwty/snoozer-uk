@@ -2,6 +2,8 @@
 
 ## Current checkpoint — 17 November 2026
 
+**Next increment in progress:** migration 57, generated campaign links, pause/resume, coarse source/device reports and traffic CSV with fresh v2 consent are implemented. Local lint, typecheck, 163 Vitest tests, two audit-policy tests and build pass. Verify its latest disposable CI, then apply migration 57 and deploy matching main to staging. **57 is not applied yet.** Read [analytics-campaigns.md](analytics-campaigns.md). The verified baseline below is still d861c1c with migrations through 56.
+
 Resume **Stage 4 analytics and integrations**. Stages 0–3 have their recorded core/staging exit evidence; live billing and production release remain gated. Read analytics.md, youtube-widget.md and the original master specification. Historical checkpoints below are superseded by this section.
 
 - App commit **d861c1c is Live** on Render Free staging, deploy **dep-dbuc6oek1f9s739r0b5g**. **Migrations 55 and 56 are applied and permission-checked** on the dedicated staging Supabase project. Do not apply them again. The labelled analytics-qa-20261117 fixture verified owner exclusion, replay deduplication, forged destination denial, both actual CSV downloads, optional YouTube loading/removal and HTTP health checks. Analytics opt-in was turned off again. Its dashboard has one QA view, two daily QA clicks and one attributed click (the first click predates per-link collection).
