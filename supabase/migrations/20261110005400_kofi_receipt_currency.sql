@@ -1,10 +1,10 @@
 alter table snoozer.kofi_donation_receipts
-  add column currency text not null default 'GBP' check (currency in ('GBP', 'USD'));
+  add column if not exists currency text not null default 'GBP' check (currency in ('GBP', 'USD'));
 
 comment on column snoozer.kofi_donation_receipts.amount_pence is
   'Amount in the minor unit of currency (GBP pence or USD cents). The legacy column name is retained.';
 
-create function public.record_kofi_donation_in_currency(
+create or replace function public.record_kofi_donation_in_currency(
   p_message uuid, p_transaction text, p_occurred_at timestamptz, p_amount integer, p_currency text
 )
 returns void language sql security definer set search_path = '' as $$

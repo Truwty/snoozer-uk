@@ -1,6 +1,6 @@
 # Ko-fi donation webhook
 
-In the platform Ko-fi account, set the Webhooks URL to the HTTPS deployment path /api/v1/billing/kofi/webhook. Set KOFI_WEBHOOK_TOKEN in the server environment to the verification token displayed by Ko-fi, then apply migration 20261110002800. Use the dashboard's single-tip test to verify a successful HTTP 200 and one private receipt. Replaying that payment should leave one row. Storage errors return 503 for retry.
+In the platform Ko-fi account, set the Webhooks URL to the HTTPS deployment path /api/v1/billing/kofi/webhook. Set KOFI_WEBHOOK_TOKEN in the server environment to the verification token displayed by Ko-fi, then apply migrations through 20261110005400. Use the dashboard's single-tip test to verify a successful HTTP 200 and one private receipt. Replaying that payment should leave one row. Storage errors return 503 for retry.
 
 Snoozer stores only the message and transaction IDs, timestamps and amount in integer minor units with the original currency. Donation receipts are unclaimed and never change account access. Membership, commission and shop event types are acknowledged and ignored. The receiver accepts GBP and USD donations. Migration 20261110005400 preserves older receipts as GBP. [Ko-fi webhook documentation](https://help.ko-fi.com/hc/en-us/articles/360004162298-Does-Ko-fi-have-an-API-or-webhook)
 
@@ -16,4 +16,4 @@ A verified account can request a review in Studio under Plan and usage. Ask the 
 
 An authorised billing operator can run the service-role RPC list_pending_kofi_donation_reviews and independently verify the claimant and payment against the platform Ko-fi account. A matching reference is a lookup aid. Verify purchaser ownership through the payment provider or a trusted support channel before confirming. Call resolve_kofi_donation_review with the review UUID and true after independent confirmation, or false when declining. A delayed webhook leaves the claim pending until its receipt arrives. A confirmed receipt stays marked as used even if the requester deletes their account. Keep the service credential in the operator secret store. A staff application screen remains pending.
 
-Run `npm run billing:preflight -- kofi` from the isolated operator environment to check the local Ko-fi configuration and Supabase diagnostic access independently of Stripe. Then send a GBP test donation from the Ko-fi dashboard. The preflight itself does not send or verify a provider delivery.
+Run `npm run billing:preflight -- kofi` from the isolated operator environment to check the local Ko-fi configuration and Supabase diagnostic access independently of Stripe. Then use Send single tip test in the Ko-fi dashboard. The preflight itself does not send or verify a provider delivery.
