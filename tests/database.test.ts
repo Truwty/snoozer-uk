@@ -123,6 +123,29 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select count(*)::int as value from snoozer.profile_view_days")).toBe(0);
   });
 
+  it("purges inactive analytics and applies the current plan after a downgrade", async () => {
+    await act("authenticated", alice);
+    await claim("analytics-plan");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'gift','analytics-plan',now()-interval '1 day',now()+interval '1 day')", [alice]);
+    await db.query(`insert into snoozer.profile_view_days(profile_id,day,views) values
+      ($1,(now() at time zone 'UTC')::date - 100,10),
+      ($1,(now() at time zone 'UTC')::date - 10,5)`, [profile]);
+    await db.query(`insert into snoozer.profile_view_receipts(profile_id,day,event_id,kind)
+      values ($1,(now() at time zone 'UTC')::date - 100,$2,'view')`, [profile, avatar]);
+    await act("authenticated", alice);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toHaveLength(2);
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='analytics-plan'");
+    await act("authenticated", alice);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toHaveLength(1);
+    await act("service_role");
+    expect(await result("select public.purge_profile_analytics() as value")).toBe(1);
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.profile_view_receipts")).toBe(0);
+    expect(await result("select sum(views)::int as value from snoozer.profile_view_days")).toBe(5);
+  });
+
   it("enforces plan link limits without deleting links after a downgrade", async () => {
     const links = Array.from({ length: 21 }, (_, index) => ({ label: "Link " + index, url: "https://example.com/" + index }));
     await act("authenticated", alice);

@@ -190,4 +190,6 @@ textarea { resize: vertical; }
 .analytics-chart-day { height: 100%; flex: 1 0 5px; display: flex; align-items: end; gap: 1px; }
 .analytics-bar { display: block; flex: 1; background: #d1d5db; }
 .analytics-bar.clicks { background: #55c799; }
+.youtube-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; }
+.youtube-widget iframe { width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 1px solid var(--edge); border-radius: .7rem; }
 .analytics-preference p { margin-block: .5rem; }

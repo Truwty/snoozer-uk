@@ -52,7 +52,8 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
     expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
     expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Analytics fixture", p_bio: "",
-      p_theme: "midnight", p_indexable: false, p_links: [{ label: "Work", url: "https://example.com/" }],
+      p_theme: "midnight", p_indexable: false, p_links: [{ label: "Work", url: "https://example.com/" },
+        { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" }],
       p_publish: true, p_remove_avatar: false })).error).toBeNull();
     const draft = await owner.rpc("get_draft");
     const id = draft.data.profile_id;
@@ -76,6 +77,17 @@ test("profile analytics requires consent, counts published link clicks and expor
     await publicPage.reload();
     await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
+    // No third-party frame or request before a separate, per-player opt-in.
+    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    let embedRequests = 0;
+    await publicPage.route("https://www.youtube-nocookie.com/**", (route) => { embedRequests++; return route.abort(); });
+    await publicPage.getByRole("button", { name: "Load YouTube player" }).click();
+    await expect(publicPage.getByTitle("YouTube: Video")).toHaveAttribute("referrerpolicy", "strict-origin");
+    await expect.poll(() => embedRequests).toBe(1);
+    await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
+    await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
+    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    expect(events).toHaveLength(2); // embed consent does not enable analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
 
     await page.goto("/sign-in");
@@ -85,6 +97,9 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
     await expect(page.getByRole("table")).toContainText("1");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download CSV" }).click();
+    expect((await downloadPromise).suggestedFilename()).toBe("snoozer-analytics.csv");
     const csv = await page.request.get("/api/v1/analytics/export?profile=" + id);
     expect(csv.status()).toBe(200);
     expect(csv.headers()["cache-control"]).toBe("private, no-store");

@@ -4,6 +4,8 @@ import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { safeLink, type PublishedProfile } from "@/lib/profile";
+import { youtubeVideoId } from "@/lib/youtube";
+import { YouTubeWidget } from "./youtube-widget";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
   profile: PublishedProfile;
@@ -54,7 +56,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
           <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer"
             data-analytics-profile={preview ? undefined : profile.username}
-            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a></li>
+            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a>
+            {youtubeVideoId(url) && <YouTubeWidget key={youtubeVideoId(url)} videoId={youtubeVideoId(url)!} label={label} />}
+          </li>
         )}
       </ul>}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">

@@ -2,6 +2,8 @@
 
 ## Current checkpoint — 17 November 2026
 
+Latest: CI 44173034365 passed the analytics journey on 9f6f6ca. A following YouTube-widget increment adds separate embed consent and blocked-provider fallback coverage; verify its latest CI before staging rollout. Local tests: 140 Vitest plus two audit-policy tests; Edge smoke: 15 passed, seven provider tests skipped. The full npm audit has one root unpatched development advisory with a narrowly scoped exception expiring 1 December 2026; run `npm run audit` and read [dependency-audit.md](dependency-audit.md).
+
 Continue **Stage 4**, not monetisation. The historical notes below are superseded by this checkpoint and the final Stage 3 staging entry. Migration 20261110005500 implements opt-in daily view/click analytics. Read [analytics.md](analytics.md) for the model, limits and verification.
 
 - Current changes pass lint, typecheck, 125 unit/SQL tests and production build locally. Run the new analytics browser journey in disposable Supabase CI, fix failures and record the run before claiming browser verification. The host still has no local Docker/Podman.

@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <p><strong>{rows.data.reduce((sum, row) => sum + row.views, 0).toLocaleString("en-GB")}</strong> recorded views</p>
         <p><strong>{rows.data.reduce((sum, row) => sum + row.clicks, 0).toLocaleString("en-GB")}</strong> recorded link clicks</p>
         <p className="muted">These are event counts, not unique people. Reloads may count again. Known bots are filtered, but automation can still inflate counts. Counts stop at 10,000 views and 10,000 clicks per profile per UTC day.</p>
-        <Link className="button small" prefetch={false} href={studioHref("/api/v1/analytics/export", draft?.profile_id)}>Download CSV</Link>
+        <a className="button small" download="snoozer-analytics.csv" href={studioHref("/api/v1/analytics/export", draft?.profile_id)}>Download CSV</a>
         <div className="analytics-chart" role="img" aria-label="Daily views and link clicks. Exact values follow in the table.">
           {[...rows.data].reverse().map(({ day, views, clicks }) => <div className="analytics-chart-day" key={day}>
             <span className="analytics-bar views" style={{ height: `${views / peak * 100}%` }} />

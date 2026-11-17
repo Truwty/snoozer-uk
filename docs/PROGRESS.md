@@ -2,6 +2,9 @@
 
 ## Current checkpoint
 
+- [CI run 44173034365](https://github.com/Truwty/snoozer-uk/actions/runs/44173034365) passed on 9f6f6ca, including the disposable Supabase analytics consent/click/CSV/owner-exclusion journey. Local Edge smoke/accessibility checks passed 15 with seven provider-dependent tests skipped. The full audit now uses a documented, expiring development-only picomatch exception; production audit reports zero vulnerabilities. See [dependency review](dependency-audit.md).
+- Added an optional [YouTube widget](youtube-widget.md) derived from published video links. Local tests now pass 140 Vitest tests plus two audit-policy tests. The new widget browser scenario and real hosted rollout remain pending.
+
 Stages 0–3 have passed their recorded core/staging checks. **Stage 4 remains in progress.** Analytics collection, daily view/click totals, charts and owner-only CSV export are implemented in this working increment. Local lint, typecheck, 125 unit/SQL tests and production build pass. Disposable Supabase browser/HTTP verification and staging rollout are pending. The chronological notes below include older, superseded limitations.
 
 Stage 3's signed provider sandbox journeys closed at the latest checkpoint below. Live billing, production rollout and advanced abuse controls remain open.
