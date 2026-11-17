@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brand } from "@/components/shell";
+import { HomeProfileDemo } from "@/components/home-profile-demo";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 
 export default function Home() {
@@ -14,21 +15,15 @@ export default function Home() {
     </header>
     <section className="hero">
       <div className="hero-copy">
-        <p className="eyebrow"><span className="spark" aria-hidden="true">✦</span> YOUR CORNER OF THE INTERNET</p>
+        <p className="eyebrow"><span className="spark" aria-hidden="true">✦</span> LINK IN BIO · PROFILE STUDIO</p>
         <h1>Make yourself<br className="hero-break" /> <em>at home.</em></h1>
-        <p className="lead">Give your work, socials and favourite things one address. Make it feel like you, then share it anywhere.</p>
+        <p className="lead">Give your links, photos and projects a page that feels like you. Share it anywhere with one Snoozer address.</p>
         <div className="actions">
           <Link className="button primary" href="/sign-up">Create your page <span aria-hidden="true">↗</span></Link>
           <Link className="button" href="/templates">Browse templates</Link>
-          <a className="button" href="#how-it-works">How it works</a>
         </div>
       </div>
-      <div className="hero-art" aria-hidden="true">
-        <div className="orbit orbit-outer" /><div className="orbit orbit-inner" />
-        <div className="orb"><div className="orb-lines" /></div>
-        <span className="art-star">✧</span><span className="art-star small-star">+</span>
-        <div className="art-coordinates"><span>FIG. 01</span><span>PERSONAL SPACE</span></div>
-      </div>
+      <HomeProfileDemo />
     </section>
     <section className="steps" id="how-it-works" aria-label="How Snoozer works">
       <article><p className="eyebrow">01 / CLAIM</p><h2>Pick your address.</h2><p>Choose a username to give your page a home on Snoozer.</p></article>

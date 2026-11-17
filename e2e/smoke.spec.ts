@@ -16,6 +16,20 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
   });
 }
 
+test("homepage preview applies Studio themes and layouts with keyboard controls", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 860 });
+  await page.goto("/");
+  const example = page.getByRole("region", { name: "Example profile" });
+  const lagoon = page.getByRole("button", { name: "Lagoon", exact: true });
+  await lagoon.focus();
+  await lagoon.press("Space");
+  await expect(lagoon).toHaveAttribute("aria-pressed", "true");
+  await expect(example).toHaveClass(/theme-lagoon/);
+  await page.getByRole("button", { name: "Editorial", exact: true }).click();
+  await expect(example).toHaveAttribute("data-layout", "editorial");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
+
 test("liveness works without credentials", async ({ request }) => {
   const response = await request.get("/health/live");
   expect(response.ok()).toBe(true);
