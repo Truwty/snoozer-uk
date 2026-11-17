@@ -1,6 +1,10 @@
-# Progress — 11 November 2026
+# Progress — 17 November 2026
 
-Milestones 0 and 1 and the core Studio and assets milestone have passed their verification checks. Milestone 3, monetisation, is next. Hosted rollout and advanced abuse controls remain open.
+## Current checkpoint
+
+Stages 0–3 have passed their recorded core/staging checks. **Stage 4 remains in progress.** Analytics collection, daily view/click totals, charts and owner-only CSV export are implemented in this working increment. Local lint, typecheck, 125 unit/SQL tests and production build pass. Disposable Supabase browser/HTTP verification and staging rollout are pending. The chronological notes below include older, superseded limitations.
+
+Stage 3's signed provider sandbox journeys closed at the latest checkpoint below. Live billing, production rollout and advanced abuse controls remain open.
 
 ## Implemented
 

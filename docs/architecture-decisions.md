@@ -1,5 +1,7 @@
 # Architecture decisions
 
+- Analytics starts with consented anonymous event totals, never fingerprinted visitors. Use daily PostgreSQL aggregates with expiring per-event receipts and service-only writes. Exclude owners with server-validated Auth; owner-scoped RPCs and CSV exports enforce plan retention. Keep direct link navigation independent of analytics availability. Do not label event ratios as CTR or event IDs as unique people.
+
 - Start from an empty workspace. Use one stateless Next.js App Router service with React, strict TypeScript, Tailwind and npm. Organise server modules by domain as the application expands.
 - Use Supabase Auth and Storage and PostgreSQL through the Supabase Data API. Versioned SQL owns constraints, RLS and transactional RPCs. Avoid a second ORM migration history or persistent application-side connection pool.
 - Keep drafts owner-only. Store immutable snapshots separately and publish by switching a pointer in the same transaction. Check expected revision under a row lock and use a unique canonical username constraint. Public reads return only published fields.

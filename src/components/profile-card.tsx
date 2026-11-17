@@ -52,7 +52,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       </div>}
       {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
         {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) =>
-          <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer">{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a></li>
+          <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer"
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"} <span aria-hidden="true">↗</span></a></li>
         )}
       </ul>}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">

@@ -16,7 +16,8 @@
     "moderation:gallery": "node --env-file-if-exists=.env.local scripts/take-down-gallery-image.mjs",
     "billing:preflight": "node --env-file-if-exists=.env.local scripts/billing-sandbox-preflight.mjs",
     "billing:diagnostics": "node --env-file-if-exists=.env.local scripts/billing-diagnostics.mjs",
-    "cleanup:avatars": "node --env-file-if-exists=.env.local scripts/cleanup-avatars.mjs"
+    "cleanup:avatars": "node --env-file-if-exists=.env.local scripts/cleanup-avatars.mjs",
+    "cleanup:analytics": "node --env-file-if-exists=.env.local scripts/purge-analytics.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

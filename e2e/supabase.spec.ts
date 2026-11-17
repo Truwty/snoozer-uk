@@ -39,6 +39,69 @@ test.beforeEach(() => {
   }
 });
 
+test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
+  const name = "analytics-" + randomUUID().slice(0, 10);
+  const email = name + "@example.com";
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(account.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  const visitor = await browser.newContext({ baseURL: "http://localhost:3000",
+    userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36" });
+  try {
+    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
+    expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Analytics fixture", p_bio: "",
+      p_theme: "midnight", p_indexable: false, p_links: [{ label: "Work", url: "https://example.com/" }],
+      p_publish: true, p_remove_avatar: false })).error).toBeNull();
+    const draft = await owner.rpc("get_draft");
+    const id = draft.data.profile_id;
+    const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
+    const publicPage = await visitor.newPage();
+    const events: string[] = [];
+    publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
+    await publicPage.goto("/" + name);
+    await publicPage.getByText("Analytics preferences", { exact: true }).click();
+    expect(await read()).toEqual([]);
+    expect(events).toHaveLength(0);
+    await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
+    await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 0 }]);
+    // Middle click leaves the source page open and exercises the real link handler.
+    const popupPromise = visitor.waitForEvent("page");
+    await publicPage.getByRole("link", { name: "Work" }).click({ button: "middle" });
+    const popup = await popupPromise;
+    await popup.close();
+    await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
+    await publicPage.getByRole("button", { name: "Turn off profile analytics" }).click();
+    await publicPage.reload();
+    await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
+    expect(events).toHaveLength(2);
+    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
+
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("link", { name: "Analytics", exact: true }).click();
+    await expect(page.getByRole("table")).toContainText("1");
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    const csv = await page.request.get("/api/v1/analytics/export?profile=" + id);
+    expect(csv.status()).toBe(200);
+    expect(csv.headers()["cache-control"]).toBe("private, no-store");
+    expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
+    // A signed-in creator who opts in still must not count their own page.
+    await page.goto("/" + name);
+    await page.getByText("Analytics preferences", { exact: true }).click();
+    const selfView = page.waitForResponse((r) => r.url().endsWith("/api/v1/analytics/view"));
+    await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
+    expect((await selfView).status()).toBe(204);
+    expect(await read()).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
+  } finally {
+    await visitor.close();
+    if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
+  }
+});
+
 test("Plus can claim and switch between independent profiles", async ({ page, request }) => {
   const name = `multi-${randomUUID().slice(0, 8)}`;
   const second = `${name}-second`;

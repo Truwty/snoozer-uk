@@ -71,6 +71,58 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  it("counts only published profiles, deduplicates events and isolates owner analytics", async () => {
+    await act("authenticated", alice);
+    await claim("analytics-alice");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await act("service_role");
+    const record = (kind = "view", actor: string | null = null, url = "https://example.com") =>
+      db.query("select public.record_profile_event('analytics-alice',$1,$2,$3,1,$4)", [avatar, kind, actor, url]);
+    await record();
+    await act("authenticated", alice);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toEqual([]);
+    await save(0, "Analytics", [{ label: "Work", url: "https://example.com" }], true);
+    await act("service_role");
+    await record("view", alice); // authenticated owner's real visits do not count
+    await record("view");
+    await record("view");
+    await record("click", null, "https://unpublished.com");
+    await record("click");
+    await record("click");
+    await expect(db.query("select * from snoozer.profile_view_days")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    const rows = (await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows;
+    expect(rows).toEqual([{ day: expect.any(Date), views: 1, clicks: 1 }]);
+    await expect(record()).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.purge_profile_analytics()")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toEqual([]);
+    await act("anon");
+    await expect(db.query("select * from public.get_my_profile_view_days($1)", [profile])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("enforces analytics retention, bounded intake and cascading profile deletion", async () => {
+    await act("authenticated", alice);
+    await claim("analytics-retention");
+    await save(0, "Analytics", [], true);
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query(`insert into snoozer.profile_view_days(profile_id,day,views) values
+      ($1,(now() at time zone 'UTC')::date - 30,50),
+      ($1,(now() at time zone 'UTC')::date - 29,40),
+      ($1,(now() at time zone 'UTC')::date,10000)`, [profile]);
+    await act("authenticated", alice);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows).toHaveLength(2);
+    await act("service_role");
+    await db.query("select public.record_profile_event('analytics-retention',$1,'view',null)", [avatar]);
+    expect(await result("select public.purge_profile_analytics() as value")).toBe(0); // intake already purged oldest day
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.profile_view_receipts")).toBe(0);
+    expect(await result("select sum(views)::int as value from snoozer.profile_view_days")).toBe(10040);
+    await db.query("delete from snoozer.profiles where id=$1", [profile]);
+    expect(await result("select count(*)::int as value from snoozer.profile_view_days")).toBe(0);
+  });
+
   it("enforces plan link limits without deleting links after a downgrade", async () => {
     const links = Array.from({ length: 21 }, (_, index) => ({ label: "Link " + index, url: "https://example.com/" + index }));
     await act("authenticated", alice);

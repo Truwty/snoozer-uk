@@ -40,6 +40,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <div className="stack status-panel">
           <Link className="button small" href={studioHref("/studio/gallery", selected)}>Image gallery</Link>
           <Link className="button small" href={studioHref("/studio/history", selected)}>Publish history</Link>
+          <Link className="button small" href={studioHref("/studio/analytics", selected)}>Analytics</Link>
           <Link className="button small" href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
           <p className="status-label">{draft.published_revision === null ? "Offline · Draft only"
             : draft.revision === draft.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p>

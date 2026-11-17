@@ -183,3 +183,11 @@ textarea { resize: vertical; }
   .public-page .profile-card { --page: white; --text: black; --detail: #333; --chip: #eee; --wash: white; }
   .public-credit { color: black; }
 }
+
+.analytics-preference { width: min(100%, 30rem); margin-inline: auto; color: var(--muted); font-size: .875rem; }
+.analytics-preference summary { cursor: pointer; }
+.analytics-chart { display: flex; align-items: end; gap: 2px; height: 10rem; border-bottom: 1px solid var(--muted); overflow-x: auto; }
+.analytics-chart-day { height: 100%; flex: 1 0 5px; display: flex; align-items: end; gap: 1px; }
+.analytics-bar { display: block; flex: 1; background: #d1d5db; }
+.analytics-bar.clicks { background: #55c799; }
+.analytics-preference p { margin-block: .5rem; }

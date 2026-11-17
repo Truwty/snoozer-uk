@@ -236,27 +236,27 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 14.1 | Profile Views | Deferred |
+| 14.1 | Profile Views | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
 | 14.2 | Unique Visitors With Privacy-Conscious Methodology | Deferred |
-| 14.3 | Link Clicks | Deferred |
+| 14.3 | Link Clicks | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
 | 14.4 | Ctr | Deferred |
 | 14.5 | Referrers | Deferred |
 | 14.6 | Device Class | Deferred |
 | 14.7 | Country-Level Aggregates | Deferred |
-| 14.8 | Time-Series Charts | Deferred |
+| 14.8 | Time-Series Charts | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
 | 14.9 | Utm Attribution | Deferred |
 | 14.10 | Campaign Comparisons | Deferred |
-| 14.11 | Bot Filtering | Deferred |
-| 14.12 | Event Deduplication | Deferred |
-| 14.13 | Csv Export | Deferred |
-| 14.14 | Retention Settings | Deferred |
+| 14.11 | Bot Filtering | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
+| 14.12 | Event Deduplication | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
+| 14.13 | Csv Export | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
+| 14.14 | Retention Settings | Partial: plan-controlled retention and purge; owner-selectable settings and hosted runner open |
 | 14.15 | Timezone Selection | Deferred |
-| 14.16 | Consent-Aware Event Collection | Deferred |
+| 14.16 | Consent-Aware Event Collection | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
 | 14.17 | Scheduled Reports | Deferred |
 | 14.18 | A/B Test Assignment | Deferred |
 | 14.19 | Statistical Guardrails | Deferred |
 | 14.20 | Real-Time Approximate Metrics | Deferred |
-| 14.21 | Anti-Self-View Controls | Deferred |
+| 14.21 | Anti-Self-View Controls | Implemented; local unit/SQL checks pass, disposable browser/staging verification pending. See analytics.md |
 
 ## 15. TEMPLATES AND MARKETPLACE
 
@@ -439,3 +439,4 @@ Deferred entries are implementation work. Provider-dependent results are tracked
 | 23.14 | Form Error Summaries | Partially implemented |
 | 23.15 | Accessible Charts | Deferred |
 | 23.16 | Non-Colour-Only Status Indicators | Partially implemented |
+

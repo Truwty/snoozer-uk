@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
+import { ProfileAnalyticsConsent } from "@/components/profile-analytics-consent";
 import { ProfileCard } from "@/components/profile-card";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { readPublished } from "@/lib/profiles-server";
@@ -37,6 +38,7 @@ export default async function Page({ params }: Props) {
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   return <main className="public-page">
     <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <Link className="public-credit" href="/">Made with Snoozer</Link>
   </main>;
 }
