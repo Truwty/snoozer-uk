@@ -386,6 +386,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       .toEqual([{ message_id: alice, transaction_id: "first", amount_pence: 350 }]);
   });
 
+  it("keeps the original Ko-fi currency and amount on replay", async () => {
+    const submit = (currency: string) => db.query(
+      "select public.record_kofi_donation_in_currency($1,'currency-test',now(),350,$2)", [alice, currency],
+    );
+    await act("authenticated", alice);
+    await expect(submit("USD")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(submit("EUR")).rejects.toMatchObject({ code: "23514" });
+    await submit("USD");
+    await submit("GBP");
+    await db.exec("reset role");
+    expect((await db.query(
+      "select amount_pence,currency from snoozer.kofi_donation_receipts where message_id=$1", [alice],
+    )).rows).toEqual([{ amount_pence: 350, currency: "USD" }]);
+  });
+
   it("exposes the sandbox portal customer only to the verified subscription owner", async () => {
     const customer = () => result("select public.get_my_stripe_sandbox_customer() as value");
     await db.exec("insert into snoozer.stripe_sandbox_prices values ('price_Portal','plus',1,'month','gbp',399,null)");

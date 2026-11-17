@@ -5,9 +5,9 @@ export const runtime = "nodejs";
 
 export function POST(request: Request) {
   return receiveKofiWebhook(request, process.env.KOFI_WEBHOOK_TOKEN, async (receipt) => {
-    const { error } = await storageAdmin().rpc("record_kofi_donation", {
+    const { error } = await storageAdmin().rpc("record_kofi_donation_in_currency", {
       p_message: receipt.id, p_transaction: receipt.transactionId,
-      p_occurred_at: receipt.occurredAt, p_amount: receipt.amount,
+      p_occurred_at: receipt.occurredAt, p_amount: receipt.amount, p_currency: receipt.currency,
     });
     if (error) throw new Error("Ko-fi receipt could not be saved.");
   });

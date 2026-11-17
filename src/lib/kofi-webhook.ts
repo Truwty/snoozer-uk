@@ -8,11 +8,11 @@ const payment = z.object({
   timestamp: z.iso.datetime({ offset: true }),
   type: z.literal("Donation"),
   amount: z.string().regex(/^(?:0|[1-9][0-9]{0,5})\.[0-9]{2}$/),
-  currency: z.literal("GBP"),
+  currency: z.enum(["GBP", "USD"]),
 });
 const digest = (value: string) => createHash("sha256").update(value).digest();
 
-type Receipt = { id: string; transactionId: string; occurredAt: string; amount: number };
+type Receipt = { id: string; transactionId: string; occurredAt: string; amount: number; currency: "GBP" | "USD" };
 
 export async function receiveKofiWebhook(
   request: Request, token: string | undefined, record: (receipt: Receipt) => Promise<void>,
@@ -45,7 +45,7 @@ export async function receiveKofiWebhook(
   try {
     await record({
       id: result.data.message_id, transactionId: result.data.kofi_transaction_id,
-      occurredAt: result.data.timestamp, amount,
+      occurredAt: result.data.timestamp, amount, currency: result.data.currency,
     });
   } catch {
     return new Response(null, { status: 503 });

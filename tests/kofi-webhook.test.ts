@@ -19,8 +19,14 @@ describe("Ko-fi donation intake", () => {
     expect((await receiveKofiWebhook(request(donation), token, record)).status).toBe(200);
     expect(record).toHaveBeenLastCalledWith({
       id: donation.message_id, transactionId: donation.kofi_transaction_id,
-      occurredAt: donation.timestamp, amount: 350,
+      occurredAt: donation.timestamp, amount: 350, currency: "GBP",
     });
+  });
+
+  it("records USD tips in cents with the original currency", async () => {
+    const record = vi.fn();
+    expect((await receiveKofiWebhook(request({ ...donation, currency: "USD" }), token, record)).status).toBe(200);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ amount: 350, currency: "USD" }));
   });
 
   it.each([
@@ -28,7 +34,7 @@ describe("Ko-fi donation intake", () => {
     [{ type: "Subscription" }, 200],
     [{ amount: "0.00" }, 400],
     [{ amount: "3.501" }, 400],
-    [{ currency: "USD" }, 400],
+    [{ currency: "EUR" }, 400],
     [{ message_id: "invalid" }, 400],
   ])("handles a changed payload without storing a donation", async (change, status) => {
     const record = vi.fn();
