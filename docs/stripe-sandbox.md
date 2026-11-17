@@ -51,3 +51,5 @@ To run the fixture locally, start disposable Supabase as described in the contin
 ## Provider verification preflight
 
 Apply migration 20261110005300 and run npm run billing:preflight with the isolated deployment environment. The command lists missing or malformed settings by name. It requires at least one active subscription offer and one active gift offer, checks each configured offer against the Stripe sandbox, and verifies the active Billing Portal configuration. The restricted key needs Price and Billing Portal configuration read access for this check. The command prints no credentials or provider object IDs. Use the provider dashboards to verify delivered events and complete the checkout, renewal, cancellation, gift refund and Ko-fi delivery scenarios.
+
+Use `npm run billing:preflight -- stripe` to check Stripe without waiting for a Ko-fi token. Omit the argument to check both providers.
