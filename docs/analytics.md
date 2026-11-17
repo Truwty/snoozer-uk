@@ -34,7 +34,9 @@ Migration 20261110005600 adds daily click totals by immutable publication positi
 
 Per-link data cascades with daily retention and profile deletion. Read access remains verified-owner only with no direct table grants. The authenticated `breakdown=links` export uses the same permission boundary as daily CSV. Creator text fields are CSV quoted and formula-leading characters are neutralised; URL schemes are validated before rendering or exporting. Daily and per-link report failures are shown independently.
 
-The per-link increment passes local lint, typecheck, 141 Vitest tests, two audit-policy tests and production build. Updated disposable browser tests cover the attributed Work link and the real link CSV download. Hosted migration 56 and its CI/staging verification are pending.
+The per-link increment passes lint, typecheck, 141 Vitest tests, two audit-policy tests and production build, both locally and in [CI 44176380200](https://github.com/Truwty/snoozer-uk/actions/runs/44176380200). CI also passed 21 browser/HTTP checks with one expected missing-secret check skipped. The attributed Work link and both actual CSV downloads are included.
+
+Migration 56 is applied and permission-checked on staging. Render deploy `dep-dbuc6oek1f9s739r0b5g` reached Live on d861c1c. Replaying a fresh anonymous QA click twice added one daily click and one per-link click under Example destination / https://example.com/. A forged unpublished destination added nothing. The owner dashboard showed one view, two daily clicks (one predates per-link collection) and one attributed click. The actual link CSV download matched that attribution. An anonymous CSV request returned 401. The earlier disposable Supabase startup failure did not recur in this run; its underlying cause remains unknown.
 
 ### Hosted evidence
 
