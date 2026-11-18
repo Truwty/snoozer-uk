@@ -352,7 +352,9 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     expect(root.status()).toBe(200);
     const html = await root.text();
     expect(html).toContain("Isolated creator-domain fixture");
-    expect(html).toContain(`https://${host}/`);
+    const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
+    expect(canonical).toBeDefined();
+    expect(new URL(canonical!).href).toBe(`https://${host}/`);
     for (const path of ["/studio", "/sign-in", "/studio/plan", "/api/v1/analytics/export"]) expect((await request.get(path, { headers, maxRedirects: 0 })).status()).toBe(404);
     expect((await request.post("/", { headers, data: {} })).status()).toBe(404);
     expect((await request.post("/api/v1/billing/stripe/webhook", { headers, data: {} })).status()).toBe(404);

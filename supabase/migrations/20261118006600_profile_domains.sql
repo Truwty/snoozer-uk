@@ -16,6 +16,8 @@ create table snoozer.domain_requests (
  check_lease uuid, check_until timestamptz, retry_after timestamptz not null default '-infinity'
 );
 create index domain_requests_owner on snoozer.domain_requests(owner_id,created_at);
+create index domain_requests_expiry on snoozer.domain_requests(expires_at,id) where used_at is null;
+create index domain_requests_history on snoozer.domain_requests((coalesce(retired_at,used_at)),id) where used_at is not null;
 create table snoozer.profile_domains (
  hostname text primary key check(snoozer.valid_domain(hostname)),
  owner_id uuid not null references auth.users(id) on delete cascade,
@@ -24,6 +26,9 @@ create table snoozer.profile_domains (
  state text not null check(state in ('provisioning','active','disconnecting','removed')),
  verified_until timestamptz, removed_at timestamptz, created_at timestamptz not null default now()
 );
+create index profile_domains_request on snoozer.profile_domains(request_id);
+create index profile_domains_owner on snoozer.profile_domains(owner_id,created_at,hostname) where state<>'removed';
+create index profile_domains_cleanup on snoozer.profile_domains(removed_at,hostname) where state='removed';
 create unique index profile_domains_one_per_profile on snoozer.profile_domains(profile_id) where state<>'removed';
 alter table snoozer.domain_requests enable row level security;
 alter table snoozer.profile_domains enable row level security;
@@ -153,9 +158,15 @@ begin
  delete from snoozer.profile_domains where hostname in (select hostname from snoozer.profile_domains where state='removed' and removed_at<now()-interval '30 days' order by removed_at,hostname limit p_limit);
  get diagnostics total=row_count;
  delete from snoozer.domain_requests where id in (
-  select r.id from snoozer.domain_requests r where not exists(select 1 from snoozer.profile_domains b where b.request_id=r.id)
-   and ((r.used_at is null and r.expires_at<now()-interval '7 days') or coalesce(r.retired_at,r.used_at)<now()-interval '30 days')
-  order by r.created_at,r.id limit p_limit);
+  select r.id from snoozer.domain_requests r where r.used_at is null and r.expires_at<now()-interval '7 days'
+   and not exists(select 1 from snoozer.profile_domains b where b.request_id=r.id)
+  order by r.expires_at,r.id limit p_limit);
+ get diagnostics removed=row_count;
+ total:=total+removed;
+ delete from snoozer.domain_requests where id in (
+  select r.id from snoozer.domain_requests r where r.used_at is not null and coalesce(r.retired_at,r.used_at)<now()-interval '30 days'
+   and not exists(select 1 from snoozer.profile_domains b where b.request_id=r.id)
+  order by coalesce(r.retired_at,r.used_at),r.id limit p_limit);
  get diagnostics removed=row_count;
  return total+removed;
 end $$;
