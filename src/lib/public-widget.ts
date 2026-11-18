@@ -19,7 +19,7 @@ type Dependencies = {
   fetchMetadata: (provider: MetadataProvider, resource: string) => Promise<WidgetFetchResult>;
 };
 
-export async function receivePublicWidget(request: Request, origin: string, dependencies: Dependencies) {
+export async function receivePublicWidget(request: Request, origin: string, dependencies: Dependencies, boundUsername?: string) {
   const reply = (status: number, data?: WidgetMetadata, retryAfter?: number) => new Response(data ? JSON.stringify(data) : null, {
     status, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
       ...(data && { "Content-Type": "application/json" }), ...(retryAfter && { "Retry-After": String(retryAfter) }) },
@@ -34,6 +34,7 @@ export async function receivePublicWidget(request: Request, origin: string, depe
   } catch { return reply(400); }
   const input = requestSchema.safeParse(payload);
   if (!input.success) return reply(400);
+  if (boundUsername && input.data.username !== boundUsername) return reply(403);
   try {
     const url = await dependencies.getLink(input.data.username, input.data.position);
     if (!url) return reply(404);

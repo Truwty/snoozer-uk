@@ -85,6 +85,12 @@ describe("public widget request boundary", () => {
       claim: vi.fn().mockResolvedValue({ state: "refresh", lease }),
       complete: vi.fn().mockResolvedValue(true), fetchMetadata: vi.fn().mockResolvedValue({ metadata: data, retryAfter: 0 }) };
   }
+  it("rejects cross-profile requests on a creator host before reading links or fetching providers", async () => {
+    const deps = dependencies();
+    expect((await receivePublicWidget(request(), origin, deps, "another-creator")).status).toBe(403);
+    expect(deps.getLink).not.toHaveBeenCalled();
+    expect(deps.fetchMetadata).not.toHaveBeenCalled();
+  });
   it("waits for cache persistence and serves cached public projections without another provider call", async () => {
     const deps = dependencies();
     expect((await receivePublicWidget(request(), origin, deps)).status).toBe(200);

@@ -1,3 +1,6 @@
+import { domainName, domainRoute } from "@/lib/domains";
+import { domainHostHeader, domainUserHeader } from "@/lib/domain-context";
+import { refreshDomain } from "@/lib/domains-server";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
@@ -19,11 +22,36 @@ export async function proxy(request: NextRequest) {
   ].join("; ");
   const headers = new Headers(request.headers);
   headers.set("Content-Security-Policy", csp);
+  headers.delete(domainHostHeader); headers.delete(domainUserHeader);
+  const host = (request.headers.get("host") ?? request.nextUrl.host).toLowerCase();
+  const custom = host !== siteUrl().host.toLowerCase();
+  let domainTarget: string | undefined;
+  let domainFailure: 404 | 503 | undefined;
+  const marker = request.nextUrl.pathname === "/.well-known/snoozer-domain" && ["GET", "HEAD"].includes(request.method);
+  if (custom && !marker) {
+    if (!domainName.safeParse(host).success || !supabaseUrl || !supabaseKey) domainFailure = 404;
+    else {
+      let lookup = await anonymousClient().rpc("resolve_profile_domain", { p_host: host });
+      if (!lookup.error && lookup.data?.state === "expired") {
+        await refreshDomain(host);
+        lookup = await anonymousClient().rpc("resolve_profile_domain", { p_host: host });
+      }
+      const name = username.safeParse(lookup.data?.username);
+      if (lookup.error) domainFailure = 503;
+      else if (lookup.data === null) domainFailure = 404;
+      else if (lookup.data?.state !== "ready" || !name.success) domainFailure = 503;
+      else if (!domainRoute(request.nextUrl.pathname, request.method, name.data)) domainFailure = 404;
+      else {
+        headers.set(domainHostHeader, host); headers.set(domainUserHeader, name.data);
+        if (request.nextUrl.pathname === "/") domainTarget = name.data;
+      }
+    }
+  }
   const slug = request.nextUrl.pathname.match(/^\/([a-zA-Z0-9-]+)\/?$/)?.[1];
   let missing = false;
   let destination: URL | undefined;
   let redirectStatus: 307 | 308 = 307;
-  if (slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
+  if (!custom && slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
     && supabaseUrl && supabaseKey && ["GET", "HEAD"].includes(request.method)) {
     // Next's async dynamic notFound fallback can be blank without JavaScript.
     const { data, error } = await anonymousClient().rpc("resolve_public_address", { p_name: canonicalUsername(slug) });
@@ -35,7 +63,9 @@ export async function proxy(request: NextRequest) {
       redirectStatus = target.data === canonicalUsername(slug) ? 308 : 307;
     }
   }
-  const response = destination ? NextResponse.redirect(destination, { status: redirectStatus }) : missing
+  const response = domainFailure ? new NextResponse(domainFailure === 503 ? "This profile domain is temporarily unavailable." : "Page not found.", { status: domainFailure })
+    : domainTarget ? NextResponse.rewrite(new URL(`/${domainTarget}${request.nextUrl.search}`, request.url), { request: { headers } })
+    : destination ? NextResponse.redirect(destination, { status: redirectStatus }) : missing
     ? NextResponse.rewrite(new URL("/profile-not-found", request.url), { status: 404, request: { headers } })
     : NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);
@@ -45,7 +75,7 @@ export async function proxy(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   if (siteUrl().protocol === "https:") response.headers.set("Strict-Transport-Security", "max-age=31536000");
 
-  if (request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
+  if (!custom && request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
     const client = createServerClient(supabaseUrl, supabaseKey, {
       global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000) }) },
       cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:" },

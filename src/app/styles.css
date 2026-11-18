@@ -425,3 +425,5 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
 
 .alias-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s5); }
 .alias-list > li { border-block-start: 1px solid var(--border); padding-block-start: var(--s5); min-width: 0; overflow-wrap: anywhere; }
+
+.profile-domains { min-width: 0; overflow-wrap: anywhere; }

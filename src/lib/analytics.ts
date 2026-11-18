@@ -32,7 +32,7 @@ export const trafficAnalytics = z.array(z.object({
   views: z.number().int().nonnegative().safe(), clicks: z.number().int().nonnegative().safe(),
 })).max(1000);
 
-export async function receiveAnalytics(request: Request, origin: string, record: (event: AnalyticsEvent) => Promise<void>) {
+export async function receiveAnalytics(request: Request, origin: string, record: (event: AnalyticsEvent) => Promise<void>, boundUsername?: string) {
   const reply = (status: number) => new Response(null, { status, headers: { "Cache-Control": "no-store" } });
   if (request.headers.get("origin") !== origin) return reply(403);
   const agent = request.headers.get("user-agent");
@@ -47,6 +47,7 @@ export async function receiveAnalytics(request: Request, origin: string, record:
   } catch { return reply(400); }
   const parsed = analyticsEvent.safeParse(payload);
   if (!parsed.success) return reply(400);
+  if (boundUsername && parsed.data.username !== boundUsername) return reply(403);
   try { await record(parsed.data); } catch { return reply(503); }
   return reply(204);
 }

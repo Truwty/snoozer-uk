@@ -7,6 +7,9 @@ end $$;
 create extension if not exists pg_cron with schema pg_catalog;
 select cron.schedule('snoozer-publications-v1','* * * * *',$job$
  select public.run_due_publications(10);
+ do $cleanup$ begin
+  if to_regprocedure('public.cleanup_domain_requests(integer)') is not null then perform public.cleanup_domain_requests(100); end if;
+ end $cleanup$;
  delete from cron.job_run_details where runid in (select r.runid from cron.job_run_details r join cron.job j on j.jobid=r.jobid where j.jobname='snoozer-publications-v1' and r.end_time<now()-interval '7 days' order by r.runid limit 500);
 $job$);
 commit;

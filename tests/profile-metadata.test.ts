@@ -13,6 +13,12 @@ describe("published metadata", () => {
     expect(result.robots).toEqual({ index: false, follow: false });
     expect(result.openGraph).toMatchObject({ title: "Custom title", description: "Custom description", images: [{ url: "https://snoozer.uk/media/profile-card/metadata-example", width: 1200, height: 630 }] });
   });
+  it("uses only the published ready domain for canonical URLs and retains platform social media origin", () => {
+    const result = profileMetadata({ ...profile, custom_domain: "links.example.com" }, new URL("https://snoozer.uk"));
+    expect(result.alternates).toEqual({ canonical: "https://links.example.com/" });
+    expect(result.openGraph).toMatchObject({ url: "https://links.example.com/", images: [{ url: "https://snoozer.uk/media/profile-card/metadata-example" }] });
+    expect(result.robots).toEqual({ index: false, follow: false });
+  });
   it("does not accept arbitrary canonical/image URLs or oversized metadata", () => {
     expect(profileSeo.safeParse({ title: "a".repeat(71), description: "" }).success).toBe(false);
     expect(profileSeo.safeParse({ title: "", description: "a".repeat(161) }).success).toBe(false);

@@ -4,7 +4,7 @@ import type { PublishedProfile } from "./profile";
 export function profileMetadata(profile: PublishedProfile, origin: URL): Metadata {
   const title = profile.seo.title || profile.display_name;
   const description = profile.seo.description || profile.bio || `Links from @${profile.username} on Snoozer.`;
-  const url = new URL(`/${profile.username}`, origin).href;
+  const url = profile.custom_domain ? new URL("https://" + profile.custom_domain).href : new URL(`/${profile.username}`, origin).href;
   const image = new URL(`/media/profile-card/${profile.username}`, origin).href;
   return {
     title, description, alternates: { canonical: url },

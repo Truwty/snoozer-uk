@@ -77,6 +77,119 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  async function domainFixture(name: string, owner = alice, host = name + ".example.com") {
+    await act("authenticated", owner); await claim(name);
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values($1,'plus',1,'staff',$2,now()-interval '1 minute',now()+interval '2 days')", [owner, name]);
+    await act("authenticated", owner);
+    const request = (await result<string>("select public.request_profile_domain($1,$2) as value", [profile, host]))!;
+    return { profile, request, host };
+  }
+  async function checkDomain(request: string, host: string, owner: string) {
+    await act("service_role");
+    const job = await result<{ state: string; lease: string }>("select public.claim_domain_check($1,$2,$3) as value", [host, request, owner]);
+    expect(job?.state).toBe("check");
+    return job!.lease;
+  }
+
+  it("leases domain verification, refuses stale completions and routes only a live verified profile", async () => {
+    const fixture = await domainFixture("domain-alice");
+    await act("service_role");
+    await db.query("select public.reserve_domain_provisioning($1)", [fixture.request]);
+    const lease = await checkDomain(fixture.request, fixture.host, alice);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [fixture.request, avatar])).toBe(false);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [fixture.request, lease])).toBe(true);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [fixture.request, lease])).toBe(false);
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [fixture.host])).toMatchObject({ state: "unavailable" });
+    await act("authenticated", alice); await save(0, "Domain publication", [], true);
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [fixture.host])).toEqual({ state: "ready", username: "domain-alice" });
+    expect(await published("domain-alice")).toMatchObject({ custom_domain: fixture.host });
+    await db.exec("reset role; update snoozer.profile_domains set verified_until=now()-interval '1 second'; update snoozer.domain_requests set retry_after=now()-interval '1 second',expires_at=now()-interval '1 day'");
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [fixture.host])).toEqual({ state: "expired" });
+    expect(await published("domain-alice")).not.toHaveProperty("custom_domain");
+    await act("service_role");
+    const refresh = await result<{ state: string; lease: string }>("select public.claim_domain_check($1) as value", [fixture.host]);
+    expect(refresh?.state).toBe("check");
+    expect(await result("select public.claim_domain_check($1) as value", [fixture.host])).toMatchObject({ state: "busy" });
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [fixture.request, refresh!.lease])).toBe(true);
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now()");
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [fixture.host])).toEqual({ state: "unavailable" });
+    expect(await published("domain-alice")).not.toHaveProperty("custom_domain");
+  });
+
+  it("allows fresh proven domain transfer, prevents stale-owner reclaim and serializes provider disconnection", async () => {
+    const first = await domainFixture("domain-alice");
+    let lease = await checkDomain(first.request, first.host, alice);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [first.request, lease])).toBe(true);
+    await act("authenticated", alice); await save(0, "Alice live", [], true);
+    const second = await domainFixture("domain-bob", bob, first.host);
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [first.host])).toMatchObject({ username: "domain-alice" });
+    lease = await checkDomain(second.request, second.host, bob);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [second.request, lease])).toBe(true);
+    expect(await result("select public.claim_domain_check($1,$2,$3) as value", [first.host, first.request, alice])).toMatchObject({ state: "unavailable" });
+    await act("authenticated", bob); await save(0, "Bob live", [], true);
+    await db.query("select public.disconnect_profile_domain($1)", [second.request]);
+    await expect(db.query("select public.delete_profile($1,1,'domain-bob')", [second.profile])).rejects.toMatchObject({ code: "P1010" });
+    await db.exec("reset role");
+    await expect(db.query("delete from auth.users where id=$1", [bob])).rejects.toMatchObject({ code: "P1010" });
+    await act("authenticated", alice);
+    const fresh = (await result<string>("select public.request_profile_domain($1,$2) as value", [first.profile, first.host]))!;
+    lease = await checkDomain(fresh, first.host, alice);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [fresh, lease])).toBe(false);
+    expect(await result("select public.complete_domain_disconnect($1,$2) as value", [first.host, first.request])).toBe(false);
+    expect(await result("select public.complete_domain_disconnect($1,$2) as value", [first.host, second.request])).toBe(true);
+    await act("authenticated", bob);
+    await db.query("select public.delete_profile($1,1,'domain-bob')", [second.profile]);
+    await act("anon");
+    expect(await result("select public.resolve_profile_domain($1) as value", [first.host])).toBeNull();
+  });
+
+  it("denies domain privileges across owners, expired requests, free plans and private tables", async () => {
+    await act("authenticated", alice); await claim("domain-free");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    await expect(db.query("select public.request_profile_domain($1,'creator.example.com')", [id])).rejects.toMatchObject({ code: "P1011" });
+    await expect(db.query("select public.request_profile_domain($1,'snoozer.uk')", [id])).rejects.toMatchObject({ code: "22023" });
+    await act("authenticated", bob);
+    await expect(db.query("select public.request_profile_domain($1,'creator.example.com')", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.list_my_domains($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.reserve_domain_provisioning($1)", [avatar])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.complete_domain_check($1,$1,true)", [avatar])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.profile_domains")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(db.query("select public.list_my_domains($1)", [id])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("bounds new domain claims and permits cancellation without touching another account's binding", async () => {
+    const first = await domainFixture("domain-quota-alice");
+    const lease = await checkDomain(first.request, first.host, alice);
+    expect(await result("select public.complete_domain_check($1,$2,true) as value", [first.request, lease])).toBe(true);
+    const second = await domainFixture("domain-quota-bob", bob, first.host);
+    await db.query("select public.disconnect_profile_domain($1)", [second.request]);
+    const inventory = await result<{ items: { state: string }[] }>("select public.list_my_domains($1) as value", [second.profile]);
+    expect(inventory!.items[0].state).toBe("retired");
+    await db.exec("reset role");
+    expect(await result("select state as value from snoozer.profile_domains where hostname=$1", [first.host])).toBe("active");
+    await act("authenticated", bob);
+    for (let i=0;i<4;i++) await db.query("select public.request_profile_domain($1,$2)", [second.profile, `extra${i}.example.com`]);
+    await expect(db.query("select public.request_profile_domain($1,'sixth.example.com')", [second.profile])).rejects.toMatchObject({ code: "P1001" });
+    await db.exec("reset role; update snoozer.domain_requests set expires_at=now()-interval '1 second' where used_at is null");
+    await act("service_role");
+    expect(await result("select public.claim_domain_check($1,$2,$3) as value", [second.host, second.request, bob])).toMatchObject({ state: "unavailable" });
+    expect(await result("select public.cleanup_domain_requests(100) as value")).toBe(0);
+    await expect(db.query("select public.cleanup_domain_requests(501)")).rejects.toMatchObject({ code: "22023" });
+    await db.exec("reset role; update snoozer.domain_requests set expires_at=now()-interval '8 days' where used_at is null");
+    await act("service_role");
+    expect(await result("select public.cleanup_domain_requests(100) as value")).toBe(5);
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.profile_domains where state='active'")).toBe(1);
+  });
+
   it("records only consented recent verified referrals, hides small cohorts and honours permanent withdrawal", async () => {
     await act("authenticated", alice);
     await expect(db.query("select public.set_my_referral_enabled(true)")).rejects.toMatchObject({ code: "22023" });

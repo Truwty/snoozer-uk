@@ -95,3 +95,17 @@ test("referral signup requires explicit consent and rejects malformed link codes
   await page.goto("/sign-up?ref=00000000-0000-4000-8000-000000000001&ref=00000000-0000-4000-8000-000000000002");
   await expect(page.getByRole("checkbox")).toHaveCount(0);
 });
+
+
+test("unbound custom hosts cannot expose account routes and marker contains only public readiness text", async ({ request }) => {
+  const headers = { host: "unbound.example.com" };
+  for (const path of ["/", "/sign-in", "/studio", "/studio/plan"]) {
+    const response = await request.get(path, { headers, maxRedirects: 0 });
+    expect(response.status()).toBe(404);
+    expect(response.headers()["cache-control"]).toContain("no-store");
+  }
+  const marker = await request.get("/.well-known/snoozer-domain", { headers });
+  expect(marker.status()).toBe(200);
+  expect(await marker.text()).toBe("snoozer-domain-v1");
+  expect(marker.headers()["content-type"]).toContain("text/plain");
+});

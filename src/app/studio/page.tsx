@@ -1,3 +1,6 @@
+import { domainInventory } from "@/lib/domains";
+import { domainProviderConfig } from "@/lib/domain-verification";
+import { ProfileDomains } from "@/components/profile-domains";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "@/components/shell";
@@ -24,7 +27,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const draft = await readStudioDraft(profile);
   const selected = profile === undefined ? undefined : draft?.profile_id;
   const client = draft && await sessionClient();
-  const [response, aliasResponse, scheduleResponse] = client && draft ? await Promise.all([client.rpc("get_my_plan"), client.rpc("list_my_aliases", { p_profile: draft.profile_id }), client.rpc("get_my_publication_schedule", { p_profile: draft.profile_id })]) : [];
+  const [response, aliasResponse, scheduleResponse, domainResponse] = client && draft ? await Promise.all([client.rpc("get_my_plan"), client.rpc("list_my_aliases", { p_profile: draft.profile_id }), client.rpc("get_my_publication_schedule", { p_profile: draft.profile_id }), client.rpc("list_my_domains", { p_profile: draft.profile_id })]) : [];
+  const domains = domainInventory.safeParse(domainResponse?.data);
+  const domainConfig = domainProviderConfig();
   const aliases = aliasInventory.safeParse(aliasResponse?.data);
   const schedule = publicationScheduleStatus.safeParse(scheduleResponse?.data);
   const plan = accountPlan.safeParse(response?.data);
@@ -54,7 +59,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         schedule={schedule.success && !scheduleResponse?.error ? { current: schedule.data.schedule, automatic: schedule.data.automatic, enabled: plan.success && plan.data.capabilities.scheduledPublishing } : undefined}
         initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id}
         avatar={<AvatarUpload profileId={draft.profile_id} revision={draft.revision} />}
-        settings={<>{aliases.success ? <ProfileAliases profileId={draft.profile_id} inventory={aliases.data} /> : <p role="alert">Aliases are unavailable. Reload to try again.</p>}<DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} /></>} />
+        settings={<>{aliases.success ? <ProfileAliases profileId={draft.profile_id} inventory={aliases.data} /> : <p role="alert">Aliases are unavailable. Reload to try again.</p>}{domains.success && !domainResponse?.error ? <ProfileDomains profileId={draft.profile_id} inventory={domains.data} verificationEnabled={!!domainConfig} serviceHost={domainConfig?.serviceHost} /> : <p role="alert">Custom domains are unavailable. Reload to try again.</p>}<DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} /></>} />
 
     </>}
   </main>;

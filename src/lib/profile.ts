@@ -1,3 +1,4 @@
+import { domainName } from "./domains";
 import { z } from "zod";
 import { galleryItem, galleryLimit } from "./gallery";
 import { linkAccents } from "./link-accent";
@@ -85,6 +86,8 @@ export const profileContent = z.object({
 });
 
 export const publishedProfile = profileContent.extend({
+  custom_domain: domainName.optional(),
+  domain_renewal: domainName.optional(),
   username,
   avatar: z.uuid().nullable(),
   gallery: z.array(galleryItem).max(galleryLimit).default([]),

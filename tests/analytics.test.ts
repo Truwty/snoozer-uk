@@ -9,6 +9,13 @@ function request(body: unknown = event, headers: Record<string, string> = {}) {
 }
 
 describe("consent-aware analytics boundary", () => {
+  it("binds creator-host events to the profile served on that host", async () => {
+    const record = vi.fn();
+    expect((await receiveAnalytics(request(), origin, record, "another-creator")).status).toBe(403);
+    expect(record).not.toHaveBeenCalled();
+    expect((await receiveAnalytics(request(), origin, record, "creator")).status).toBe(204);
+    expect(record).toHaveBeenCalledOnce();
+  });
   it("acknowledges only after durable storage, returns a retryable failure and never caches", async () => {
     const record = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
     expect((await receiveAnalytics(request(), origin, record)).status).toBe(503);

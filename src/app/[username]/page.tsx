@@ -30,6 +30,6 @@ export default async function Page({ params }: Props) {
   return <main className="public-page">
     <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
-    <Link className="public-credit" href="/">Made with Snoozer</Link>
+    <Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link>
   </main>;
 }

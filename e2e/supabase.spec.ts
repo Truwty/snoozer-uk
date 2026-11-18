@@ -301,6 +301,89 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
   }
 });
 
+test("isolated domain fixtures bind HTTP hosts and reject cross-profile and privileged routes", async ({ page, request }) => {
+  test.setTimeout(90000);
+  page.setDefaultTimeout(15000);
+  const name = "domain-" + randomUUID().slice(0, 8);
+  const host = name + ".example.com";
+  const email = name + "@example.com";
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(account.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  let domainRequest: string | undefined;
+  try {
+    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByLabel("Username").fill(name);
+    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await editorTab(page, "Settings");
+    await expect(page.getByLabel("Domain hostname", { exact: true })).toBeDisabled();
+    await page.getByRole("link", { name: "Plan and usage", exact: true }).click();
+    const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now()+3600000).toISOString() }).single<{ code: string }>();
+    expect(gift.error).toBeNull();
+    await page.getByText("Redeem a plan gift", { exact: true }).click();
+    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
+    await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
+    await page.getByRole("link", { name: "Back to Studio", exact: true }).click();
+    await page.getByLabel("Display name", { exact: true }).fill("Isolated creator-domain fixture");
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await editorTab(page, "Settings");
+    await page.getByLabel("Domain hostname", { exact: true }).fill(host);
+    await page.getByRole("button", { name: "Request domain connection", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Domain request saved." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Verify " + host, exact: true })).toBeDisabled();
+    const draft = await owner.rpc("get_draft");
+    const inventory = await owner.rpc("list_my_domains", { p_profile: draft.data.profile_id });
+    expect(inventory.error).toBeNull();
+    domainRequest = inventory.data.items[0].id;
+    // Provider proof is an isolated fixture here; DNS/TLS boundaries have separate tests and hosted evidence.
+    expect((await admin.rpc("reserve_domain_provisioning", { p_request: domainRequest })).error).toBeNull();
+    const job = await admin.rpc("claim_domain_check", { p_host: host, p_request: domainRequest, p_actor: account.data.user!.id });
+    expect(job.error).toBeNull();
+    expect(job.data.state).toBe("check");
+    expect((await admin.rpc("complete_domain_check", { p_request: domainRequest, p_lease: job.data.lease, p_ok: true })).data).toBe(true);
+    const headers = { host };
+    const root = await request.get("/", { headers, maxRedirects: 0 });
+    expect(root.status()).toBe(200);
+    const html = await root.text();
+    expect(html).toContain("Isolated creator-domain fixture");
+    expect(html).toContain(`https://${host}/`);
+    for (const path of ["/studio", "/sign-in", "/studio/plan", "/api/v1/analytics/export"]) expect((await request.get(path, { headers, maxRedirects: 0 })).status()).toBe(404);
+    expect((await request.post("/", { headers, data: {} })).status()).toBe(404);
+    expect((await request.post("/api/v1/billing/stripe/webhook", { headers, data: {} })).status()).toBe(404);
+    expect((await request.get("/.well-known/snoozer-domain", { headers })).status()).toBe(200);
+    const event = { username: name, id: randomUUID(), consent: true, kind: "view" };
+    const customHeaders = { host, origin: "https://" + host, "user-agent": "Mozilla/5.0" };
+    expect((await request.post("/api/v1/analytics/view", { headers: customHeaders, data: { ...event, username: "another-creator" } })).status()).toBe(403);
+    expect((await request.post("/api/v1/analytics/view", { headers: customHeaders, data: event })).status()).toBe(204);
+    expect((await request.post("/api/v1/widgets/public", { headers: customHeaders, data: { username: "another-creator", position: 1, provider: "github", consent: true } })).status()).toBe(403);
+    expect((await request.post("/api/v1/analytics/view", { headers: { origin: "https://"+host, "user-agent": "Mozilla/5.0", "x-snoozer-domain-host": host, "x-snoozer-domain-username": name }, data: event })).status()).toBe(403);
+    expect((await request.get("/", { headers: { host: "unclaimed.example.com" }, maxRedirects: 0 })).status()).toBe(404);
+    await page.reload(); await editorTab(page, "Settings");
+    await page.getByRole("button", { name: "Disconnect " + host, exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Routing stopped." })).toBeVisible();
+    expect((await request.get("/", { headers, maxRedirects: 0 })).status()).toBe(503);
+    expect((await owner.rpc("delete_profile", { p_profile: draft.data.profile_id, p_expected: draft.data.revision, p_username: name })).error?.code).toBe("P1010");
+    await page.setViewportSize({ width: 360, height: 850 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    if (domainRequest) {
+      await owner.rpc("disconnect_profile_domain", { p_request: domainRequest });
+      await admin.rpc("complete_domain_disconnect", { p_host: host, p_request: domainRequest });
+    }
+    if (account.data.user) {
+      const removed = await admin.auth.admin.deleteUser(account.data.user.id);
+      if (!test.info().errors.length) expect(removed.error).toBeNull();
+    }
+  }
+});
+
 test("signup referral credit is optional, private and withdrawable", async ({ page, request }) => {
   test.setTimeout(90000);
   page.setDefaultTimeout(15000);

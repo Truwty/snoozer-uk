@@ -1,4 +1,5 @@
 import "server-only";
+import { refreshDomain } from "./domains-server";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
@@ -40,5 +41,12 @@ export const readPublished = cache(async (name: string) => {
   if (!username.safeParse(canonical).success) return null;
   const { data, error } = await anonymousClient().rpc("get_published_profile", { p_name: canonical });
   if (error) throw new Error("Couldn’t load this profile.");
-  return data === null ? null : publishedProfile.parse(data);
+  if (data === null) return null;
+  const profile = publishedProfile.parse(data);
+  if (profile.domain_renewal && await refreshDomain(profile.domain_renewal) === "verified") {
+    const renewed = await anonymousClient().rpc("get_published_profile", { p_name: canonical });
+    if (renewed.error) throw new Error("Couldn’t load this profile.");
+    return renewed.data === null ? null : publishedProfile.parse(renewed.data);
+  }
+  return profile;
 });
