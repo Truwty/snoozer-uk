@@ -147,6 +147,10 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(page.getByRole("table", { name: "Daily browser observations within your plan’s retention window" })).toContainText("100.0%");
     expect(await page.getByRole("region", { name: "Daily browser report", exact: true })
       .evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.setViewportSize({ width: 1280, height: 720 });
     const browserDownload = page.waitForEvent("download");
     await page.getByRole("link", { name: "Download browser CSV", exact: true }).click();
     expect((await browserDownload).suggestedFilename()).toBe("snoozer-browser-analytics.csv");
