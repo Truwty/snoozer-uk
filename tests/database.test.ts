@@ -77,6 +77,61 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  const saveProduct = (profile: string, id: string | null = null, revision = 0, archived = false, amount = 500) =>
+    result<string>("select public.save_product_draft($1,$2,$3,'Creator guide','Plain text description',$4,$5) as value", [profile, id, revision, amount, archived]);
+
+  it("keeps product drafts private and rejects cross-owner writes and stale revisions", async () => {
+    await act("authenticated", alice); await claim("product-alice");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    const id = await saveProduct(profile);
+    expect(await result("select public.list_my_product_drafts($1) as value", [profile])).toMatchObject({ activeUsed: 1, items: [{ id, title: "Creator guide", amount: 500, revision: 0 }] });
+    await saveProduct(profile, id, 0, true);
+    await expect(saveProduct(profile, id, 0)).rejects.toMatchObject({ code: "40001" });
+    await act("authenticated", bob);
+    await expect(saveProduct(profile, id, 1)).rejects.toMatchObject({ code: "42501" });
+    await expect(result("select public.list_my_product_drafts($1) as value", [profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.product_drafts")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(result("select public.list_my_product_drafts($1) as value", [profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(saveProduct(profile)).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(saveProduct(profile)).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice); await save(0, "Public creator", [], true);
+    expect(JSON.stringify(await published("product-alice"))).not.toContain("Creator guide");
+  });
+
+  it("bounds account product slots, supports reversible archive and enforces the total cap", async () => {
+    await act("authenticated", alice); await claim("product-quota");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    const first = await saveProduct(profile);
+    for (let i=0; i<4; i++) await saveProduct(profile);
+    await expect(saveProduct(profile)).rejects.toMatchObject({ code: "P1201" });
+    await saveProduct(profile, first, 0, true);
+    await saveProduct(profile);
+    await expect(saveProduct(profile, first, 1, false)).rejects.toMatchObject({ code: "P1201" });
+    for (let i=0; i<14; i++) await saveProduct(profile, null, 0, true);
+    await expect(saveProduct(profile, null, 0, true)).rejects.toMatchObject({ code: "P1201" });
+    expect(await result("select public.list_my_product_drafts($1) as value", [profile])).toMatchObject({ activeUsed: 5, totalUsed: 20 });
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values($1,'pro',1,'staff','product-plan',now()-interval '1 minute',now()+interval '1 day')", [alice]);
+    await act("authenticated", alice);
+    const second = await result<string>("select public.claim_additional_profile('product-secondary') as value");
+    await expect(saveProduct(second!)).rejects.toMatchObject({ code: "P1201" });
+    expect(await result("select public.list_my_product_drafts($1) as value", [second])).toMatchObject({ activeUsed: 5, totalUsed: 20, items: [] });
+  });
+
+  it("validates product prices and text at the database boundary and cascades only private drafts", async () => {
+    await act("authenticated", alice); await claim("product-validation");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    for (const amount of [0,49,100001]) await expect(saveProduct(profile, null, 0, false, amount)).rejects.toMatchObject({ code: "22023" });
+    for (const title of [" ", "a".repeat(101), "Invalid\nline"]) await expect(result("select public.save_product_draft($1,null,0,$2,'',50,false) as value", [profile,title])).rejects.toMatchObject({ code: "22023" });
+    await saveProduct(profile, null, 0, false, 50);
+    await saveProduct(profile, null, 0, false, 100000);
+    await db.query("select public.delete_profile($1,0,'product-validation')", [profile]);
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.product_drafts")).toBe(0);
+  });
+
   async function domainFixture(name: string, owner = alice, host = name + ".example.com") {
     await act("authenticated", owner); await claim(name);
     const profile = (await draft() as { profile_id: string }).profile_id;

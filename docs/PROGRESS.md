@@ -1,5 +1,11 @@
 # Progress — 18 November 2026
 
+## Current work — private product catalogue
+
+Commerce foundation slice implemented in source, not deployed: migration67, verified-owner private product-draft RPCs, profile-scoped Studio catalogue, exact integer GBP prices, revision conflicts and reversible archive/restore. Account-wide caps: five active/twenty total, all plans. Local lint/types/230 unit+SQL tests and two audit-policy checks pass; production build/audit pass; disposable browser journey pending. No files, Checkout, buyer delivery or connected accounts exist. Do not call commerce or Phase5 complete.
+
+Next: run the new product browser/SQL journey in disposable CI, fix any failures, then apply migration67 only after passing checks and deploy the matching source. Preserve immutable hosted migrations through66. Continue private product attachments and sandbox Connect/receipt/refund/buyer access after the catalogue slice. See creator-commerce.md for the reviewed proposed model and explicit live-release gates. The Stripe connector exposes only live Lingua; no live mutation was made, and existing staging sandbox keys stay provider-side.
+
 ## Current checkpoint — custom-domain staging exit passed
 
 Application **2907dc9** is Live on Render Free, deploy **dep-dbunt38m7kps73d0bvj0** (18 November 2026, 10:33 UTC). Both health endpoints returned200. Supabase migrations through **66** are applied and recorded; never edit/reapply those files. The existing native publication job includes bounded domain cleanup; its natural10:31UTC run succeeded. Analytics cleanup was unchanged.
@@ -14,7 +20,7 @@ Actual custom-host root returned200 with the published version5 portfolio and cu
 
 Evidence outside Git: ../snoozer-phase5-evidence-20261118/ includes domain-connected.jpg, custom-domain-portfolio.jpg, render-domain-verified.jpg, ionos-qa-records.jpg, domain-removed.jpg, ionos-qa-cleaned.jpg and render-capacity-restored.jpg. The provider screenshot initially showed Unknown while issuance updated; actual HTTPS and owner verification are authoritative. Render subsequently displayed Certificate Issued during cleanup.
 
-**Next unfinished Phase5 stream: creator commerce foundations**, including reviewed seller/Connect model, private products/assets, permissioned buyer delivery and sandbox receipt/refund paths. No commerce code or connected accounts exist yet. Preserve existing platform billing and Ko-fi flows. Live payments, production SMTP/legal/tax readiness and snoozer.uk DNS cutover remain Phase7 gates. Apex/www can consume two Render slots; resolve launch capacity before promising live creator-domain availability. Long-term certificate renewal and prolonged outage recovery have not been observed.
+**Next unfinished Phase5 stream: creator commerce foundations**, including reviewed seller/Connect model, private products/assets, permissioned buyer delivery and sandbox receipt/refund paths. Product metadata drafts are now implemented in source (not hosted); no connected accounts or purchase/delivery implementation exists yet. Preserve existing platform billing and Ko-fi flows. Live payments, production SMTP/legal/tax readiness and snoozer.uk DNS cutover remain Phase7 gates. Apex/www can consume two Render slots; resolve launch capacity before promising live creator-domain availability. Long-term certificate renewal and prolonged outage recovery have not been observed.
 
 ## Prior verified release — initial Phase5 features
 
@@ -32,7 +38,6 @@ IONOS remains signed in. Read-only verification found apex/www forwarding to the
 
 Hosted public checks: profile200 with published SEO/noindex/project URL, social image200 with PNG signature, alias307 preserving query/private no-store. The dedicated fixture remains live and nonindexable for review; its QA alias phase5-qa-link-20261118 is active (one of two QA-account slots). Next: continue creator commerce foundations, with the existing architecture and safe free-tier boundary. Consult the original master specification, implementation-plan.md and feature-ledger.md; do not rebuild working billing, analytics or widget paths. The full phase remains open.
 
-Creator-domain source is now implemented in migration **66**, which is NOT applied to hosted staging. It adds nonexclusive DNS claims, exclusive bindings, service verification leases, transfer/replay protection, deletion guards and provider-removal confirmation. Owner Settings and safe custom-Host routing are wired; auth/admin/billing routes are denied and media/public APIs are profile-bound. Canonical metadata uses only ready DB bindings. Local lint/types/**224 unit+SQL/two policy/build** pass. The new real HTTP Host/browser journey is pending disposable CI. The owner approved a Services→Read-only Render key, which is now stored only in staging as RENDER_CUSTOM_DOMAINS_API_KEY (Save only; active after the next deploy). No environment-secret/write/deploy access was granted. Actual provider certificate/ownership delivery is unverified; no domain is provisioned and DNS is unchanged. Read custom-domains.md before provider operations. Keep the existing verified release running until migration66/provider CI pass and staged rollout is ready.
 
 ## Design overhaul — delivered to staging
 

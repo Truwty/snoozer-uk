@@ -301,6 +301,57 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
   }
 });
 
+test("private product drafts save, edit, archive and restore without exposing a storefront", async ({ page, request }) => {
+  test.setTimeout(90000);
+  page.setDefaultTimeout(15000);
+  const name = "product-" + randomUUID().slice(0, 8);
+  const email = name + "@example.com";
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(account.error).toBeNull();
+  try {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByLabel("Username").fill(name);
+    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Product drafts", exact: true }).click();
+    await expect(page.getByText("No product drafts for this profile yet.")).toBeVisible();
+    const create = page.getByRole("region", { name: "New product", exact: true });
+    await create.getByLabel("Product title", { exact: true }).fill("Private creator handbook");
+    await create.getByLabel("Product description", { exact: true }).fill("A private digital product draft.");
+    await create.getByLabel("Price (GBP)", { exact: true }).fill("19.99");
+    await create.getByRole("button", { name: "Create product draft", exact: true }).click();
+    const item = page.locator("details").filter({ hasText: "Private creator handbook" });
+    await expect(item.locator("summary")).toContainText("Private draft");
+    await item.locator("summary").click();
+    await item.getByLabel("Price (GBP)", { exact: true }).fill("25.50");
+    await item.getByRole("button", { name: "Save product draft", exact: true }).click();
+    await expect(item.getByLabel("Price (GBP)", { exact: true })).toHaveValue("25.50");
+    await item.getByRole("button", { name: "Archive product draft", exact: true }).click();
+    await expect(item.locator("summary")).toContainText("Archived");
+    await item.getByRole("button", { name: "Restore product draft", exact: true }).click();
+    await expect(item.locator("summary")).toContainText("Private draft");
+    await page.reload();
+    await item.locator("summary").click();
+    await expect(item.getByLabel("Price (GBP)", { exact: true })).toHaveValue("25.50");
+    const publicPage = await request.get("/" + name);
+    expect(publicPage.status()).toBe(200);
+    expect(await publicPage.text()).not.toContain("Private creator handbook");
+    await page.setViewportSize({ width: 360, height: 850 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    if (account.data.user) {
+      const removed = await admin.auth.admin.deleteUser(account.data.user.id);
+      if (!test.info().errors.length) expect(removed.error).toBeNull();
+    }
+  }
+});
+
 test("isolated domain fixtures bind HTTP hosts and reject cross-profile and privileged routes", async ({ page, request }) => {
   test.setTimeout(90000);
   page.setDefaultTimeout(15000);

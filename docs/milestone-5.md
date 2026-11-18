@@ -75,3 +75,5 @@ Domain CI44283640311 passed audit/lint/types/224 unit+SQL/two policy/migrations/
 Domain CI44285159462 passed on2907dc9:224 unit/SQL+2 policy+31 browser checks, one expected skip, all four Lighthouse100. Hosted migration66 applied/tracked and privilege-checked. Updated cleanup command ran naturally/succeeded at10:31UTC. New Render deploydep-dbunt38m7kps73d0bvj0 targets that exact SHA and is updating. Next is one temporary profile-qa.snoozer.uk provider/TLS proof within the observed remaining included slot, followed by cleanup; no real DNS/provider association has been created yet.
 
 Real custom-domain verification and cleanup passed18November18:10–18:12UTC; see the current checkpoint above. Creator commerce foundations are next.
+
+Private product catalogue slice: migration67, owner-scoped UI and RPCs, GBP integer amounts, optimistic revisions, reversible archive and account caps implemented; no files, purchase or delivery yet. Local230 unit/SQL+2 policy checks, lint/types pass; final build/audit/provider browser journey pending. See creator-commerce.md.
