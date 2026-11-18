@@ -1,3 +1,4 @@
+begin;
 -- Project targets are outbound addresses only; never fetched by the server.
 create function snoozer.valid_project_url(p_url text) returns boolean
 language sql immutable set search_path = '' as $$
@@ -99,3 +100,5 @@ begin
   return saved_revision;
 end $$;
 
+
+commit;

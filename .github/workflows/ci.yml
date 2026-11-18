@@ -38,6 +38,7 @@ jobs:
         run: |
           if ! npx --yes supabase@3.1.0 start > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
             echo "::error::The disposable Supabase stack could not start."
+            python3 -c 'import pathlib,re,sys; s=pathlib.Path(sys.argv[1]).read_text(errors="replace"); print("\n".join(re.findall(r"SQLSTATE [A-Z0-9]{5}|Applying migration [a-z0-9_]+\.sql",s)[-8:]))' "$RUNNER_TEMP/supabase-start.log"
             exit 1
           fi
           eval "$(npx --yes supabase@3.1.0 status -o env)"

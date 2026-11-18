@@ -21,11 +21,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
     <Link href={studioHref("/studio", selected)}>← Back to Studio</Link>
     <section className="stack">
       <h1>Publish history</h1>
-      <p className="muted">Snoozer keeps your 20 most recent publications. Open a version to preview it and restore it to your draft.</p>
+      <p className="muted">Snoozer keeps your 20 most recent versions and protects live or pending scheduled snapshots. Open a version to preview it and restore it to your draft.</p>
       {versions.length === 0 ? <p>No published versions yet.</p> : <ul className="history-list">
-        {versions.map(({ revision, display_name, published_at, live }) => <li key={revision} className="panel stack">
+        {versions.map(({ revision, display_name, published_at, live, activated, scheduled_for }) => <li key={revision} className="panel stack">
           <strong>{display_name}</strong>
-          <p>Version {revision} · <time dateTime={published_at}>{publicationDate(published_at)}</time>{live && <span className="badge">Live</span>}</p>
+          <p>Version {revision} · {activated ? "Published" : "Captured"} <time dateTime={published_at}>{publicationDate(published_at)}</time>{live && <span className="badge">Live</span>}{scheduled_for && <span className="badge">Scheduled · {publicationDate(scheduled_for)}</span>}</p>
           <Link className="button small" href={studioHref(`/studio/history/${revision}`, selected)}>Preview version {revision}</Link>
         </li>)}
       </ul>}

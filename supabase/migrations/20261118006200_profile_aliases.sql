@@ -1,3 +1,4 @@
+begin;
 -- One permanent registry gives profile and alias claims a real shared unique key.
 lock table snoozer.profiles, snoozer.reserved_names in share row exclusive mode;
 create table snoozer.public_names(name text primary key);
@@ -102,3 +103,5 @@ $$;
 revoke execute on function public.manage_profile_alias(uuid,text,text),public.list_my_aliases(uuid),public.resolve_profile_alias(text) from public,anon,authenticated,service_role;
 grant execute on function public.manage_profile_alias(uuid,text,text),public.list_my_aliases(uuid) to authenticated;
 grant execute on function public.resolve_profile_alias(text) to anon,authenticated;
+
+commit;

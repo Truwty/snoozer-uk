@@ -1,3 +1,4 @@
+begin;
 alter table snoozer.profiles add column seo_title text not null default '' check (char_length(seo_title)<=70), add column seo_description text not null default '' check (char_length(seo_description)<=160);
 alter table snoozer.published_profiles add column seo_title text not null default '' check (char_length(seo_title)<=70), add column seo_description text not null default '' check (char_length(seo_description)<=160);
 alter function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb) set schema snoozer;
@@ -65,3 +66,5 @@ begin
     where p.id = p_profile and v.profile_id = p_profile and v.revision = p_revision;
 end $$;
 
+
+commit;

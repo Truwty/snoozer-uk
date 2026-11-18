@@ -308,6 +308,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(error).toBeNull();
+  let scheduledProfileId = "";
   const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
   try {
     await page.goto("/sign-in");
@@ -393,6 +394,8 @@ test("portfolio projects persist, publish and restore with responsive public ren
       expect((await otherClient.auth.signInWithPassword({ email: competitorEmail, password })).error).toBeNull();
       const ownerDraft = await ownerClient.rpc("get_draft");
       expect(ownerDraft.error).toBeNull();
+      expect(ownerDraft.data.profile_id).toMatch(/^[0-9a-f-]{36}$/);
+      scheduledProfileId = ownerDraft.data.profile_id;
       const collision = name + "-race";
       const results = await Promise.all([
         ownerClient.rpc("manage_profile_alias", { p_profile: ownerDraft.data.profile_id, p_name: collision, p_operation: "create" }),
@@ -430,6 +433,37 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
+    await editorTab(page, "Profile");
+    await page.getByLabel("Display name").fill("Scheduled future version");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
+    await editorTab(page, "Settings");
+    const future = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
+    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
+    await editorTab(page, "Profile");
+    await page.getByLabel("Display name").fill("Draft after scheduling");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
+    // Only this disposable fixture's due time changes; production code never accepts a simulated clock.
+    execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", `update snoozer.publication_schedules set run_at=now()-interval '1 second' where profile_id='${scheduledProfileId}'`]);
+    await editorTab(page, "Settings");
+    await page.getByRole("button", { name: "Check due publication", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Scheduled version is now live." })).toBeVisible();
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Scheduled future version", exact: true })).toBeVisible();
+    await editorTab(page, "Profile");
+    await expect(page.getByLabel("Display name")).toHaveValue("Draft after scheduling");
+    await editorTab(page, "Settings");
+    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
+    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel scheduled publication", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Schedule cancelled." })).toBeVisible();
+    await expect(page.locator("form form")).toHaveCount(0);
   } finally {
     await visitor.close();
     if (data.user) await admin.auth.admin.deleteUser(data.user.id);

@@ -80,6 +80,8 @@ test("template search combines filters, preserves URL state and clears empty res
   await page.getByRole("button", { name: "Find templates", exact: true }).click();
   await expect(page.getByRole("heading", { name: "No matching templates", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Browse all templates", exact: true }).click();
+  await expect(page.getByLabel("Search templates", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("combobox", { name: "Template theme", exact: true })).toHaveValue("all");
   await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });

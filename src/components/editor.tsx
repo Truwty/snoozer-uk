@@ -9,6 +9,8 @@ import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-acc
 import { studioTemplates } from "@/lib/studio-templates";
 import { VisualSelect } from "./visual-select";
 import { CopyLink } from "./copy-link";
+import { SchedulePublication } from "./schedule-publication";
+import type { PublicationSchedule } from "@/lib/publication-schedule";
 import { Unpublish } from "./unpublish";
 import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
@@ -17,7 +19,7 @@ import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
-export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", avatar, settings }: { avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
+export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
@@ -272,6 +274,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
           }} /> Remove avatar on next manual save</label>}
 
       {saved.published_revision !== null && <Unpublish profileId={saved.profile_id} revision={saved.revision} />}
+      {schedule ? <SchedulePublication profileId={saved.profile_id} revision={saved.revision} current={schedule.current} automatic={schedule.automatic} enabled={schedule.enabled} captureDisabled={Boolean(edits) || pending || conflict} /> : <p role="alert">Scheduled publishing is unavailable. Reload to try again.</p>}
       {settings}
       </section>
     </div>

@@ -30,7 +30,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 5.3 | Reserved Path Namespaces | Tested locally |
 | 5.4 | Length And Allowed-Character Rules | Tested locally |
 | 5.5 | Rename Redirect Policy | Deferred |
-| 5.6 | Alias Ownership And Expiry | Deferred |
+| 5.6 | Alias Ownership And Expiry | Implemented with plan quotas, 90-day expiry, renew/retire and permanent namespace protection; SQL tested, provider browser pending |
 | 5.7 | Custom Domains With Dns Challenge | Deferred |
 | 5.8 | Tls Provisioning And Renewal | Deferred |
 | 5.9 | Anti-Takeover Verification | Deferred |
@@ -52,7 +52,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 6.7 | Content Warning Where Appropriate | Deferred |
 | 6.8 | Share And Qr Controls | Partially implemented |
 | 6.9 | Profile Visibility Modes | Partially implemented |
-| 6.10 | Scheduled Publishing | Deferred |
+| 6.10 | Scheduled Publishing | Implemented frozen snapshots, bounded native worker and owner recovery; SQL tested, hosted automatic execution pending |
 | 6.11 | Password-Protected Pages With Secure Verification | Deferred |
 | 6.12 | View Counter With Bot Filtering | Deferred |
 | 6.13 | Mobile Safe-Area Insets | Partially implemented |
@@ -177,7 +177,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 11.14 | Testimonials | Deferred |
 | 11.15 | Poll | Deferred |
 | 11.16 | Faq | Deferred |
-| 11.17 | Project Cards | Deferred |
+| 11.17 | Project Cards | Implemented validated outbound project sections, shared rendering and snapshot restore; unit/SQL tested, provider browser pending |
 | 11.18 | Product Cards | Deferred |
 | 11.19 | Support/Donation Panel | Deferred |
 | 11.20 | Newsletter Signup | Deferred |
@@ -265,7 +265,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 15.1 | First-Party Templates | Tested in the public gallery and Studio with twelve built-in presentations across three starter content families; validated existing appearance options, distinct example handles and working application flow |
 | 15.2 | Creator-Submitted Templates | Deferred |
 | 15.3 | Draft And Publish States | Deferred |
-| 15.4 | Search And Filters | Deferred |
+| 15.4 | Search And Filters | First-party template search/theme/layout filters and URL state tested locally; creator marketplace discovery remains deferred |
 | 15.5 | Tags | Deferred |
 | 15.6 | Preview | Tested for public examples and private previews using the creator’s draft |
 | 15.7 | Apply Full Template | Implemented for colours and starter sections when the draft has no sections |

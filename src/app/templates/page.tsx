@@ -23,7 +23,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
       <h1>Find a starting point</h1>
       <p className="muted">Explore twelve free template styles. Change the colours and text in Studio before sharing your page.</p>
     </header>
-    <form action="/templates" method="get" className="template-filters">
+    <form key={JSON.stringify(filters)} action="/templates" method="get" className="template-filters">
       <label>Search templates<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Name or style" /></label>
       <label>Template theme<select name="theme" defaultValue={filters.theme}><option value="all">All themes</option>{themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}</select></label>
       <label>Template layout<select name="layout" defaultValue={filters.layout}><option value="all">All layouts</option>{profileLayouts.map((layout) => <option key={layout} value={layout}>{layoutLabels[layout]}</option>)}</select></label>

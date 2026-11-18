@@ -1924,4 +1924,97 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select profile_id is null and retired_at is not null as value from snoozer.profile_aliases where name='second-alias'")).toBe(true);
   });
 
+  it("activates only the frozen scheduled version, retaining newer drafts and idempotent due processing", async () => {
+    await act("authenticated", alice); await claim("scheduled-alice");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const schedule = (expected: number) => result("select public.schedule_publication($1,$2,now()+interval '1 day') as value", [id, expected]);
+    await expect(schedule(0)).rejects.toMatchObject({ code: "P1009" });
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','schedule-test',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice);
+    await save(0, "Before schedule", [], true);
+    await result("select public.save_profile($1,1,'Frozen version','Bio','lagoon',false,'[]',false,false,$2,null,$3) as value", [id, JSON.stringify([{ kind: "project", heading: "Project", body: "Frozen project", target: "https://example.com/work" }, { heading: "Private", body: "Do not expose", hidden: true }]), JSON.stringify({ title: "Frozen SEO", description: "Scheduled description" })]);
+    for (const time of ["now()", "now()+interval '366 days'", "null"]) await expect(db.query(`select public.schedule_publication($1,2,${time})`, [id])).rejects.toMatchObject({ code: "22023" });
+    expect(await schedule(2)).toBe(3);
+    expect(await published("scheduled-alice")).toMatchObject({ display_name: "Before schedule" });
+    expect(await result("select public.get_my_publication_schedule($1)->'schedule' as value", [id])).toMatchObject({ revision: 3, state: "pending" });
+    expect(await result("select public.get_publication(3,$1) as value", [id])).toMatchObject({ activated: false, scheduled_for: expect.any(String), seo: { title: "Frozen SEO" } });
+    await save(3, "Newer draft", [], false);
+    expect(await result("select public.run_my_publication_schedule($1) as value", [id])).toBe("not_due");
+    await act("authenticated", bob);
+    await expect(db.query("select public.run_my_publication_schedule($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.cancel_publication_schedule($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.get_my_publication_schedule($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.run_due_publications(10)")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role; update snoozer.publication_schedules set run_at=now()-interval '1 second'");
+    await act("service_role");
+    expect(await result("select public.run_due_publications(10) as value")).toBe(1);
+    expect(await result("select public.run_due_publications(10) as value")).toBe(0);
+    await act("authenticated", alice);
+    expect(await draft()).toMatchObject({ revision: 4, display_name: "Newer draft", published_revision: 3 });
+    expect(await published("scheduled-alice")).toMatchObject({ display_name: "Frozen version", seo: { title: "Frozen SEO" }, sections: [{ kind: "project", target: "https://example.com/work" }] });
+    expect(await result("select public.get_my_publication_schedule($1)->'schedule' as value", [id])).toMatchObject({ state: "published", reason: null });
+    expect(await result("select public.get_publication(3,$1) as value", [id])).toMatchObject({ activated: true, scheduled_for: null });
+    await expect(save(3, "Stale draft", [], true)).rejects.toMatchObject({ code: "40001" });
+  });
+
+  it("cancels scheduled publication on explicit offline actions and blocks expired entitlements", async () => {
+    await act("authenticated", alice); await claim("schedule-cancel");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','schedule-cancel',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice);
+    const schedule = (expected: number) => result("select public.schedule_publication($1,$2,now()+interval '1 day') as value", [id, expected]);
+    await schedule(0);
+    expect(await published("schedule-cancel")).toBeNull();
+    await db.query("select public.cancel_publication_schedule($1)", [id]);
+    expect(await result("select public.get_my_publication_schedule($1)->'schedule' as value", [id])).toMatchObject({ state: "cancelled", reason: "manual" });
+    await schedule(1);
+    await db.query("select public.unpublish_profile($1,2)", [id]);
+    expect(await result("select public.get_my_publication_schedule($1)->'schedule' as value", [id])).toMatchObject({ state: "cancelled", reason: "superseded" });
+    await schedule(3);
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='schedule-cancel'; update snoozer.publication_schedules set run_at=now()-interval '1 second'");
+    await act("service_role");
+    await expect(db.query("select public.run_due_publications(0)")).rejects.toMatchObject({ code: "22023" });
+    expect(await result("select public.run_due_publications(1) as value")).toBe(1);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_publication_schedule($1)->'schedule' as value", [id])).toMatchObject({ state: "blocked", reason: "plan_changed" });
+    expect(await published("schedule-cancel")).toBeNull();
+    await expect(db.query("select * from snoozer.publication_schedules")).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("protects a live snapshot while repeatedly replacing a pending scheduled version", async () => {
+    await act("authenticated", alice); await claim("schedule-retention");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','schedule-retention',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice);
+    await save(0, "Original live version", [], true);
+    await save(1, "Prepared future version", [], false);
+    for (let expected = 2; expected < 27; expected++) {
+      expect(await result("select public.schedule_publication($1,$2,now()+interval '1 day') as value", [id, expected])).toBe(expected + 1);
+    }
+    expect(await published("schedule-retention")).toMatchObject({ display_name: "Original live version" });
+    expect((await result<unknown[]>("select public.list_publications($1) as value", [id]))!.length).toBeLessThanOrEqual(22);
+    expect(await result("select public.get_publication(1,$1) as value", [id])).toMatchObject({ live: true });
+    expect(await result("select public.get_publication(27,$1) as value", [id])).toMatchObject({ activated: false, scheduled_for: expect.any(String) });
+  });
+
+  it("bounds due batches and respects shared publication quota after a downgrade", async () => {
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'pro',1,'staff','schedule-quota',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice); await claim("schedule-quota-a");
+    const ids = [(await draft() as { profile_id: string }).profile_id];
+    for (const name of ["schedule-quota-b", "schedule-quota-c", "schedule-quota-d"]) ids.push((await result<string>("select public.claim_additional_profile($1) as value", [name]))!);
+    for (const id of ids) await db.query("select public.schedule_publication($1,0,now()+interval '1 day')", [id]);
+    await db.exec("reset role; update snoozer.entitlement_grants set plan='plus' where source_ref='schedule-quota'; update snoozer.publication_schedules set run_at=now()-interval '1 second'");
+    await act("service_role");
+    expect(await result("select public.run_due_publications(2) as value")).toBe(2);
+    expect(await result("select public.run_due_publications(2) as value")).toBe(2);
+    expect(await result("select public.run_due_publications(2) as value")).toBe(0);
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.profiles where published_revision is not null")).toBe(3);
+    expect(await result("select count(*)::integer as value from snoozer.publication_schedules where state='blocked' and reason='quota'")).toBe(1);
+  });
+
 });

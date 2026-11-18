@@ -30,7 +30,7 @@ export default async function Page({ params, searchParams }: {
     <Link href={studioHref("/studio/history", profile === undefined ? undefined : draft.profile_id)}>← Publish history</Link>
     <section className="stack">
       <h1>Version {publication.revision}</h1>
-      <p><time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}</p>
+      <p>{publication.activated ? "Published" : "Captured"} <time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}{publication.scheduled_for && ` · Scheduled for ${publicationDate(publication.scheduled_for)}`}</p>
       <ProfileCard profile={publication} preview galleryBase="/studio/gallery/image" avatarSrc={publication.avatar ? `/studio/avatar/${publication.avatar}` : undefined} />
       <div className="restore-bar"><RestorePublication profileId={draft.profile_id} revision={publication.revision} draftRevision={publication.draft_revision} /></div>
     </section>

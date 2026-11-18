@@ -6,6 +6,8 @@ const publicationDetails = z.object({
   display_name: z.string(),
   published_at: z.iso.datetime({ offset: true }),
   live: z.boolean(),
+  activated: z.boolean().default(true),
+  scheduled_for: z.iso.datetime({ offset: true }).nullable().default(null),
 });
 
 export const publicationList = z.array(publicationDetails);
