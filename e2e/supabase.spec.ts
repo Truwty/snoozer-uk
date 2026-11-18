@@ -391,7 +391,6 @@ test("private product drafts save, edit, archive and restore without exposing a 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
-    if (test.info().errors.length) console.log("Private product failure view:", (await page.locator("main").innerText({ timeout: 1000 }).catch(() => "Main view unavailable")).slice(0, 3000));
     if (account.data.user) {
       const removed = await admin.auth.admin.deleteUser(account.data.user.id);
       if (!test.info().errors.length) expect(removed.error).toBeNull();
