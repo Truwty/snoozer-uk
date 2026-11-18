@@ -3,17 +3,28 @@ import { boundedBody } from "./bounded-request";
 import { username, safeLink, link } from "./profile";
 import { trafficDevices, trafficSources } from "./analytics-context";
 
-const attribution = { version: z.literal(2).optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional() };
+const attribution = { version: z.union([z.literal(2), z.literal(3)]).optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional(),
+  browser: z.uuidv4().optional(), browserDay: z.iso.date().optional() };
 
 export const analyticsEvent = z.discriminatedUnion("kind", [
   z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("view"), ...attribution }).strict(),
   z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("click"),
     position: z.number().int().min(1).max(2000), url: z.string().max(2048).refine(safeLink), ...attribution }).strict(),
-]);
+]).refine((event) => (!event.browser && !event.browserDay) || (event.version === 3 && !!event.browser && !!event.browserDay));
 export type AnalyticsEvent = z.infer<typeof analyticsEvent>;
 export const dailyAnalytics = z.array(z.object({
   day: z.iso.date(), views: z.number().int().min(0).max(10000), clicks: z.number().int().min(0).max(10000),
 }));
+export const browserAnalytics = z.array(z.object({
+  day: z.iso.date(), unique_browsers: z.number().int().min(0).max(10000), clicked_browsers: z.number().int().min(0).max(10000),
+}).refine((row) => row.clicked_browsers <= row.unique_browsers));
+export function browserCtr(unique: number, clicked: number) {
+  return unique > 0 ? (clicked / unique * 100).toFixed(1) + "%" : "—";
+}
+export function browserAnalyticsCsv(rows: z.infer<typeof browserAnalytics>) {
+  return "date_utc,daily_browsers,clicked_browsers,browser_ctr_percent\r\n" + rows.map((row) =>
+    `${row.day},${row.unique_browsers},${row.clicked_browsers},${row.unique_browsers > 0 ? (row.clicked_browsers / row.unique_browsers * 100).toFixed(1) : ""}\r\n`).join("");
+}
 export const linkAnalytics = z.array(link.extend({ clicks: z.number().int().nonnegative().safe() })).max(100);
 export const analyticsCampaigns = z.array(z.object({ id: z.uuid(), label: z.string().min(1).max(80), active: z.boolean() })).max(20);
 export const trafficAnalytics = z.array(z.object({

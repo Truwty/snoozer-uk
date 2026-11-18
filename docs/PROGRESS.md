@@ -2,6 +2,9 @@
 
 ## Current checkpoint
 
+- Public widgets **d182a5f are Live**, deploy **dep-dbud6majnfac73csrs30**, migration **58 applied**. CI **44187169499** passed 185 Vitest, two audit-policy and 21 browser/HTTP checks (one expected skip). Hosted GitHub/Discord summaries returned real public metadata; Twitch rendered its offline state at 446×300, then Hide removed it. Both health endpoints returned 200.
+- Daily browser counts/CTR (migration **59, not applied**) now pass 192 unit/SQL tests, lint/typecheck/build locally. Fresh V3 consent, scoped random codes, hash deduplication and browser CSV are implemented; disposable CI and hosted scheduler verification remain pending. See analytics-browsers.md.
+
 - Generated campaign links, pause/resume, coarse source/device reports and traffic CSV passed CI 44180646763 and are verified on staging app 80ce59c, migration 57. Replayed events deduplicate; pause/resume attribution and real traffic CSV match. The QA campaign is left paused. See [campaigns](analytics-campaigns.md).
 - The next [public widgets](public-widgets.md) increment adds cached GitHub/Discord summaries, bounded provider backoff, Twitch embed sizing/consent, validated Roblox outbound links and publication-revocation checks. Local lint, typecheck, 185 Vitest tests, two audit-policy tests and build pass. Migration 58 and disposable CI/hosted verification are pending.
 

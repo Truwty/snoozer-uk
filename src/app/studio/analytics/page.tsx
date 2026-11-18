@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { dailyAnalytics, linkAnalytics, analyticsCampaigns, trafficAnalytics } from "@/lib/analytics";
+import { dailyAnalytics, linkAnalytics, analyticsCampaigns, trafficAnalytics, browserAnalytics, browserCtr } from "@/lib/analytics";
 import { AnalyticsCampaigns } from "@/components/analytics-campaigns";
 import { siteUrl } from "@/lib/env";
 import { Brand } from "@/components/shell";
@@ -11,16 +11,18 @@ export const metadata = { title: "Analytics", robots: { index: false, follow: fa
 export default async function Page({ searchParams }: { searchParams: Promise<StudioProfileQuery> }) {
   const draft = await readStudioDraft((await searchParams).profile);
   const client = await sessionClient();
-  const [response, linksResponse, campaignResponse, trafficResponse] = draft ? await Promise.all([
+  const [response, linksResponse, campaignResponse, trafficResponse, browserResponse] = draft ? await Promise.all([
     client.rpc("get_my_profile_view_days", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_link_totals", { p_profile: draft.profile_id }),
     client.rpc("get_my_analytics_campaigns", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_traffic_totals", { p_profile: draft.profile_id }),
+    client.rpc("get_my_profile_browser_days", { p_profile: draft.profile_id }),
   ]) : [];
   const rows = dailyAnalytics.safeParse(response?.data);
   const links = linkAnalytics.safeParse(linksResponse?.data);
   const campaigns = analyticsCampaigns.safeParse(campaignResponse?.data);
   const traffic = trafficAnalytics.safeParse(trafficResponse?.data);
+  const browsers = browserAnalytics.safeParse(browserResponse?.data);
   const peak = rows.success ? Math.max(1, ...rows.data.map((row) => Math.max(row.views, row.clicks))) : 1;
   return <main className="shell narrow">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></header>
@@ -52,6 +54,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
           <tbody>{rows.data.map(({ day, views, clicks }) => <tr key={day}><th scope="row"><time dateTime={day}>{day}</time></th><td>{views}</td><td>{clicks}</td></tr>)}</tbody>
         </table>
       </>)}
+      {draft && (browserResponse?.error || !browsers.success) && <p role="alert">Daily browser reports are unavailable. Please try again later.</p>}
+      {browsers.success && browsers.data.length > 0 && <>
+        <h2>Daily browsers and click-through rate</h2>
+        <p className="muted">Only visitors who allowed the latest analytics scope and have writable browser storage are included here. A browser counts once per profile and UTC day; browsers with at least one recorded view and link click count as clicked browsers. CTR is clicked browsers divided by daily browsers. These are approximate browser counts, not people. Clearing storage or withdrawing and allowing again can count a browser again. Counts before this feature are zero. Daily counts must not be added together as unique visitors across days.</p>
+        <a className="button small" download="snoozer-browser-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=browsers", draft?.profile_id)}>Download browser CSV</a>
+        <div className="analytics-context-wrap" role="region" aria-label="Daily browser report" tabIndex={0}>
+          <table>
+            <caption>Daily browser observations within your plan’s retention window</caption>
+            <thead><tr><th scope="col">UTC date</th><th scope="col">Daily browsers</th><th scope="col">Clicked browsers</th><th scope="col">Browser CTR</th></tr></thead>
+            <tbody>{browsers.data.map((row) => <tr key={row.day}><th scope="row">{row.day}</th><td>{row.unique_browsers}</td><td>{row.clicked_browsers}</td><td>{browserCtr(row.unique_browsers, row.clicked_browsers)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </>}
       {draft && (linksResponse?.error || !links.success) && <p role="alert">Per-link analytics are unavailable. Please try again later.</p>}
       {links.success && links.data.length > 0 && <>
         <h2>Most clicked links</h2>

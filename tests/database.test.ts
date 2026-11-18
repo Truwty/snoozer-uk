@@ -178,6 +178,66 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select * from snoozer.profile_traffic_days")).rejects.toMatchObject({ code: "42501" });
   });
 
+  it("deduplicates daily browsers, handles click-before-view and preserves legacy event callers", async () => {
+    await act("authenticated", alice);
+    await claim("daily-browsers");
+    await save(0, "Daily", [{ label: "Work", url: "https://example.com" }], true);
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await act("service_role");
+    const record = (kind: string, key: string | null, event = crypto.randomUUID(), actor: string | null = null, url = "https://example.com") =>
+      db.query("select public.record_profile_event_with_browser('daily-browsers',$1,$2,$3,1,$4,'direct',null,'desktop',$5)", [event, kind, actor, url, key]);
+    const key = "a".repeat(64);
+    const another = "b".repeat(64);
+    await record("click", key, avatar);
+    await record("click", key, avatar); // receipt replay
+    await record("view", key);
+    await record("view", key); // reload
+    await record("click", key);
+    await record("view", another);
+    await record("click", another);
+    await record("view", key, crypto.randomUUID(), alice);
+    await record("click", "c".repeat(64), crypto.randomUUID(), null, "https://unpublished.com");
+    await record("view", "malformed"); // event still counts, browser metric omitted
+    await db.query("select public.record_profile_event('daily-browsers',gen_random_uuid(),'view',null)");
+    await expect(db.query("select * from snoozer.profile_browser_days")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    expect((await db.query("select * from public.get_my_profile_view_days($1)", [profile])).rows)
+      .toEqual([{ day: expect.any(Date), views: 5, clicks: 3 }]);
+    expect((await db.query("select * from public.get_my_profile_browser_days($1)", [profile])).rows)
+      .toEqual([{ day: expect.any(Date), unique_browsers: 2, clicked_browsers: 2 }]);
+    await expect(record("view", key)).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.profile_browser_days")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    expect((await db.query("select * from public.get_my_profile_browser_days($1)", [profile])).rows).toEqual([]);
+    await act("anon");
+    await expect(db.query("select * from public.get_my_profile_browser_days($1)", [profile])).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    await db.query("delete from snoozer.profiles where id=$1", [profile]);
+    expect(await result("select count(*)::int as value from snoozer.profile_browser_days")).toBe(0);
+  });
+
+  it("purges previous-day browser hashes while retaining aggregates and prevents changes at the daily cap", async () => {
+    await act("authenticated", alice);
+    await claim("browser-retention");
+    await save(0, "Daily", [], true);
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    await db.exec("reset role");
+    await db.query(`insert into snoozer.profile_view_days(profile_id,day,views,unique_browsers) values
+      ($1,(now() at time zone 'UTC')::date-1,1,1), ($1,(now() at time zone 'UTC')::date,10000,1)`, [profile]);
+    await db.query(`insert into snoozer.profile_browser_days values($1,(now() at time zone 'UTC')::date-1,$2,true,false)`, [profile,"a".repeat(64)]);
+    await act("service_role");
+    await db.query("select public.record_profile_event_with_browser('browser-retention',gen_random_uuid(),'view',null,null,null,'direct',null,'desktop',$1)", ["b".repeat(64)]);
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.profile_browser_days")).toBe(0);
+    expect(await result("select sum(unique_browsers)::int as value from snoozer.profile_view_days")).toBe(2);
+    await db.query(`insert into snoozer.profile_browser_days values($1,(now() at time zone 'UTC')::date-1,$2,true,false)`, [profile,"c".repeat(64)]);
+    await act("service_role");
+    await db.query("select public.purge_profile_analytics()");
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.profile_browser_days")).toBe(0);
+    expect(await result("select count(*)::int as value from snoozer.profile_view_days")).toBe(2);
+  });
+
   it("counts only published profiles, deduplicates events and isolates owner analytics", async () => {
     await act("authenticated", alice);
     await claim("analytics-alice");

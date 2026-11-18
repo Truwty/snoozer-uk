@@ -58,7 +58,10 @@ test("profile analytics requires consent, counts published link clicks and expor
   const visitor = await browser.newContext({ baseURL: "http://localhost:3000",
     userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36" });
   await visitor.addInitScript(() => {
-    try { localStorage.setItem("snoozer-analytics-consent", "yes"); } catch { /* Some third-party frames block storage. */ }
+    try {
+      localStorage.setItem("snoozer-analytics-consent", "yes");
+      localStorage.setItem("snoozer-analytics-consent-v2", "yes");
+    } catch { /* Some third-party frames block storage. */ }
   });
   try {
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
@@ -99,7 +102,11 @@ test("profile analytics requires consent, counts published link clicks and expor
     const popup = await popupPromise;
     await popup.close();
     await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
+    const readBrowsers = async () => (await owner.rpc("get_my_profile_browser_days", { p_profile: id })).data;
+    await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 1, clicked_browsers: 1 }]);
+    expect(JSON.parse(events[0])).toMatchObject({ version: 3, browser: expect.any(String), browserDay: expect.any(String) });
     await publicPage.getByRole("button", { name: "Turn off profile analytics" }).click();
+    expect(await publicPage.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("snoozer-analytics-browser-v3:")))).toEqual([]);
     await publicPage.reload();
     await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
@@ -137,6 +144,14 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(csv.status()).toBe(200);
     expect(csv.headers()["cache-control"]).toBe("private, no-store");
     expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
+    await expect(page.getByRole("table", { name: "Daily browser observations within your plan’s retention window" })).toContainText("100.0%");
+    const browserDownload = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download browser CSV", exact: true }).click();
+    expect((await browserDownload).suggestedFilename()).toBe("snoozer-browser-analytics.csv");
+    const browserCsv = await page.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id);
+    expect(browserCsv.status()).toBe(200);
+    expect(await browserCsv.text()).toMatch(/^date_utc,daily_browsers,clicked_browsers,browser_ctr_percent\r\n\d{4}-\d{2}-\d{2},1,1,100.0\r\n$/);
+    expect((await visitor.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id)).status()).toBe(401);
     // A signed-in creator who opts in still must not count their own page.
     await page.goto("/" + name);
     await page.getByText("Analytics preferences", { exact: true }).click();
@@ -172,6 +187,9 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect.poll(traffic).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: "Newsletter", source: "email", views: 2 }),
     ]));
+    // The first scope was withdrawn, so the new opt-in creates one new browser code.
+    // Reloads while this scope remains allowed reuse it.
+    await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 2, clicked_browsers: 1 }]);
     await page.reload();
     await expect(page.getByRole("table", { name: "Campaign, source and device event totals" })).toContainText("Newsletter");
     const trafficDownload = page.waitForEvent("download");

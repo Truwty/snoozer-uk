@@ -2,7 +2,9 @@
 
 ## Current checkpoint — 17 November 2026
 
-**Next increment in progress:** migration 58 adds cached public GitHub/Discord summaries and global provider guards. Twitch embeds enforce 400×300/HTTPS-parent rules and separate consent; Roblox remains validated outbound links without API statistics. Local lint/typecheck, 185 Vitest tests, two audit-policy tests and build pass. Verify the latest disposable CI, then apply **58 (not applied yet)** before deploying its matching source. Read [public-widgets.md](public-widgets.md).
+**Next increment:** daily browser observations and CTR, migration **59 not applied yet**. Local lint/typecheck, 192 Vitest plus two policy tests and build pass. Read analytics-browsers.md. Verify latest CI, apply 59, then run the operator-only supabase/operations/schedule-analytics-cleanup.sql on existing staging. pg_cron 1.6.4 is available/preloaded but not installed yet. Observe an actual scheduled success before claiming cleanup works. Then deploy and verify the fresh consent/browser CSV journey.
+
+**Latest verified app:** public widgets **d182a5f are Live**, deploy **dep-dbud6majnfac73csrs30**. **Migrations through 58 applied**; do not reapply. CI **44187169499** passed 185 unit/SQL, two audit-policy and 21 browser/HTTP checks (one expected skip). Actual hosted public GitHub/Discord metadata and Twitch offline/hide were verified; health endpoints returned 200. Labelled QA profile now has GitHub vercel/next.js, Discord's official developer community and Twitch twitchdev links. No provider credentials or paid infrastructure added.
 
 **Verified baseline:** campaign app **80ce59c is Live**, deploy **dep-dbucj78ae00c73e4omc0**. **Migrations through 57 are applied**; do not apply them again. CI 44180646763 passed all campaign paths. Hosted campaign create/pause/resume, replay deduplication and actual traffic CSV were verified. The named QA campaign is paused. Its traffic report has campaign email/mobile views 2 and No campaign email/mobile views 1; daily QA totals are four views/two clicks. Browser analytics consent remains off. [Campaign details](analytics-campaigns.md).
 
