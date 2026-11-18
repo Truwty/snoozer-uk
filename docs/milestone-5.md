@@ -81,3 +81,5 @@ Private product catalogue slice: migration67, owner-scoped UI and RPCs, GBP inte
 Catalogue CI44368928071 passed on3d29333:230 unit/SQL+2 policy+32 browser, one expected skip, all four Lighthouse100 scores. Follow-up private PDF source migration68 adds shared quota reservations, owner download/recovery/removal and existing media cleanup integration. Local235 unit/SQL+2 policy/lint/types/build pass; extended browser journey pending;67–68 not hosted. No commerce transactions or buyer distribution enabled.
 
 CI44370516885 failed only the new attachment journey heading-order assertion after its file operations, ownership, quota/removal and phone-width assertions passed. The file h3 had no preceding h2; product summary now contains a styled h2. Migration67 was applied/recorded from its passing catalogue source;68 is not hosted. Full follow-up CI pending.
+
+Reliability review: product fields are now controlled so resolved error actions cannot auto-reset unsaved text. Pending submissions disable inputs. Added an actual stale UI versus concurrent SQL/RPC update browser assertion; lint/types pass. No schema change;67 remains immutable on staging.
