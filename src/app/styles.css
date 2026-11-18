@@ -340,9 +340,10 @@ dialog::backdrop { background: var(--preview-shadow); }
 .activity-chart { margin: 0; display: grid; gap: var(--s3); padding-block: var(--s5); min-width: 0; }
 .chart-legend, .chart-dates { display: flex; justify-content: space-between; gap: var(--s4); font-size: .875rem; color: var(--text-muted); }
 .chart-legend { justify-content: start; }
+.chart-dates { margin-inline-start: calc(3rem + var(--s2)); }
 .chart-plot { display: grid; grid-template-columns: 3rem minmax(0,1fr); gap: var(--s2); }
 .chart-axis { display: flex; flex-direction: column; justify-content: space-between; text-align: end; font-size: .875rem; color: var(--text-muted); }
-.analytics-chart { height: 12rem; gap: var(--s1); border-block-end: 1px solid var(--border); }
+.analytics-chart { height: 12rem; justify-content: space-between; gap: var(--s1); border-block-end: 1px solid var(--border); }
 .analytics-chart-day { border: 0; padding: 0 var(--s2); min-width: 44px; max-width: 64px; background: transparent; cursor: crosshair; }
 .chart-tooltip { font-size: .875rem; color: var(--text); padding: var(--s3) var(--s4); background: var(--surface-2); border-radius: var(--r-input); font-variant-numeric: tabular-nums; }
 .analytics-context-wrap { max-width: 100%; min-width: 0; }
