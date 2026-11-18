@@ -36,7 +36,9 @@ export async function manageProductFile(_: ActionState, form: FormData): Promise
       if (input.data.operation === "remove") {
         const marked = await client.rpc("remove_my_product_file", { p_product: current.productId, p_file: current.id });
         const removing = productFile.safeParse(marked.data);
-        if (marked.error || !removing.success || removing.data.state !== "removing") return { status: "error", message: "File removal could not be started. Reload and retry." };
+        if (marked.error || !removing.success || removing.data.state !== "removing") return { status: "error", message: marked.error?.code === "P1211"
+          ? "This PDF is retained by private versions. Discard those versions before removing it."
+          : "File removal could not be started. Reload and retry." };
         const removed = await bucket.remove([productFilePath(removing.data)]);
         if (removed.error) return { status: "error", message: "Removal is pending. Download is disabled; retry removal to release storage." };
         const completed = await admin.rpc("complete_product_file_removal", { p_owner: user.id, p_product: current.productId, p_file: current.id });

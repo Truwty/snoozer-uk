@@ -1,6 +1,16 @@
 # Progress — 18 November 2026
 
-## Current work — sandbox seller onboarding
+## Current work — private immutable product versions
+
+Migration70 and the owner freeze/discard workflow are implemented in source, not hosted. Snapshots retain saved title/description, integer GBP price, draft revision, opaque file identity, byte count and a server-computed SHA-256 fingerprint. Five private versions per product; replay of the same revision/file/hash returns the same UUID, changed hashes/stale drafts fail closed. File removal is blocked while a snapshot retains it. Owner-scoped list/discard and service-only freezing; no public data or buyer entitlement. Unsold versions still cascade with profile deletion. Before orders exist, add restricting order references and actionable profile/account deletion guards; this slice alone is not purchased-file retention or malware scanning.
+
+Local257 unit/SQL +2 policy checks, lint/types/build passed. Full browser/CI and hosted70 remain pending; do not apply70 until matching CI passes. One initial SQL test fixture reused a deleted username, correctly tripping the existing quarantine; the new deletion case now uses its own distinct name. No product rule was weakened.
+
+## Verified running release — guarded sandbox seller onboarding
+
+Application **0f79ee8** is Live on Render Free, deploy **dep-dbv2u2u7bikc73fdlbqg**, finished18November2026 **23:06:08UTC**. Both health endpoints returned ready/live. Supabase69 is applied/tracked and now immutable. Hosted SQL: latest20261118006900, RLS true, authenticated direct read false, service reservation execute true, zero merchant bindings. CI44379854853/job135068794428 passed253 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100 scores. The authenticated hosted seller setup shows the genuine unconfigured state with disabled controls, no provider account and no simulated success. Screenshot: ../snoozer-phase5-evidence-20261118/seller-setup-unconfigured.jpg. No Stripe configuration, credential, account or live setting changed.
+
+## Seller onboarding implementation — prior source checkpoint, now hosted
 
 Migration69 and seller setup are implemented in source, not hosted. Accounts v2 full Dashboard, Stripe fee/loss responsibility, merchant card capability and current payout/card status checks; private owner binding and stable operation UUID; conservative23-hour uncertain-creation cutoff; scoped platform self-read; signed-in single-use hosted onboarding links. Readiness is cleared when a leased refresh starts and cannot be restored by stale completion or browser return parameters. No identity/contact details are copied from Snoozer to Stripe. UK sandbox country selection requires an explicit test-only acknowledgement. All provider calls remain disabled unless the separate sandbox flag, pinned platform and test key are configured. No live operation exists.
 

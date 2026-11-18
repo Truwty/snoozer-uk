@@ -43,7 +43,7 @@ Official references checked18November2026: [SaaS account configuration](https://
 
 Upgrade path: foundation metadata caps are shared across all plans. Creators may edit existing unsold drafts when the retained total cap is reached. Before public selling, introduce explicitly versioned product entitlements and retain immutable purchased snapshots; do not silently increase free storage or repurpose IDs as purchased file versions.
 
-## Sandbox seller onboarding source (migration69, not hosted)
+## Sandbox seller onboarding (migration69 hosted, provider setup disabled)
 
 Seller setup at /studio/products/seller is account-wide, available only to verified profile owners when the separate SNOOZER_CREATOR_SANDBOX_ENABLED flag is true, a test-only key exists and STRIPE_CREATOR_SANDBOX_PLATFORM_ID is pinned. Optional dedicated STRIPE_CREATOR_SANDBOX_API_KEY takes precedence over the existing sandbox key. Permissions: platform self-read, Accounts v2 create/read, Account Links v2 create. A separate minimal RAK is preferred; credentials stay provider-side. No new credential was created for implementation.
 
@@ -54,3 +54,11 @@ Refresh uses a30-second lease and one-minute cooldown. Claim immediately clears 
 Return/refresh routes contain no account IDs/tokens and never grant a plan or buyer access. Expired single-use links require the signed-in owner to resume setup and acknowledge the notice; the server creates a fresh owner-bound link. Only connect.stripe.com/setup/ HTTPS links with the expected account and fresh expiry are accepted. Full Dashboard links use the bound account ID. No live keys, browser-supplied account IDs or arbitrary redirects are accepted.
 
 A provider binding restricts auth account deletion until operator reconciliation. There is deliberately no unverified disconnect/reset button that could orphan an uncertain provider account. Profile deletion alone does not erase an account-wide provider binding. Before enabling live use, implement the approved provider closure/financial retention/privacy workflow as part of Phase6/7. Sandbox source is not proof of actual provider delivery; no connected account has been created yet.
+
+## Private version snapshots (migration70, source only)
+
+The owner can freeze a saved draft with its ready PDF. The server first performs an owner-scoped file lookup, downloads at most4MiB, checks size/framing and computes SHA-256 over the actual bytes. Only the service can freeze the snapshot; SQL rechecks verified ownership, saved revision, ready file, profile media scope and stored size/MIME under the existing account/media locks. Copy, price, currency, file identity, bytes and fingerprint cannot be edited. Retry of the same tuple/hash returns the existing UUID; a changed hash fails closed. Five snapshots per product, at most100 per account, no second physical file or storage allowance.
+
+Private versions have owner-only list/discard controls. File removal fails before Storage deletion while any version retains the PDF. Discarding all private versions releases that guard; it does not remove the draft or PDF. Profile deletion still cascades unsold snapshots and uses the existing delayed media cleanup. The file FK is deferred so the complete unsold profile cascade can finish atomically. No public API, buyer permission, malware scan, order or purchase-retention claim is introduced.
+
+Before orders exist, add restrictive order-to-version references, explicit product/profile/account retention guards and bounded financial/history retention. A purchased snapshot must never pass the current private discard path. Buyer delivery must verify the retained fingerprint and content-safety approval. Local257 unit/SQL +2 policy/lint/types/build passed; full disposable browser and hosted70 are pending. See the current PROGRESS/CONTINUE checkpoint for migration69 deployment evidence; earlier catalogue release paragraphs are historical.

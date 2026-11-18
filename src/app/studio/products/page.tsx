@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Brand } from "@/components/shell";
 import { ProductDraftForm } from "@/components/product-draft-form";
 import { ProductFileForm } from "@/components/product-file-form";
+import { ProductVersionForm } from "@/components/product-version-form";
+import { productVersions } from "@/lib/product-versions";
 import { productFile } from "@/lib/product-files";
 import { z } from "zod";
 import { productInventory } from "@/lib/products";
@@ -17,6 +19,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const inventory = productInventory.safeParse(response?.data);
   const fileResponse = draft ? await client.rpc("list_my_product_files", { p_profile: draft.profile_id }) : null;
   const files = z.array(productFile).max(20).safeParse(fileResponse?.data);
+  const versionResponse = draft ? await client.rpc("list_my_product_versions", { p_profile: draft.profile_id }) : null;
+  const versions = productVersions.safeParse(versionResponse?.data);
   return <main className="shell stack">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", profile === undefined ? undefined : draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack"><p className="eyebrow">STUDIO / PRODUCTS</p><h1>Product drafts</h1>
@@ -29,6 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
           <summary><h2 className="product-summary-title">{product.title} · {product.archived ? "Archived" : "Private draft"}</h2></summary>
           <ProductDraftForm key={product.revision} profileId={draft.profile_id} product={product} canActivate={inventory.data.activeUsed < inventory.data.activeLimit} />
           {files.success && !fileResponse?.error ? <ProductFileForm key={files.data.find((file) => file.productId === product.id)?.state ?? "empty"} profileId={draft.profile_id} productId={product.id} file={files.data.find((file) => file.productId === product.id)} /> : <p role="alert">Private files are unavailable. Reload to try again.</p>}
+          {versions.success && !versionResponse?.error && files.success && !fileResponse?.error ? <ProductVersionForm product={product} file={files.data.find((file) => file.productId === product.id)} versions={versions.data.filter((version) => version.productId === product.id)} /> : <p role="alert">Private versions are unavailable. Reload to try again.</p>}
         </details>)}
         {inventory.data.activeUsed < inventory.data.activeLimit && inventory.data.totalUsed < inventory.data.totalLimit
           ? <section className="stack" aria-labelledby="new-product-title"><h2 id="new-product-title">New product</h2><ProductDraftForm profileId={draft.profile_id} /></section>

@@ -133,14 +133,93 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select count(*)::integer as value from snoozer.product_drafts")).toBe(0);
   });
 
-  async function productFileFixture() {
-    await act("authenticated", alice); await claim("private-pdf");
+  async function productFileFixture(name="private-pdf") {
+    await act("authenticated", alice); await claim(name);
     const profile = (await draft() as { profile_id: string }).profile_id;
     const product = (await saveProduct(profile))!;
     await act("service_role");
     const file = (await result<{ id: string; scope: string; bytes: number }>("select public.prepare_product_file($1,$2,100) as value", [alice,product]))!;
     return { profile, product, ...file, path: `${file.scope}/${file.id}.pdf` };
   }
+
+  async function readyVersionFixture() {
+    const file = await productFileFixture();
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{\"size\":100,\"mimetype\":\"application/pdf\"}',now())", [file.path]);
+    await act("service_role");
+    expect(await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id])).toBe(true);
+    return file;
+  }
+  const freezeVersion = (file: { product: string; id: string }, revision=0, hash="a".repeat(64), owner=alice) =>
+    result<string>("select public.freeze_product_version($1,$2,$3,$4,$5) as value", [owner,file.product,revision,file.id,hash]);
+
+  it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
+    const file = await readyVersionFixture();
+    const id = await freezeVersion(file);
+    expect(await freezeVersion(file)).toBe(id);
+    await act("authenticated", alice);
+    await saveProduct(file.profile,file.product,0,false,1200);
+    expect(await result("select public.list_my_product_versions($1) as value",[file.profile])).toMatchObject([{ id, revision:0, amount:500, bytes:100, sha256:"a".repeat(64), fileId:file.id }]);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage:{ mediaBytes:100 } });
+    await expect(result("select public.remove_my_product_file($1,$2) as value",[file.product,file.id])).rejects.toMatchObject({ code:"P1211" });
+    expect(await result("select public.get_my_product_file($1) as value",[file.id])).toMatchObject({ state:"ready" });
+    await act("service_role");
+    await expect(freezeVersion(file)).rejects.toMatchObject({ code:"40001" });
+    await freezeVersion(file,1);
+    await db.exec("reset role");
+    await expect(db.query("update snoozer.product_versions set amount=999")).rejects.toMatchObject({ code:"42501" });
+  });
+
+  it("isolates version inventory and mutations from anonymous and other accounts", async () => {
+    const file = await readyVersionFixture();
+    const id = await freezeVersion(file);
+    for (const role of ["authenticated","anon"] as const) {
+      await act(role,bob);
+      await expect(result("select public.list_my_product_versions($1) as value",[file.profile])).rejects.toMatchObject({ code:"42501" });
+      await expect(freezeVersion(file)).rejects.toMatchObject({ code:"42501" });
+      await expect(db.query("select * from snoozer.product_versions")).rejects.toMatchObject({ code:"42501" });
+    }
+    await act("authenticated",bob);
+    expect(await result("select public.discard_my_product_version($1,$2) as value",[file.product,id])).toBe(false);
+    await act("service_role");
+    await expect(freezeVersion(file,0,"a".repeat(64),bob)).rejects.toMatchObject({ code:"42501" });
+    await expect(freezeVersion(file,0,"a".repeat(64),unverified)).rejects.toMatchObject({ code:"42501" });
+    await expect(db.query("select * from snoozer.product_versions")).rejects.toMatchObject({ code:"42501" });
+  });
+
+  it("bounds private versions, rejects changed fingerprints and allows explicit discard before file removal", async () => {
+    const file = await readyVersionFixture();
+    const first = await freezeVersion(file);
+    await expect(freezeVersion(file,0,"b".repeat(64))).rejects.toMatchObject({ code:"40001" });
+    await expect(freezeVersion(file,0,"not-a-hash")).rejects.toMatchObject({ code:"22023" });
+    for(let revision=1; revision<=5; revision++) {
+      await act("authenticated",alice); await saveProduct(file.profile,file.product,revision-1);
+      await act("service_role");
+      if(revision===5) await expect(freezeVersion(file,revision)).rejects.toMatchObject({ code:"P1212" });
+      else await freezeVersion(file,revision);
+    }
+    await act("authenticated",alice);
+    expect(await result("select public.discard_my_product_version($1,$2) as value",[file.product,first])).toBe(true);
+    expect(await result("select public.discard_my_product_version($1,$2) as value",[file.product,first])).toBe(false);
+    const remaining = await result<{id:string}[]>("select public.list_my_product_versions($1) as value",[file.profile]);
+    for(const version of remaining!) await result("select public.discard_my_product_version($1,$2) as value",[file.product,version.id]);
+    expect(await result("select public.remove_my_product_file($1,$2) as value",[file.product,file.id])).toMatchObject({ state:"removing" });
+    await act("service_role");
+    await expect(freezeVersion(file,5)).rejects.toMatchObject({ code:"P1211" });
+  });
+
+  it("refuses missing files and cascades only unsold private versions during profile deletion", async () => {
+    const pending = await productFileFixture("version-pdf-delete");
+    await expect(freezeVersion(pending)).rejects.toMatchObject({ code:"P1211" });
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{\"size\":100,\"mimetype\":\"application/pdf\"}',now())",[pending.path]);
+    await act("service_role"); await result("select public.commit_product_file($1,$2,$3) as value",[alice,pending.product,pending.id]);
+    await freezeVersion(pending);
+    await act("authenticated",alice); await db.query("select public.delete_profile($1,0,'version-pdf-delete')",[pending.profile]);
+    await db.exec("reset role");
+    expect(await result("select count(*)::int as value from snoozer.product_versions")).toBe(0);
+    expect(await result("select count(*)::int as value from snoozer.avatar_cleanup where scope=$1",[pending.scope])).toBe(1);
+  });
 
   it("reserves private product media once and requires actual stored bytes before owner download", async () => {
     const file = await productFileFixture();
