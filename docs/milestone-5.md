@@ -15,7 +15,11 @@ Delivery sequence and exit evidence:
 
 All streams require meaningful positive, negative and boundary tests, appropriate browser evidence, an entitlement decision and operational documentation. Provider limitations and remaining inventory stay explicit rather than being relabelled complete. Existing published data must survive every additive migration and downgrade.
 
-Current slice: portfolio project sections and layout. All shipped appearance presets remain available on every plan; paid entitlement enforcement for future premium-only presets must be introduced deliberately, without retroactively restricting existing ones. No new infrastructure or dependencies are required.
+## Historical implementation log
+
+The checkpoints below preserve failures and earlier pending states. Current evidence: CI44243963647 passed all checks on f8cc758; hosted migrations60–65 are applied, matching Render deploydep-dbumn8gae00c73f0ld8g is Live and both health endpoints return200. The native scheduler ran successfully; dedicated fixture activation remains under verification.
+
+Initial slice: portfolio project sections and layout. All shipped appearance presets remain available on every plan; paid entitlement enforcement for future premium-only presets must be introduced deliberately, without retroactively restricting existing ones. No new infrastructure or dependencies are required.
 
 Portfolio and template discovery implementation: local lint/typecheck/200 Vitest/two policy/build pass. Local filter journey passes after using its real combobox name; remaining provider journeys require disposable Supabase CI. Migration 60 is not applied to hosted staging yet.
 
@@ -41,3 +45,5 @@ Referral/growth implementation (migration 64): consented signup-to-verification 
 CI 44242705899 (7b97530) pinpointed the timeout: axe was being injected into the deliberately JavaScript-disabled visitor context. The test retains its no-JS rendering checks and now runs axe in a separate normal-JavaScript page. The failed run did pass the generated PNG bytes/content-type, alias redirect/retirement and concurrent alias/profile-claim assertions before reaching axe; the full restore/schedule journey is still pending.
 
 Motion increment (migration65): built-in one-shot Soft rise background, shared editor/preview/public renderer, no content delay or looping animation, OS reduced-motion priority. All existing and new shipped presets remain free. SQL publish/restore and input-boundary coverage uses the new preset; actual browser reduced-motion assertions are pending. The advanced effects inventory remains open.
+
+Hosted delivery, 18 November: f8cc758 is Live on dep-dbumn8gae00c73f0ld8g; both health endpoints200. Migrations60–65 applied and tracked; never reapply. Native job snoozer-publications-v1 succeeded naturally at09:12 and activated dedicated fixture phase5-qa-20261118 at09:19. Saved draft revision6 preserved its newer name; active immutable revision5 retained the original portfolio. Before due profile/card404; after due profile200, noindex/customSEO/projectlink, valid PNG200. QA alias phase5-qa-link-20261118 returns uncached307 with query preserved. Growth enable/disable worked; QA link disabled again. CI44243963647 passed213 unit/SQL+2 policy+29 browser, one expected skip, four Lighthouse100 scores. Evidence in ../snoozer-phase5-evidence-20261118/.
