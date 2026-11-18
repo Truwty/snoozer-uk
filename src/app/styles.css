@@ -417,3 +417,6 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
 .template-filters label { min-width: 0; }
 @media (max-width: 54rem) { .template-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 28rem) { .template-filters { grid-template-columns: minmax(0,1fr); } }
+
+.alias-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s5); }
+.alias-list > li { border-block-start: 1px solid var(--border); padding-block-start: var(--s5); min-width: 0; overflow-wrap: anywhere; }

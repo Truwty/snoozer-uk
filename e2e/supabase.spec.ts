@@ -326,7 +326,8 @@ test("portfolio projects persist, publish and restore with responsive public ren
       await page.getByLabel(`Section ${index} project URL`, { exact: true }).fill(`https://example.com/project-${index}`);
     }
     await editorTab(page, "Design");
-    await page.getByLabel("Profile layout", { exact: true }).selectOption("portfolio");
+    await expect(page.getByRole("button", { name: "Portfolio grid", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Portfolio grid", exact: true }).click();
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Draft saved.");
     await page.reload();
@@ -367,6 +368,39 @@ test("portfolio projects persist, publish and restore with responsive public ren
     expect(social.headers()["content-type"]).toContain("image/png");
     expect((await social.body()).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
     expect((await visitor.request.get("/media/profile-card/unclaimed-profile")).status()).toBe(404);
+    await editorTab(page, "Settings");
+    const alias = name + "-alt";
+    await page.getByLabel("New alias", { exact: true }).fill(alias);
+    await page.getByRole("button", { name: "Claim alias", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
+    const redirected = await visitor.request.get(`/${alias}?campaign=qa-code`, { maxRedirects: 0 });
+    expect(redirected.status()).toBe(307);
+    expect(redirected.headers().location).toContain(`/${name}?campaign=qa-code`);
+    expect(redirected.headers()["cache-control"]).toContain("no-store");
+    await page.getByRole("button", { name: `Renew @${alias} for 90 days`, exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
+    await page.getByText(`Retire @${alias}`, { exact: true }).click();
+    await page.getByRole("button", { name: `Retire @${alias} permanently`, exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alias retired." })).toBeVisible();
+    expect((await visitor.request.get(`/${alias}`, { maxRedirects: 0 })).status()).toBe(404);
+    const competitorEmail = `${name}-race@example.com`;
+    const competitor = await admin.auth.admin.createUser({ email: competitorEmail, password, email_confirm: true });
+    expect(competitor.error).toBeNull();
+    try {
+      const ownerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+      const otherClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+      expect((await ownerClient.auth.signInWithPassword({ email, password })).error).toBeNull();
+      expect((await otherClient.auth.signInWithPassword({ email: competitorEmail, password })).error).toBeNull();
+      const ownerDraft = await ownerClient.rpc("get_draft");
+      expect(ownerDraft.error).toBeNull();
+      const collision = name + "-race";
+      const results = await Promise.all([
+        ownerClient.rpc("manage_profile_alias", { p_profile: ownerDraft.data.profile_id, p_name: collision, p_operation: "create" }),
+        otherClient.rpc("claim_profile", { p_name: collision }),
+      ]);
+      expect(results.filter((result) => !result.error)).toHaveLength(1);
+      expect(results.filter((result) => result.error).map((result) => result.error!.code)).toEqual(["23505"]);
+    } finally { if (competitor.data.user) await admin.auth.admin.deleteUser(competitor.data.user.id); }
     await editorTab(page, "Sections");
     for (const width of [360, 1280]) {
       await publicPage.setViewportSize({ width, height: 850 });

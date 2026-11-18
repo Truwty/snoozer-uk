@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "@/components/shell";
 import { ClaimForm } from "@/components/claim-form";
+import { aliasInventory } from "@/lib/aliases";
+import { ProfileAliases } from "@/components/profile-aliases";
 import { DeleteProfile } from "@/components/delete-profile";
 import { Editor } from "@/components/editor";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -20,7 +22,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const { profile, logout, deleted, restored, template } = await searchParams;
   const draft = await readStudioDraft(profile);
   const selected = profile === undefined ? undefined : draft?.profile_id;
-  const response = draft && await (await sessionClient()).rpc("get_my_plan");
+  const client = draft && await sessionClient();
+  const [response, aliasResponse] = client && draft ? await Promise.all([client.rpc("get_my_plan"), client.rpc("list_my_aliases", { p_profile: draft.profile_id })]) : [];
+  const aliases = aliasInventory.safeParse(aliasResponse?.data);
   const plan = accountPlan.safeParse(response?.data);
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
   return <main className="shell">
@@ -45,7 +49,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
       <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
         initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id}
         avatar={<AvatarUpload profileId={draft.profile_id} revision={draft.revision} />}
-        settings={<DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} />} />
+        settings={<>{aliases.success ? <ProfileAliases profileId={draft.profile_id} inventory={aliases.data} /> : <p role="alert">Aliases are unavailable. Reload to try again.</p>}<DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} /></>} />
 
     </>}
   </main>;

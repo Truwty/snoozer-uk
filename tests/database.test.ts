@@ -38,7 +38,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
         await save(0, "Legacy profile", [{ label: "Work", url: "https://example.com" }], true);
         await db.exec("reset role");
       }
-      await db.exec(await readFile(new URL(`../supabase/migrations/${filename}`, import.meta.url), "utf8"));
+      try {
+        await db.exec(await readFile(new URL(`../supabase/migrations/${filename}`, import.meta.url), "utf8"));
+      } catch (error) {
+        throw new Error(`Migration ${filename} failed`, { cause: error });
+      }
       if (filename.startsWith("20261110004600")) {
         expect(await result(`select p.id = l.profile_id and p.id = s.profile_id and p.id = pl.profile_id as value
           from snoozer.profiles p join snoozer.links l using (owner_id)
@@ -54,6 +58,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
   beforeEach(async () => {
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
 
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
@@ -1870,6 +1875,53 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select snoozer.save_profile_content($1,5,'Bypass','Bio','lagoon',false,'[]',true,false,null,null)", [id])).rejects.toMatchObject({ code: "42501" });
     await act("anon");
     await expect(db.query("select public.save_profile($1,5,'Bypass','Bio','lagoon',false,'[]',false,false,null,null,'{}')", [id])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("shares the profile/alias namespace and enforces ownership, quota, expiry and permanent retirement", async () => {
+    await act("authenticated", alice);
+    await claim("alias-alice");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const change = (name: string, operation = "create", profile = id) => db.query("select public.manage_profile_alias($1,$2,$3)", [profile, name, operation]);
+    await expect(change("alice-alias")).rejects.toMatchObject({ code: "P1007" });
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','alias-test',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice);
+    await change("alice-alias");
+    expect(await result("select public.username_available('alice-alias') as value")).toBe(false);
+    expect(await result("select public.resolve_profile_alias('alice-alias') as value")).toBeNull();
+    await expect(change("studio")).rejects.toMatchObject({ code: "23505" });
+    await expect(change("alias-alice")).rejects.toMatchObject({ code: "23505" });
+    await change("second-alias");
+    await expect(change("third-alias")).rejects.toMatchObject({ code: "P1007" });
+    await expect(change("bad-name", "unsupported")).rejects.toMatchObject({ code: "22023" });
+    await save(0, "Alice", [], true);
+    await act("anon");
+    expect(await result("select public.resolve_profile_alias('alice-alias') as value")).toBe("alias-alice");
+    expect(await result("select public.published_profile_exists('alice-alias') as value")).toBe(true);
+    await expect(db.query("select public.list_my_aliases($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.profile_aliases")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", bob);
+    await expect(claim("alice-alias")).rejects.toMatchObject({ code: "23505" });
+    await expect(change("alice-alias", "renew")).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select public.list_my_aliases($1)", [id])).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role; update snoozer.profile_aliases set expires_at=now()-interval '1 second' where name='alice-alias'");
+    await act("authenticated", alice);
+    expect(await result("select public.resolve_profile_alias('alice-alias') as value")).toBeNull();
+    await change("alice-alias", "renew");
+    expect(await result("select public.resolve_profile_alias('alice-alias') as value")).toBe("alias-alice");
+    await change("alice-alias", "retire");
+    await expect(change("alice-alias", "renew")).rejects.toMatchObject({ code: "P1008" });
+    expect(await result("select public.resolve_profile_alias('alice-alias') as value")).toBeNull();
+    expect(await result("select public.username_available('alice-alias') as value")).toBe(false);
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='alias-test'");
+    await act("anon");
+    expect(await result("select public.resolve_profile_alias('second-alias') as value")).toBeNull();
+    await act("authenticated", alice);
+    expect(await result("select public.list_my_aliases($1) as value", [id])).toMatchObject({ limit: 0, used: 1, items: expect.arrayContaining([{ name: "second-alias", expiresAt: expect.any(String), state: "plan-limit" }]) });
+    await db.query("select public.delete_profile($1,1,'alias-alice')", [id]);
+    expect(await result("select public.username_available('second-alias') as value")).toBe(false);
+    await db.exec("reset role");
+    expect(await result("select profile_id is null and retired_at is not null as value from snoozer.profile_aliases where name='second-alias'")).toBe(true);
   });
 
 });

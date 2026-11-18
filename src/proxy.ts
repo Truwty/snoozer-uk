@@ -21,13 +21,21 @@ export async function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", csp);
   const slug = request.nextUrl.pathname.match(/^\/([a-zA-Z0-9-]+)\/?$/)?.[1];
   let missing = false;
+  let destination: URL | undefined;
+  let redirectStatus: 307 | 308 = 307;
   if (slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
     && supabaseUrl && supabaseKey && ["GET", "HEAD"].includes(request.method)) {
     // Next's async dynamic notFound fallback can be blank without JavaScript.
-    const { data, error } = await anonymousClient().rpc("published_profile_exists", { p_name: canonicalUsername(slug) });
-    missing = !error && data === false;
+    const { data, error } = await anonymousClient().rpc("resolve_public_address", { p_name: canonicalUsername(slug) });
+    missing = !error && data === null;
+    const target = username.safeParse(data);
+    if (!error && target.success && target.data !== slug) {
+      destination = new URL(`/${target.data}`, siteUrl());
+      destination.search = request.nextUrl.search;
+      redirectStatus = target.data === canonicalUsername(slug) ? 308 : 307;
+    }
   }
-  const response = missing
+  const response = destination ? NextResponse.redirect(destination, { status: redirectStatus }) : missing
     ? NextResponse.rewrite(new URL("/profile-not-found", request.url), { status: 404, request: { headers } })
     : NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);
