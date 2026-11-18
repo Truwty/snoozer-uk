@@ -382,6 +382,12 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await expect(versions.getByText("1 of 5 private versions.", { exact: false })).toBeVisible();
     const snapshot = (await owner.rpc("list_my_product_versions", { p_profile: productProfile.data.profile_id })).data[0];
     expect(snapshot).toMatchObject({ revision: 4, amount: 2550, fileId: privateFile.id, sha256: createHash("sha256").update(pdf).digest("hex") });
+    const versionDownload = await versions.getByRole("link", { name: "Download private revision 4", exact: true }).getAttribute("href");
+    const frozenDownload = await page.request.get(versionDownload!);
+    expect(frozenDownload.status()).toBe(200);
+    expect(await frozenDownload.body()).toEqual(pdf);
+    expect(frozenDownload.headers()["cache-control"]).toBe("private, no-store");
+    expect((await request.get(versionDownload!)).status()).toBe(404);
     expect((await owner.rpc("freeze_product_version", { p_owner: account.data.user!.id, p_product: savedProduct.id,
       p_expected: 4, p_file: privateFile.id, p_sha256: snapshot.sha256 })).error).not.toBeNull();
     await page.setViewportSize({ width: 360, height: 850 });
@@ -396,6 +402,7 @@ test("private product drafts save, edit, archive and restore without exposing a 
     expect((await page.request.get(downloadPath)).status()).toBe(200);
     await versions.getByRole("button", { name: "Discard private revision 4", exact: true }).click();
     await expect(versions.getByText("No frozen versions yet.", { exact: true })).toBeVisible();
+    expect((await page.request.get(versionDownload!)).status()).toBe(404);
     await pdfForm.getByRole("button", { name: "Remove private PDF", exact: true }).click();
     await expect(pdfForm.getByLabel("PDF file", { exact: true })).toBeVisible();
     expect((await page.request.get(downloadPath)).status()).toBe(404);

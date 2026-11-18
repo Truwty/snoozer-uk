@@ -158,6 +158,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const id = await freezeVersion(file);
     expect(await freezeVersion(file)).toBe(id);
     await act("authenticated", alice);
+    expect(await result("select public.get_my_product_version_file($1) as value",[id])).toMatchObject({ versionId:id, id:file.id, bytes:100, sha256:"a".repeat(64), state:"ready" });
     await saveProduct(file.profile,file.product,0,false,1200);
     expect(await result("select public.list_my_product_versions($1) as value",[file.profile])).toMatchObject([{ id, revision:0, amount:500, bytes:100, sha256:"a".repeat(64), fileId:file.id }]);
     expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage:{ mediaBytes:100 } });
@@ -175,6 +176,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const id = await freezeVersion(file);
     for (const role of ["authenticated","anon"] as const) {
       await act(role,bob);
+      if(role==="authenticated") expect(await result("select public.get_my_product_version_file($1) as value",[id])).toBeNull();
+      else await expect(result("select public.get_my_product_version_file($1) as value",[id])).rejects.toMatchObject({ code:"42501" });
       await expect(result("select public.list_my_product_versions($1) as value",[file.profile])).rejects.toMatchObject({ code:"42501" });
       await expect(freezeVersion(file)).rejects.toMatchObject({ code:"42501" });
       await expect(db.query("select * from snoozer.product_versions")).rejects.toMatchObject({ code:"42501" });
@@ -200,6 +203,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     }
     await act("authenticated",alice);
     expect(await result("select public.discard_my_product_version($1,$2) as value",[file.product,first])).toBe(true);
+    expect(await result("select public.get_my_product_version_file($1) as value",[first])).toBeNull();
     expect(await result("select public.discard_my_product_version($1,$2) as value",[file.product,first])).toBe(false);
     const remaining = await result<{id:string}[]>("select public.list_my_product_versions($1) as value",[file.profile]);
     for(const version of remaining!) await result("select public.discard_my_product_version($1,$2) as value",[file.product,version.id]);

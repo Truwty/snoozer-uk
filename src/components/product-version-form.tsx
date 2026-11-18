@@ -14,6 +14,7 @@ export function ProductVersionForm({ product, file, versions }: { product: Produ
     <p>{versions.length} of 5 private versions. Their shared PDF counts once towards storage and stays attached until all versions are discarded.</p>
     {versions.map((version) => <div className="panel stack" key={version.id}><h4>Revision {version.revision} · {version.title} · £{(version.amount / 100).toFixed(2)}</h4>
       <p>{version.description || "No description."}</p><p>{Math.ceil(version.bytes / 1024)} KB · SHA-256 <code style={{ overflowWrap: "anywhere" }}>{version.sha256}</code></p>
+      <a className="text-link" href={`/studio/products/version/${version.id}`} download>Download private revision {version.revision}</a>
       <form action={submit}><input type="hidden" name="product" value={product.id} /><input type="hidden" name="id" value={version.id} /><input type="hidden" name="revision" value={version.revision} />
         <button className="button secondary" name="operation" value="discard" disabled={pending}>Discard private revision {version.revision}</button>
       </form>

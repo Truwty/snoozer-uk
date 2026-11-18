@@ -2,6 +2,8 @@
 
 Status: in progress. Read the original master specification and the current continuation checkpoint. Preserve the tested editor and provider integrations. This milestone is not complete merely because one vertical slice passes.
 
+Current18November checkpoint: a9c0e75 passes full CI44419321759 (257 unit/SQL, two policy,32 browser, one expected skip, four Lighthouse100). Migrations69–70 are hosted and immutable. Seller account creation/binding/real hosted-link delivery passed using the separately approved scoped onboarding-sandbox key. Business-owner completion/current capabilities remain a user handoff. Private snapshot freeze/retention/discard passes disposable browser CI; hosted upload attempts failed in this in-app browser and Supabase's own dashboard before an HTTP response, so hosted freezing is not claimed. Read the top of PROGRESS/CONTINUE for IDs, cleanup state and exact next work. Phase5 remains open for safe storefront/Checkout/receipts/refunds/buyer access and purchased-version retention; Phases6–7 remain open.
+
 Latest release: private product catalogue/PDF slice passed CI44374827297 onbd0e1ab (235 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100). Hosted migrations through68 are applied; dep-dbuvbbutlv9c73c69re0 is Live since19:01:28UTC. Actual618-byte owner upload/download, anonymous denial, quota618→0 and removal passed; archived metadata retained, profile draft6/live5 preserved. See PROGRESS.md and creator-commerce.md. Full Phase5 remains open for sandbox commerce onboarding, purchases, receipts/refunds and buyer access.
 
 Delivery sequence and exit evidence:
