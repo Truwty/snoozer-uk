@@ -36,7 +36,7 @@ export function TextSectionsEditor({ sections, onChange }: {
 
   return <fieldset className="stack" ref={list}>
     <legend className="section-title">Text sections <small>{sections.length}/{textSectionLimits.count}</small></legend>
-    <p className="muted">Add text, highlight an update with a callout, share a quote, or count down to an event. Sections appear above your links. Drag a section or use its Move buttons.</p>
+    <p className="muted">Add text, highlight an update with a callout, share a quote, count down to an event, or showcase a project. Sections appear above your links. Drag a section or use its Move buttons.</p>
     <p className="sr-only" aria-live="polite">{announcement}</p>
     {sections.map((section, index) => <div key={index} className="link-editor stack" data-reorder-index={index}
       data-drop-target={dropIndex === index || undefined}>
@@ -47,7 +47,7 @@ export function TextSectionsEditor({ sections, onChange }: {
           const kind = sectionKinds.find((candidate) => candidate === event.target.value);
           if (kind) change(index, {
             kind: kind === "text" ? undefined : kind,
-            target: kind === "countdown" ? section.target ?? "" : undefined,
+            target: kind === section.kind ? section.target : kind === "countdown" || kind === "project" ? "" : undefined,
           });
         }}>
           {sectionKinds.map((kind) => <option value={kind} key={kind}>{sectionLabels[kind]}</option>)}
@@ -60,6 +60,10 @@ export function TextSectionsEditor({ sections, onChange }: {
       </label>
       {section.kind === "countdown" && <label>Section {index + 1} target time (UTC)
         <input disabled={section.locked} type="datetime-local" step={60} required value={section.target ?? ""}
+          onChange={(event) => change(index, { target: event.target.value })} />
+      </label>}
+      {section.kind === "project" && <label>Section {index + 1} project URL
+        <input disabled={section.locked} type="url" required maxLength={2048} value={section.target ?? ""} placeholder="https://"
           onChange={(event) => change(index, { target: event.target.value })} />
       </label>}
       <label>Section {index + 1} text

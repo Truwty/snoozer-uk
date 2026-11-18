@@ -1803,4 +1803,34 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await write(4, true, []);
     expect(await published("sections-alice")).toMatchObject({ sections: [] });
   });
+  it("validates project targets and preserves portfolio publications through draft, hiding and restore", async () => {
+    await act("authenticated", alice);
+    await claim("portfolio-alice");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const appearance = { density: "balanced", corners: "soft", layout: "portfolio" };
+    const project = { kind: "project", heading: "Project", body: "Description", target: "https://example.com/work" };
+    const write = (expected: number, sections: unknown, publish = true) => result(
+      "select public.save_profile($1,$2,'Alice','Bio','lagoon',false,'[]',$3,false,$4,$5) as value",
+      [id, expected, publish, JSON.stringify(sections), JSON.stringify(appearance)],
+    );
+    for (const target of [null, "", "javascript:alert(1)", "https://127.0.0.1", "https://user@example.com", "https://example.com:65536", "https://example.com:" + "9".repeat(2048)]) {
+      await expect(write(0, [{ ...project, target }])).rejects.toMatchObject({ code: "22023" });
+    }
+    expect(await write(0, [project])).toBe(1);
+    expect(await published("portfolio-alice")).toMatchObject({ appearance, sections: [project] });
+    await write(1, [{ ...project, target: "https://example.com/new", hidden: true }], false);
+    expect(await published("portfolio-alice")).toMatchObject({ sections: [project] });
+    await act("authenticated", bob);
+    await expect(write(2, [project])).rejects.toMatchObject({ code: "40001" });
+    await act("authenticated", alice);
+    await write(2, [{ ...project, hidden: true }]);
+    expect(await published("portfolio-alice")).toMatchObject({ sections: [] });
+    await db.query("select public.restore_publication($1,1,3)", [id]);
+    expect(await draft()).toMatchObject({ revision: 4, appearance, sections: [project] });
+    expect(await published("portfolio-alice")).toMatchObject({ sections: [] });
+    await write(4, [project]);
+    await act("anon");
+    expect(await published("portfolio-alice")).toMatchObject({ sections: [project] });
+  });
+
 });

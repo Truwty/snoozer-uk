@@ -1,5 +1,15 @@
 # Progress — 18 November 2026
 
+## Milestone 5 — in progress
+
+Resumed from design checkpoint 9585313/b3f775a. Read the original master specification (all unique requirements and the identical per-feature contract) and preserve the deployed design. See milestone-5.md for the full delivery sequence; no claim that the whole phase is complete.
+
+Portfolio project sections and a responsive Portfolio grid layout are implemented in the working source. Migration **20261118006000_portfolio_projects.sql** is additive and not yet applied to hosted staging. Project targets are validated public HTTP(S) outbound URLs, never fetched by Snoozer; existing six-section quota, visibility, locks, revision checks, publication and restore remain in force. All current appearance presets remain free. Project-card clicks are not included in the existing ordered-link click report.
+
+Template discovery now has URL-preserved word search, theme/layout filters, a real empty state and clear action. No catalogue or provider fixtures were replaced.
+
+Verification: baseline 195 tests passed. New source passes lint/typecheck, 200 unit/SQL tests, two audit-policy tests and build. Local public browser suite passed 19 checks; the new filter test initially used an overly exact label-text selector, then passed with the actual combobox accessible name. Eight provider-dependent local skips are not passing evidence. Full disposable Supabase CI, hosted migration/deployment and portfolio browser verification remain pending. Next continue advanced SEO, then the remaining streams in milestone-5.md. Do not reapply migrations through 59, activate live payments or change production DNS.
+
 ## Design overhaul — delivered to staging
 
 The owner’s DESIGN.md presentation work is deployed and verified on Render Free staging. All ten presentation tasks are delivered within the existing application, subject to the explicit limits below. Application source **b3f775a**, deploy **dep-dbui4esipgvc7390dol0**, is Live (18 November 2026, 03:58 UTC); /health/live and /health/ready both returned 200. No migrations, API routes, dependency manifest/lockfile, auth actions, billing operations or analytics persistence changed.

@@ -301,6 +301,77 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
   }
 });
 
+test("portfolio projects persist, publish and restore with responsive public rendering", async ({ page, browser }) => {
+  test.setTimeout(90000);
+  const name = `portfolio-${randomUUID().slice(0, 8)}`;
+  const email = `${name}@example.com`;
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(error).toBeNull();
+  const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
+  try {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByLabel("Username").fill(name);
+    await page.getByRole("button", { name: "Claim address" }).click();
+    await page.getByLabel("Display name").fill("Portfolio first publication");
+    await editorTab(page, "Sections");
+    for (const index of [1, 2]) {
+      await page.getByRole("button", { name: "Add text section", exact: true }).click();
+      await page.getByLabel(`Section ${index} type`, { exact: true }).selectOption("project");
+      await page.getByLabel(`Section ${index} heading`, { exact: true }).fill(`Project ${index}`);
+      await page.getByLabel(`Section ${index} text`, { exact: true }).fill(`The story behind project ${index}.`);
+      await page.getByLabel(`Section ${index} project URL`, { exact: true }).fill(`https://example.com/project-${index}`);
+    }
+    await editorTab(page, "Design");
+    await page.getByLabel("Profile layout", { exact: true }).selectOption("portfolio");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Draft saved.");
+    await page.reload();
+    await editorTab(page, "Sections");
+    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
+    expect((await visitor.request.get(`/${name}`)).status()).toBe(404);
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    const publicPage = await visitor.newPage();
+    await publicPage.goto(`/${name}`);
+    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
+    for (const width of [360, 1280]) {
+      await publicPage.setViewportSize({ width, height: 850 });
+      expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      const columns = await publicPage.locator(".profile-sections").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
+      expect(columns).toBe(width === 360 ? 1 : 2);
+    }
+    expect((await new AxeBuilder({ page: publicPage }).analyze()).violations).toEqual([]);
+    await page.getByLabel("Section 1 project URL", { exact: true }).fill("https://example.com/updated");
+    await editorTab(page, "Profile");
+    await page.getByLabel("Display name").fill("Portfolio second publication");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Draft saved.");
+    await publicPage.reload();
+    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Publish history", exact: true }).click();
+    await page.getByRole("listitem").filter({ hasText: "Portfolio first publication" }).getByRole("link", { name: /Preview version/ }).click();
+    await page.getByRole("button", { name: "Restore to draft", exact: true }).click();
+    await editorTab(page, "Sections");
+    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Portfolio second publication", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
+    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
+  } finally {
+    await visitor.close();
+    if (data.user) await admin.auth.admin.deleteUser(data.user.id);
+  }
+});
+
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;

@@ -1,4 +1,4 @@
-import type { ProfileContent, TextSection } from "./profile";
+import { defaultAppearance, profileLayouts, themes, type ProfileContent, type TextSection } from "./profile";
 
 type StudioTemplate = {
   id: string;
@@ -48,3 +48,21 @@ export const studioTemplates: readonly StudioTemplate[] = [...starters, ...start
   { ...template, id: template.id + "-airy", name: template.name + " · Airy", description: template.description + " Airy spacing and rounded corners.",
     appearance: { density: "airy", corners: "round", layout: "centred", accent: "theme", entrance: "none" } as const },
 ])];
+
+export function templateFilters(input: { q?: string | string[]; theme?: string | string[]; layout?: string | string[] }) {
+  return {
+    q: typeof input.q === "string" ? input.q.trim().slice(0, 80) : "",
+    theme: themes.find((theme) => theme === input.theme) ?? "all",
+    layout: profileLayouts.find((layout) => layout === input.layout) ?? "all",
+  };
+}
+
+export function findTemplates(filters: ReturnType<typeof templateFilters>) {
+  const words = filters.q.toLocaleLowerCase("en-GB").split(/\s+/).filter(Boolean);
+  return studioTemplates.filter((template) => {
+    const text = `${template.name} ${template.description} ${template.id}`.toLocaleLowerCase("en-GB");
+    return (filters.theme === "all" || template.theme === filters.theme)
+      && (filters.layout === "all" || (template.appearance ?? defaultAppearance).layout === filters.layout)
+      && words.every((word) => text.includes(word));
+  });
+}

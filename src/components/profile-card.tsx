@@ -43,9 +43,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             <blockquote><p>{section.body}</p></blockquote>
             <figcaption>{section.heading}</figcaption>
           </figure>;
-          return <section className={section.kind === "callout" ? "profile-text-section profile-callout" : "profile-text-section"} key={index}>
+          return <section className={"profile-text-section" + (section.kind === "callout" ? " profile-callout" : section.kind === "project" ? " profile-project" : "")} key={index}>
             {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
             <p>{section.body}</p>
+            {section.kind === "project" && section.target && safeLink(section.target) && <a className="project-link" href={section.target} rel="ugc nofollow noreferrer">Explore {section.heading} <span aria-hidden="true">↗</span></a>}
             {section.kind === "countdown" && <div className="countdown">
               {target ? <>
                 <p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p>

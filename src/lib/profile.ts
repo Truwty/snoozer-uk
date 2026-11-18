@@ -9,7 +9,7 @@ export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
 export const themes = ["midnight", "daybreak", "lagoon"] as const;
 export const profileDensities = ["compact", "balanced", "airy"] as const;
 export const profileCorners = ["square", "soft", "round"] as const;
-export const profileLayouts = ["centred", "editorial"] as const;
+export const profileLayouts = ["centred", "editorial", "portfolio"] as const;
 export const defaultAppearance = { density: "balanced", corners: "soft", layout: "centred", accent: "theme", entrance: "none" } as const;
 export const profileAppearance = z.strictObject({
   density: z.enum(profileDensities),
@@ -45,9 +45,9 @@ export const link = z.object({
 });
 
 export const textSectionLimits = { count: 6, heading: 80, body: 800 };
-export const sectionKinds = ["text", "callout", "quote", "countdown"] as const;
+export const sectionKinds = ["text", "callout", "quote", "countdown", "project"] as const;
 export const sectionLabels: Record<typeof sectionKinds[number], string> = {
-  text: "Text", callout: "Callout", quote: "Quote", countdown: "Countdown",
+  text: "Text", callout: "Callout", quote: "Quote", countdown: "Countdown", project: "Project",
 };
 const textSection = z.object({
   kind: z.enum(sectionKinds).optional(),
@@ -61,8 +61,10 @@ const textSection = z.object({
 }).superRefine((section, context) => {
   if (section.kind === "countdown" && !countdownTarget(section.target ?? "")) {
     context.addIssue({ code: "custom", path: ["target"], message: "Enter a valid countdown date and time in UTC." });
-  } else if (section.kind !== "countdown" && section.target !== undefined) {
-    context.addIssue({ code: "custom", path: ["target"], message: "Only countdown sections have a target time." });
+  } else if (section.kind === "project" && (!section.target || section.target.length > 2048 || !safeLink(section.target))) {
+    context.addIssue({ code: "custom", path: ["target"], message: "Enter a public HTTP or HTTPS project address." });
+  } else if (section.kind !== "countdown" && section.kind !== "project" && section.target !== undefined) {
+    context.addIssue({ code: "custom", path: ["target"], message: "Only countdown and project sections have a target." });
   }
 });
 export type TextSection = z.infer<typeof textSection>;

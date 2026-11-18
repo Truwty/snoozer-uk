@@ -135,6 +135,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
         }}>
           <option value="centred">Centred card</option>
           <option value="editorial">Editorial</option>
+          <option value="portfolio">Portfolio grid</option>
         </select></VisualSelect>
         <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
           const entrance = event.target.value;

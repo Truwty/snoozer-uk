@@ -63,3 +63,23 @@ test("Stripe intake is unavailable without server configuration", async ({ reque
   const response = await request.post("/api/v1/billing/stripe/webhook");
   expect(response.status()).toBe(503);
 });
+
+
+test("template search combines filters, preserves URL state and clears empty results", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 812 });
+  await page.goto("/templates");
+  await page.getByLabel("Search templates", { exact: true }).fill("notebook compact");
+  await page.getByRole("combobox", { name: "Template theme", exact: true }).selectOption("midnight");
+  await page.getByRole("button", { name: "Find templates", exact: true }).click();
+  await expect(page).toHaveURL(/q=notebook\+compact/);
+  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(1);
+  await page.reload();
+  await expect(page.getByLabel("Search templates", { exact: true })).toHaveValue("notebook compact");
+  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveAttribute("href", "/studio?template=project-notebook-compact");
+  await page.getByLabel("Search templates", { exact: true }).fill("no such template");
+  await page.getByRole("button", { name: "Find templates", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "No matching templates", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Browse all templates", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});
