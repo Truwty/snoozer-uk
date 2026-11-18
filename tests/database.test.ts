@@ -132,6 +132,84 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select count(*)::integer as value from snoozer.product_drafts")).toBe(0);
   });
 
+  async function productFileFixture() {
+    await act("authenticated", alice); await claim("private-pdf");
+    const profile = (await draft() as { profile_id: string }).profile_id;
+    const product = (await saveProduct(profile))!;
+    await act("service_role");
+    const file = (await result<{ id: string; scope: string; bytes: number }>("select public.prepare_product_file($1,$2,100) as value", [alice,product]))!;
+    return { profile, product, ...file, path: `${file.scope}/${file.id}.pdf` };
+  }
+
+  it("reserves private product media once and requires actual stored bytes before owner download", async () => {
+    const file = await productFileFixture();
+    expect(await result("select public.prepare_product_file($1,$2,100) as value", [alice,file.product])).toBeNull();
+    expect(await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id])).toBe(false);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_product_file($1) as value", [file.id])).toBeNull();
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage: { mediaBytes: 100 } });
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{\"size\":99,\"mimetype\":\"application/pdf\"}',now())", [file.path]);
+    await act("service_role");
+    expect(await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id])).toBe(false);
+    await db.exec("reset role; update storage.objects set metadata='{\"size\":100,\"mimetype\":\"application/pdf\"}'");
+    await act("service_role");
+    expect(await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id])).toBe(true);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage: { mediaBytes: 100 } });
+    expect(await result("select public.get_my_product_file($1) as value", [file.id])).toMatchObject({ id: file.id, state: "ready", bytes: 100 });
+    await act("authenticated", bob);
+    expect(await result("select public.get_my_product_file($1) as value", [file.id])).toBeNull();
+    await expect(result("select public.list_my_product_files($1) as value", [file.profile])).rejects.toMatchObject({ code: "42501" });
+    await expect(result("select public.prepare_product_file($1,$2,100) as value", [alice,file.product])).rejects.toMatchObject({ code: "42501" });
+    await expect(result("select public.remove_my_product_file($1,$2) as value", [file.product,file.id])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("stops delivery before physical removal, retains reservations and refuses a premature completion", async () => {
+    const file = await productFileFixture();
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{\"size\":100,\"mimetype\":\"application/pdf\"}',now())", [file.path]);
+    await act("service_role");
+    await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id]);
+    await act("authenticated", alice);
+    expect(await result("select public.remove_my_product_file($1,$2) as value", [file.product,file.id])).toMatchObject({ state: "removing" });
+    expect(await result("select public.get_my_product_file($1) as value", [file.id])).toBeNull();
+    await act("service_role");
+    expect(await result("select public.complete_product_file_removal($1,$2,$3) as value", [alice,file.product,file.id])).toBe(false);
+    expect(await result("select public.commit_product_file($1,$2,$3) as value", [alice,file.product,file.id])).toBe(false);
+    await db.exec("reset role; delete from storage.objects");
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage: { mediaBytes: 100 } });
+    await act("service_role");
+    expect(await result("select public.complete_product_file_removal($1,$2,$3) as value", [bob,file.product,file.id])).toBe(false);
+    expect(await result("select public.complete_product_file_removal($1,$2,$3) as value", [alice,file.product,file.id])).toBe(true);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({ usage: { mediaBytes: 0 } });
+  });
+
+  it("counts product reservations with existing media allowance and sweeps only unbound old objects", async () => {
+    const file = await productFileFixture();
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('avatar-images',$1,jsonb_build_object('size',(select media_bytes from snoozer.plan_versions where plan='free' order by version desc limit 1)),now())", [file.scope+'/'+avatar+'.webp']);
+    await act("authenticated", alice);
+    const second = await saveProduct(file.profile);
+    await act("service_role");
+    await expect(result("select public.prepare_product_file($1,$2,100) as value", [alice,second])).rejects.toMatchObject({ code: "P1104" });
+    for (const size of [0,4194305]) await expect(result("select public.prepare_product_file($1,$2,$3) as value", [alice,second,size])).rejects.toMatchObject({ code: "22023" });
+    await db.exec("reset role; delete from storage.objects");
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{\"size\":100,\"mimetype\":\"application/pdf\"}',now()-interval '4 hours')", [file.path]);
+    const orphan = file.scope+'/'+avatar+'.pdf';
+    await db.query("insert into storage.objects(bucket_id,name,metadata,created_at) values('product-files',$1,'{}',now()-interval '4 hours')", [orphan]);
+    await act("service_role");
+    expect(await result("select public.find_orphan_product_files() as value")).toEqual([orphan]);
+    await act("authenticated", alice);
+    await db.query("select public.delete_profile($1,0,'private-pdf')", [file.profile]);
+    await act("service_role");
+    expect(await result<string[]>("select public.find_orphan_product_files() as value")).toEqual(expect.arrayContaining([file.path,orphan]));
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.avatar_cleanup where scope=$1", [file.scope])).toBe(1);
+  });
+
   async function domainFixture(name: string, owner = alice, host = name + ".example.com") {
     await act("authenticated", owner); await claim(name);
     const profile = (await draft() as { profile_id: string }).profile_id;

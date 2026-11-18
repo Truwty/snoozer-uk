@@ -1,10 +1,12 @@
 # Progress — 18 November 2026
 
-## Current work — private product catalogue
+## Current work — private catalogue and PDF attachments
 
-Commerce foundation slice implemented in source, not deployed: migration67, verified-owner private product-draft RPCs, profile-scoped Studio catalogue, exact integer GBP prices, revision conflicts and reversible archive/restore. Account-wide caps: five active/twenty total, all plans. Local lint/types/230 unit+SQL tests and two audit-policy checks pass; production build/audit pass; disposable browser journey pending. No files, Checkout, buyer delivery or connected accounts exist. Do not call commerce or Phase5 complete.
+Catalogue source3d29333 passed CI44368928071 (job135030225477):230 unit/SQL+2 policy checks,32 browser checks/one expected skip, scan/audit/lint/types/build and four Lighthouse100 scores. The original run44368755769 was cancelled by the follow-up; it is not passing evidence. A repeated local test exposed an older widget fixture that aged expiry but not its just-completed lease; the fixture now ages both. No widget production code changed.
 
-Next: run the new product browser/SQL journey in disposable CI, fix any failures, then apply migration67 only after passing checks and deploy the matching source. Preserve immutable hosted migrations through66. Continue private product attachments and sandbox Connect/receipt/refund/buyer access after the catalogue slice. See creator-commerce.md for the reviewed proposed model and explicit live-release gates. The Stripe connector exposes only live Lingua; no live mutation was made, and existing staging sandbox keys stay provider-side.
+Private PDF attachment source is now implemented in migration68 with owner upload/recovery/download/removal, private bucket, shared media reservations/actual-byte accounting and bounded orphan cleanup through the existing media cleaner. Local lint/types/235 unit+SQL+2 policy/build pass. Extended disposable browser upload/download/isolation/removal checks are pending. No malware scanner, public storefront, Checkout, buyer delivery or connected account is enabled. Product files are owner-only attachments, not approved distributable goods. No new dependency or paid resource.
+
+Migrations67–68 are NOT hosted yet; do not deploy the new application first. After passing combined CI, apply and record67 then68 in the existing staging SQL editor, deploy the exact tested source and verify real owner journeys. Preserve immutable hosted migrations through66. Continue sandbox Connect/receipt/refund/buyer access afterwards; Phase5 remains open. Read creator-commerce.md. The Stripe connector exposes only live Lingua; used for advisory guidance only, no live mutation. Existing staging sandbox keys stay provider-side.
 
 ## Current checkpoint — custom-domain staging exit passed
 

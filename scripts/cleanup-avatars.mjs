@@ -48,6 +48,7 @@ for (let index = 0; index < 10; index++) {
       removeObjects(job.scope, "avatar-images", /^[0-9a-f-]{36}\.webp$/),
       removeObjects(job.scope, "gallery-incoming", /^[0-9a-f-]{36}\.upload$/),
       removeObjects(job.scope, "gallery-images", /^[0-9a-f-]{36}\.webp$/),
+      removeObjects(job.scope, "product-files", /^[0-9a-f-]{36}\.pdf$/),
     ]);
     success = results.every(Boolean);
   } catch {
@@ -63,6 +64,7 @@ console.log(`Avatar cleanup completed: ${completed}; retry or operator attention
 for (const [operation, bucket] of [
   ["find_orphan_avatars", "avatar-images"],
   ["find_abandoned_avatar_uploads", "avatar-incoming"],
+  ["find_orphan_product_files", "product-files"],
 ]) {
   const keys = await rpc(operation);
   if (!keys.length) continue;

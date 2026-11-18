@@ -77,3 +77,5 @@ Domain CI44285159462 passed on2907dc9:224 unit/SQL+2 policy+31 browser checks, o
 Real custom-domain verification and cleanup passed18November18:10–18:12UTC; see the current checkpoint above. Creator commerce foundations are next.
 
 Private product catalogue slice: migration67, owner-scoped UI and RPCs, GBP integer amounts, optimistic revisions, reversible archive and account caps implemented; no files, purchase or delivery yet. Local230 unit/SQL+2 policy checks, lint/types pass; final build/audit/provider browser journey pending. See creator-commerce.md.
+
+Catalogue CI44368928071 passed on3d29333:230 unit/SQL+2 policy+32 browser, one expected skip, all four Lighthouse100 scores. Follow-up private PDF source migration68 adds shared quota reservations, owner download/recovery/removal and existing media cleanup integration. Local235 unit/SQL+2 policy/lint/types/build pass; extended browser journey pending;67–68 not hosted. No commerce transactions or buyer distribution enabled.
