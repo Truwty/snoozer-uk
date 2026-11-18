@@ -713,6 +713,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     } finally { await responsivePage.close(); }
 
     await editorTab(page, "Settings");
+    await expect(page.getByRole("tabpanel", { name: "Settings", exact: true })).toBeInViewport();
     await expect(page.locator("form form")).toHaveCount(0);
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();

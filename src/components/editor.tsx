@@ -92,6 +92,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
       </div>
     </header>
     <div className="editor-grid">
+    <div className="editor-column">
     <form id="profile-editor" className="editor-form stack" onInvalidCapture={(event) => {
       const panel = (event.target as HTMLElement).closest<HTMLElement>("[data-editor-panel]");
       if (panel) {
@@ -266,6 +267,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
       {saved.published_revision !== null && <Unpublish profileId={saved.profile_id} revision={saved.revision} />}
       {settings}
       </section>
+    </div>
     <aside className="preview stack">
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>

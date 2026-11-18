@@ -237,13 +237,13 @@ input[type=file]::file-selector-button { min-height: 44px; background: var(--sur
 .editor-topbar .actions { gap: var(--s2); }
 .editor-topbar p { font-size: .875rem; }
 .editor-grid { padding-top: var(--s5); grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); }
-.editor-form { min-width: 0; align-content: start; }
+.editor-column, .editor-form { min-width: 0; align-content: start; }
 .editor-panel { padding: var(--s5) 0; gap: var(--s5); }
 .editor-panel .section-title { font-size: 1.375rem; }
 .editor-tabs { display: flex; overflow-x: auto; gap: var(--s1); border-block-end: 1px solid var(--border); }
 .editor-tabs button { min-height: 44px; background: transparent; color: var(--text-muted); border: 0; padding: var(--s3); border-block-end: 2px solid transparent; }
 .editor-tabs button[aria-selected=true] { color: var(--accent); border-color: var(--accent); }
-.editor-grid > .preview { position: sticky; top: 9rem; grid-column: 2; grid-row: 1 / span 2; }
+.editor-grid > .preview { position: sticky; top: 9rem; grid-column: 2; grid-row: 1; }
 .editor-settings { grid-column: 1; min-width: 0; }
 .editor-grid .avatar-panel { margin: 0; border: 0; padding: 0 0 var(--s5); border-block-end: 1px solid var(--border); }
 .link-row { display: grid; grid-template-columns: auto minmax(0,1fr) minmax(0,1.3fr) auto; align-items: end; gap: var(--s2); background: transparent; border: 0; border-block-end: 1px solid var(--border); border-radius: 0; padding: var(--s3) 0; }
