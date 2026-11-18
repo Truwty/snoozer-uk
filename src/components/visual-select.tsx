@@ -7,7 +7,7 @@ export function VisualSelect({ label, children, onPick }: { label: string; onPic
     Array.isArray(child) ? child : [child]).filter(isValidElement) as ReactElement<{ value: string; children: ReactNode }>[];
   return <div className="visual-select">
     <label>{label}{children}</label>
-    <div className="swatch-options" aria-label={label + " choices"} role="group">
+    <div className="swatch-options">
       {options.map((option) => <button key={option.props.value} type="button" className="swatch-option"
         data-value={option.props.value} aria-pressed={children.props.value === option.props.value}
         onClick={() => onPick(option.props.value)}>{option.props.children}</button>)}

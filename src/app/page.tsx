@@ -27,7 +27,7 @@ export default function Home() {
       <HomeProfileDemo />
     </section>
     <section className="steps" id="how-it-works" aria-label="How Snoozer works">
-      <article><div className="step-visual" aria-hidden="true"><span>snoozer.uk/</span><strong>yourname</strong><span className="status-label">Available</span></div><p className="eyebrow">01 / CLAIM</p><h2>Pick your address.</h2><p>Choose a username to give your page a home on Snoozer.</p></article>
+      <article><div className="step-visual" aria-hidden="true"><span>snoozer.uk/</span><strong>yourname</strong><span className="muted">Choose your handle</span></div><p className="eyebrow">01 / CLAIM</p><h2>Pick your address.</h2><p>Choose a username to give your page a home on Snoozer.</p></article>
       <article><div className="step-visual swatch-options" aria-hidden="true"><span className="demo-swatch" data-theme="midnight" /><span className="demo-swatch" data-theme="lagoon" /><span className="demo-swatch" data-theme="daybreak" /></div><p className="eyebrow">02 / CREATE</p><h2>Make it personal.</h2><p>Add a photo, a short bio and links. Try a theme in the live preview.</p></article>
       <article><div className="step-visual"><span>snoozer.uk</span><CopyLink path="/" /></div><p className="eyebrow">03 / SHARE</p><h2>Take it live.</h2><p>Publish when you’re ready and use the same link wherever you show up.</p></article>
     </section>

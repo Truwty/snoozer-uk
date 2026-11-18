@@ -283,7 +283,7 @@ dialog::backdrop { background: var(--preview-shadow); }
 .hero h1 { font-size: clamp(2.5rem,6vw,4.5rem); letter-spacing: -.03em; line-height: 1; }
 .hero h1 em { letter-spacing: -.03em; }
 .home-demo { margin: 0; background: transparent; box-shadow: none; border: 0; padding: 0; }
-.home-demo .profile-text-section { background: transparent; padding: var(--s3) 0; }
+.home-demo .profile-text-section { background: transparent; padding: var(--s2) 0; border: 0; border-block-start: 1px solid var(--chip); border-radius: 0; }
 .home-demo-bar { font-size: .875rem; }
 .home-demo-controls legend { font-size: .875rem; }
 .home:has(.home-demo .theme-lagoon) { --accent: var(--lagoon-detail); --surface: var(--lagoon-page); }
@@ -385,3 +385,7 @@ dialog::backdrop { background: var(--preview-shadow); }
 
 .profile-card :focus-visible { outline-color: var(--text); }
 .panel > .page-header { padding-block: 0 var(--s5); }
+
+.home-demo .profile-inner { --card-gap: var(--s2); --card-pad: var(--s5); }
+.home-demo .profile-inner > h2 { font-size: 2.25rem; }
+@media (min-width: 54rem) { .home-demo-controls { grid-template-columns: 1fr 1fr; } .hero { align-items: start; } .hero-copy { padding-top: var(--s8); } }
