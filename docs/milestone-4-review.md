@@ -35,3 +35,5 @@ All shipped metrics, campaigns (up to 20 per profile) and consent-scoped widgets
 | Other widgets (11.7–21) | Countdown and support links have existing working paths; remaining authorisation-dependent and user-content widgets stay individually tracked in feature-ledger.md for growth/trust work. |
 
 No new provider accounts, paid workers, paid databases, Redis or paid cron service are needed for this milestone. Production billing, SMTP, domain cutover, moderation and production security/recovery gates remain separate milestones.
+
+Final layout verification: d165408 is Live on dep-dbugbkgm7kps73caqesg. Test-only 4169bc6 passed CI 44219930318, including 375 px dashboard overflow/axe and desktop report column fit. See analytics-api.md for the shipped route contracts. No additional migrations or secrets were needed.
