@@ -358,6 +358,7 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     for (const path of ["/studio", "/sign-in", "/studio/plan", "/api/v1/analytics/export"]) expect((await request.get(path, { headers, maxRedirects: 0 })).status()).toBe(404);
     expect((await request.post("/", { headers, data: {} })).status()).toBe(404);
     expect((await request.post("/api/v1/billing/stripe/webhook", { headers, data: {} })).status()).toBe(404);
+    expect((await request.post("/api/v1/analytics/view", { headers: { ...headers, "next-action": "fixture-action" }, data: {} })).status()).toBe(404);
     expect((await request.get("/.well-known/snoozer-domain", { headers })).status()).toBe(200);
     const event = { username: name, id: randomUUID(), consent: true, kind: "view" };
     const customHeaders = { host, origin: "https://" + host, "user-agent": "Mozilla/5.0" };

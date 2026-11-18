@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
       if (lookup.error) domainFailure = 503;
       else if (lookup.data === null) domainFailure = 404;
       else if (lookup.data?.state !== "ready" || !name.success) domainFailure = 503;
-      else if (!domainRoute(request.nextUrl.pathname, request.method, name.data)) domainFailure = 404;
+      else if (request.headers.has("next-action") || !domainRoute(request.nextUrl.pathname, request.method, name.data)) domainFailure = 404;
       else {
         headers.set(domainHostHeader, host); headers.set(domainUserHeader, name.data);
         if (request.nextUrl.pathname === "/") domainTarget = name.data;

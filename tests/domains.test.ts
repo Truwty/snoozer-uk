@@ -44,6 +44,8 @@ it("recognises only matching custom-host context and confirms removal only from 
   const headers = { [domainHostHeader]: host, [domainUserHeader]: "creator" };
   expect(publicDomainContext(new Request("https://"+host+"/", { headers }), "https://snoozer.uk")).toEqual({ host, username: "creator" });
   expect(publicDomainContext(new Request("https://snoozer.uk/", { headers }), "https://snoozer.uk")).toBeNull();
+  expect(publicDomainContext(new Request("http://localhost:3000/api/v1/analytics/view", { headers: { ...headers, host } }), "https://snoozer.uk")).toEqual({ host, username: "creator" });
+  expect(publicDomainContext(new Request("https://"+host+"/", { headers: { ...headers, host: "snoozer.uk" } }), "https://snoozer.uk")).toBeNull();
   expect(publicDomainContext(new Request("https://"+host+"/", { headers: { ...headers, [domainUserHeader]: "<script>" } }), "https://snoozer.uk")).toBeNull();
   for (const status of [200, 401, 403, 429, 500]) expect(await providerDomainRemoved(host, config, vi.fn(async () => new Response(null, { status })))).toBe(false);
   expect(await providerDomainRemoved(host, config, vi.fn(async () => new Response(null, { status: 404 })))).toBe(false);
