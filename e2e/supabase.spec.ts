@@ -670,6 +670,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("link", { name: "Publish history" }).click();
     await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
     const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
+    const historyPreviewHref = (await firstVersion.getByRole("link", { name: /Preview version/ }).getAttribute("href"))!;
     await firstVersion.getByRole("link", { name: /Preview version/ }).click();
     await expect(page.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await page.getByRole("button", { name: "Restore to draft" }).click();
@@ -695,6 +696,21 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByText("Live · Up to date")).toBeVisible();
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
+
+    const responsivePage = await page.context().newPage();
+    try {
+      await responsivePage.setViewportSize({ width: 360, height: 812 });
+      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
+        const response = await responsivePage.goto(path);
+        expect(response?.status()).toBe(path === "/studio/billing-diagnostics" ? 404 : 200);
+        expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(360);
+      }
+      await responsivePage.goto(profileHref);
+      for (const tab of ["Profile", "Design", "Links", "Sections", "Settings"]) {
+        await editorTab(responsivePage, tab);
+        expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), tab).toBeLessThanOrEqual(360);
+      }
+    } finally { await responsivePage.close(); }
 
     await editorTab(page, "Settings");
     await expect(page.locator("form form")).toHaveCount(0);
