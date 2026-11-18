@@ -331,7 +331,7 @@ dialog::backdrop { background: var(--preview-shadow); }
 @media (max-width: 28rem) { .auth-panel { padding: var(--s5) var(--s4); } }
 
 .analytics-summary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s5); padding-block: var(--s5); }
-.stat-card { display: grid; gap: var(--s2); padding: var(--s5) 0; border-block-start: 1px solid var(--border); }
+.stat-card { display: grid; align-content: start; gap: var(--s2); padding: var(--s5) 0; border-block-start: 1px solid var(--border); }
 .stat-card strong { font-size: clamp(2rem,4vw,3rem); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .stat-card small { color: var(--text-muted); }
 .section-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s4); padding-top: var(--s6); }

@@ -44,7 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
             description="Weighted across recorded UTC days; not unique people." />
         </div>
         <details className="muted"><summary>How counts work</summary><p>These are event counts, not unique people. Reloads may count again. Known bots are filtered, but automation can still inflate counts. Counts stop at 10,000 views and 10,000 clicks per profile per UTC day.</p></details>
-        <a className="button small" download="snoozer-analytics.csv" href={studioHref("/api/v1/analytics/export", draft?.profile_id)}>Download CSV</a>
+        <header className="section-header"><h2>Daily activity</h2><a className="button small" download="snoozer-analytics.csv" href={studioHref("/api/v1/analytics/export", draft?.profile_id)}>Download CSV</a></header>
         <AnalyticsChart rows={rows.data} />
         <Disclosure title="Daily activity table"><TableScroll label="Daily activity report">
         <table>
