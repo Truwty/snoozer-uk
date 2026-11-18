@@ -145,6 +145,8 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(csv.headers()["cache-control"]).toBe("private, no-store");
     expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
     await expect(page.getByRole("table", { name: "Daily browser observations within your plan’s retention window" })).toContainText("100.0%");
+    expect(await page.getByRole("region", { name: "Daily browser report", exact: true })
+      .evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     const browserDownload = page.waitForEvent("download");
     await page.getByRole("link", { name: "Download browser CSV", exact: true }).click();
     expect((await browserDownload).suggestedFilename()).toBe("snoozer-browser-analytics.csv");

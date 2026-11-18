@@ -24,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const traffic = trafficAnalytics.safeParse(trafficResponse?.data);
   const browsers = browserAnalytics.safeParse(browserResponse?.data);
   const peak = rows.success ? Math.max(1, ...rows.data.map((row) => Math.max(row.views, row.clicks))) : 1;
-  return <main className="shell narrow">
+  return <main className="shell analytics-shell">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack">
       <h1>Profile analytics</h1>

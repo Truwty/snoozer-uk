@@ -201,6 +201,8 @@ textarea { resize: vertical; }
 .analytics-links th:first-child { width: 78%; }
 .analytics-links small { display: block; font-weight: 400; }
 .analytics-context-wrap { overflow-x: auto; }
+.analytics-shell { width: min(100% - 2rem, 64rem); padding-block: 2rem; }
+.analytics-shell p { max-width: 75ch; }
 .analytics-context-wrap table { min-width: 34rem; width: 100%; }
 .analytics-context-wrap th, .analytics-context-wrap td { text-align: start; padding: .5rem; overflow-wrap: anywhere; }
 .youtube-widget { display: grid; gap: .7rem; padding: .8rem 0; text-align: start; font-size: .875rem; }
