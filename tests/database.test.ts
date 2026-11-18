@@ -368,7 +368,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select public.claim_public_widget('unsupported','resource')")).rejects.toMatchObject({ code: "22023" });
     const claimed = await result<{ lease: string }>("select public.claim_public_widget('discord','i:Example') as value");
     expect(await result("select public.complete_public_widget('discord','i:Example',$1,'{}',0) as value", [claimed?.lease])).toBe(true);
-    await db.exec("reset role; update snoozer.public_widget_cache set expires_at=now()-interval '8 days'; update snoozer.public_widget_limits set next_allowed=now()-interval '1 second'");
+    await db.exec("reset role; update snoozer.public_widget_cache set expires_at=now()-interval '8 days',lease_until=now()-interval '8 days'; update snoozer.public_widget_limits set next_allowed=now()-interval '1 second'");
     await act("service_role");
     expect(await result("select public.claim_public_widget('discord','i:Another') as value")).toMatchObject({ state: "refresh" });
     await db.exec("reset role");
