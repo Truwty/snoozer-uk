@@ -32,3 +32,5 @@ Verification: final lint/typecheck/194 Vitest/two policy/build pass. Initial loc
 CI 44225645050 verified Lighthouse 100 on all four required routes but failed a redundant visual-picker group label; fixed in 098c088. CI 44226574841 progressed to dragging and found a handle obscured by the sticky toolbar; shared scroll-margin clearance fixes the product interaction without changing reorder logic. Both failed runs are retained as failure evidence, not counted as passing. Final verification pending.
 
 CI 44227690374 passed desktop dragging but failed touch reordering after an open row menu. The phone grid now gives the handle its own column, and action menus close after selection. Sort/save algorithms remain unchanged. Final source now has 195 unit/SQL tests; final CI is still required.
+
+CI 44228794454 passed both drag paths and reached taking a page offline. It found the moved Unpublish form nested inside the editor form. Unpublish is now a sibling alongside deletion settings, restoring the existing server action without modifying it. A browser assertion guards against nested forms. Final CI pending.

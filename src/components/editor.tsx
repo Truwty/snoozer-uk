@@ -234,17 +234,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
         </details>}
       </fieldset>
       </section>
-      <section role="tabpanel" aria-labelledby="editor-tab-Settings" id="editor-panel-Settings" data-editor-panel="Settings" hidden={tab !== "Settings"} className="editor-panel stack">
-        <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
-          onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
-        {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
-          onChange={(event) => {
-            const checked = event.target.checked;
-            edit((current) => ({ ...current, removeAvatar: checked }));
-          }} /> Remove avatar on next manual save</label>}
 
-        {saved.published_revision !== null && <Unpublish profileId={saved.profile_id} revision={saved.revision} />}
-      </section>
       {conflict && !pending ? <div className="stack">
         <p className="message error" role="alert">Your draft changed elsewhere. Your unsaved edits are still here.</p>
         <details>
@@ -264,7 +254,18 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
           : <ActionMessage state={message} />}
       </>}
     </form>
-    {tab === "Settings" && <div className="editor-settings">{settings}</div>}
+      <section role="tabpanel" aria-labelledby="editor-tab-Settings" id="editor-panel-Settings" data-editor-panel="Settings" hidden={tab !== "Settings"} className="editor-settings editor-panel stack">
+        <label className="check"><input type="checkbox" form="profile-editor" name="indexable" checked={content.indexable}
+          onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
+        {saved.avatar && <label className="check"><input type="checkbox" form="profile-editor" name="remove_avatar" checked={removeAvatar} disabled={pending}
+          onChange={(event) => {
+            const checked = event.target.checked;
+            edit((current) => ({ ...current, removeAvatar: checked }));
+          }} /> Remove avatar on next manual save</label>}
+
+      {saved.published_revision !== null && <Unpublish profileId={saved.profile_id} revision={saved.revision} />}
+      {settings}
+      </section>
     <aside className="preview stack">
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>

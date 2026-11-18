@@ -697,6 +697,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
 
     await editorTab(page, "Settings");
+    await expect(page.locator("form form")).toHaveCount(0);
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
