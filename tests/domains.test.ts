@@ -5,7 +5,7 @@ import { verifyDomain, providerDomainRemoved, requestDomainMarker, type DomainCh
 
 const host = "creator.example.com";
 const token = "snoozer-domain=00000000-0000-4000-8000-000000000001";
-const config = { key: "fixture-render-key-123456789", serviceId: "srv-example", serviceHost: "snoozer-staging.onrender.com" };
+const config = { key: "x".repeat(32), serviceId: "srv-example", serviceHost: "snoozer-staging.onrender.com" };
 function checks(): DomainChecks {
   return { txt: vi.fn(async () => [[token]]), ipv4: vi.fn(async () => ["216.24.57.1"]), ipv6: vi.fn(async () => []),
     fetch: vi.fn(async () => Response.json({ name: host, verificationStatus: "verified" })) as typeof fetch,
