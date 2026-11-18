@@ -2,6 +2,8 @@
 
 Status: in progress. Read the original master specification and the current continuation checkpoint. Preserve the tested editor and provider integrations. This milestone is not complete merely because one vertical slice passes.
 
+Latest release: private product catalogue/PDF slice passed CI44374827297 onbd0e1ab (235 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100). Hosted migrations through68 are applied; dep-dbuvbbutlv9c73c69re0 is Live since19:01:28UTC. Actual618-byte owner upload/download, anonymous denial, quota618→0 and removal passed; archived metadata retained, profile draft6/live5 preserved. See PROGRESS.md and creator-commerce.md. Full Phase5 remains open for sandbox commerce onboarding, purchases, receipts/refunds and buyer access.
+
 Delivery sequence and exit evidence:
 1. Portfolio project cards and responsive layout: validated drafts, shared renderer, publish/restore, ownership, unsafe URL rejection, mobile/keyboard tests.
 2. First-party template discovery: useful search/category filters, URL state, real previews/application and empty results; preserve installed templates.
@@ -85,3 +87,5 @@ CI44370516885 failed only the new attachment journey heading-order assertion aft
 Reliability review: product fields are now controlled so resolved error actions cannot auto-reset unsaved text. Pending submissions disable inputs. Added an actual stale UI versus concurrent SQL/RPC update browser assertion; lint/types pass. No schema change;67 remains immutable on staging.
 
 CI44372518937 and44373694612 stopped before the new conflict assertion: a populated wrapped textarea changes the exact label lookup. A local real Edge reproduction returned0 matches for the wrapped populated field and1 with a text-only aria-labelledby target. Product description now uses that explicit label. The persisted-revision wait remains; unused failure logging was removed. No hosted schema edit.
+
+Final private-product CI44374827297 passed all checks after the heading, populated-label and stale-save preservation fixes. Actual hosted QA is recorded in PROGRESS.md; file7866e02a-1e46-496a-b2dc-5fc8edc6ca21 was physically removed, archived productaf4d9fea-b5c7-4e24-a34f-0ea83f9de083 remains650p/revision2. No private product/file ID entered the public profile. No commerce transaction was made.

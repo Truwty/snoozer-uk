@@ -2,7 +2,7 @@
 
 ## Current checkpoint — custom-domain staging exit passed
 
-Application **2907dc9** is Live on Render Free, deploy **dep-dbunt38m7kps73d0bvj0** (18 November 2026, 10:33 UTC). Both health endpoints returned200. Supabase migrations through **66** are applied and recorded; never edit/reapply those files. The existing native publication job includes bounded domain cleanup; its natural10:31UTC run succeeded. Analytics cleanup was unchanged.
+Domain verification used application **2907dc9**, then Live on Render Free, deploy **dep-dbunt38m7kps73d0bvj0** (18 November 2026, 10:33 UTC). Both health endpoints returned200. Supabase migrations through **66** are applied and recorded; never edit/reapply those files. The existing native publication job includes bounded domain cleanup; its natural10:31UTC run succeeded. Analytics cleanup was unchanged.
 
 CI **44285159462** passed:224 unit/SQL tests, two audit-policy checks,31 browser/HTTP checks and one expected skip, secret scan, audit, lint, types, build and four Lighthouse accessibility100 scores. Disposable CI uses an isolated provider-proof fixture; the external provider test below is separate actual evidence.
 

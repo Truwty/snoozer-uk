@@ -214,8 +214,8 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 13.1 | Digital Downloads | Owner-only private PDF foundation implemented with quota/recovery/removal; local SQL/boundary tests pass; combined provider browser/hosted checks pending; buyer delivery remains open |
-| 13.2 | Product Detail Cards | Private title/description/GBP catalogue with revision guards/archive tested in CI; public storefront and purchase flow remain open |
+| 13.1 | Digital Downloads | Owner-only private PDF foundation with shared quotas/recovery/removal passes CI44374827297 and actual hosted upload/exact download/removal; buyer delivery and content scanning remain open |
+| 13.2 | Product Detail Cards | Private title/description/GBP catalogue with stale-save preservation, revision guards and archive tested in CI and hosted staging; public storefront and purchase flow remain open |
 | 13.3 | Creator Collections | Deferred |
 | 13.4 | Inventory For Limited Digital Items | Deferred |
 | 13.5 | Discount Codes | Deferred |
