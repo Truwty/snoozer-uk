@@ -427,3 +427,4 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
 .alias-list > li { border-block-start: 1px solid var(--border); padding-block-start: var(--s5); min-width: 0; overflow-wrap: anywhere; }
 
 .profile-domains { min-width: 0; overflow-wrap: anywhere; }
+.product-summary-title { display: inline; font: inherit; overflow-wrap: anywhere; }

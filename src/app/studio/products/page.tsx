@@ -25,7 +25,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <p>{inventory.data.activeUsed} of {inventory.data.activeLimit} active drafts · {inventory.data.totalUsed} of {inventory.data.totalLimit} total across your account. Archived products retain their details.</p>
         {inventory.data.items.length === 0 && <p>No product drafts for this profile yet.</p>}
         {inventory.data.items.map((product) => <details className="panel stack" key={product.id}>
-          <summary>{product.title} · {product.archived ? "Archived" : "Private draft"}</summary>
+          <summary><h2 className="product-summary-title">{product.title} · {product.archived ? "Archived" : "Private draft"}</h2></summary>
           <ProductDraftForm key={product.revision} profileId={draft.profile_id} product={product} canActivate={inventory.data.activeUsed < inventory.data.activeLimit} />
           {files.success && !fileResponse?.error ? <ProductFileForm key={files.data.find((file) => file.productId === product.id)?.state ?? "empty"} profileId={draft.profile_id} productId={product.id} file={files.data.find((file) => file.productId === product.id)} /> : <p role="alert">Private files are unavailable. Reload to try again.</p>}
         </details>)}
