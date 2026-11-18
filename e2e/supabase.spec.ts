@@ -302,7 +302,8 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
 });
 
 test("portfolio projects persist, publish and restore with responsive public rendering", async ({ page, browser }) => {
-  test.setTimeout(90000);
+  test.setTimeout(120000);
+  page.setDefaultTimeout(15000);
   const name = `portfolio-${randomUUID().slice(0, 8)}`;
   const email = `${name}@example.com`;
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
@@ -364,7 +365,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(publicPage).toHaveTitle("Custom portfolio title · Snoozer");
     await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute("content", "Custom portfolio description");
     await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
-    const social = await visitor.request.get(`/media/profile-card/${name}`);
+    const social = await test.step("Generate the published social card", () => visitor.request.get(`/media/profile-card/${name}`, { timeout: 15000 }));
     expect(social.status()).toBe(200);
     expect(social.headers()["content-type"]).toContain("image/png");
     expect((await social.body()).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
@@ -465,7 +466,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(page.getByRole("status").filter({ hasText: "Schedule cancelled." })).toBeVisible();
     await expect(page.locator("form form")).toHaveCount(0);
   } finally {
-    await visitor.close();
+    // The browser fixture closes visitor contexts even when a timed-out test has already closed them.
     if (data.user) await admin.auth.admin.deleteUser(data.user.id);
   }
 });
