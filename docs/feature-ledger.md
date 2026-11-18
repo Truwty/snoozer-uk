@@ -262,7 +262,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 15.1 | First-Party Templates | Tested in the public gallery and Studio with three built-in templates |
+| 15.1 | First-Party Templates | Tested in the public gallery and Studio with twelve built-in presentations across three starter content families; validated existing appearance options, distinct example handles and working application flow |
 | 15.2 | Creator-Submitted Templates | Deferred |
 | 15.3 | Draft And Publish States | Deferred |
 | 15.4 | Search And Filters | Deferred |
