@@ -21,6 +21,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", profile === undefined ? undefined : draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack"><p className="eyebrow">STUDIO / PRODUCTS</p><h1>Product drafts</h1>
       <p>Prepare your digital product catalogue privately. Products, files, checkout and buyer delivery must all be ready before a storefront can open. These drafts are not published or available to buy.</p>
+      <Link href="/studio/products/seller">Stripe sandbox seller setup</Link>
       {!draft ? <p>Claim a profile in Studio before creating products.</p> : !inventory.success || response?.error ? <p role="alert">Your product catalogue is unavailable. Reload to try again.</p> : <>
         <p>{inventory.data.activeUsed} of {inventory.data.activeLimit} active drafts · {inventory.data.totalUsed} of {inventory.data.totalLimit} total across your account. Archived products retain their details.</p>
         {inventory.data.items.length === 0 && <p>No product drafts for this profile yet.</p>}

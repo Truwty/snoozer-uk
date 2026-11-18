@@ -390,6 +390,15 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await page.setViewportSize({ width: 360, height: 850 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.getByRole("link", { name: "Stripe sandbox seller setup", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Stripe sandbox setup", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start Stripe sandbox setup", exact: true })).toBeDisabled();
+    await expect(page.getByText("No sandbox seller account is linked.", { exact: true })).toBeVisible();
+    await page.goto("/studio/products/seller?returned=1&expired=1");
+    await expect(page.getByText("You returned from Stripe. This does not confirm completion. Check account status below.", { exact: true })).toBeVisible();
+    expect((await owner.rpc("get_my_creator_sandbox_account")).data).toBeNull();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
     if (account.data.user) {
       const removed = await admin.auth.admin.deleteUser(account.data.user.id);

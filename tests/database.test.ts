@@ -57,6 +57,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
+    await db.exec("reset role; truncate snoozer.creator_sandbox_accounts cascade;");
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
@@ -208,6 +209,58 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result<string[]>("select public.find_orphan_product_files() as value")).toEqual(expect.arrayContaining([file.path,orphan]));
     await db.exec("reset role");
     expect(await result("select count(*)::integer as value from snoozer.avatar_cleanup where scope=$1", [file.scope])).toBe(1);
+  });
+
+  it("reserves one creator sandbox attempt, binds once and isolates its owner inventory", async () => {
+    await act("authenticated", alice); await claim("seller-alice");
+    expect(await result("select public.get_my_creator_sandbox_account() as value")).toBeNull();
+    await expect(result("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value", [alice])).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    const first = await result<{id:string}>("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value", [alice]);
+    expect(await result("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value", [alice])).toMatchObject({ id: first!.id });
+    await expect(result("select public.reserve_creator_sandbox_account($1,'acct_Other','GB') as value", [alice])).rejects.toMatchObject({ code: "40001" });
+    expect(await result("select public.bind_creator_sandbox_account($1,$2,'acct_Creator') as value", [alice,first!.id])).toBe(true);
+    expect(await result("select public.bind_creator_sandbox_account($1,$2,'acct_Other') as value", [alice,first!.id])).toBe(false);
+    expect(await result("select public.bind_creator_sandbox_account($1,$2,'acct_Platform') as value", [alice,first!.id])).toBe(false);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_creator_sandbox_account() as value")).toMatchObject({ accountId: "acct_Creator", ready: false });
+    await act("authenticated", bob);
+    expect(await result("select public.get_my_creator_sandbox_account() as value")).toBeNull();
+    await expect(db.query("select * from snoozer.creator_sandbox_accounts")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(result("select public.get_my_creator_sandbox_account() as value")).rejects.toMatchObject({ code: "42501" });
+    await db.exec("reset role");
+    await expect(db.query("delete from auth.users where id=$1", [alice])).rejects.toMatchObject({ code: "23001", constraint: "creator_sandbox_accounts_owner_id_fkey" });
+  });
+
+  it("refuses unsafe account-creation retries and leases readiness updates", async () => {
+    await act("authenticated", alice); await claim("seller-retry");
+    await act("service_role");
+    const merchant = await result<{id:string}>("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value", [alice]);
+    await expect(result("select public.reserve_creator_sandbox_account($1,'acct_Platform','US') as value", [alice])).rejects.toMatchObject({ code: "22023" });
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set created_at=now()-interval '24 hours'");
+    await act("service_role");
+    await expect(result("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value", [alice])).rejects.toMatchObject({ code: "P1210" });
+    expect(await result("select public.bind_creator_sandbox_account($1,$2,'acct_Creator') as value", [alice,merchant!.id])).toBe(false);
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set created_at=now()");
+    await act("service_role");
+    await result("select public.bind_creator_sandbox_account($1,$2,'acct_Creator') as value", [alice,merchant!.id]);
+    const lease = await result<string>("select public.claim_creator_sandbox_check($1) as value", [alice]);
+    expect(lease).toBeTruthy();
+    expect(await result("select public.claim_creator_sandbox_check($1) as value", [alice])).toBeNull();
+    expect(await result("select public.complete_creator_sandbox_check($1,'acct_Other',$2,true) as value", [alice,lease])).toBe(false);
+    expect(await result("select public.complete_creator_sandbox_check($1,'acct_Creator',$2,true) as value", [alice,lease])).toBe(true);
+    expect(await result("select public.complete_creator_sandbox_check($1,'acct_Creator',$2,false) as value", [alice,lease])).toBe(false);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_creator_sandbox_account() as value")).toMatchObject({ ready: true });
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set retry_after=now()-interval '1 second'");
+    await act("service_role");
+    const expiredLease = await result<string>("select public.claim_creator_sandbox_check($1) as value", [alice]);
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set check_until=now()-interval '1 second'");
+    await act("service_role");
+    expect(await result("select public.complete_creator_sandbox_check($1,'acct_Creator',$2,true) as value", [alice,expiredLease])).toBe(false);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_creator_sandbox_account() as value")).toMatchObject({ ready: false });
   });
 
   async function domainFixture(name: string, owner = alice, host = name + ".example.com") {

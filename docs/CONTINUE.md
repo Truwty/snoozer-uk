@@ -1,6 +1,14 @@
 # Continuation
 
-## Current release — private catalogue and PDF staging exit passed
+## Current work — sandbox seller onboarding
+
+Migration69 and seller setup are implemented in source, not hosted. Accounts v2 full Dashboard, Stripe fee/loss responsibility, merchant card capability and current payout/card status checks; private owner binding and stable operation UUID; conservative23-hour uncertain-creation cutoff; scoped platform self-read; signed-in single-use hosted onboarding links. Readiness is cleared when a leased refresh starts and cannot be restored by stale completion or browser return parameters. No identity/contact details are copied from Snoozer to Stripe. UK sandbox country selection requires an explicit test-only acknowledgement. All provider calls remain disabled unless the separate sandbox flag, pinned platform and test key are configured. No live operation exists.
+
+Local253 unit/SQL tests +2 policy checks passed; lint/types/build passed. One initial assertion expected foreign_key_violation but PostgreSQL correctly returns restrict_violation23001 for the explicit account-deletion guard; fixed to assert the exact constraint. SDK23.1.0 requires accounts.retrieve(null) for platform self-read; corrected before release. Final browser/CI checks pending. Hosted migrations remain immutable through68; do not apply69 or deploy before matching CI passes. No Stripe account, key, webhook or flag has been created/changed by this source work.
+
+Planner guide iguide_61VmbKRoeHsWac4k241IqN5aCtEjC was accepted as advisory guidance (no new Connect fee), with the documented hosted-onboarding adaptation and independent existing premium billing retained. This is not live commercial/legal approval. Next: finish purchases/receipts/refunds/buyer access and file-version retention, then actual approved sandbox provider verification. Preserve current product/draft/publication fixtures and IONOS root/mail DNS.
+
+## Verified running release — private catalogue and PDF staging exit passed
 
 **Applicationbd0e1ab is Live** on Render Free, deploy **dep-dbuvbbutlv9c73c69re0**, finished18November2026 **19:01:28UTC**. /health/live and /health/ready both returned200. Supabase migrations through **68** are applied and recorded; never edit/reapply them. No new dependency, mandatory credential or paid infrastructure was introduced.
 
