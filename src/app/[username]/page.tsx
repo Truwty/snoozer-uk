@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { profileMetadata } from "@/lib/profile-metadata";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import { ProfileAnalyticsConsent } from "@/components/profile-analytics-consent";
@@ -17,17 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!supabaseUrl || !supabaseKey) return { robots: { index: false, follow: false } };
   const profile = await readPublished((await params).username);
   if (!profile) return { robots: { index: false, follow: false } };
-  const url = new URL(`/${profile.username}`, siteUrl()).href;
-  const description = profile.bio || `Links from @${profile.username} on Snoozer.`;
-  const image = avatarPath(profile.username, profile.avatar);
-  return {
-    title: profile.display_name,
-    description,
-    alternates: { canonical: url },
-    robots: { index: profile.indexable, follow: profile.indexable },
-    openGraph: { title: profile.display_name, description, url, type: "profile", images: image ? [image] : undefined },
-    twitter: { card: "summary", title: profile.display_name, description, images: image ? [image] : undefined },
-  };
+  return profileMetadata(profile, siteUrl());
 }
 
 export default async function Page({ params }: Props) {

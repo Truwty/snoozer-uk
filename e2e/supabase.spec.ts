@@ -320,7 +320,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await editorTab(page, "Sections");
     for (const index of [1, 2]) {
       await page.getByRole("button", { name: "Add text section", exact: true }).click();
-      await page.getByLabel(`Section ${index} type`, { exact: true }).selectOption("project");
+      await page.getByRole("combobox", { name: `Section ${index} type`, exact: true }).selectOption("project");
       await page.getByLabel(`Section ${index} heading`, { exact: true }).fill(`Project ${index}`);
       await page.getByLabel(`Section ${index} text`, { exact: true }).fill(`The story behind project ${index}.`);
       await page.getByLabel(`Section ${index} project URL`, { exact: true }).fill(`https://example.com/project-${index}`);
@@ -338,6 +338,36 @@ test("portfolio projects persist, publish and restore with responsive public ren
     const publicPage = await visitor.newPage();
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
+    await editorTab(page, "Settings");
+    await page.getByLabel("SEO title", { exact: true }).fill("Custom portfolio title");
+    await page.getByLabel("SEO description", { exact: true }).fill("Custom portfolio description");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Draft saved.");
+    await publicPage.reload();
+    await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("requires Plus or higher");
+    await page.getByRole("link", { name: "Plan and usage", exact: true }).click();
+    const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
+    expect(gift.error).toBeNull();
+    await page.getByText("Redeem a plan gift", { exact: true }).click();
+    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
+    await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
+    await expect(page.getByText("Plus", { exact: true }).first()).toBeVisible();
+    await page.getByRole("link", { name: "Back to Studio", exact: true }).click();
+    await page.getByLabel("Display name").fill("Portfolio SEO publication");
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await publicPage.reload();
+    await expect(publicPage).toHaveTitle("Custom portfolio title · Snoozer");
+    await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute("content", "Custom portfolio description");
+    await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
+    const social = await visitor.request.get(`/media/profile-card/${name}`);
+    expect(social.status()).toBe(200);
+    expect(social.headers()["content-type"]).toContain("image/png");
+    expect((await social.body()).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    expect((await visitor.request.get("/media/profile-card/unclaimed-profile")).status()).toBe(404);
+    await editorTab(page, "Sections");
     for (const width of [360, 1280]) {
       await publicPage.setViewportSize({ width, height: 850 });
       expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);

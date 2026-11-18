@@ -20,7 +20,7 @@ export function HomeProfileDemo() {
 
   return <div className="home-demo">
     <div className="home-demo-bar"><span>Profile preview</span><span>Example · snoozer.uk/afterhours</span></div>
-    <ProfileCard avatarSrc="/icon.svg" preview previewLabel="Example profile" profile={{
+    <ProfileCard avatarSrc="/icon.svg" preview previewLabel="Example profile" profile={{ seo: { title: "", description: "" },
       username: "afterhours",
       display_name: "After Hours",
       bio: "Design notes, late-night playlists and things worth keeping.",

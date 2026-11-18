@@ -257,6 +257,12 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
       </>}
     </form>
       <section role="tabpanel" aria-labelledby="editor-tab-Settings" id="editor-panel-Settings" data-editor-panel="Settings" hidden={tab !== "Settings"} className="editor-settings editor-panel stack">
+        <fieldset className="stack"><legend className="section-title">Search and sharing</legend>
+          <p className="muted">Draft custom metadata on any plan. Publishing overrides requires Plus or higher. Leave these blank to use your display name and bio. Search engines and social sites may cache older previews.</p>
+          <label>SEO title<input form="profile-editor" name="seo_title" maxLength={70} value={content.seo.title} onChange={(event) => set("seo", { ...content.seo, title: event.target.value })} /></label>
+          <label>SEO description<textarea form="profile-editor" name="seo_description" rows={3} maxLength={160} value={content.seo.description} onChange={(event) => set("seo", { ...content.seo, description: event.target.value })} /></label>
+          <div className="stack" aria-label="Metadata preview"><strong>{content.seo.title || content.display_name}</strong><p>{content.seo.description || content.bio || `Links from @${saved.username} on Snoozer.`}</p></div>
+        </fieldset>
         <label className="check"><input type="checkbox" form="profile-editor" name="indexable" checked={content.indexable}
           onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
         {saved.avatar && <label className="check"><input type="checkbox" form="profile-editor" name="remove_avatar" checked={removeAvatar} disabled={pending}

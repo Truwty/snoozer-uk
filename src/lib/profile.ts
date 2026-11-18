@@ -70,7 +70,10 @@ const textSection = z.object({
 export type TextSection = z.infer<typeof textSection>;
 export const textSections = z.array(textSection).max(textSectionLimits.count);
 
+export const profileSeo = z.strictObject({ title: z.string().trim().max(70), description: z.string().trim().max(160) });
+
 export const profileContent = z.object({
+  seo: profileSeo.default({ title: "", description: "" }),
   display_name: z.string().trim().min(1, "Enter a display name.").max(60),
   bio: z.string().trim().max(280),
   theme: z.enum(themes),

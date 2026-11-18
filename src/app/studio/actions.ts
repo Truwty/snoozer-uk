@@ -63,6 +63,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_bio: content.bio,
     p_theme: content.theme,
     p_appearance: appearance,
+    p_seo: content.seo,
     p_indexable: content.indexable,
     p_links: links,
     p_sections: content.sections.map((section) => ({ ...section, hidden: section.hidden ?? false, locked: section.locked ?? false })),
@@ -70,6 +71,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_remove_avatar: removeAvatar,
   });
   if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };
+  if (error?.code === "P1006") return { status: "error", message: "Publishing custom SEO metadata requires Plus or higher. Clear the overrides to use your display name and bio." };
   if (error?.code === "P1005") return { status: "error", message: "You’ve reached your plan’s published profile limit." };
   if (error?.code === "40001") {
     return { status: "error", conflict: true, message: "Your draft changed elsewhere. Copy your edits or load the saved draft." };

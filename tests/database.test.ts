@@ -1234,7 +1234,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(save(2, "Cross-user overwrite", [], true)).rejects.toMatchObject({ code: "40001" });
     await act("anon");
     expect(await published("alice")).toEqual({
-      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [],
+      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [], seo: { title: "", description: "" },
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", alice);
@@ -1831,6 +1831,45 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await write(4, [project]);
     await act("anon");
     expect(await published("portfolio-alice")).toMatchObject({ sections: [project] });
+  });
+
+  it("gates custom metadata at publication, preserves drafts and snapshots, and closes legacy bypasses", async () => {
+    await act("authenticated", alice);
+    await claim("seo-alice");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const seo = { title: "Custom title", description: "Custom description" };
+    const write = (expected: number, publish: boolean, metadata: unknown) => result(
+      "select public.save_profile($1,$2,'Alice','Bio','lagoon',false,'[]',$3,false,null,null,$4) as value",
+      [id, expected, publish, JSON.stringify(metadata)],
+    );
+    for (const invalid of [{}, { ...seo, title: "a".repeat(71) }, { ...seo, description: null }, { ...seo, image: "https://example.com" }]) {
+      await expect(write(0, false, invalid)).rejects.toMatchObject({ code: "22023" });
+    }
+    await write(0, true, { title: "", description: "" });
+    await write(1, false, seo);
+    expect(await draft()).toMatchObject({ revision: 2, seo });
+    expect(await published("seo-alice")).toMatchObject({ seo: { title: "", description: "" } });
+    await expect(write(2, true, seo)).rejects.toMatchObject({ code: "P1006" });
+    await expect(save(2, "Legacy client", [], true)).rejects.toMatchObject({ code: "P1006" });
+    await act("authenticated", bob);
+    await expect(write(2, true, seo)).rejects.toMatchObject({ code: "40001" });
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','seo-test',now()-interval '1 minute',now()+interval '1 hour')", [alice]);
+    await act("authenticated", alice);
+    await write(2, true, seo);
+    expect(await published("seo-alice")).toMatchObject({ seo });
+    await db.exec("reset role; update snoozer.entitlement_grants set revoked_at=now() where source_ref='seo-test'");
+    await act("authenticated", alice);
+    expect(await published("seo-alice")).toMatchObject({ seo });
+    await expect(save(3, "Legacy downgrade", [], true)).rejects.toMatchObject({ code: "P1006" });
+    await db.query("select public.restore_publication($1,1,3)", [id]);
+    expect(await draft()).toMatchObject({ revision: 4, seo: { title: "", description: "" } });
+    expect(await published("seo-alice")).toMatchObject({ seo });
+    await save(4, "Default metadata", [], true);
+    expect(await published("seo-alice")).toMatchObject({ seo: { title: "", description: "" } });
+    await expect(db.query("select snoozer.save_profile_content($1,5,'Bypass','Bio','lagoon',false,'[]',true,false,null,null)", [id])).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(db.query("select public.save_profile($1,5,'Bypass','Bio','lagoon',false,'[]',false,false,null,null,'{}')", [id])).rejects.toMatchObject({ code: "42501" });
   });
 
 });

@@ -35,7 +35,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
     <ul className="template-grid">
       {templates.map((template) => <li className="template-item stack" key={template.id}>
         <p className="eyebrow">EXAMPLE · {template.id}</p>
-        <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{
+        <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{ seo: { title: "", description: "" },
           username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
           indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
         }} />

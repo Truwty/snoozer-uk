@@ -8,7 +8,7 @@ Portfolio project sections and a responsive Portfolio grid layout are implemente
 
 Template discovery now has URL-preserved word search, theme/layout filters, a real empty state and clear action. No catalogue or provider fixtures were replaced.
 
-Verification: baseline 195 tests passed. New source passes lint/typecheck, 200 unit/SQL tests, two audit-policy tests and build. Local public browser suite passed 19 checks; the new filter test initially used an overly exact label-text selector, then passed with the actual combobox accessible name. Eight provider-dependent local skips are not passing evidence. Full disposable Supabase CI, hosted migration/deployment and portfolio browser verification remain pending. Next continue advanced SEO, then the remaining streams in milestone-5.md. Do not reapply migrations through 59, activate live payments or change production DNS.
+Verification: baseline 195 tests passed. New source passes lint/typecheck, 200 unit/SQL tests, two audit-policy tests and build. Local public browser suite passed 19 checks; the new filter test initially used an overly exact label-text selector, then passed with the actual combobox accessible name. Eight provider-dependent local skips are not passing evidence. Full disposable Supabase CI, hosted migration/deployment and portfolio browser verification remain pending. Advanced SEO is now implemented with draft previews, server-enforced publication entitlements, snapshot/restore support and generated social cards; migration 61 and provider browser verification are pending. Continue the remaining streams in milestone-5.md. Do not reapply migrations through 59, activate live payments or change production DNS.
 
 ## Design overhaul — delivered to staging
 
