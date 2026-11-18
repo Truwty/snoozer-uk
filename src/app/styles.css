@@ -268,10 +268,12 @@ input[type=file]::file-selector-button { min-height: 44px; background: var(--sur
  .editor-grid { grid-template-columns: minmax(0,1fr); }
  .editor-grid > .preview, .editor-settings { position: static; grid-column: 1; grid-row: auto; }
 
- .link-row { grid-template-columns: minmax(0,1fr) auto; }
- .link-row > label { grid-column: 1; }
- .link-row .row-menu { grid-column: 2; grid-row: 1 / span 3; }
- .link-row .reorder-handle { grid-column: 2; }
+ .link-row { grid-template-columns: 24px minmax(0,1fr) auto; }
+ .link-row > label { grid-column: 2; }
+ .link-row > label:first-of-type { grid-row: 1; }
+ .link-row > label:last-of-type { grid-row: 2; }
+ .link-row .row-menu { grid-column: 3; grid-row: 1 / span 2; align-self: start; }
+ .link-row .reorder-handle { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
 }
 
 dialog { width: min(calc(100% - var(--s6)), 28rem); padding: var(--s6); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--r-card); }
