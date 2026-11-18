@@ -54,6 +54,7 @@
   --surface: #17171e; --surface-2: #1e1e27; --border: rgba(255,255,255,.12);
   --text: #f7f5fa; --text-muted: #b4b2c0; --text-subtle: #9a98a8;
   --ok: #5eeaa0; --danger: #ff8a8a;
+  --field-border: var(--preview-border);
   --ink: var(--text); --muted: var(--text-muted); --edge: var(--border); --ground: var(--bg);
   --radius: var(--r-card);
   --r-chip: 10px; --r-input: 12px; --r-card: 20px; --r-pill: 999px;

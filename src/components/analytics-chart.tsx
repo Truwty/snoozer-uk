@@ -10,7 +10,7 @@ export function AnalyticsChart({ rows }: { rows: { day: string; views: number; c
   return <figure className="activity-chart">
     <figcaption className="chart-legend"><span>Views · silver</span><span>Clicks · green</span></figcaption>
     <div className="chart-plot">
-      <div className="chart-axis" aria-hidden="true"><span>{peak}</span><span>{Math.round(peak / 2)}</span><span>0</span></div>
+      <div className="chart-axis" aria-hidden="true"><span>{peak}</span><span>{peak / 2}</span><span>0</span></div>
       <div className="analytics-chart" role="group" aria-label="Daily views and link clicks">
         {days.map((day, index) => <button type="button" key={day.day} className="analytics-chart-day" tabIndex={index === Math.min(selected, days.length - 1) ? 0 : -1}
           aria-label={`${day.day}: ${day.views} views, ${day.clicks} clicks`}
