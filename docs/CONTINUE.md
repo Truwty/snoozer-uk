@@ -1,5 +1,14 @@
 # Continuation
 
+## Active design overhaul
+
+The owner supplied C:/Users/dynel/Downloads/DESIGN.md and explicitly requested Ponytail. All ten presentation tasks are implemented in the working source; each task passed lint, typecheck, the existing 192 unit/SQL plus two policy tests and a build before moving on. Final token/template tests raise the unit count to 194. Full disposable browser/Lighthouse verification and staging deployment are pending. Read design-overhaul.md first; this supersedes the older “next milestone 5” instruction until the design acceptance checks finish.
+
+No API routes, server actions, auth/billing/analytics persistence, migrations, dependency manifest or lockfile changed. Template presentation uses existing appearance fields. Existing application routes retain their contracts. Sandbox UI is not advertised on the production hostname.
+
+Known limits: saved-image alt-text editing has no existing server operation and is outside presentation-only scope; the upload description remains editable. Privacy/Terms/Contact sections are staging drafts with TODO(owner) facts, not invented legal identity/contact details. Historical data/fixtures and standalone brand assets retain their existing colour literals; app UI colours are tokenised.
+
+
 ## Current checkpoint — 18 November 2026
 
 **Milestone 4 core/staging exit passed.** Read [milestone-4-review.md](milestone-4-review.md) for the tested critical subset and explicit deferred inventory. This does not mean every advanced feature in the master specification is complete. **Next delivery milestone: 5, premium and creator growth.** Do not rebuild working billing, analytics or widget paths.

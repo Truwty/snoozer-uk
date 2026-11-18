@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MediaFolderEditor } from "@/components/media-folder-editor";
@@ -21,7 +22,7 @@ export default async function MediaFoldersPage({ searchParams }: { searchParams:
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio/gallery", selected)}>Back to image gallery</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
-      <h1>Media folders</h1>
+      <PageHeader title="Media folders" />
       <p className="muted">Organise images from your draft and retained publications. Folders are private, and moving an image does not change your public gallery.</p>
       <MediaFolderEditor profileId={draft.profile_id} library={mediaLibrary.parse(library.data)} draftRevision={draft.revision} draftSize={draft.gallery.length} />
     </section>

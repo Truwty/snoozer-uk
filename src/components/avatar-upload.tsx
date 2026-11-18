@@ -1,9 +1,10 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { discardAvatarUpload, finishAvatarUpload, requestAvatarUpload } from "@/app/studio/avatar-actions";
 import { supabaseConfig } from "@/lib/env";
+import { FileDrop } from "./ui";
 import { ActionMessage } from "./action-message";
 import { initialState, type ActionState } from "@/lib/actions";
 
@@ -12,6 +13,11 @@ const maxBytes = 2 * 1024 * 1024;
 export function AvatarUpload({ profileId, revision }: { profileId: string; revision: number }) {
   const [state, setState] = useState<ActionState>(initialState);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
   const input = useRef<HTMLInputElement>(null);
 
   async function upload() {
@@ -38,6 +44,7 @@ export function AvatarUpload({ profileId, revision }: { profileId: string; revis
       const result = await finishAvatarUpload(profileId, revision, intent.uploadKey!);
       if (result.error) throw new Error(result.error);
       if (input.current) input.current.value = "";
+      setSelected(null); setPreview("");
       setState({ status: "success", message: result.message ?? "Avatar saved." });
     } catch (error) {
       setState({ status: "error", message: error instanceof Error ? error.message : "Couldn’t upload the image." });
@@ -53,6 +60,7 @@ export function AvatarUpload({ profileId, revision }: { profileId: string; revis
       setState(result.error ? { status: "error", message: result.error }
         : { status: "success", message: result.message ?? "Pending upload cleared." });
       if (input.current) input.current.value = "";
+      setSelected(null); setPreview("");
     } catch {
       setState({ status: "error", message: "Couldn’t clear the pending upload." });
     } finally {
@@ -61,11 +69,12 @@ export function AvatarUpload({ profileId, revision }: { profileId: string; revis
   }
 
   return <div className="stack">
-    <label>Choose an avatar<input ref={input} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} /></label>
-    <small>JPEG, PNG or WebP, up to 2 MB. The image is cropped to a square.</small>
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    {preview && <img className="avatar" src={preview} alt="Selected avatar preview" />}
+    <FileDrop label="Choose an avatar" hint="JPEG, PNG or WebP, up to 2 MB. The image is cropped to a square." ref={input} accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => { const file = event.target.files?.[0] ?? null; setSelected(file); setPreview(file && file.size <= maxBytes && ["image/jpeg", "image/png", "image/webp"].includes(file.type) ? URL.createObjectURL(file) : ""); }} />
     <div className="actions">
-      <button className="button small" type="button" disabled={busy} onClick={upload}>{busy ? "Working…" : "Upload or finish pending"}</button>
-      <button className="button small" type="button" disabled={busy} onClick={discard}>Discard pending upload</button>
+      <button className="button small" type="button" disabled={busy} onClick={upload}>{busy ? "Working…" : selected ? "Upload avatar" : "Finish pending upload"}</button>
+      <details><summary>Upload recovery</summary><button className="button small danger" type="button" disabled={busy} onClick={discard}>Discard pending upload</button></details>
     </div>
     <ActionMessage state={state} />
   </div>;

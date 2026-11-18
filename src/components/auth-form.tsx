@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId, useState } from "react";
 import { initialState, type ActionState } from "@/lib/actions";
+import { Button, Field } from "./ui";
 import { ActionMessage } from "./action-message";
 
 export function AuthForm({ action, label, email, password, token }: {
@@ -12,15 +13,30 @@ export function AuthForm({ action, label, email, password, token }: {
   token?: string;
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
+  const [visible, setVisible] = useState(false);
+  const [length, setLength] = useState(0);
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const id = useId();
   return <form action={submit} className="stack">
-    {email && <label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label>}
-    {password && <label>{password === "new" ? "New password" : "Password"}
-      <input name="password" type="password" autoComplete={`${password}-password`}
-        required minLength={password === "new" ? 12 : undefined} maxLength={password === "new" ? 72 : 256} />
-      {password === "new" && <small>Use at least 12 characters.</small>}
-    </label>}
+    {email && <Field label="Email address"><input name="email" type="email" autoComplete="email" required maxLength={254}
+      aria-invalid={!!errors.email} aria-describedby={errors.email ? id + "-email" : undefined}
+      onBlur={(event) => setErrors((current) => ({ ...current, email: event.target.value && !event.target.validity.valid ? event.target.validationMessage : "" }))} />
+      {errors.email && <span id={id + "-email"} className="message error">{errors.email}</span>}
+    </Field>}
+    {password && <div className="password-field">
+      <Field label={password === "new" ? "New password" : "Password"}>
+        <input name="password" type={visible ? "text" : "password"} autoComplete={`${password}-password`}
+          required minLength={password === "new" ? 12 : undefined} maxLength={password === "new" ? 72 : 256}
+          aria-invalid={!!errors.password} aria-describedby={password === "new" ? id + "-password" : undefined}
+          onChange={(event) => { setLength(event.target.value.length); setErrors((current) => ({ ...current, password: "" })); }}
+          onBlur={(event) => setErrors((current) => ({ ...current, password: event.target.value && !event.target.validity.valid ? event.target.validationMessage : "" }))} />
+      </Field>
+      <button type="button" className="password-toggle" aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? "Hide" : "Show"}</button>
+      {password === "new" && <small id={id + "-password"} className={length >= 12 ? "password-valid" : "muted"} aria-live="polite">12+ characters{length >= 12 ? " · Met" : ""}</small>}
+      {errors.password && <p className="message error">{errors.password}</p>}
+    </div>}
     {token && <input type="hidden" name="token_hash" value={token} />}
-    <button className="button primary" disabled={pending}>{pending ? "Working…" : label}</button>
+    <Button variant="primary" disabled={pending}>{pending ? "Working…" : label}</Button>
     <ActionMessage state={state} />
   </form>;
 }

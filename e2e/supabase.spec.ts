@@ -1,8 +1,9 @@
+import { checkLighthouse } from "./lighthouse";
 import { execFileSync } from "node:child_process";
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 import sharp from "sharp";
 import Stripe from "stripe";
 
@@ -38,6 +39,16 @@ test.beforeEach(() => {
     throw new Error("These tests require credentials for the disposable loopback stack only.");
   }
 });
+
+async function editorTab(page: Page, name: string) {
+  const tab = page.getByRole("tab", { name, exact: true });
+  if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
+}
+async function linkMenu(page: Page, index: number) {
+  await editorTab(page, "Links");
+  const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
+  if (!(await summary.evaluate((element) => element.parentElement?.hasAttribute("open")))) await summary.click();
+}
 
 test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
   test.setTimeout(90000);
@@ -128,6 +139,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
+    await page.getByText("Daily activity table", { exact: true }).click();
     await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
     await expect(page.getByRole("table", { name: "Clicks attributed to published destinations" })).toContainText("Work");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
@@ -290,7 +302,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
 });
 
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
-  test.setTimeout(90000);
+  test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
   const email = `${name}@example.com`;
   const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
@@ -310,6 +322,16 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Username").fill(name.toUpperCase());
     await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    const profileTab = page.getByRole("tab", { name: "Profile", exact: true });
+    await profileTab.focus();
+    await profileTab.press("ArrowRight");
+    await expect(page.getByRole("tab", { name: "Design", exact: true })).toBeFocused();
+    await profileTab.click();
+    await page.setViewportSize({ width: 360, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await checkLighthouse(page, "/studio");
     await page.getByRole("link", { name: "Plan and usage" }).click();
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
@@ -368,33 +390,44 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const abandonedPath = `${abandonedStage.scope}/${abandonedStage.key}`;
     const oldToken = await stageAdmin.storage.from("avatar-incoming").createSignedUploadUrl(abandonedPath);
     expect(oldToken.error).toBeNull();
+    await page.getByText("Upload recovery", { exact: true }).click();
     await page.getByRole("button", { name: "Discard pending upload" }).click();
     await expect(page.getByRole("status")).toHaveText("Pending upload cleared.");
     expect((await stageOwner.storage.from("avatar-incoming").uploadToSignedUrl(
       abandonedPath, oldToken.data!.token, image, { contentType: "image/png" },
     )).error).toBeNull();
-    await page.getByRole("button", { name: "Upload or finish pending" }).click();
+    await editorTab(page, "Profile");
+    await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Choose an image to upload" })).toBeVisible();
 
+    await editorTab(page, "Profile");
     await page.getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
-    await page.getByRole("button", { name: "Upload or finish pending" }).click();
+    await editorTab(page, "Profile");
+    await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");
     await page.goto("/templates");
-    await page.getByRole("link", { name: "Open Project notebook in Studio" }).click();
+    await page.locator('a[href="/studio?template=project-notebook"]').click();
     await expect(page.getByLabel("Preview a template")).toHaveValue("project-notebook");
+    await editorTab(page, "Design");
     await page.getByLabel("Preview a template").selectOption("");
 
+    await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Snoozer Creator");
+    await editorTab(page, "Profile");
     await page.getByLabel("Bio").fill("Private until I publish.");
-    await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption("lagoon");
+    await editorTab(page, "Design");
+    await page.getByRole("button", { name: "Lagoon", exact: true }).click();
+    await editorTab(page, "Design");
     await page.getByText("Copy or paste appearance", { exact: true }).click();
     await expect(page.getByLabel("Current appearance code")).toHaveValue(/"theme":"lagoon"/);
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.getByRole("button", { name: "Copy appearance", exact: true }).click();
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('"theme":"lagoon"');
+    await editorTab(page, "Design");
     await page.getByLabel("Paste an appearance code").fill('{"version":2}');
     await page.getByRole("button", { name: "Apply appearance" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Enter a valid Snoozer appearance code." })).toBeVisible();
+    await editorTab(page, "Design");
     await page.getByLabel("Paste an appearance code").fill(JSON.stringify({
       version: 1, theme: "daybreak",
       appearance: { density: "airy", corners: "round", layout: "editorial", accent: "rose" },
@@ -406,42 +439,63 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Undo edit" }).click();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await expect(page.getByLabel("Card corners")).toHaveValue("soft");
+    await editorTab(page, "Design");
     await page.getByText("Copy or paste appearance", { exact: true }).click();
+    await editorTab(page, "Design");
     await page.getByLabel("Preview a template").selectOption("project-notebook");
     await expect(page.getByRole("heading", { name: "Current projects" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
+    await editorTab(page, "Design");
     await page.getByRole("button", { name: "Apply with starter sections" }).click();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("midnight");
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Current projects");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 1 text").fill("First line.\nLiteral <em>markup</em>.");
+    await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Move up (section 2)" }).press("Enter");
     await expect(page.getByLabel("Section 1 heading")).toBeFocused();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await editorTab(page, "Design");
     await page.getByLabel("Preview a template").selectOption("field-guide");
     await expect(page.getByRole("button", { name: "Apply with starter sections" })).toHaveCount(0);
+    await editorTab(page, "Design");
     await page.getByRole("button", { name: "Apply template colours" }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
+    await editorTab(page, "Design");
     await page.getByLabel("Background entrance").selectOption("fade");
+    await editorTab(page, "Design");
     await page.getByLabel("Link accent").selectOption("ink");
     await expect(page.locator("#link-accent-contrast")).toContainText("Link text contrast");
+    await editorTab(page, "Design");
     await page.getByLabel("Profile layout").selectOption("editorial");
     await expect(page.getByRole("region", { name: "Page preview" })).toHaveAttribute("data-layout", "editorial");
+    await editorTab(page, "Design");
     await page.getByLabel("Card spacing").selectOption("compact");
+    await editorTab(page, "Design");
     await page.getByLabel("Card corners").selectOption("square");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 1 type").selectOption("callout");
+    await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Add text section" }).click();
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 3 type").selectOption("quote");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 3 attribution").fill("Studio notebook");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 3 text").fill("Stay curious.");
     const preview = page.getByRole("region", { name: "Page preview" });
     await expect(preview.locator("blockquote")).toHaveText("Stay curious.");
+    await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Add text section" }).click();
     await page.getByRole("combobox", { name: "Section 4 type", exact: true }).selectOption("countdown");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 4 heading").fill("Launch");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 4 text").fill("Save the date.");
     await expect(preview.getByText("Choose a target time to preview the countdown.")).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Lock section 4" })).toBeDisabled();
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 4 target time").fill("2096-02-29T18:15");
     await expect(preview.locator(".countdown-remaining")).toContainText("remaining");
     await page.setViewportSize({ width: 1440, height: 1100 });
@@ -471,10 +525,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Redo edit" }).click();
     await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
     for (const [index, label] of ["First", "Second"].entries()) {
+      await editorTab(page, "Links");
       await page.getByRole("button", { name: "Add link" }).click();
+      await editorTab(page, "Links");
       await page.getByLabel(`Link ${index + 1} label`).fill(label);
+      await editorTab(page, "Links");
       await page.getByLabel(`Link ${index + 1} URL`).fill(`https://example.com/${label}`);
     }
+    await linkMenu(page, 2);
     await page.getByRole("button", { name: "Move up (link 2)" }).press("Enter");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
@@ -508,6 +566,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1100 });
+    await editorTab(page, "Sections");
     const lock = page.getByRole("checkbox", { name: "Lock section 2" });
     await lock.check();
     await expect(page.getByLabel("Section 2 heading")).toBeDisabled();
@@ -516,13 +575,19 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 2 heading")).toBeEnabled();
     await page.getByRole("button", { name: "Redo edit" }).click();
     await expect(lock).toBeChecked();
+    await editorTab(page, "Links");
     await page.getByText("Add Ko-fi support link", { exact: true }).click();
+    await editorTab(page, "Links");
     await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
+    await editorTab(page, "Links");
     await page.getByRole("button", { name: "Add support link" }).click();
     await expect(page.getByText("Enter your full Ko-fi profile address.")).toBeVisible();
+    await editorTab(page, "Links");
     await page.getByLabel("Ko-fi profile URL").fill("https://www.ko-fi.com/creator/");
+    await editorTab(page, "Links");
     await page.getByLabel("Ko-fi profile URL").press("Enter");
     await expect(page.getByLabel("Link 3 label")).toBeFocused();
+    await editorTab(page, "Links");
     await page.getByLabel("Link 3 label").fill("Support my projects");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
@@ -580,13 +645,20 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect(avatarPath).toBeTruthy();
     expect((await visitor.request.get(avatarPath!)).headers()["content-type"]).toBe("image/webp");
 
+    await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Second publication");
+    await editorTab(page, "Sections");
     await page.getByLabel("Section 4 target time").fill("2000-01-01T00:00");
     await expect(preview.locator(".countdown-remaining")).toHaveText("Countdown finished.");
+    await editorTab(page, "Design");
     await page.getByLabel("Profile layout").selectOption("centred");
+    await editorTab(page, "Design");
     await page.getByLabel("Link accent").selectOption("theme");
+    await editorTab(page, "Design");
     await page.getByLabel("Card spacing").selectOption("airy");
+    await editorTab(page, "Design");
     await page.getByLabel("Card corners").selectOption("round");
+    await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Remove section 3" }).click();
     await lock.uncheck();
     await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
@@ -607,6 +679,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link accent")).toHaveValue("ink");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
     await expect(page.getByLabel("Card corners")).toHaveValue("square");
+    await editorTab(page, "Sections");
     await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
     await expect(lock).toBeChecked();
@@ -622,6 +695,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.reload();
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
 
+    await editorTab(page, "Settings");
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
@@ -661,6 +735,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const { data: lateUpload, error: signingError } = await incoming.createSignedUploadUrl(`${oldScope}/pending`);
     expect(signingError).toBeNull();
 
+    await editorTab(page, "Settings");
+    await page.getByText("Delete profile", { exact: true }).first().click();
+    await page.getByText("Review profile deletion").click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).not.toBeVisible();
     await page.getByText("Review profile deletion").click();
     await page.getByLabel(`Type ${name} to confirm`).fill("wrong-name");
     await page.getByRole("button", { name: "Permanently delete profile" }).click();
@@ -888,6 +968,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await stale.goto("/studio");
   await expect(stale.getByLabel("Display name")).toHaveValue(name);
 
+  await editorTab(page, "Profile");
   await page.getByLabel("Display name").fill("Autosaved from the first tab");
   await expect(page.getByRole("status")).toHaveText("Draft saved.");
   const publicPage = await request.get(`/${name}`);
@@ -895,6 +976,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await page.reload();
   await expect(page.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
 
+  await editorTab(stale, "Profile");
   await stale.getByLabel("Display name").fill("Unsaved from the stale tab");
   await expect(stale.getByRole("alert").filter({ hasText: "Your draft changed elsewhere" })).toBeVisible();
   await expect(stale.getByRole("button", { name: "Publish page" })).toBeDisabled();
@@ -903,9 +985,12 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await stale.getByRole("button", { name: "Discard local edits and load saved draft" }).click();
   await expect(stale.getByLabel("Display name")).toHaveValue("Autosaved from the first tab");
 
+  await editorTab(stale, "Links");
   await stale.getByRole("button", { name: "Add link" }).click();
+  await editorTab(stale, "Links");
   await stale.getByLabel("Link 1 label").fill("Portfolio");
   await expect(stale.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
+  await editorTab(stale, "Links");
   await stale.getByLabel("Link 1 URL").fill("https://example.com/");
   await expect(stale.getByRole("status")).toHaveText("Draft saved.");
   await stale.reload();
@@ -921,8 +1006,10 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
     await route.fulfill({ response });
   }, { times: 1 });
   try {
+    await editorTab(stale, "Profile");
     await stale.getByLabel("Bio").fill("First edit");
     await expect(stale.getByRole("status")).toHaveText("Saving…");
+    await editorTab(stale, "Profile");
     await stale.getByLabel("Bio").fill("Edit made during the save");
   } finally {
     release();

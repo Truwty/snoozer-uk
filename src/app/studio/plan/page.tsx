@@ -1,3 +1,5 @@
+import { Card, ProgressBar } from "@/components/ui";
+import { siteUrl } from "@/lib/env";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -53,6 +55,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const { data, error } = await client.rpc("get_my_plan");
   const result = accountPlan.safeParse(data);
   const plan = error || !result.success ? null : result.data;
+  const showSandbox = !["snoozer.uk", "www.snoozer.uk"].includes(siteUrl().hostname);
   const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
   const [offers, { checkout, portal, profile: requested }, portalCustomer, reviewResponse, staffAccess, profileResponse] = await Promise.all([
@@ -71,20 +74,20 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
 
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
-    <section className="panel stack">
+    <section className="stack plan-page">
       <h1>Plan and usage</h1>
-      {sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
+      {showSandbox && sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
       {!staffAccess.error && staffAccess.data === true && <Link href="/studio/billing-diagnostics" prefetch={false}>Billing diagnostics</Link>}
       {plan ? <>
-        <p>Current plan: <strong>{labels[plan.plan]}</strong></p>
+        <Card><p className="eyebrow">CURRENT PLAN</p><p className="current-plan">Current plan: <strong>{labels[plan.plan]}</strong></p>
         {plan.expiresAt && <p>Plan access ends on <time dateTime={plan.expiresAt}>
           {new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(plan.expiresAt))}
         </time>.</p>}
         <dl className="stack">
-          <div><dt>Published profiles</dt><dd>{plan.usage.publishedProfiles} of {plan.quotas.profiles}</dd></div>
-          <div><dt>{draft ? `Draft links for @${draft.username}` : "Draft links"}</dt><dd>{linksUsed} of {linkLimit}</dd></div>
-          <div><dt>Media storage</dt><dd>{formatMediaBytes(plan.usage.mediaBytes)} of {formatMediaBytes(plan.quotas.mediaBytes)}</dd></div>
-        </dl>
+          <div><dt>Published profiles</dt><dd><ProgressBar label="Published profiles" value={plan.usage.publishedProfiles} max={plan.quotas.profiles} description={`${plan.usage.publishedProfiles} of ${plan.quotas.profiles}`} /></dd></div>
+          <div><dt>{draft ? `Draft links for @${draft.username}` : "Draft links"}</dt><dd><ProgressBar label="Draft links" value={linksUsed} max={linkLimit} description={`${linksUsed} of ${linkLimit}`} /></dd></div>
+          <div><dt>Media storage</dt><dd><ProgressBar label="Media storage" value={plan.usage.mediaBytes} max={plan.quotas.mediaBytes} description={`${formatMediaBytes(plan.usage.mediaBytes)} of ${formatMediaBytes(plan.quotas.mediaBytes)}`} /></dd></div>
+        </dl></Card>
         {draft && linksUsed >= linkLimit && <p>Your draft has reached the Studio link limit.</p>}
         {plan.usage.mediaBytes >= plan.quotas.mediaBytes
           ? <p>Your plan’s media storage is full. Stored images remain available.</p>
@@ -105,19 +108,20 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <ClaimForm additional />
         </details>}
       </div>
-      {checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
-      {checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
-      {portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}
-      {!portalCustomer?.error && typeof portalCustomer?.data === "string" && <form action={openSandboxPortal}>
+      {showSandbox && checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
+      {showSandbox && checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
+      {showSandbox && portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}
+      {showSandbox && !portalCustomer?.error && typeof portalCustomer?.data === "string" && <form action={openSandboxPortal}>
         <button className="button small" type="submit">Manage sandbox billing</button>
       </form>}
-      {offers.length > 0 && <div className="stack">
+      {showSandbox && offers.length > 0 && <div className="stack">
         <h2>Stripe sandbox offers</h2>
-        {offers.map(({ plan, label, interval, amount }) => <form key={plan + interval} action={startSandboxCheckout}>
+        <div className="plan-offers">{offers.map(({ plan, label, interval, amount }) => <form className="panel stack plan-offer" key={plan + interval} action={startSandboxCheckout}>
+          <h3>{label}</h3><p className="offer-price">{amount}<small> per {interval}</small></p>
           <input type="hidden" name="plan" value={plan} />
           <input type="hidden" name="interval" value={interval} />
-          <button className="button small" type="submit">{label} · {amount} per {interval} · Test checkout</button>
-        </form>)}
+          <button className="button primary" type="submit">{label} · {amount} per {interval} · Test checkout</button>
+        </form>)}</div>
       </div>}
       <details>
         <summary>Redeem a plan gift</summary>

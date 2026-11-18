@@ -6,9 +6,10 @@ type StudioTemplate = {
   description: string;
   theme: ProfileContent["theme"];
   sections: TextSection[];
+  appearance?: ProfileContent["appearance"];
 };
 
-export const studioTemplates: readonly StudioTemplate[] = [
+const starters: readonly StudioTemplate[] = [
   {
     id: "project-notebook",
     name: "Project notebook",
@@ -37,3 +38,13 @@ export const studioTemplates: readonly StudioTemplate[] = [
     ],
   },
 ];
+
+// Existing starter copy, presented in distinct supported appearance combinations.
+export const studioTemplates: readonly StudioTemplate[] = [...starters, ...starters.flatMap((template) => [
+  { ...template, id: template.id + "-compact", name: template.name + " · Compact", description: template.description + " Compact spacing and square corners.",
+    appearance: { density: "compact", corners: "square", layout: "centred", accent: "theme", entrance: "none" } as const },
+  { ...template, id: template.id + "-editorial", name: template.name + " · Editorial", description: template.description + " An editorial layout with balanced spacing.",
+    appearance: { density: "balanced", corners: "soft", layout: "editorial", accent: "theme", entrance: "none" } as const },
+  { ...template, id: template.id + "-airy", name: template.name + " · Airy", description: template.description + " Airy spacing and rounded corners.",
+    appearance: { density: "airy", corners: "round", layout: "centred", accent: "theme", entrance: "none" } as const },
+])];

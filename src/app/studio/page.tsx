@@ -2,10 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "@/components/shell";
 import { ClaimForm } from "@/components/claim-form";
-import { CopyLink } from "@/components/copy-link";
 import { DeleteProfile } from "@/components/delete-profile";
 import { Editor } from "@/components/editor";
-import { Unpublish } from "@/components/unpublish";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { supabaseUrl, supabaseKey } from "@/lib/env";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
@@ -35,30 +33,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
       <p className="muted">Pick the username people will use to find your page.</p>
       <ClaimForm />
     </section> : <>
-      <header className="studio-heading">
-        <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1><p className="muted">@{draft.username}</p></div>
-        <div className="stack status-panel">
-          <Link className="button small" href={studioHref("/studio/gallery", selected)}>Image gallery</Link>
-          <Link className="button small" href={studioHref("/studio/history", selected)}>Publish history</Link>
-          <Link className="button small" href={studioHref("/studio/analytics", selected)}>Analytics</Link>
-          <Link className="button small" href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
-          <p className="status-label">{draft.published_revision === null ? "Offline · Draft only"
-            : draft.revision === draft.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p>
-          {draft.published_revision !== null && <div className="actions">
-            <Link className="button small" href={`/${draft.username}`}>View live page ↗</Link>
-            <CopyLink path={`/${draft.username}`} />
-            <Unpublish profileId={draft.profile_id} revision={draft.revision} />
-          </div>}
-        </div>
-      </header>
-      <section className="panel avatar-panel">
-        <h2>Avatar</h2>
-        <AvatarUpload profileId={draft.profile_id} revision={draft.revision} />
-      </section>
+      <header className="studio-heading"><div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1></div></header>
+      <nav className="studio-nav" aria-label="Studio navigation">
+        <Link href={studioHref("/studio", selected)} aria-current="page">Editor</Link>
+        <Link href={studioHref("/studio/gallery", selected)}>Image gallery</Link>
+        <Link href={studioHref("/studio/history", selected)}>Publish history</Link>
+        <Link href={studioHref("/studio/analytics", selected)}>Analytics</Link>
+        <Link href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
+      </nav>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
-        initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id} />
-      <DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} />
+        initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id}
+        avatar={<AvatarUpload profileId={draft.profile_id} revision={draft.revision} />}
+        settings={<DeleteProfile profileId={draft.profile_id} username={draft.username} revision={draft.revision} />} />
+
     </>}
   </main>;
 }

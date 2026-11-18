@@ -1,3 +1,4 @@
+import { accentPalette } from "./tokens";
 export const linkAccents = ["theme", "mint", "rose", "ink"] as const;
 export type LinkAccent = typeof linkAccents[number];
 
@@ -8,7 +9,7 @@ export const linkAccentLabels: Record<LinkAccent, string> = {
   ink: "Ink",
 };
 
-const backgrounds = { mint: "#91efce", rose: "#f3adc6", ink: "#25345f" };
+const backgrounds = accentPalette;
 const minimumTextContrast = 4.5;
 
 function luminance(colour: string) {
@@ -28,9 +29,9 @@ export function contrastRatio(first: string, second: string) {
 export function linkAccentColours(accent: LinkAccent) {
   if (accent === "theme") return undefined;
   const background = backgrounds[accent];
-  const black = contrastRatio(background, "#000000");
-  const white = contrastRatio(background, "#ffffff");
+  const black = contrastRatio(background, accentPalette.black);
+  const white = contrastRatio(background, accentPalette.white);
   const ratio = Math.max(black, white);
   if (ratio < minimumTextContrast) return undefined;
-  return { background, foreground: black >= white ? "#000000" : "#ffffff", ratio };
+  return { background, foreground: black >= white ? accentPalette.black : accentPalette.white, ratio };
 }

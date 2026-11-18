@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GalleryEditor } from "@/components/gallery-editor";
@@ -21,7 +22,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
-      <h1>Image gallery</h1>
+      <PageHeader title="Image gallery" />
       <p className="muted">Add up to eight images. Your changes stay in your draft until you publish in Studio.</p>
       <div><Link className="button small" href={studioHref("/studio/gallery/folders", selected)}>Organise media folders</Link></div>
       <GalleryEditor profileId={draft.profile_id} revision={draft.revision} items={draft.gallery} pending={pending} />

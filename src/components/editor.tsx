@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
+import { VisualSelect } from "./visual-select";
+import { CopyLink } from "./copy-link";
+import { Unpublish } from "./unpublish";
 import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
@@ -14,8 +17,10 @@ import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
-export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }: { draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
+export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", avatar, settings }: { avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
+  const tabs = ["Profile", "Design", "Links", "Sections", "Settings"] as const;
+  const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
@@ -39,7 +44,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
     edit((current) => ({
       ...current,
       content: {
-        ...current.content, theme: template.theme,
+        ...current.content, theme: template.theme, appearance: template.appearance ?? current.content.appearance,
         sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
       },
     }));
@@ -73,33 +78,63 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
     window.requestAnimationFrame(() => (linkLabels.current[index] ?? addLink.current)?.focus());
   }
 
-  return <div className="editor-grid">
-    <form className="panel editor-form stack" onSubmit={(event) => {
+  return <div className="studio-workspace">
+    <header className="editor-topbar">
+      <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p></div>
+      <div className="actions">
+        {saved.published_revision !== null && <><Link className="button small" href={`/${saved.username}`}>View live page ↗</Link><CopyLink path={`/${saved.username}`} /></>}
+        <div className="actions" aria-label="Editing history" role="group">
+          <button type="button" className="button small" disabled={!canUndo} onClick={() => travel("undo")}>Undo edit</button>
+          <button type="button" className="button small" disabled={!canRedo} onClick={() => travel("redo")}>Redo edit</button>
+        </div>
+        <button form="profile-editor" className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>
+        <button form="profile-editor" className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
+      </div>
+    </header>
+    <div className="editor-grid">
+    <form id="profile-editor" className="editor-form stack" onInvalidCapture={(event) => {
+      const panel = (event.target as HTMLElement).closest<HTMLElement>("[data-editor-panel]");
+      if (panel) {
+        setTab(panel.dataset.editorPanel as typeof tab);
+        window.requestAnimationFrame(() => (event.target as HTMLElement).focus());
+      }
+    }} onSubmit={(event) => {
       event.preventDefault();
       const button = (event.nativeEvent as SubmitEvent).submitter;
       void commit(button instanceof HTMLButtonElement && button.value === "publish" ? "publish" : "draft");
     }}>
-      <div className="actions" aria-label="Editing history" role="group">
-        <button type="button" className="button small" disabled={!canUndo} onClick={() => travel("undo")}>Undo edit</button>
-        <button type="button" className="button small" disabled={!canRedo} onClick={() => travel("redo")}>Redo edit</button>
+      <div className="editor-tabs" role="tablist" aria-label="Profile editor">
+        {tabs.map((name, index) => <button key={name} id={`editor-tab-${name}`} type="button" role="tab" aria-selected={tab === name}
+          aria-controls={`editor-panel-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)}
+          onKeyDown={(event) => {
+            const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+            const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : direction ? (index + direction + tabs.length) % tabs.length : null;
+            if (next !== null) { event.preventDefault(); setTab(tabs[next]); document.getElementById(`editor-tab-${tabs[next]}`)?.focus(); }
+          }}>{name}</button>)}
       </div>
+      <section role="tabpanel" aria-labelledby="editor-tab-Profile" id="editor-panel-Profile" data-editor-panel="Profile" hidden={tab !== "Profile"} className="editor-panel stack">
+        <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>
       <fieldset className="stack">
         <legend className="section-title">Profile details</legend>
         <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
           onChange={(event) => set("display_name", event.target.value)} /></label>
         <label>Bio<textarea name="bio" maxLength={280} rows={4} value={content.bio}
           onChange={(event) => set("bio", event.target.value)} /></label>
-        <label>Theme<select name="theme" value={content.theme}
+      </fieldset>
+      </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Design" id="editor-panel-Design" data-editor-panel="Design" hidden={tab !== "Design"} className="editor-panel stack">
+      <fieldset className="stack"><legend className="section-title">Appearance</legend>
+        <VisualSelect label="Theme" onPick={(value) => { const theme = themes.find((item) => item === value); if (theme) set("theme", theme); }}><select name="theme" value={content.theme}
           onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
           {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
-        </select></label>
-        <label>Profile layout<select value={content.appearance.layout} onChange={(event) => {
+        </select></VisualSelect>
+        <VisualSelect label="Profile layout" onPick={(value) => { const layout = profileLayouts.find((item) => item === value); if (layout) set("appearance", { ...content.appearance, layout }); }}><select value={content.appearance.layout} onChange={(event) => {
           const layout = profileLayouts.find((value) => value === event.target.value);
           if (layout) set("appearance", { ...content.appearance, layout });
         }}>
           <option value="centred">Centred card</option>
           <option value="editorial">Editorial</option>
-        </select></label>
+        </select></VisualSelect>
         <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
           const entrance = event.target.value;
           if (entrance === "none" || entrance === "fade") set("appearance", { ...content.appearance, entrance });
@@ -107,18 +142,18 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
           <option value="none">None</option>
           <option value="fade">Fade in</option>
         </select></label>
-        <label>Card spacing<select value={content.appearance.density} onChange={(event) => {
+        <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });
         }}>
           {profileDensities.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></label>
-        <label>Card corners<select value={content.appearance.corners} onChange={(event) => {
+        </select></VisualSelect>
+        <VisualSelect label="Card corners" onPick={(value) => { const corners = profileCorners.find((item) => item === value); if (corners) set("appearance", { ...content.appearance, corners }); }}><select value={content.appearance.corners} onChange={(event) => {
           const corners = profileCorners.find((value) => value === event.target.value);
           if (corners) set("appearance", { ...content.appearance, corners });
         }}>
           {profileCorners.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></label>
+        </select></VisualSelect>
         <label>Link accent<select value={content.appearance.accent} aria-describedby="link-accent-contrast" onChange={(event) => {
           const accent = linkAccents.find((value) => value === event.target.value);
           if (accent) set("appearance", { ...content.appearance, accent });
@@ -129,13 +164,6 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
           {linkColours ? "Link text contrast " + (Math.floor(linkColours.ratio * 10) / 10).toFixed(1) + " to 1."
             : "Links use your theme colours."}
         </p>
-        <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
-          onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
-        {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
-          onChange={(event) => {
-            const checked = event.target.checked;
-            edit((current) => ({ ...current, removeAvatar: checked }));
-          }} /> Remove avatar on next manual save</label>}
       </fieldset>
       <fieldset className="stack">
         <legend className="section-title">Studio templates</legend>
@@ -158,12 +186,16 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
         edit((current) => ({ ...current, content: { ...current.content, ...settings } }));
         setTemplateId("");
       }} />
-      <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
+      </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
+        <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
+      </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
         <p className="sr-only" aria-live="polite">{announcement}</p>
         {content.links.length > linkLimit && <p>Remove links until you reach your current allowance before saving link edits or publishing.</p>}
-        {content.links.map((item, index) => <div className="link-editor stack" key={index} data-reorder-index={index}
+        {content.links.map((item, index) => <div className="link-editor link-row" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
           {content.links.length > 1 && <span className="reorder-handle" aria-hidden="true" {...linkHandle}>Drag to move</span>}
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
@@ -171,7 +203,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
           <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
-          <div className="actions">
+          <details className="row-menu"><summary aria-label={`Actions for link ${index + 1}`}>Actions</summary><div className="actions">
             <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
             <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
             <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => {
@@ -179,7 +211,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
               setAnnouncement(`Removed link ${index + 1}.`);
               focusLink(Math.min(index, content.links.length - 2));
             }}>Remove</button>
-          </div>
+          </div></details>
         </div>)}
         <button className="button" type="button" ref={addLink} disabled={content.links.length >= linkLimit}
           onClick={() => {
@@ -201,10 +233,18 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
           </div>
         </details>}
       </fieldset>
-      <div className="actions">
-        <button className="button" disabled={pending || conflict} name="intent" value="draft">Save draft</button>
-        <button className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
-      </div>
+      </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Settings" id="editor-panel-Settings" data-editor-panel="Settings" hidden={tab !== "Settings"} className="editor-panel stack">
+        <label className="check"><input type="checkbox" name="indexable" checked={content.indexable}
+          onChange={(event) => set("indexable", event.target.checked)} /> Allow search engines to index my published page</label>
+        {saved.avatar && <label className="check"><input type="checkbox" name="remove_avatar" checked={removeAvatar} disabled={pending}
+          onChange={(event) => {
+            const checked = event.target.checked;
+            edit((current) => ({ ...current, removeAvatar: checked }));
+          }} /> Remove avatar on next manual save</label>}
+
+        {saved.published_revision !== null && <Unpublish profileId={saved.profile_id} revision={saved.revision} />}
+      </section>
       {conflict && !pending ? <div className="stack">
         <p className="message error" role="alert">Your draft changed elsewhere. Your unsaved edits are still here.</p>
         <details>
@@ -224,6 +264,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
           : <ActionMessage state={message} />}
       </>}
     </form>
+    {tab === "Settings" && <div className="editor-settings">{settings}</div>}
     <aside className="preview stack">
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
@@ -242,11 +283,11 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "" }
       </section>}
       <div className={"preview-card preview-" + previewSize}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
-          ...saved, ...content, theme: template.theme,
+          ...saved, ...content, theme: template.theme, appearance: template.appearance ?? content.appearance,
           sections: content.sections.length ? content.sections : template.sections,
         } : { ...saved, ...content }}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
       </div>
     </aside>
-  </div>;
+  </div></div>;
 }

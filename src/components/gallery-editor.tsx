@@ -7,6 +7,7 @@ import { discardGalleryUpload, editGallery, finishGalleryUpload, startGalleryUpl
 import { galleryIncoming, galleryLimit, galleryMaxBytes, galleryTypes, type GalleryItem } from "@/lib/gallery";
 import { supabaseConfig } from "@/lib/env";
 import { initialState, type ActionState } from "@/lib/actions";
+import { EmptyState, FileDrop } from "./ui";
 import { ActionMessage } from "./action-message";
 
 const invalidFileMessage = "Choose a JPEG, PNG or WebP image up to 4 MB.";
@@ -93,8 +94,8 @@ export function GalleryEditor({ profileId, revision, items, pending }: {
             onClick={() => run(() => editGallery(profileId, revision, item.id, "remove"))}>Remove from draft</button>
         </div>
       </li>)}
-    </ol> : <p>Your draft gallery is empty.</p>}
-    {(items.length < galleryLimit || pending) && <form className="stack" onSubmit={(event) => { event.preventDefault(); void run(upload); }}>
+    </ol> : <EmptyState title="Your draft gallery is empty." description="Add up to eight images."><button type="button" className="button" onClick={() => fileInput.current?.click()}>Choose an image</button></EmptyState>}
+    {(items.length < galleryLimit || pending) && <form className="stack gallery-upload" onSubmit={(event) => { event.preventDefault(); void run(upload); }}>
       {pending
         ? <p>Pending image: <strong>{pending.alt}</strong>. Finish it if the file uploaded, or choose the file again.</p>
         : <label>Image description<input ref={altInput} required maxLength={180} disabled={busy}
@@ -105,12 +106,11 @@ export function GalleryEditor({ profileId, revision, items, pending }: {
         event.dataTransfer.dropEffect = busy ? "none" : "copy";
       }}>
         <p>Drop one image here or use the file picker.</p>
-        <label>Choose a gallery image<input ref={fileInput} type="file" accept={galleryTypes.join(",")}
-          disabled={busy} aria-describedby="gallery-file-help" onChange={() => {
+        <FileDrop label="Choose a gallery image" hint="JPEG, PNG or WebP, up to 4 MB. Images are resized and metadata is removed." hintId="gallery-file-help"
+          ref={fileInput} accept={galleryTypes.join(",")} disabled={busy} aria-describedby="gallery-file-help" onChange={() => {
             setDroppedFile(null);
             setState(initialState);
-          }} /></label>
-        <small id="gallery-file-help">JPEG, PNG or WebP, up to 4 MB. Images are resized and metadata is removed.</small>
+          }} />
         <p aria-live="polite">{droppedFile ? "Selected image: " + droppedFile.name : ""}</p>
       </div>
       <div className="actions">

@@ -30,6 +30,23 @@ test("homepage preview applies Studio themes and layouts with keyboard controls"
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
+test("handle availability, template choices and password controls work", async ({ page }) => {
+  await page.route("**/api/v1/usernames/available-handle", (route) => route.fulfill({ json: { available: true } }));
+  await page.goto("/");
+  await page.getByLabel("Username", { exact: true }).fill("available-handle");
+  await expect(page.getByRole("status")).toContainText("Available. Claim it to reserve it.");
+  await page.goto("/templates");
+  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
+  await page.goto("/sign-up");
+  const password = page.getByLabel("New password", { exact: true });
+  await password.fill("twelve-characters");
+  await expect(page.getByText("12+ characters · Met")).toBeVisible();
+  await page.getByRole("button", { name: "Show password" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Hide password" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+});
+
 test("liveness works without credentials", async ({ request }) => {
   const response = await request.get("/health/live");
   expect(response.ok()).toBe(true);

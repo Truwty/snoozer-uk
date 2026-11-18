@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "./ui";
 import { useEffect, useRef, useState } from "react";
 
 export function TwitchWidget({ channel, label }: { channel: string; label: string }) {
@@ -17,7 +18,8 @@ export function TwitchWidget({ channel, label }: { channel: string; label: strin
   const src = loaded && typeof window !== "undefined"
     ? `https://player.twitch.tv/?channel=${channel}&parent=${encodeURIComponent(window.location.hostname)}&autoplay=false&muted=true` : "";
   return <div className="twitch-widget" ref={container}>
-    <p className="muted">Optional Twitch player. Loading connects to Twitch and shares your IP address and the Snoozer site origin. This choice is separate from profile analytics.</p>
+    <p className="muted">Optional Twitch player · loads only when you choose.</p>
+    <Disclosure title="Learn more about Twitch privacy"><p className="muted">Optional Twitch player. Loading connects to Twitch and shares your IP address and the Snoozer site origin. This choice is separate from profile analytics.</p></Disclosure>
     {!wide && <p className="muted">Twitch requires a player at least 400 px wide. Use the original link above on smaller screens.</p>}
     {(wide || loaded) && <button className="button small" type="button" aria-expanded={loaded && wide} onClick={() => setLoaded(!loaded)}>
       {loaded ? "Hide Twitch player" : "Load Twitch player"}

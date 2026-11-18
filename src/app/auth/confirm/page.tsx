@@ -7,6 +7,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const { token_hash: token } = await searchParams;
   return <AuthShell title="Verify your email" description="Confirm your email to start building your Snoozer page.">
     {typeof token === "string" ? <AuthForm action={confirmEmail} label="Verify email" token={token} />
-      : <Link href="/sign-in">Go to sign in</Link>}
+      : <Link className="button primary" href="/sign-in">Go to sign in</Link>}
   </AuthShell>;
 }

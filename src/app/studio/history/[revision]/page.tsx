@@ -28,11 +28,11 @@ export default async function Page({ params, searchParams }: {
   return <main className="shell narrow stack">
     <Brand />
     <Link href={studioHref("/studio/history", profile === undefined ? undefined : draft.profile_id)}>← Publish history</Link>
-    <section className="panel stack">
+    <section className="stack">
       <h1>Version {publication.revision}</h1>
       <p><time dateTime={publication.published_at}>{publicationDate(publication.published_at)}</time>{publication.live && " · Live"}</p>
       <ProfileCard profile={publication} preview galleryBase="/studio/gallery/image" avatarSrc={publication.avatar ? `/studio/avatar/${publication.avatar}` : undefined} />
-      <RestorePublication profileId={draft.profile_id} revision={publication.revision} draftRevision={publication.draft_revision} />
+      <div className="restore-bar"><RestorePublication profileId={draft.profile_id} revision={publication.revision} draftRevision={publication.draft_revision} /></div>
     </section>
   </main>;
 }

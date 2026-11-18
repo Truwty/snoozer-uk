@@ -1,18 +1,18 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { claim, claimAdditional } from "@/app/studio/actions";
 import { initialState } from "@/lib/actions";
 import { canonicalUsername, username } from "@/lib/profile";
 import { ActionMessage } from "./action-message";
 
-export function ClaimForm({ additional = false }: { additional?: boolean }) {
+export function ClaimForm({ additional = false, hero = false }: { additional?: boolean; hero?: boolean }) {
   const [state, submit, pending] = useActionState(additional ? claimAdditional : claim, initialState);
   const [name, setName] = useState("");
   const [availability, setAvailability] = useState<{ name: string; message: string }>();
   const [checking, setChecking] = useState(false);
 
-  async function check() {
+  const check = useCallback(async () => {
     const nameAtRequest = name;
     const parsed = username.safeParse(canonicalUsername(nameAtRequest));
     if (!parsed.success) {
@@ -30,9 +30,15 @@ export function ClaimForm({ additional = false }: { additional?: boolean }) {
     } finally {
       setChecking(false);
     }
-  }
+  }, [name]);
 
-  return <form action={submit} className="stack">
+  useEffect(() => {
+    if (!hero || !name) return;
+    const timer = window.setTimeout(() => void check(), 400);
+    return () => window.clearTimeout(timer);
+  }, [hero, name, check]);
+
+  return <form action={submit} className={hero ? "stack hero-claim" : "stack"}>
     <label htmlFor="username">Username</label>
     <div className="address">
       <span>snoozer.uk/</span>
@@ -41,8 +47,8 @@ export function ClaimForm({ additional = false }: { additional?: boolean }) {
     </div>
     {availability?.name === name && <p className="message" role="status">{availability.message}</p>}
     <div className="actions">
-      <button className="button" type="button" disabled={checking || pending} onClick={check}>{checking ? "Checking…" : "Check availability"}</button>
-      <button className="button primary" disabled={pending}>{pending ? "Claiming…" : "Claim address"}</button>
+      {!hero && <button className="button" type="button" disabled={checking || pending} onClick={() => void check()}>{checking ? "Checking…" : "Check availability"}</button>}
+      <button className="button primary" disabled={pending}>{pending ? "Claiming…" : hero ? "Claim it" : "Claim address"}</button>
     </div>
     <ActionMessage state={state} />
   </form>;

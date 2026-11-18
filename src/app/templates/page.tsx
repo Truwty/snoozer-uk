@@ -11,20 +11,20 @@ export const metadata = {
 
 export default function Templates() {
   return <main className="shell stack">
-    <header className="nav"><Brand /><Link className="button small" href="/sign-up">Create your page</Link></header>
-    <header className="panel stack">
+    <header className="nav"><Brand /><nav className="actions"><Link className="button small" href="/sign-in">Sign in</Link><Link className="button small" href="/sign-up">Create your page</Link></nav></header>
+    <header className="page-header stack">
       <p className="eyebrow">SNOOZER STUDIO</p>
       <h1>Find a starting point</h1>
-      <p className="muted">Explore three free templates. Change the colours and text in Studio before sharing your page.</p>
+      <p className="muted">Explore twelve free template styles. Change the colours and text in Studio before sharing your page.</p>
     </header>
     <ul className="template-grid">
-      {studioTemplates.map((template) => <li className="panel stack" key={template.id}>
-        <p>{template.description}</p>
-        <ProfileCard preview previewLabel={template.name + " preview"} profile={{
-          username: "template-preview", display_name: template.name, bio: "", theme: template.theme,
-          indexable: false, avatar: null, appearance: defaultAppearance, gallery: [], links: [], sections: template.sections,
+      {studioTemplates.map((template) => <li className="template-item stack" key={template.id}>
+        <p className="eyebrow">EXAMPLE · {template.id}</p>
+        <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{
+          username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
+          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
         }} />
-        <Link className="button" href={`/studio?template=${template.id}`}>Open {template.name} in Studio</Link>
+        <Link className="button primary" href={`/studio?template=${template.id}`}>Use this template</Link>
       </li>)}
     </ul>
   </main>;

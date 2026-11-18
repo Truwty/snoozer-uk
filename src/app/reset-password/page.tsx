@@ -7,6 +7,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const { token_hash: token } = await searchParams;
   return <AuthShell title="Choose a new password" description="This link can be used once.">
     {typeof token === "string" ? <AuthForm action={resetPassword} label="Set new password" token={token} password="new" />
-      : <Link href="/forgot-password">Request a reset link</Link>}
+      : <Link className="button primary" href="/forgot-password">Request a reset link</Link>}
   </AuthShell>;
 }

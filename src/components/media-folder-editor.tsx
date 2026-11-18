@@ -6,6 +6,8 @@ import { galleryLimit } from "@/lib/gallery";
 import { changeMediaFolders } from "@/app/studio/gallery/folders/actions";
 import { initialState, type ActionState } from "@/lib/actions";
 import { mediaFolderLimit, type FolderEdit, type MediaLibrary } from "@/lib/media-folders";
+import Link from "next/link";
+import { EmptyState, Select } from "./ui";
 import { ActionMessage } from "./action-message";
 
 function field(form: HTMLFormElement, name: string) {
@@ -68,13 +70,14 @@ export function MediaFolderEditor({ profileId, library, draftRevision, draftSize
     {folders.length >= mediaFolderLimit && <p>You have reached the 12 folder limit.</p>}
     <ActionMessage state={state} />
     {draftSize >= galleryLimit && items.some((item) => !item.in_draft) && <p>Your draft gallery is full. Remove an image to add another.</p>}
-    <label>Show images in
-      <select value={filter} onChange={(event) => setSelection(event.target.value)}>
+    <div className="folder-chips" role="group" aria-label="Folder filters">
+      {[{ id: "", name: "All images" }, { id: "unfiled", name: "Unfiled" }, ...folders].map((folder) => <button className="button small" type="button" key={folder.id} aria-pressed={filter === folder.id} onClick={() => setSelection(folder.id)}>{folder.name}</button>)}
+    </div>
+    <Select label="Show images in" value={filter} onChange={(event) => setSelection(event.target.value)}>
         <option value="">All images</option>
         <option value="unfiled">Unfiled</option>
         {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
-      </select>
-    </label>
+    </Select>
     {selectedFolder && <details className="panel">
       <summary>Manage {selectedFolder.name}</summary>
       <div className="stack media-folder-settings">
@@ -91,7 +94,7 @@ export function MediaFolderEditor({ profileId, library, draftRevision, draftSize
       </div>
     </details>}
     <h2>{selectedFolder?.name ?? (filter === "unfiled" ? "Unfiled" : "All images")}</h2>
-    {!visible.length && <p>{filter ? "There are no images here." : "Upload an image in the gallery to start your library."}</p>}
+    {!visible.length && <EmptyState title="No images here" description={filter ? "There are no images here." : "Upload an image in the gallery to start your library."}><Link className="button" href={`/studio/gallery?profile=${profileId}`}>Open image gallery</Link></EmptyState>}
     {!!visible.length && <ul className="gallery-editor-grid" aria-label="Media library images">
       {visible.map((item) => <li className="panel stack" key={item.id}>
         {/* The owner image route serves an already resized WebP. */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "./ui";
 import { useState } from "react";
 
 export function YouTubeWidget({ videoId, label }: { videoId: string; label: string }) {
@@ -7,7 +8,8 @@ export function YouTubeWidget({ videoId, label }: { videoId: string; label: stri
   // Defence in depth if this component gains another caller.
   if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
   return <div className="youtube-widget">
-    <p className="muted">Optional YouTube player. Loading connects to Google and shares your IP address and the Snoozer site origin. Your profile analytics choice is separate.</p>
+    <p className="muted">Optional YouTube player · loads only when you choose.</p>
+    <Disclosure title="Learn more about YouTube privacy"><p className="muted">Optional YouTube player. Loading connects to Google and shares your IP address and the Snoozer site origin. Your profile analytics choice is separate.</p></Disclosure>
     <button className="button small" type="button" aria-expanded={loaded} onClick={() => setLoaded(!loaded)}>
       {loaded ? "Hide YouTube player" : "Load YouTube player"}
     </button>

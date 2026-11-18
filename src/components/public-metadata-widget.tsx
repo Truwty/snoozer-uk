@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "./ui";
 import { useEffect, useState } from "react";
 import { widgetMetadata, type MetadataProvider, type WidgetMetadata } from "@/lib/widgets";
 
@@ -31,7 +32,8 @@ export function PublicMetadataWidget({ username, position, provider, resource }:
     setVisible(!visible); setResult(null); setFailed(false);
   }
   return <div className="public-widget">
-    <p className="muted">Optional {name} summary. Load requests cached public information through Snoozer; your browser does not contact {name} directly. This choice is separate from profile analytics.</p>
+    <p className="muted">Optional public summary · requested through Snoozer.</p>
+    <Disclosure title="Learn more about public summaries"><p className="muted">Optional {name} summary. Load requests cached public information through Snoozer; your browser does not contact {name} directly. This choice is separate from profile analytics.</p></Disclosure>
     <button className="button small" type="button" aria-expanded={visible} onClick={toggle}>
       {visible ? `Hide ${name} summary` : `Load ${name} summary`}
     </button>
