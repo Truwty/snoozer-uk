@@ -378,6 +378,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await editorTab(page, "Design");
     await expect(page.getByRole("button", { name: "Portfolio grid", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Portfolio grid", exact: true }).click();
+    await page.getByRole("combobox", { name: "Background entrance", exact: true }).selectOption("rise");
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Draft saved.");
     await page.reload();
@@ -460,7 +461,15 @@ test("portfolio projects persist, publish and restore with responsive public ren
       const columns = await publicPage.locator(".profile-sections").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
       expect(columns).toBe(width === 360 ? 1 : 2);
     }
-    expect((await new AxeBuilder({ page: publicPage }).analyze()).violations).toEqual([]);
+    await publicPage.emulateMedia({ reducedMotion: "reduce" });
+    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
+    await publicPage.emulateMedia({ reducedMotion: "no-preference" });
+    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("profile-rise");
+    // Keep the no-JavaScript rendering checks; axe itself needs script execution.
+    const accessiblePage = await page.context().newPage();
+    await accessiblePage.goto(publicPage.url());
+    expect((await new AxeBuilder({ page: accessiblePage }).analyze()).violations).toEqual([]);
+    await accessiblePage.close();
     await page.getByLabel("Section 1 project URL", { exact: true }).fill("https://example.com/updated");
     await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Portfolio second publication");

@@ -141,11 +141,13 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
         </select></VisualSelect>
         <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
           const entrance = event.target.value;
-          if (entrance === "none" || entrance === "fade") set("appearance", { ...content.appearance, entrance });
+          if (entrance === "none" || entrance === "fade" || entrance === "rise") set("appearance", { ...content.appearance, entrance });
         }}>
           <option value="none">None</option>
           <option value="fade">Fade in</option>
+          <option value="rise">Soft rise</option>
         </select></label>
+        <small className="muted">Decorative backgrounds animate once. Your visitor’s reduced-motion setting always takes priority.</small>
         <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });

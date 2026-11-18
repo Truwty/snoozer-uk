@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, profileContent, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, profileAppearance, profileContent, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
+  it("accepts only bounded built-in motion presets without executable appearance settings", () => {
+    for (const entrance of ["none", "fade", "rise"]) expect(profileAppearance.parse({ ...defaultAppearance, entrance }).entrance).toBe(entrance);
+    for (const entrance of ["loop", "bounce", "url(https://example.com)", null]) expect(profileAppearance.safeParse({ ...defaultAppearance, entrance }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, duration: 999999 }).success).toBe(false);
+  });
+
   it("canonicalises ASCII usernames and rejects confusables", () => {
     expect(canonicalUsername("  My-Page ")).toBe("my-page");
     expect(canonicalUsername("ｍypage")).toBe("");

@@ -1760,7 +1760,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   });
 
   it("accepts only built-in appearance tokens and restores the saved appearance", async () => {
-    const compact = { density: "compact", corners: "square", layout: "editorial", accent: "ink", entrance: "fade" };
+    const compact = { density: "compact", corners: "square", layout: "editorial", accent: "ink", entrance: "rise" };
     const defaults = { density: "balanced", corners: "soft" };
     const write = (expected: number, publish: boolean, appearance: unknown) => result(
       "select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',$2,false,null,$3) as value",
