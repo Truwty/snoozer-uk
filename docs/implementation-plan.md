@@ -2,6 +2,8 @@
 
 The numbered feature inventory is tracked in [feature-ledger.md](feature-ledger.md). Each feature needs a permission model, durable storage where applicable, positive and negative tests, and evidence from its normal user journey. Free-tier constraints govern capacity and scheduling.
 
+Milestone 4 core/staging exit passed on 18 November 2026. See [scope and evidence](milestone-4-review.md); advanced deferred inventory remains implementation work. Next delivery milestone: 5.
+
 | Milestone | Scope and delivery order | Exit evidence |
 | --- | --- | --- |
 | 0 | Audit, runtime and lint, SQL migration workflow, private GitHub, CI, local Supabase, Render config, threat model, design tokens and operational limits | Reproducible build and clean database reset |

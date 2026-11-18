@@ -1,21 +1,19 @@
-# Progress — 17 November 2026
+# Progress — 18 November 2026
 
 ## Current checkpoint
 
-- Public widgets **d182a5f are Live**, deploy **dep-dbud6majnfac73csrs30**, migration **58 applied**. CI **44187169499** passed 185 Vitest, two audit-policy and 21 browser/HTTP checks (one expected skip). Hosted GitHub/Discord summaries returned real public metadata; Twitch rendered its offline state at 446×300, then Hide removed it. Both health endpoints returned 200.
-- Daily browser counts/CTR (migration **59, not applied**) now pass 192 unit/SQL tests, lint/typecheck/build locally. Fresh V3 consent, scoped random codes, hash deduplication and browser CSV are implemented; disposable CI and hosted scheduler verification remain pending. See analytics-browsers.md.
+**Milestone 4 core/staging exit passed.** The tested critical subset includes consent-aware views/clicks, daily browser methodology/CTR, per-link and source/campaign reports, charts and real owner-only CSVs, plan retention and native bounded cleanup, and consent-scoped widgets with tested failure/revocation paths. Advanced inventory remains explicitly deferred in [milestone-4-review.md](milestone-4-review.md) and feature-ledger.md. This is not full-project or production-launch completion.
 
-- Generated campaign links, pause/resume, coarse source/device reports and traffic CSV passed CI 44180646763 and are verified on staging app 80ce59c, migration 57. Replayed events deduplicate; pause/resume attribution and real traffic CSV match. The QA campaign is left paused. See [campaigns](analytics-campaigns.md).
-- The next [public widgets](public-widgets.md) increment adds cached GitHub/Discord summaries, bounded provider backoff, Twitch embed sizing/consent, validated Roblox outbound links and publication-revocation checks. Local lint, typecheck, 185 Vitest tests, two audit-policy tests and build pass. Migration 58 and disposable CI/hosted verification are pending.
+- **7f38cff is Live** on Render Free staging, deploy **dep-dbug8f8ae00c73eetm1g**. Both health endpoints returned 200. **Migrations through 59 are applied** on the dedicated staging project.
+- **CI 44218187287 passed** lint/typecheck, build, secret scan, 192 Vitest, two audit-policy and 21 browser/HTTP checks, one expected skip. Local lint/typecheck/tests/build/audit passed. Production audit has zero vulnerabilities; the scoped unpatched development-only picomatch exception expires 1 December 2026.
+- Real hosted QA verified click-before-view, replay deduplication, repeated views with one daily browser, fresh consent, owner exclusion, old-scope rejection, GPC skip, private persistence and actual browser CSV. Nov 18 fixture: two views/one click, one daily browser/one clicked browser, CTR 100%. Historic counts are not backfilled. Browser opt-in is off again.
+- Native pg_cron 1.6.4 job **snoozer-analytics-cleanup-v1** runs every five minutes on the existing database. The 18 November 01:50 UTC scheduled execution succeeded and removed a deliberately isolated old QA hash. See [browser analytics](analytics-browsers.md) for bounded cleanup, pause/backlog and browser-storage limitations.
+- Widgets passed CI **44187169499** and actual staging provider checks: GitHub vercel/next.js metadata, Discord Developers counts, Twitch offline UI at 446×300 with correct parent/mute/no-autoplay, and Hide removal. YouTube consent/hide and revocation/failure paths are verified. Roblox outbound game links are validated; API statistics remain deferred.
+- Generated campaigns/pause/resume/source/device/traffic CSV were verified in CI **44180646763** and staging. Named QA campaign remains paused. Existing billing Stage 3 sandbox exit evidence remains valid.
 
-- [CI run 44173960711](https://github.com/Truwty/snoozer-uk/actions/runs/44173960711) passed the analytics and optional YouTube widget journeys: 126 Vitest, two audit-policy and 21 browser/HTTP tests; one expected missing-secret test skipped. The following test-only run passed all 140 Vitest tests but failed during disposable Supabase startup before browser execution.
-- Migration 55 and app 984261c are deployed to the existing free staging services. The labelled analytics fixture verified owner exclusion, view/click replay deduplication, wrong-origin denial, live/readiness HTTP 200, actual CSV download and optional YouTube frame loading/removal. See [analytics evidence](analytics.md) and [YouTube widget](youtube-widget.md).
-- The per-link reporting increment adds migration 56, retained publication label/destination counts, a top-100 owner report and formula-safe CSV. [CI 44176380200](https://github.com/Truwty/snoozer-uk/actions/runs/44176380200) passed lint, typecheck, 141 Vitest, two audit-policy and 21 browser/HTTP tests plus build, with one expected missing-secret test skipped. Migration 56 is applied on staging and app d861c1c is Live on deploy dep-dbuc6oek1f9s739r0b5g. Hosted replay/forged-destination checks produced the expected per-link counts; the real link CSV download matched them. Anonymous export returned 401.
-- Local Edge smoke/accessibility checks passed 15 with seven provider-dependent tests skipped. Full dependency audit uses a documented, expiring development-only picomatch exception; production audit reports zero vulnerabilities. See [dependency review](dependency-audit.md).
+**Next delivery milestone: 5, premium and creator growth.** Start from the exact tasks in [CONTINUE.md](CONTINUE.md). Production SMTP, legal/tax settings, live billing, DNS cutover, moderation, stronger distributed abuse controls and final security/performance/recovery audits remain open. Existing advanced features deferred from earlier milestones remain implementation work.
 
-Stages 0–3 have passed their recorded core/staging checks. **Stage 4 remains in progress.** Next work includes referrer/campaign attribution, experiments groundwork and additional provider integrations. The chronological notes below include older, superseded limitations.
-
-Stage 3's signed provider sandbox journeys closed at the latest checkpoint below. Live billing, production rollout and advanced abuse controls remain open.
+The implemented inventory and historical notes below describe earlier increments and may include superseded pending states.
 
 ## Implemented
 
