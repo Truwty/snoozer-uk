@@ -31,11 +31,11 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 5.4 | Length And Allowed-Character Rules | Tested locally |
 | 5.5 | Rename Redirect Policy | Deferred |
 | 5.6 | Alias Ownership And Expiry | Implemented with plan quotas, 90-day expiry, renew/retire and permanent namespace protection; SQL and disposable provider browser pass; hosted307 and owner inventory verified in Phase5; see milestone-5.md |
-| 5.7 | Custom Domains With Dns Challenge | Migration66 and owner/UI/routing implemented; local SQL/boundary tests pass. Provider credential and real DNS/TLS delivery unverified |
-| 5.8 | Tls Provisioning And Renewal | Operator-managed Render association and bounded pinned TLS checks implemented; actual provider certificate/renewal verification pending |
-| 5.9 | Anti-Takeover Verification | SQL covers fresh claims, consumed-proof rejection, transfer and disconnect-generation protection; real provider delivery pending |
+| 5.7 | Custom Domains With Dns Challenge | Implemented and tested in CI and actual IONOS/Render staging DNS/TLS journey; temporary QA connection cleaned; operator-managed included-capacity gate remains |
+| 5.8 | Tls Provisioning And Renewal | Actual Render certificate issuance and pinned HTTPS verified; bounded proof renewal implemented/tested; long-term provider renewal not observed |
+| 5.9 | Anti-Takeover Verification | SQL/CI covers fresh claims, consumed proofs, transfer and disconnect generations; actual owner DNS/provider/TLS activation verified |
 | 5.10 | Canonical Seo Redirects | Deferred |
-| 5.11 | Domain Disconnect And Rollback | Routing stop/deletion guard and provider404 confirmation implemented and SQL/boundary tested; hosted provider-removal test pending |
+| 5.11 | Domain Disconnect And Rollback | Actual owner routing stop, provider removal404 plus parent200 confirmation and DB removed state verified; DNS and free slot restored |
 | 5.12 | Username Squatting Appeals | Deferred |
 | 5.13 | Vanity Url Availability Checker | Partially implemented |
 
@@ -52,7 +52,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 6.7 | Content Warning Where Appropriate | Deferred |
 | 6.8 | Share And Qr Controls | Partially implemented |
 | 6.9 | Profile Visibility Modes | Partially implemented |
-| 6.10 | Scheduled Publishing | Implemented frozen snapshots, bounded native worker and owner recovery; SQL tested, hosted automatic execution pending |
+| 6.10 | Scheduled Publishing | Frozen snapshots, native bounded worker and owner recovery tested in CI; actual hosted09:19UTC activation retained newer draft6 |
 | 6.11 | Password-Protected Pages With Secure Verification | Deferred |
 | 6.12 | View Counter With Bot Filtering | Deferred |
 | 6.13 | Mobile Safe-Area Insets | Partially implemented |
