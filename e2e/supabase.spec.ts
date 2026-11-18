@@ -348,7 +348,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await publicPage.reload();
     await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByRole("alert")).toContainText("requires Plus or higher");
+    await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
     await page.getByRole("link", { name: "Plan and usage", exact: true }).click();
     const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
     expect(gift.error).toBeNull();
