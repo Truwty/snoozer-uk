@@ -330,6 +330,7 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await item.locator("summary").click();
     await item.getByLabel("Price (GBP)", { exact: true }).fill("25.50");
     await item.getByRole("button", { name: "Save product draft", exact: true }).click();
+    await expect(item.locator('input[name="revision"]')).toHaveValue("1");
     await expect(item.getByLabel("Price (GBP)", { exact: true })).toHaveValue("25.50");
     const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
@@ -337,6 +338,7 @@ test("private product drafts save, edit, archive and restore without exposing a 
     const catalogue = await owner.rpc("list_my_product_drafts", { p_profile: productProfile.data.profile_id });
     expect(catalogue.error).toBeNull();
     const savedProduct = catalogue.data.items[0];
+    expect(savedProduct).toMatchObject({ title: "Private creator handbook", revision: 1, amount: 2550 });
     expect((await owner.rpc("save_product_draft", { p_profile: productProfile.data.profile_id, p_id: savedProduct.id, p_expected: savedProduct.revision,
       p_title: savedProduct.title, p_description: "Concurrent saved version", p_amount: savedProduct.amount, p_archived: false })).error).toBeNull();
     await item.getByLabel("Product description", { exact: true }).fill("Unsaved text must survive a revision conflict");
@@ -389,6 +391,7 @@ test("private product drafts save, edit, archive and restore without exposing a 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
+    if (test.info().errors.length) console.log("Private product failure view:", (await page.locator("main").innerText({ timeout: 1000 }).catch(() => "Main view unavailable")).slice(0, 3000));
     if (account.data.user) {
       const removed = await admin.auth.admin.deleteUser(account.data.user.id);
       if (!test.info().errors.length) expect(removed.error).toBeNull();
