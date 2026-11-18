@@ -85,3 +85,13 @@ test("template search combines filters, preserves URL state and clears empty res
   await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });
+
+
+test("referral signup requires explicit consent and rejects malformed link codes", async ({ page }) => {
+  await page.goto("/sign-up?ref=00000000-0000-4000-8000-000000000001");
+  await expect(page.getByRole("checkbox", { name: /Credit the creator who shared this link/ })).not.toBeChecked();
+  await page.goto("/sign-up?ref=javascript:alert(1)");
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await page.goto("/sign-up?ref=00000000-0000-4000-8000-000000000001&ref=00000000-0000-4000-8000-000000000002");
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+});

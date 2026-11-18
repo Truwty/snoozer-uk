@@ -301,6 +301,54 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
   }
 });
 
+test("signup referral credit is optional, private and withdrawable", async ({ page, request }) => {
+  test.setTimeout(90000);
+  page.setDefaultTimeout(15000);
+  const name = "referral-" + randomUUID().slice(0, 8);
+  const email = name + "@example.com";
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const creator = await admin.auth.admin.createUser({ email: name + "-owner@example.com", password, email_confirm: true });
+  expect(creator.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  let memberId: string | undefined;
+  try {
+    expect((await owner.auth.signInWithPassword({ email: name + "-owner@example.com", password })).error).toBeNull();
+    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
+    expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Referral creator", p_bio: "", p_theme: "midnight", p_indexable: false, p_links: [], p_publish: true, p_remove_avatar: false })).error).toBeNull();
+    expect((await owner.rpc("set_my_referral_enabled", { p_enabled: true })).error).toBeNull();
+    const report = await owner.rpc("get_my_growth");
+    expect(report.error).toBeNull();
+    await page.goto(`/sign-up?ref=${report.data.code}`);
+    const consent = page.getByRole("checkbox", { name: /Credit the creator who shared this link/ });
+    await expect(consent).not.toBeChecked();
+    await consent.check();
+    await page.getByLabel("Email address").fill(email);
+    await page.getByLabel("New password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Create account", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("verification link");
+    const members = await admin.auth.admin.listUsers({ perPage: 1000 });
+    memberId = members.data.users.find((user) => user.email === email)?.id;
+    expect(memberId).toBeTruthy();
+    expect((await owner.rpc("get_my_growth")).data.verified).toBe(0);
+    await page.goto(await mailLink(request, email, "Verify your Snoozer email", "/auth/confirm"));
+    await page.getByRole("button", { name: "Verify email", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Claim your address", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Referral choices and Growth", exact: true }).click();
+    await expect(page.getByText("Your consented referral is included in the sharing creator’s aggregate report.", { exact: true })).toBeVisible();
+    expect((await owner.rpc("get_my_growth")).data).toMatchObject({ verified: 1, claimed: null, published: null });
+    await page.getByText("Withdraw or prevent referral attribution", { exact: true }).click();
+    await page.getByRole("button", { name: "Withdraw referral attribution", exact: true }).click();
+    await expect(page.getByText("Attribution withdrawn. This account cannot be attributed again.", { exact: true })).toBeVisible();
+    expect((await owner.rpc("get_my_growth")).data.verified).toBe(0);
+    await page.setViewportSize({ width: 360, height: 850 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    if (memberId) await admin.auth.admin.deleteUser(memberId);
+    if (creator.data.user) await admin.auth.admin.deleteUser(creator.data.user.id);
+  }
+});
+
 test("portfolio projects persist, publish and restore with responsive public rendering", async ({ page, browser }) => {
   test.setTimeout(120000);
   page.setDefaultTimeout(15000);

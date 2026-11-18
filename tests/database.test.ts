@@ -21,14 +21,14 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       create role authenticated;
       create role service_role;
       create schema auth;
-      create table auth.users(id uuid primary key, email_confirmed_at timestamptz);
+      create table auth.users(id uuid primary key, email_confirmed_at timestamptz, created_at timestamptz default now(), raw_user_meta_data jsonb default '{}');
       create function auth.uid() returns uuid language sql stable
         as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       create schema storage;
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       create table storage.objects(bucket_id text, name text, created_at timestamptz);
       alter table storage.objects add column metadata jsonb;
-      insert into auth.users values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
+      insert into auth.users(id,email_confirmed_at) values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
     `);
     const migrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
     for (const filename of migrations.filter((entry) => entry.endsWith(".sql")).sort()) {
@@ -58,6 +58,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
   beforeEach(async () => {
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
 
@@ -75,6 +76,87 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const draft = () => result("select public.get_draft() as value");
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
+
+  it("records only consented recent verified referrals, hides small cohorts and honours permanent withdrawal", async () => {
+    await act("authenticated", alice);
+    await expect(db.query("select public.set_my_referral_enabled(true)")).rejects.toMatchObject({ code: "22023" });
+    await claim("referral-alice");
+    await save(0, "Alice", [], true);
+    await db.query("select public.set_my_referral_enabled(true)");
+    const report = await result<{ code: string }>("select public.get_my_growth() as value");
+    const metadata = { snoozer_referral: report!.code, snoozer_referral_consent: true };
+    await db.exec("reset role");
+    await db.query("update auth.users set created_at=clock_timestamp(),raw_user_meta_data=$1 where id=$2", [JSON.stringify(metadata), bob]);
+    await act("authenticated", bob);
+    expect(await result("select public.accept_my_referral() as value")).toBe("accepted");
+    expect(await result("select public.accept_my_referral() as value")).toBe("already_recorded");
+    await claim("referral-bob");
+    await save(0, "Bob", [], true);
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_growth() as value")).toMatchObject({ verified: 1, claimed: null, published: null });
+    await act("authenticated", bob);
+    await db.query("select public.withdraw_my_referral()");
+    expect(await result("select public.get_my_growth() as value")).toMatchObject({ attribution: "withdrawn" });
+    expect(await result("select public.accept_my_referral() as value")).toBe("already_recorded");
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_growth() as value")).toMatchObject({ verified: 0 });
+    await db.exec("reset role");
+    expect(await result("select raw_user_meta_data as value from auth.users where id=$1", [bob])).toEqual({});
+  });
+
+  it("refuses forged, stale, disabled and self referrals without exposing private tables", async () => {
+    await act("authenticated", alice);
+    await claim("referral-alice");
+    await save(0, "Alice", [], true);
+    await db.query("select public.set_my_referral_enabled(true)");
+    const report = await result<{ code: string }>("select public.get_my_growth() as value");
+    const metadata = { snoozer_referral: report!.code, snoozer_referral_consent: true };
+    for (const [id, consent, age, code] of [
+      [alice, true, "0 seconds", report!.code], [bob, false, "0 seconds", report!.code],
+      [bob, true, "25 hours", report!.code], [bob, true, "0 seconds", "not-a-uuid"],
+    ] as const) {
+      await db.exec("reset role");
+      await db.query("update auth.users set created_at=clock_timestamp()-$1::interval,raw_user_meta_data=$2 where id=$3", [age, JSON.stringify({ ...metadata, snoozer_referral: code, snoozer_referral_consent: consent }), id]);
+      await act("authenticated", id);
+      expect(await result("select public.accept_my_referral() as value")).toBe("ineligible");
+    }
+    await act("authenticated", alice);
+    await db.query("select public.set_my_referral_enabled(false)");
+    await db.exec("reset role");
+    await db.query("update auth.users set raw_user_meta_data=$1 where id=$2", [JSON.stringify(metadata), bob]);
+    await act("authenticated", bob);
+    expect(await result("select public.accept_my_referral() as value")).toBe("ineligible");
+    await expect(db.query("select * from snoozer.referral_attributions")).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.referral_codes")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(db.query("select public.accept_my_referral()")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(db.query("select public.get_my_growth()")).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("reports current profile stages only at the cohort threshold and removes deleted members", async () => {
+    await act("authenticated", alice);
+    await claim("referral-alice");
+    await save(0, "Alice", [], true);
+    await db.query("select public.set_my_referral_enabled(true)");
+    const report = await result<{ code: string }>("select public.get_my_growth() as value");
+    const ids = Array.from({ length: 5 }, (_, i) => "00000000-0000-4000-8000-00000000010" + i);
+    try {
+      for (const [index, id] of ids.entries()) {
+        await db.exec("reset role");
+        await db.query("insert into auth.users(id,email_confirmed_at,created_at,raw_user_meta_data) values($1,now(),clock_timestamp(),$2)", [id, JSON.stringify({ snoozer_referral: report!.code, snoozer_referral_consent: true })]);
+        await act("authenticated", id);
+        expect(await result("select public.accept_my_referral() as value")).toBe("accepted");
+        if (index === 0) { await claim("referral-member"); await save(0, "Member", [], true); }
+      }
+      await act("authenticated", alice);
+      expect(await result("select public.get_my_growth() as value")).toMatchObject({ verified: 5, claimed: 1, published: 1 });
+      await db.exec("reset role");
+      await db.query("delete from auth.users where id=$1", [ids[4]]);
+      await act("authenticated", alice);
+      expect(await result("select public.get_my_growth() as value")).toMatchObject({ verified: 4, claimed: null, published: null });
+    } finally { await db.exec("reset role"); await db.query("delete from auth.users where id=any($1::uuid[])", [ids]); }
+  });
 
   it("leases public widget refreshes and refuses stale completions or direct cache access", async () => {
     await act("service_role");

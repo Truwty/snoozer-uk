@@ -5,12 +5,13 @@ import { initialState, type ActionState } from "@/lib/actions";
 import { Button, Field } from "./ui";
 import { ActionMessage } from "./action-message";
 
-export function AuthForm({ action, label, email, password, token }: {
+export function AuthForm({ action, label, email, password, token, referral }: {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
   label: string;
   email?: boolean;
   password?: "current" | "new";
   token?: string;
+  referral?: string;
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
   const [visible, setVisible] = useState(false);
@@ -35,6 +36,11 @@ export function AuthForm({ action, label, email, password, token }: {
       {password === "new" && <small id={id + "-password"} className={length >= 12 ? "password-valid" : "muted"} aria-live="polite">12+ characters{length >= 12 ? " · Met" : ""}</small>}
       {errors.password && <p className="message error">{errors.password}</p>}
     </div>}
+    {referral && <fieldset className="stack"><legend>Optional referral credit</legend>
+      <input type="hidden" name="referral" value={referral} />
+      <label><input type="checkbox" name="referral_consent" /> Credit the creator who shared this link. Snoozer will count my verified account and profile progress in their aggregate report.</label>
+      <small className="muted">No names or email addresses are shared. No rewards are granted. You can withdraw in Growth after signing in. Verification within 24 hours of signup is required.</small>
+    </fieldset>}
     {token && <input type="hidden" name="token_hash" value={token} />}
     <Button variant="primary" disabled={pending}>{pending ? "Working…" : label}</Button>
     <ActionMessage state={state} />

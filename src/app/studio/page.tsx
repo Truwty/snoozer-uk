@@ -38,6 +38,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
       <h1>Claim your address</h1>
       <p className="muted">Pick the username people will use to find your page.</p>
       <ClaimForm />
+      <Link href="/studio/growth">Referral choices and Growth</Link>
     </section> : <>
       <header className="studio-heading"><div><p className="eyebrow">YOUR WORKSPACE</p><h1>Studio</h1></div></header>
       <nav className="studio-nav" aria-label="Studio navigation">
@@ -46,6 +47,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <Link href={studioHref("/studio/history", selected)}>Publish history</Link>
         <Link href={studioHref("/studio/analytics", selected)}>Analytics</Link>
         <Link href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
+        <Link href="/studio/growth">Growth</Link>
       </nav>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}

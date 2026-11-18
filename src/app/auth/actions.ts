@@ -1,5 +1,6 @@
 "use server";
 
+import { referralSignupData } from "@/lib/referrals";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
@@ -22,7 +23,7 @@ export async function register(_: ActionState, form: FormData): Promise<ActionSt
   const client = await sessionClient();
   const result = await client.auth.signUp({
     email: address.data, password: password.data,
-    options: { emailRedirectTo: new URL("/auth/confirm", siteUrl()).href },
+    options: { emailRedirectTo: new URL("/auth/confirm", siteUrl()).href, data: referralSignupData(form.get("referral"), form.get("referral_consent")) },
   });
   if (result.error?.status === 429) return error("Too many requests. Try again later.");
   if ((result.error?.status ?? 0) >= 500) return unavailable();
@@ -66,6 +67,10 @@ export async function confirmEmail(_: ActionState, form: FormData): Promise<Acti
   const client = await sessionClient();
   const result = await client.auth.verifyOtp({ type: "email", token_hash: token.data });
   if (result.error || !result.data.user?.email_confirmed_at) return error("This verification link has expired or already been used.");
+  if (result.data.user.user_metadata.snoozer_referral_consent === true) {
+    const attribution = await client.rpc("accept_my_referral");
+    if (attribution.error || !["accepted", "already_recorded"].includes(attribution.data)) redirect("/studio/growth?referral=unconfirmed");
+  }
   redirect("/studio");
 }
 
