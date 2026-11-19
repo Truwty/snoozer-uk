@@ -16,10 +16,10 @@ const objects = {
   "radar.early_fraud_warning.updated": ["radar.early_fraud_warning", "issfr_"],
 } as const;
 const eventSchema = z.object({ object:z.literal("event"), id:z.string().regex(/^evt_[A-Za-z0-9]{1,128}$/), type:z.string(),
-  account:stripeAccountId, context:z.null().optional(), livemode:z.literal(false),
+  account:stripeAccountId, context:stripeAccountId.nullable().optional(), livemode:z.literal(false),
   created:z.number().int().positive().max(253402300799),
   data:z.object({object:z.object({id:z.string(),object:z.string(),livemode:z.literal(false)})}),
-});
+}).refine(event=>event.context==null||event.context===event.account);
 export type CreatorReceipt = {id:string; accountId:string; type:string; objectId:string; occurredAt:string};
 
 export function creatorSandboxReceipt(value:unknown):CreatorReceipt|null {

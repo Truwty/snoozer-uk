@@ -27,6 +27,14 @@ it("rejects live, platform-only, thin, stale, object-confused and incorrectly si
   expect((await receiveCreatorWebhook(altered,secret,record)).status).toBe(400);expect(record).not.toHaveBeenCalled();
   expect((await receiveCreatorWebhook(request({...event,type:"charge.refunded",data:{object:{id:"ch_"+"x".repeat(129),object:"charge",livemode:false}}}),secret,record)).status).toBe(400);
 });
+it("accepts Stripe snapshot context only when it matches the required connected account",async()=>{
+  const record=vi.fn().mockResolvedValue(undefined);
+  expect((await receiveCreatorWebhook(request({...event,api_version:"2026-10-28.endive",context:event.account}),secret,record)).status).toBe(204);
+  expect(record).toHaveBeenCalledTimes(1);
+  for(const patch of [{account:undefined,context:event.account},{context:"acct_Other"},{context:event.account,data:undefined}])
+    expect((await receiveCreatorWebhook(request({...event,...patch}),secret,record)).status).toBe(400);
+  expect(record).toHaveBeenCalledTimes(1);
+});
 it("bounds streams and keeps unrelated connected-account events separate from premium billing",async()=>{
   const record=vi.fn();
   expect((await receiveCreatorWebhook(new Request("https://example.com",{method:"POST",body:"x".repeat(262145),headers:{"stripe-signature":"test"}}),secret,record)).status).toBe(413);
