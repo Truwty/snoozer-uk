@@ -1,5 +1,11 @@
 # Progress — 19 November 2026
 
+## Provider update — sandbox seller onboarding verified
+
+The user completed Stripe-hosted onboarding. A real Snoozer status refresh at **19November2026 06:15:39UTC** confirmed **active sandbox card-payment and payout capabilities**, readinesstrue, for the existing bound seller. Return navigation alone was not used as proof. Evidence: ../snoozer-commerce-evidence-20261119/seller-capabilities-active.jpg. No account was recreated/rebound; the agent entered no password or agreement.
+
+Next access issue: the browser is now signed into the connected seller, not the original platform administrator. Attempting the pinned platform's API-key page explicitly returned no access and switched to the seller. No key permissions, credentials or event destination were changed. At the user's request, closed completed QA/extra Stripe/Ko-fi tabs, kept Render1/IONOS6/Supabase8, signed out of the seller Dashboard and opened **Stripe's actual email/password login in tab24**. User is signing back into the original platform account. Seller onboarding remains complete; do not repeat it. Payments remain disabled pending scoped payment permissions, destination/signing secret and actual commerce exit tests.
+
 ## Current release — gated sandbox commerce hosted, provider exit open
 
 **16aba31 is Live** on the existing Render Free staging service. Exact-source deploy **dep-dbv8be3l550s7391e8t0** finished **19November2026 05:15:58UTC**. CI **44463174220**, job135354586225, passed **321 unit/SQL tests, two policy checks,34 browser checks**, one expected missing-secret skip, four Lighthouse accessibility100 scores, secret scan/audit/lint/types/build. No dependency, paid infrastructure or live payment setting was added.

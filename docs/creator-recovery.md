@@ -1,6 +1,6 @@
 # Creator sandbox recovery and release checks
 
-Current implementation is sandbox-only. Do not enable selling from source-file existence or CI fixtures. Check PROGRESS.md for the actual deployed commit/migrations and provider evidence. Source72–76 must be deployed as one coherent, tested slice; keep both new-purchase gates disabled during setup. Hosted migrations through71 are immutable.
+Current implementation is sandbox-only. Do not enable selling from source-file existence or CI fixtures. Check PROGRESS.md for the actual deployed commit/migrations and provider evidence. Source16aba31/migrations72–76 are deployed as one coherent, tested slice; both new-purchase gates stay disabled during provider setup. Hosted migrations through76 are immutable.
 
 ## Durable intake and provider checks
 

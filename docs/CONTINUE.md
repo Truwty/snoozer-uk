@@ -1,5 +1,11 @@
 # Continuation
 
+## Latest handoff — seller ready, original platform login pending
+
+User completed onboarding. Actual status refresh at **19November2026 06:15:39UTC** confirmed current card-payment and payout capabilities active/readinesstrue for the existing bound seller. Evidence outside Git: ../snoozer-commerce-evidence-20261119/seller-capabilities-active.jpg. Do not ask the user to repeat seller onboarding, recreate its account or reset its password.
+
+The new seller login replaced the original platform browser session. The pinned platform API-key URL explicitly denied access and switched to the connected seller; its account switcher offered no platform/sandbox switch. No payment-key/destination mutation was made. User asked to close unneeded tabs and open the correct login. Closed completed QA/public profile/extra Stripe/Ko-fi tabs; retained Render1, IONOS6, Supabase8 and **Stripe login24**. Signed out only of the seller Stripe Dashboard; tab24 is now the real dashboard.stripe.com/login with blank Email/Password, ready for the original platform login. User will sign in and reply. Old tab2/5/9/16 handles are closed; do not reuse them. Browser2/phaseBrowser remains selected; commerceKeys is tab24. Deployed source16aba31/migrations≤76 remain unchanged. Next confirm the signed-in platform matches acct_1UdFe9PhIIpNUquS before preparing exact scoped payment permissions and connected-account destination for required action-time approval. Keep purchases off until real provider exit proof.
+
 ## Exact current release —16aba31 Live, migrations through76 immutable
 
 **Start here; older unhosted entries below are historical.** Source16aba319f0dae01bf9f8cbdcf1d51e7ed708bfc4 is Live on Render Free, deploydep-dbv8be3l550s7391e8t0, finished19November2026 **05:15:58UTC**. CI44463174220/job135354586225 passed321 unit/SQL+2 policy+34 browser, one expected skip, four Lighthouse100, scan/audit/lint/types/build. Live/ready browser bodies pass.72–76 were committed in one guarded transaction and tracked; **never edit/reapply migrations≤76**. Original tracking text has CRLF from the Windows editor; LF-normalized hashes match all five source files exactly. No tracking rows were rewritten. Roles/RLS and disabled purchase policy verified; no orders/receipts created.
