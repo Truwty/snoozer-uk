@@ -20,6 +20,13 @@ function provider(value: unknown = account) {
 }
 
 describe("creator sandbox onboarding", () => {
+  it("rejects non-HTTP local return schemes before contacting Stripe", async () => {
+    const p=provider();
+    for(const value of ["ftp://localhost","http://stage.example.com","https://user:pass@stage.example.com"]) {
+      await expect(creatorOnboardingUrl(p.stripe,merchant,new URL(value),now)).rejects.toThrow();
+    }
+    expect(p.self).not.toHaveBeenCalled(); expect(p.link).not.toHaveBeenCalled();
+  });
   it("requires an explicit flag, pinned platform, service credential and test key", () => {
     vi.stubEnv("SNOOZER_CREATOR_SANDBOX_ENABLED", "false");
     vi.stubEnv("STRIPE_CREATOR_SANDBOX_PLATFORM_ID", merchant.platformId);

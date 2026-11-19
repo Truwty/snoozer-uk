@@ -16,7 +16,7 @@ export async function deleteProfile(_: ActionState, form: FormData): Promise<Act
 
   const { client } = await requireAccount();
   const { error } = await client.rpc("delete_profile", { p_profile: profile.data, p_expected: expected.data, p_username: name.data });
-  if (error) return { status: "error", message: error.code === "P1010" ? "Disconnect your custom domain and confirm provider removal in Settings before deleting this profile." : error.code === "40001"
+  if (error) return { status: "error", message: error.code === "P1213" ? "This profile is retained by a sandbox offer or order. Withdraw its offers or contact the operator about order retention." : error.code === "P1010" ? "Disconnect your custom domain and confirm provider removal in Settings before deleting this profile." : error.code === "40001"
     ? "Your profile changed. Reload Studio before deleting it."
     : "Couldn’t delete your profile. Reload Studio to check its status before retrying." };
   redirect("/studio?deleted=1");

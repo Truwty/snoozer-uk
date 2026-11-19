@@ -58,6 +58,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
   beforeEach(async () => {
     await db.exec("reset role; truncate snoozer.creator_sandbox_accounts cascade;");
+    await db.exec("update snoozer.creator_sandbox_policy set enabled=false,platform_id=null");
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
@@ -152,6 +153,97 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   }
   const freezeVersion = (file: { product: string; id: string }, revision=0, hash="a".repeat(64), owner=alice) =>
     result<string>("select public.freeze_product_version($1,$2,$3,$4,$5) as value", [owner,file.product,revision,file.id,hash]);
+
+  async function sandboxOfferFixture() {
+    const file = await readyVersionFixture();
+    const version = (await freezeVersion(file))!;
+    const merchant = (await result<{id:string}>("select public.reserve_creator_sandbox_account($1,'acct_Platform','GB') as value",[alice]))!;
+    await result("select public.bind_creator_sandbox_account($1,$2,'acct_Creator') as value",[alice,merchant.id]);
+    const lease=await result<string>("select public.claim_creator_sandbox_check($1) as value",[alice]);
+    expect(await result("select public.complete_creator_sandbox_check($1,'acct_Creator',$2,true) as value",[alice,lease])).toBe(true);
+    await act("authenticated",alice); await save(0,"Sandbox merchant",[],true);
+    await act("service_role");
+    expect(await result("select public.review_creator_sandbox_fixture($1,$2,$3) as value",[alice,version,"a".repeat(64)])).toBe(true);
+    return {...file,version};
+  }
+  const reserveOrder = (version:string,buyer=bob) => result<{id:string;createdAt:string;amount:number;checkoutId:string|null}>("select public.reserve_creator_sandbox_order($1,$2) as value",[buyer,version]);
+  async function enableSandboxOffer(version:string) {
+    await db.exec("reset role; update snoozer.creator_sandbox_policy set enabled=true,platform_id='acct_Platform'");
+    await act("authenticated",alice); expect(await result("select public.publish_my_creator_sandbox_offer($1,true) as value",[version])).toBe(true);
+    await act("service_role");
+  }
+
+  it("keeps order creation disabled until a reviewed fixture, explicit policy and fresh seller readiness exist", async () => {
+    const fixture = await sandboxOfferFixture();
+    await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+    await act("authenticated",alice);
+    await expect(result("select public.publish_my_creator_sandbox_offer($1,true) as value",[fixture.version])).rejects.toMatchObject({code:"P1220"});
+    await enableSandboxOffer(fixture.version);
+    await expect(reserveOrder(fixture.version,alice)).rejects.toMatchObject({code:"42501"});
+    await expect(reserveOrder(fixture.version,unverified)).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set checked_at=now()-interval '6 minutes'");
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set checked_at=now(); update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+  });
+
+  it("reserves one pending order, binds one test Checkout and isolates buyer history", async () => {
+    const fixture=await sandboxOfferFixture(); await enableSandboxOffer(fixture.version);
+    const order=(await reserveOrder(fixture.version))!;
+    expect(await reserveOrder(fixture.version)).toMatchObject({id:order.id,amount:500,checkoutId:null});
+    const expires=new Date(Date.parse(order.createdAt)+3600000).toISOString();
+    const bind=(account="acct_Creator",session="cs_test_Creator")=>result("select public.bind_creator_sandbox_checkout($1,$2,$3,$4,$5) as value",[order.id,bob,account,session,expires]);
+    expect(await bind("acct_Other")).toBe(false);
+    expect(await bind("acct_Creator","cs_live_Invalid")).toBe(false);
+    expect(await bind()).toBe(true); expect(await bind()).toBe(true);
+    expect(await bind("acct_Creator","cs_test_Replacement")).toBe(false);
+    await act("authenticated",alice); await saveProduct(fixture.profile,fixture.product,0,false,1200);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toEqual([]);
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,amount:500,state:"pending",held:false,accessUntil:null}]);
+    await expect(result("select public.get_creator_sandbox_order($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
+    await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select * from snoozer.creator_sandbox_orders")).rejects.toMatchObject({code:"42501"});
+    await act("anon"); await expect(result("select public.list_my_creator_sandbox_orders() as value")).rejects.toMatchObject({code:"42501"});
+  });
+
+  it("rejects foreign offer control and stops new reservations for archived or unpublished products", async () => {
+    const fixture=await sandboxOfferFixture(); await enableSandboxOffer(fixture.version);
+    expect(await result("select public.review_creator_sandbox_fixture($1,$2,$3) as value",[alice,fixture.version,"b".repeat(64)])).toBe(false);
+    await act("authenticated",bob);
+    await expect(result("select public.review_creator_sandbox_fixture($1,$2,$3) as value",[alice,fixture.version,"a".repeat(64)])).rejects.toMatchObject({code:"42501"});
+    expect(await result("select public.publish_my_creator_sandbox_offer($1,false) as value",[fixture.version])).toBe(false);
+    await expect(result("select public.publish_my_creator_sandbox_offer($1,true) as value",[fixture.version])).rejects.toMatchObject({code:"P1220"});
+    await act("authenticated",alice); await saveProduct(fixture.profile,fixture.product,0,true);
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+    await act("authenticated",alice); await saveProduct(fixture.profile,fixture.product,1,false);
+    await result("select public.unpublish_profile($1,1) as value",[fixture.profile]);
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+  });
+
+  it("retains ordered versions and profiles after withdrawal and protects buyer account deletion", async () => {
+    const fixture=await sandboxOfferFixture(); await enableSandboxOffer(fixture.version);
+    await reserveOrder(fixture.version);
+    await act("authenticated",alice);
+    expect(await result("select public.publish_my_creator_sandbox_offer($1,false) as value",[fixture.version])).toBe(true);
+    await expect(result("select public.discard_my_product_version($1,$2) as value",[fixture.product,fixture.version])).rejects.toMatchObject({code:"23001",constraint:"creator_sandbox_orders_version_id_fkey"});
+    await expect(db.query("select public.delete_profile($1,1,'private-pdf')",[fixture.profile])).rejects.toMatchObject({code:"P1213"});
+    await expect(result("select public.remove_my_product_file($1,$2) as value",[fixture.product,fixture.id])).rejects.toMatchObject({code:"P1211"});
+    await db.exec("reset role");
+    await expect(db.query("delete from auth.users where id=$1",[bob])).rejects.toMatchObject({code:"23001",constraint:"creator_sandbox_orders_buyer_id_fkey"});
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+  });
+
+  it("stops uncertain Checkout retries and bounds retained sandbox orders", async () => {
+    const fixture=await sandboxOfferFixture(); await enableSandboxOffer(fixture.version);
+    const order=(await reserveOrder(fixture.version))!;
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set created_at=now()-interval '24 hours'");
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1210"});
+    expect(await result("select public.bind_creator_sandbox_checkout($1,$2,'acct_Creator','cs_test_Old',now()+interval '1 hour') as value",[order.id,bob])).toBe(false);
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set state='expired'");
+    await db.query("insert into snoozer.creator_sandbox_orders(buyer_id,seller_id,profile_id,version_id,platform_id,account_id,state) select $1,$2,$3,$4,'acct_Platform','acct_Creator','expired' from generate_series(1,63)",[bob,alice,fixture.profile,fixture.version]);
+    await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1221"});
+  });
 
   it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
     const file = await readyVersionFixture();

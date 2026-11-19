@@ -18,7 +18,9 @@ export async function manageProductVersion(_: ActionState, form: FormData): Prom
     const value = input.data;
     if (value.operation === "discard") {
       const removed = await client.rpc("discard_my_product_version", { p_product: value.product, p_version: value.id });
-      if (removed.error || removed.data !== true) return { status: "error", message: "This version could not be discarded. Reload to check its state." };
+      if (removed.error || removed.data !== true) return { status: "error", message: ["23001", "23503"].includes(removed.error?.code ?? "")
+        ? "This version is retained by a sandbox offer or order. Withdraw its offer first; versions with orders remain retained."
+        : "This version could not be discarded. Reload to check its state." };
       return { status: "success", message: "Private version discarded. Your saved draft and PDF are unchanged." };
     }
     const response = await client.rpc("get_my_product_file", { p_file: value.id });

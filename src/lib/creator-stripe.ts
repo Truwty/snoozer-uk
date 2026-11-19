@@ -44,9 +44,14 @@ export async function readCreatorSandboxAccount(stripe: Stripe, merchant: Creato
   return creatorAccountReady(await stripe.v2.core.accounts.retrieve(merchant.accountId, { include: ["configuration.merchant", "defaults"] }), merchant);
 }
 
+export function assertCreatorReturnSite(site: URL) {
+  const localHttp = site.protocol === "http:" && ["localhost", "127.0.0.1"].includes(site.hostname);
+  if (site.username || site.password || (site.protocol !== "https:" && !localHttp)) throw new Error("HTTPS is required.");
+}
+
 export async function creatorOnboardingUrl(stripe: Stripe, merchant: CreatorMerchant, site: URL, now = Date.now()) {
+  assertCreatorReturnSite(site);
   await readCreatorSandboxAccount(stripe, merchant);
-  if (site.username || site.password || (site.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(site.hostname))) throw new Error("HTTPS is required.");
   const result = await stripe.v2.core.accountLinks.create({ account: merchant.accountId!, use_case: { type: "account_onboarding",
     account_onboarding: { collection_options: { fields: "eventually_due" }, return_url: new URL("/studio/products/seller?returned=1", site).href,
       refresh_url: new URL("/studio/products/seller?expired=1", site).href } } });
