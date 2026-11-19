@@ -1,5 +1,13 @@
 # Progress — 19 November 2026
 
+## Current work — bounded receipt recovery and retention (76 source only)
+
+Source75 a7dee8a passed CI44462265410/job135351635817:312 unit/SQL+2 policy checks,34 browser checks, one expected skip, four Lighthouse100 and scan/audit/lint/types/build. Hosted still d6d907f/migration71; all new commerce migrations72–76 are unhosted and purchases remain disabled.
+
+Source76 completes the bounded operational source slice: dedicated-token persisted-receipt retry endpoint, one-at-a-time default/maximum10, SQL leases with exponential backoff to one hour, dead-letter after ten automatic attempts with explicit-ID replay, aggregate-only billing staff diagnostics, disabled-by-default hourly GitHub recovery workflow, and bounded90-day order/receipt purge plus reviewed native pg_cron activation script. Pending attempts, payment holds and accounts with any unresolved receipt prevent order cleanup; processed linked receipts stay retained. Physical PDFs/versions are not deleted by history cleanup. Retry errors produce503 and job failure signals, with no raw provider payload/error in responses. No credential, scheduler or workflow has been activated.
+
+Local321 unit/SQL tests plus two policy checks, lint/types/build passed (102 SQL, six new recovery tests). Initial missing-token fixture failure was a test helper's default-argument mistake; corrected explicit-undefined call passes, with no weakening of production authentication. Matching full CI pending. Read docs/creator-recovery.md for exact release/provider/retention checks and setup boundaries. Actual hosted payment/refund/buyer delivery, natural recovery/retention execution and owner Stripe completion remain unverified. Phase5 remains open; do not infer completion of advanced ledger features or Phases6–7.
+
 ## Current work — reviewed sandbox storefront and Checkout caller (75 source only)
 
 Source74 87d9472 passed CI44461446340/job135348937214:303 unit/SQL+2 policy checks,33 browser checks, one expected skip, four Lighthouse100, scan/audit/lint/types/build. Browser coverage includes the buyer receipt empty state/return-parameter isolation/foreign-file404/phone/axe and dedicated intake default-off. Hosted remains d6d907f/migration71.

@@ -378,6 +378,49 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("anon");expect(await result("select public.get_creator_sandbox_store('private-pdf')->'items' as value")).toEqual([]);
   });
 
+  it("leases persisted receipt retries with backoff and exposes aggregate recovery diagnostics only to existing billing staff",async()=>{
+    await boundSandboxOrder();await recordCreatorReceipt();
+    const list=()=>result<unknown[]>("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,null) as value");
+    expect(await list()).toMatchObject([{id:"evt_Order",accountId:"acct_Creator"}]);
+    expect(await result("select public.claim_creator_sandbox_receipt_retry('evt_Order','acct_Platform') as value")).toBe(true);
+    expect(await result("select public.claim_creator_sandbox_receipt_retry('evt_Order','acct_Platform') as value")).toBe(false);expect(await list()).toEqual([]);
+    expect(await result("select public.list_creator_sandbox_receipt_retries('acct_Other',1,'evt_Order') as value")).toEqual([]);
+    await expect(result("select public.list_creator_sandbox_receipt_retries('acct_Platform',11,null) as value")).rejects.toMatchObject({code:"22023"});
+    await act("authenticated",alice);await expect(list()).rejects.toMatchObject({code:"42501"});
+    await expect(result("select public.read_creator_sandbox_diagnostics() as value")).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role");await db.query("insert into snoozer.staff_roles(owner_id,role) values($1,'billing_diagnostics')",[alice]);
+    await act("authenticated",alice);
+    expect(await result("select public.read_creator_sandbox_diagnostics() as value")).toEqual({pendingReceipts:1,deferredReceipts:1,deadLetterReceipts:0,uncertainOrders:0,heldOrders:0});
+    await db.exec("reset role; update snoozer.creator_sandbox_receipts set retry_count=10,next_attempt_at=now()-interval '1 second'");await act("service_role");
+    expect(await list()).toEqual([]);
+    expect(await result("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,'evt_Order') as value")).toMatchObject([{id:"evt_Order"}]);
+    await act("authenticated",alice);
+    expect(await result("select public.read_creator_sandbox_diagnostics()->'deadLetterReceipts' as value")).toBe(1);
+  });
+
+  it("retains unresolved holds and account receipt backlogs, then removes expired unheld order history without deleting product bytes",async()=>{
+    const order=await boundSandboxOrder();await recordCreatorReceipt();await reconcileCreator(order.id,"paid","{refund}");
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set paid_at=now()-interval '100 days',access_until=now()-interval '70 days',retained_until=now()-interval '10 days'; update snoozer.creator_sandbox_receipts set received_at=now()-interval '100 days',processed_at=now()-interval '100 days'");
+    await act("service_role");expect(await result("select public.purge_creator_sandbox_history(100) as value")).toEqual({ordersRemoved:0,receiptsRemoved:0});
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set holds='{}'");await act("service_role");await recordCreatorReceipt("evt_Backlog");
+    expect(await result("select public.purge_creator_sandbox_history(100) as value")).toEqual({ordersRemoved:0,receiptsRemoved:0});
+    expect(await result("select public.ignore_creator_sandbox_receipt('evt_Backlog','acct_Platform','acct_Creator') as value")).toBe(true);
+    expect(await result("select public.purge_creator_sandbox_history(100) as value")).toEqual({ordersRemoved:1,receiptsRemoved:1});
+    await db.exec("reset role");expect(await result("select count(*)::integer as value from snoozer.product_files")).toBe(1);
+    expect(await result("select count(*)::integer as value from snoozer.product_versions")).toBe(1);
+    await act("authenticated",bob);expect(await result("select public.list_my_creator_sandbox_orders() as value")).toEqual([]);
+  });
+
+  it("bounds cleanup batches and never time-purges an uncertain pending order",async()=>{
+    const order=await boundSandboxOrder();await db.exec("reset role; update snoozer.creator_sandbox_orders set retained_until=now()-interval '1 day'");
+    await db.query("insert into snoozer.creator_sandbox_orders(buyer_id,seller_id,profile_id,version_id,platform_id,account_id,state,retained_until) select $1,$2,$3,$4,'acct_Platform','acct_Creator','expired',now()-interval '1 day' from generate_series(1,2)",[bob,alice,order.profile,order.version]);
+    await act("service_role");expect(await result("select public.purge_creator_sandbox_history(1) as value")).toEqual({ordersRemoved:1,receiptsRemoved:0});
+    expect(await result("select public.purge_creator_sandbox_history(1) as value")).toEqual({ordersRemoved:1,receiptsRemoved:0});
+    expect(await result("select public.get_creator_sandbox_order($1)->>'state' as value",[order.id])).toBe("pending");
+    await expect(result("select public.purge_creator_sandbox_history(101) as value")).rejects.toMatchObject({code:"22023"});
+    await act("authenticated",bob);await expect(result("select public.purge_creator_sandbox_history(1) as value")).rejects.toMatchObject({code:"42501"});
+  });
+
   it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
     const file = await readyVersionFixture();
     const id = await freezeVersion(file);

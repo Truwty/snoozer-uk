@@ -1,5 +1,15 @@
 # Continuation
 
+## Exact next checkpoint — complete sandbox commerce source through76, not hosted
+
+Source76 adds dedicated-token persisted-receipt recovery, default one/max10, SQL leases/backoff/dead-letter, billing read-only aggregate diagnostics, disabled optional hourly GitHub job and bounded retention/native pg_cron activation operation. Local321 unit/SQL+2 policy/lint/types/build pass (102 SQL, six retry cases). Initial missing-token test failure was corrected at its defaulted test wrapper; production bearer authentication was unchanged. Full new CI pending. No new key/token/event destination/scheduler/workflow was configured.
+
+Source75 a7dee8a CI44462265410/job135351635817 passed312 unit/SQL+2 policy+34 browser, one expected skip, four Lighthouse100 and all gates. Hosted d6d907f/migration71 is unchanged. Source72–76 now form one coherent gated source slice; after final matching CI, they may be applied/tracked together and exact tested source deployed with application/SQL purchase gates OFF for private UI/permissions/health verification. Do not enable purchases until actual provider prerequisites/proof pass. Read creator-recovery.md in full for the safe exit sequence.
+
+Next: verify final CI and release with gates off; verify current hosted migrations before any application. Prepare actual scoped-key payment-read/Checkout permissions and separate connected-account snapshot destination; ask required action-time approval only once concrete. Optional dedicated recovery token destinations are Render and this private GitHub repository's Secrets; workflow remains off until tested. The owner must create/enter/submit their Stripe password directly in tab2, per browser policy. Do not create a mailbox/password, fabricate identity, bypass CAPTCHA or rebind seller to another account. No new manual answer has completed that step.
+
+Real normal-browser PDF freeze/hash, Checkout/refund/dispute/fraud event/buyer delivery, missed-delivery resend, retry and natural retention runs remain UNVERIFIED. Existing archived QA products/published5/draft6/analytics fixture and IONOS root/mail DNS remain preserved. Phase5 is open; full master/advanced ledger and Phases6–7 are not complete.
+
 ## Exact next checkpoint — storefront/Checkout75 implemented, not hosted
 
 Current source adds a gated /store/[username], owner reviewed-test-offer publish/withdraw controls and server-only reservation→current provider capabilities→direct Checkout→durable binding→redirect. Already-bound attempts resume the same validated canonical open URL, never create a replacement; closed/held attempts reconcile and return to the fixed private receipt page. Only verified independent buyers, captured version/GBP money, fresh readiness/review/public profile and separate application/database gates. Anonymous store data contains no Storage/provider identifiers or hash. Application flag is still off; approved key is onboarding-only. No provider permissions, event destination or live settings were changed.

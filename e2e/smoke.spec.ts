@@ -67,6 +67,7 @@ test("Stripe intake is unavailable without server configuration", async ({ reque
 test("creator payment intake is isolated and disabled without its own configuration",async({request})=>{
   test.skip(process.env.SNOOZER_CREATOR_SANDBOX_ENABLED==="true","Creator sandbox is explicitly configured");
   expect((await request.post("/api/v1/commerce/stripe/webhook")).status()).toBe(503);
+  expect((await request.post("/api/v1/commerce/stripe/recover",{data:{limit:1}})).status()).toBe(503);
 });
 
 test("sandbox storefront cannot open while the explicit purchase gate is off",async({request})=>{

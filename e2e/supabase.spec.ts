@@ -827,6 +827,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await page.getByRole("link", { name: "Billing diagnostics" }).click();
       await expect(page.getByRole("heading", { name: "Billing diagnostics" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Stripe sandbox" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Creator sandbox recovery",exact:true })).toBeVisible();
+      await expect(page.getByText("Receipts needing operator review after ten retries",{exact:true})).toBeVisible();
+      await expect(page.getByText("Creator recovery diagnostics are unavailable.",{exact:true})).toHaveCount(0);
     } finally {
       staffSql("delete from snoozer.staff_roles where owner_id = '" + billingStaff + "'");
     }
