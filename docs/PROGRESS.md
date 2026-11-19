@@ -1,5 +1,17 @@
 # Progress — 19 November 2026
 
+## Current release — gated sandbox commerce hosted, provider exit open
+
+**16aba31 is Live** on the existing Render Free staging service. Exact-source deploy **dep-dbv8be3l550s7391e8t0** finished **19November2026 05:15:58UTC**. CI **44463174220**, job135354586225, passed **321 unit/SQL tests, two policy checks,34 browser checks**, one expected missing-secret skip, four Lighthouse accessibility100 scores, secret scan/audit/lint/types/build. No dependency, paid infrastructure or live payment setting was added.
+
+**Migrations72–76 were applied atomically, tracked and verified; they are now immutable.** Preflight confirmed latest71, no commerce policy table and zero frozen versions. The transaction required the71 boundary and committed a disabled purchase policy with zero orders/receipts. Five stored migration sources match the reviewed source exactly after CRLF→LF normalization. The initial raw hash mismatch was solely Windows newline normalization; no source or tracking rows were rewritten/reapplied. Hosted RLS=true for all four new private tables; authenticated direct order SELECT=false; authenticated payment reconciliation=false; service reconciliation=true; anonymous buyer-file RPC=false, authenticated=true. DB purchase policy=false.
+
+Actual post-deploy live/ready bodies passed. Verified QA owner can open /studio/purchases and sees genuine empty history; public /store/phase5-qa-20261118 renders Page not found while purchases are disabled. Fresh seller check at **05:17:38UTC** reports further onboarding/capability review, readinessfalse. A fresh single-use hosted test onboarding link is open in tab2 with blank email. No mailbox, password, identity, agreement or CAPTCHA was created/submitted by the agent. Browser policy requires the owner to create/enter/submit the password directly. Do not persist/reuse the transient link or switch the seller binding.
+
+Final hosted fixture check: phase5-qa-20261118 draft6/published5, two products/both archived, zero files, orders and receipts. Existing analytics fixture, IONOS root/mail DNS, premium billing and Ko-fi remain preserved. Evidence outside Git: ../snoozer-commerce-evidence-20261119/buyer-receipts-empty.jpg, seller-current-requirements.jpg and stripe-owner-step-fresh.jpg. Tab19 retains buyer receipts; tab2 is the fresh Stripe owner handoff.
+
+Phase5 remains open. Real creator Checkout/refund/dispute/fraud event and buyer-byte delivery, normal-browser PDF freeze, broader scoped test-key permissions, dedicated connected-account destination/signing secret, recovery credential/job and natural retention execution remain **UNVERIFIED**. The approved key is still onboarding-only; no recovery credential/scheduler/workflow was activated. These are the next exit checks in creator-recovery.md. Advanced ledger work and Phases6–7 are not complete.
+
 ## Current work — bounded receipt recovery and retention (76 source only)
 
 Source75 a7dee8a passed CI44462265410/job135351635817:312 unit/SQL+2 policy checks,34 browser checks, one expected skip, four Lighthouse100 and scan/audit/lint/types/build. Hosted still d6d907f/migration71; all new commerce migrations72–76 are unhosted and purchases remain disabled.

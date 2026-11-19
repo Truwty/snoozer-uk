@@ -214,12 +214,12 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 13.1 | Digital Downloads | Hosted owner PDF/quota/removal proof; private snapshots pass CI44423125617 (hosted positive snapshot blocked by upload-network failure). Buyer ownership/current-provider/SHA-256 delivery passes unit/SQL and CI44461446340; order retention/source recovery exist but are unhosted. Actual sandbox buyer payment/delivery and production scanning remain unverified |
-| 13.2 | Product Detail Cards | Hosted private GBP drafts/archive/revisions; reviewed frozen sandbox store and durable direct Checkout/resume pass CI44462265410. Store/purchase gates remain off; new source unhosted and actual creator Checkout unverified |
+| 13.1 | Digital Downloads | Hosted owner PDF/quota/removal proof; private snapshots pass CI44423125617 (hosted positive snapshot blocked by upload-network failure). Buyer ownership/current-provider/SHA-256 delivery passes unit/SQL/CI44463174220; schema76/gated source16aba31 hosted. Actual sandbox buyer payment/delivery and production scanning remain unverified |
+| 13.2 | Product Detail Cards | Hosted private GBP drafts/archive/revisions; reviewed frozen sandbox store and durable direct Checkout/resume pass CI44462265410/44463174220. Source16aba31 hosted with purchases disabled; actual creator Checkout unverified |
 | 13.3 | Creator Collections | Deferred |
 | 13.4 | Inventory For Limited Digital Items | Deferred |
 | 13.5 | Discount Codes | Deferred |
-| 13.6 | Purchase Receipts | Private buyer-only sandbox title/amount/reference/state/expiry UI passes CI44461446340; explicitly not a tax invoice. New source unhosted; actual provider purchase unverified |
+| 13.6 | Purchase Receipts | Private buyer-only sandbox title/amount/reference/state/expiry UI passes CI44461446340/44463174220; explicitly not a tax invoice. Hosted genuine empty history verified; actual provider purchase unverified |
 | 13.7 | Refund Status | Canonical partial/full refund and sticky delivery holds pass CI44460593527; buyer held status passes CI44461446340. Actual creator refund delivery and case resolution remain unverified |
 | 13.8 | Download Access Expiry | Fixed first-verified-paid30-day window, database-time inventory and per-request paid/unheld/fresh proof pass SQL/unit/CI44461446340. Actual hosted expiry/delivery unverified |
 | 13.9 | Licence Keys If Appropriate | Deferred |
@@ -228,7 +228,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 13.12 | Creator Storefront Analytics | Deferred |
 | 13.13 | Affiliate Disclosures | Deferred |
 | 13.14 | Tax-Ready Receipts Where Supported | Deferred |
-| 13.15 | Fraud Review | Current direct-charge/early-fraud reads and sticky dispute/fraud holds pass CI44460593527. Bounded retry/backoff/dead-letter/read-only diagnostics source has local coverage; actual provider warning/case resolution unverified |
+| 13.15 | Fraud Review | Current direct-charge/early-fraud reads and sticky dispute/fraud holds pass CI44460593527/44463174220. Bounded retry/backoff/dead-letter/read-only diagnostics pass CI and schema76 is hosted; real provider warning/case resolution and operational job execution unverified |
 | 13.16 | Product Moderation | Service-only reviewed sandbox-fixture SHA attestation with24-hour expiry and explicit owner publication passes CI44462265410. This is not production malware/content moderation; those remain open |
 | 13.17 | Buyer Support Flow | Private sandbox purchase references/status and draft contact anchor implemented; monitored operator contact, case handling and live support policy remain open |
 
