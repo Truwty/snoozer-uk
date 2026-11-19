@@ -46,6 +46,7 @@ it("does not grant access for open, expired or asynchronous pending sessions",()
   expect(inspectCreatorCheckout({...p.session,status:"expired",payment_status:"unpaid",payment_intent:null},order).state).toBe("expired");
   p.session.payment_status="unpaid";p.payment.status="processing";p.payment.amount_received=0;p.charge.paid=false;
   expect(inspectCreatorCheckout(p.session,order).state).toBe("pending");
+  expect(()=>inspectCreatorCheckout(p.session,{...order,state:"paid",paymentId:"pi_Order",chargeId:"ch_Order",paidAt:order.createdAt,accessUntil:order.createdAt})).toThrow();
 });
 it("rejects incomplete paid proof, mismatched identities, fees, transfers and changed prices",()=>{
   for(const patch of [{amount_received:499},{status:"processing"},{application_fee_amount:50},{transfer_data:{destination:"acct_Other"}},

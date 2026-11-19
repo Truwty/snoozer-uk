@@ -64,6 +64,11 @@ test("Stripe intake is unavailable without server configuration", async ({ reque
   expect(response.status()).toBe(503);
 });
 
+test("creator payment intake is isolated and disabled without its own configuration",async({request})=>{
+  test.skip(process.env.SNOOZER_CREATOR_SANDBOX_ENABLED==="true","Creator sandbox is explicitly configured");
+  expect((await request.post("/api/v1/commerce/stripe/webhook")).status()).toBe(503);
+});
+
 
 test("template search combines filters, preserves URL state and clears empty results", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 812 });

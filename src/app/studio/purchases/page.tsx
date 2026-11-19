@@ -1,0 +1,23 @@
+import Link from "next/link";
+import { Brand } from "@/components/shell";
+import { PurchaseRefresh } from "@/components/purchase-refresh";
+import { creatorPurchases } from "@/lib/creator-purchases";
+import { requireAccount } from "@/lib/profiles-server";
+
+export const metadata={title:"Sandbox purchases",robots:{index:false,follow:false}};
+export default async function Page() {
+  const {client}=await requireAccount();
+  const response=await client.rpc("list_my_creator_sandbox_orders");const purchases=creatorPurchases.safeParse(response.data);
+  return <main className="shell stack"><header className="nav"><Brand/><Link className="button small" href="/studio">Back to Studio</Link></header>
+    <section className="panel stack"><p className="eyebrow">STUDIO / SANDBOX</p><h1>Your purchases</h1>
+      <p>Test purchases only. This is not a tax invoice. A return from Checkout does not confirm payment. Downloads require current Stripe verification on every request.</p>
+      <p>Confirmed payments allow downloads for 30 days from first verification. Refunds, disputes or fraud review pause delivery. Order references are retained for at least 90 days; pending attempts need reconciliation before removal.</p>
+      {response.error||!purchases.success?<p role="alert">Your purchase history is unavailable. Reload to try again.</p>:purchases.data.length===0?<p>No sandbox purchases yet.</p>:purchases.data.map(order=><article className="panel stack" key={order.id} style={{overflowWrap:"anywhere"}}>
+        <h2>{order.title}</h2><p>£{(order.amount/100).toFixed(2)} GBP · {order.held?"Delivery paused for review":order.state==="paid"?"Payment confirmed":order.state==="expired"?"Checkout expired or failed":"Awaiting payment verification"}</p>
+        <p>Purchase reference: <code>{order.id}</code></p>
+        {order.accessUntil&&<p>Download expiry: <time dateTime={order.accessUntil}>{new Date(order.accessUntil).toUTCString()}</time></p>}
+        {order.accessActive&&<a className="text-link" href={`/studio/purchases/file/${order.id}`} download>Verify payment and download PDF</a>}
+        <PurchaseRefresh id={order.id}/><Link href="/#contact">Purchase support</Link>
+      </article>)}
+    </section></main>;
+}

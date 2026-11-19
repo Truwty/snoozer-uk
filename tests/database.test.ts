@@ -320,6 +320,37 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await reconcileCreator(order.id,"expired","{}",null)).toMatchObject({state:"paid",holds:["dispute"]});
   });
 
+  it("authorizes buyer file projections only after fresh canonical paid proof, retaining access through creator archive/unpublish",async()=>{
+    const order=await boundSandboxOrder();
+    await act("authenticated",bob);expect(await result("select public.owns_my_creator_sandbox_order($1) as value",[order.id])).toBe(true);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    await act("service_role");await recordCreatorReceipt();await reconcileCreator(order.id);
+    await act("authenticated",alice);expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    expect(await result("select public.owns_my_creator_sandbox_order($1) as value",[order.id])).toBe(false);
+    await saveProduct(order.profile,order.product,0,true);await db.query("select public.unpublish_profile($1,1)",[order.profile]);
+    await act("authenticated",bob);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toMatchObject({orderId:order.id,versionId:order.version,id:expect.any(String),state:"ready"});
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,accessActive:true}]);
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set provider_checked_at=now()-interval '31 seconds'");
+    await act("authenticated",bob);expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    await act("service_role");await reconcileCreator(order.id,"paid","{refund}");
+    await act("authenticated",bob);expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,accessActive:false}]);
+    await act("anon");await expect(result("select public.get_my_creator_order_file($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
+    await act("service_role");await expect(result("select public.get_my_creator_order_file($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
+  });
+
+  it("throttles buyer-triggered verification and denies expired download windows",async()=>{
+    const order=await boundSandboxOrder();await recordCreatorReceipt();await reconcileCreator(order.id);
+    await act("authenticated",alice);expect(await result("select public.claim_my_creator_order_check($1) as value",[order.id])).toBe(false);
+    await act("authenticated",bob);
+    expect(await result("select public.claim_my_creator_order_check($1) as value",[order.id])).toBe(true);
+    expect(await result("select public.claim_my_creator_order_check($1) as value",[order.id])).toBe(false);
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set access_until=now()-interval '1 second'");
+    await act("authenticated",bob);expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    await act("authenticated",unverified);await expect(result("select public.claim_my_creator_order_check($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
+  });
+
   it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
     const file = await readyVersionFixture();
     const id = await freezeVersion(file);

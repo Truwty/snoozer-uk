@@ -1,5 +1,15 @@
 # Progress — 19 November 2026
 
+## Current work — buyer receipt and delivery (74 source only)
+
+Source73 acdfa62 passed CI44460593527/job135346126737:293 unit/SQL+2 policy checks,32 browser checks, one expected skip, four Lighthouse100, scan/audit/lint/types/build. It remains unhosted together with72; the running release and hosted migration71 have not changed.
+
+Source74 adds private /studio/purchases, server-checked payment refresh, buyer-owned attachment delivery and authenticated SQL projection/ten-second verification cooldown. Each download checks verified identity/ownership before provider reads, current canonical direct-account payment and fraud state, a fresh SQL authorization, retained version/size and actual SHA-256. No public/signed Storage URL or email-only access. Denial is private/no-store with no bytes; throttle429 has Retry-After10. Refund/dispute/fraud/expiry/foreign identity fail closed. Archive/unpublish preserves the paid version. New SQL freshness timestamp cannot be advanced by an authenticated direct write. New-Checkout disabling does not disable retained purchase verification.
+
+Local303 unit/SQL tests plus two policy checks passed, including97 SQL and eight new buyer delivery/helper tests; focused111 tests and types passed. Initial lint failure on Date.now during rendering was fixed by making accessActive a database-time inventory field; final lint, types and97-test SQL recheck passed. Production build passed before that small projection/render correction. Disposable browser additions cover the empty buyer receipt page, arbitrary return parameters granting nothing, foreign-file404,360px/axe and disabled dedicated commerce intake. Full matching CI is required. Source72–74 remain unhosted; no real buyer payment/delivery has been claimed.
+
+Next coherent slice: reviewed fixture offer controls/storefront, authenticated Checkout reservation→provider→durable binding→redirect/resume, and bounded receipt recovery/retention. Current provider key is still onboarding-only; event destination, broader test permissions and business-owner completion remain unverified. Phase5 remains open.
+
 ## Current work — connected-account receipts (73 source only)
 
 Source72 commit6ab28da is on private main; CI44458774852/job135340212891 passed275 unit/SQL tests, two policy checks,32 browser checks, one expected skip, four Lighthouse accessibility100 scores and scan/audit/lint/types/build. Staging remains d6d907f with migrations through71. Do not apply72–73 or enable purchases until the complete journey passes.

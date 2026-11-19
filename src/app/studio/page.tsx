@@ -54,6 +54,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <Link href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
         <Link href="/studio/growth">Growth</Link>
         <Link href={studioHref("/studio/products", selected)}>Product drafts</Link>
+        <Link href="/studio/purchases">Sandbox purchases</Link>
       </nav>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}

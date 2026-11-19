@@ -47,7 +47,7 @@ export function inspectCreatorCheckout(value:unknown,input:CreatorOrder) {
   const paid=session.status==="complete"&&session.payment_status==="paid"&&payment?.status==="succeeded"
     &&payment.amount_received===order.amount&&charge?.paid&&charge.captured&&charge.status==="succeeded";
   // Any contradictory paid claim is an unavailable proof, never a pending success.
-  if((session.payment_status==="paid"||payment?.status==="succeeded")&&!paid) throw new Error("Incomplete payment proof.");
+  if((order.state==="paid"||session.payment_status==="paid"||payment?.status==="succeeded")&&!paid) throw new Error("Incomplete payment proof.");
   const failed=session.status==="complete"&&["canceled","requires_payment_method"].includes(payment?.status??"");
   return {checkoutId:session.id,createdAt:new Date(session.created*1000).toISOString(),expiresAt:new Date(session.expires_at*1000).toISOString(),
     paymentId:payment?.id??null,chargeId:charge?.paid&&charge.captured&&charge.status==="succeeded"?charge.id:null,

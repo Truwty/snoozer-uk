@@ -1,5 +1,11 @@
 # Continuation
 
+## Exact next checkpoint — buyer delivery74 source only
+
+The newest source adds /studio/purchases, authenticated payment status refresh and /studio/purchases/file/[id]. SQL74 adds ownership, ten-second provider-check throttle, freshness-stamped canonical proof and buyer-only ready-file projection; inventory accessActive uses database time. Every download rechecks provider state and exact retained SHA-256 before bytes, with fail-closed private responses. Purchase archive/unpublish does not revoke legitimate paid access. No raw shared URL or email identity. Local303 unit/SQL+2 policy passed (97 SQL;8 new buyer route/helper cases); initial lint Date.now finding was fixed with SQL accessActive, final97-test SQL/lint/types recheck passed. Build passed before that small projection change. New disposable browser assertions are committed for matching CI, not claimed run locally (no Docker).
+
+Source73 acdfa62 CI44460593527/job135346126737 passed293 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100, scan/audit/lint/types/build. Hosted remains d6d907f/migration71;72–74 must stay unhosted until Checkout/offer/storefront/recovery are coherent and tested. Next implement the reservation→create→binding→redirect/resume caller, reviewed test-fixture offer controls and sandbox storefront, bounded recovery/retention. Then review exact additional sandbox key/event-destination access and actual provider proof; current key has onboarding permissions only. No credential or CAPTCHA handoff was bypassed.
+
 ## Exact next checkpoint — receipts73 source, not hosted
 
 Read the newest PROGRESS entry first. Private main source72 (6ab28da) passed CI44458774852/job135340212891:275 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100, scan/audit/lint/types/build. New73 source implements dedicated connected-account raw-signature webhook, private durable receipts, canonical direct-account payment proof, sticky holds/fixed access and receipt-backed old-session recovery. Source72–73 must stay unhosted until coherent Checkout/buyer delivery and matching CI are ready; running d6d907f/hosted71 are unchanged.

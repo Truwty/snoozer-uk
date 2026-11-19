@@ -422,6 +422,13 @@ test("private product drafts save, edit, archive and restore without exposing a 
     expect((await owner.rpc("get_my_creator_sandbox_account")).data).toBeNull();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.goto("/studio/purchases?order="+randomUUID()+"&cancelled=1");
+    await expect(page.getByRole("heading",{name:"Your purchases",exact:true})).toBeVisible();
+    await expect(page.getByText("No sandbox purchases yet.",{exact:true})).toBeVisible();
+    expect((await owner.rpc("list_my_creator_sandbox_orders")).data).toEqual([]);
+    expect((await page.request.get("/studio/purchases/file/"+randomUUID())).status()).toBe(404);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
   } finally {
     if (account.data.user) {
       const removed = await admin.auth.admin.deleteUser(account.data.user.id);
