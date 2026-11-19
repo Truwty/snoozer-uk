@@ -1,5 +1,13 @@
 # Progress — 19 November 2026
 
+## Current work — connected-account receipts (73 source only)
+
+Source72 commit6ab28da is on private main; CI44458774852/job135340212891 passed275 unit/SQL tests, two policy checks,32 browser checks, one expected skip, four Lighthouse accessibility100 scores and scan/audit/lint/types/build. Staging remains d6d907f with migrations through71. Do not apply72–73 or enable purchases until the complete journey passes.
+
+Migration73 and a dedicated /api/v1/commerce/stripe/webhook now implement bounded raw-signature sandbox snapshot intake, bound-account-only private receipts without customer payloads, exact duplicate identity, canonical direct-account Checkout/payment/charge/line-item reconciliation, current early-fraud lookup, sticky refund/dispute/fraud holds, fixed first-paid30-day access and90-day retention, and receipt-backed recovery of an old canonical Checkout. Checkout return parameters do not grant anything. Unknown connected accounts are ignored without provider access; unrelated Dashboard payments receive a durable disposition. Receipt processing continues when only the new-Checkout flag is switched off. Provider/SQL failures return503 for retry. Failed card attempts do not pin a permanent charge ID; canonical completed asynchronous failures expire the attempt.
+
+Local full293 unit/SQL tests plus two audit-policy checks pass, including95 SQL and13 new intake/provider tests. Lint/types and production build pass. No event destination, additional key permissions or hosted payment has been configured. There is still no storefront/buyer delivery caller or automatic receipt recovery/retention runner. Phase5 remains open.
+
 ## Current source work — sandbox order contract (72 not hosted)
 
 Migration72 adds private sandbox policy (disabled by default), operator-reviewed test-fixture offers, owner publication/withdrawal RPC, stable buyer/version pending orders, immutable version/provider account references, one test Checkout binding, private buyer inventory and restrictive version/profile/auth deletion guards. It does not create Checkout, process payments, grant access or publish a storefront; there are no new UI payment buttons. This is internal persistence groundwork for the next complete commerce slice. Keep it unhosted until payment/receipt/buyer delivery integration and matching CI are ready. Hosted migrations remain immutable through71.

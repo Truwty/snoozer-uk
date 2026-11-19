@@ -245,6 +245,81 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role"); await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1221"});
   });
 
+  async function boundSandboxOrder() {
+    const fixture=await sandboxOfferFixture();await enableSandboxOffer(fixture.version);
+    const order=(await reserveOrder(fixture.version))!;
+    const expires=new Date(Date.parse(order.createdAt)+86340000).toISOString();
+    expect(await result("select public.bind_creator_sandbox_checkout($1,$2,'acct_Creator','cs_test_Order',$3) as value",[order.id,bob,expires])).toBe(true);
+    return {...fixture,...order,expires};
+  }
+  const recordCreatorReceipt=(id="evt_Order",type="checkout.session.completed",object="cs_test_Order",account="acct_Creator")=>
+    result("select public.record_creator_sandbox_receipt($1,'acct_Platform',$2,$3,$4,'2026-11-19T01:00:00Z') as value",[id,account,type,object]);
+  const reconcileCreator=(id:string,state="paid",holds="{}",receipt:string|null="evt_Order",account="acct_Creator",payment="pi_Order")=>
+    result<{state:string;paidAt:string;accessUntil:string;holds:string[]}>("select public.reconcile_creator_sandbox_order($1,'acct_Platform',$2,'cs_test_Order',$3,'ch_Order',$4,$5::text[],$6) as value",[id,account,payment,state,holds,receipt]);
+
+  it("deduplicates private creator receipts, rejects identity conflicts and ignores unknown provider accounts",async()=>{
+    await boundSandboxOrder();
+    expect(await recordCreatorReceipt()).toBe(true);expect(await recordCreatorReceipt()).toBe(true);
+    expect(await recordCreatorReceipt("evt_Unknown","charge.refunded","ch_Else","acct_Unknown")).toBe(false);
+    await expect(recordCreatorReceipt("evt_Order","checkout.session.expired")).rejects.toMatchObject({code:"40001"});
+    await expect(recordCreatorReceipt("evt_Invalid","checkout.session.completed","cs_live_Invalid")).rejects.toMatchObject({code:"23514"});
+    await act("authenticated",bob);
+    await expect(recordCreatorReceipt()).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select * from snoozer.creator_sandbox_receipts")).rejects.toMatchObject({code:"42501"});
+    await act("anon");await expect(recordCreatorReceipt()).rejects.toMatchObject({code:"42501"});
+  });
+
+  it("fixes the first paid access window and retains sticky holds through duplicate and out-of-order successes",async()=>{
+    const order=await boundSandboxOrder();await recordCreatorReceipt();
+    const first=(await reconcileCreator(order.id))!;
+    expect(first).toMatchObject({state:"paid",holds:[]});
+    expect(Date.parse(first.accessUntil)-Date.parse(first.paidAt)).toBe(30*86400000);
+    await recordCreatorReceipt("evt_Refund","charge.refunded","ch_Order");
+    expect(await reconcileCreator(order.id,"paid","{refund}","evt_Refund")).toMatchObject({holds:["refund"],paidAt:first.paidAt,accessUntil:first.accessUntil});
+    await recordCreatorReceipt("evt_Dispute","charge.dispute.closed","du_Order");
+    expect(await reconcileCreator(order.id,"paid","{dispute,fraud}","evt_Dispute")).toMatchObject({holds:["dispute","fraud","refund"]});
+    expect(await reconcileCreator(order.id)).toMatchObject({holds:["dispute","fraud","refund"],paidAt:first.paidAt,accessUntil:first.accessUntil});
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.creator_sandbox_receipts where processed_at is not null and order_id=$1",[order.id])).toBe(3);
+    expect(await result("select retained_until>=paid_at+interval '90 days' as value from snoozer.creator_sandbox_orders where id=$1",[order.id])).toBe(true);
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",held:true,accessUntil:first.accessUntil}]);
+  });
+
+  it("enforces provider scope and immutable payment bindings before saving any access",async()=>{
+    const order=await boundSandboxOrder();await recordCreatorReceipt();
+    await expect(reconcileCreator(order.id,"paid","{}","evt_Order","acct_Other")).rejects.toMatchObject({code:"40001"});
+    await expect(reconcileCreator(order.id,"paid","{unknown}")).rejects.toMatchObject({code:"22023"});
+    await expect(reconcileCreator(order.id,"paid","{}","evt_Missing")).rejects.toMatchObject({code:"40001"});
+    await recordCreatorReceipt("evt_WrongSession","checkout.session.completed","cs_test_Other");
+    await expect(reconcileCreator(order.id,"paid","{}","evt_WrongSession")).rejects.toMatchObject({code:"40001"});
+    await reconcileCreator(order.id);
+    await expect(reconcileCreator(order.id,"paid","{}","evt_Order","acct_Creator","pi_Replacement")).rejects.toMatchObject({code:"40001"});
+    await act("authenticated",bob);await expect(reconcileCreator(order.id)).rejects.toMatchObject({code:"42501"});
+  });
+
+  it("recovers an old canonical Checkout only through a matching durable receipt and original creation window",async()=>{
+    const fixture=await sandboxOfferFixture();await enableSandboxOffer(fixture.version);const order=(await reserveOrder(fixture.version))!;
+    await db.exec("reset role; update snoozer.creator_sandbox_orders set created_at=now()-interval '2 days'");
+    const created=(await result<string>("select created_at as value from snoozer.creator_sandbox_orders where id=$1",[order.id]))!;
+    const expires=new Date(Date.parse(created)+86340000).toISOString();await act("service_role");
+    const recover=(receipt="evt_Order",accountSession="cs_test_Order",time=created)=>result("select public.recover_creator_sandbox_checkout($1,$2,$3,$4,$5) as value",[order.id,receipt,accountSession,time,expires]);
+    expect(await recover()).toBe(false);await recordCreatorReceipt();
+    expect(await recover("evt_Order","cs_test_Other")).toBe(false);
+    expect(await recover("evt_Order","cs_test_Order",new Date(Date.parse(created)-60000).toISOString())).toBe(false);
+    expect(await recover()).toBe(true);expect(await recover()).toBe(true);
+    expect(await recover("evt_Order","cs_test_Replacement")).toBe(false);
+    expect(await reconcileCreator(order.id)).toMatchObject({state:"paid"});
+  });
+
+  it("records pre-payment holds without granting access and permits only canonical late payment to establish the first window",async()=>{
+    const order=await boundSandboxOrder();await recordCreatorReceipt("evt_Dispute","charge.dispute.created","du_Order");
+    expect(await reconcileCreator(order.id,"pending","{dispute}","evt_Dispute")).toMatchObject({state:"pending",paidAt:null,accessUntil:null,holds:["dispute"]});
+    expect(await reconcileCreator(order.id,"expired","{}",null)).toMatchObject({state:"expired",paidAt:null});
+    await recordCreatorReceipt();expect(await reconcileCreator(order.id)).toMatchObject({state:"paid",holds:["dispute"]});
+    expect(await reconcileCreator(order.id,"expired","{}",null)).toMatchObject({state:"paid",holds:["dispute"]});
+  });
+
   it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
     const file = await readyVersionFixture();
     const id = await freezeVersion(file);

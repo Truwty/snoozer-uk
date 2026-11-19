@@ -1,5 +1,13 @@
 # Continuation
 
+## Exact next checkpoint — receipts73 source, not hosted
+
+Read the newest PROGRESS entry first. Private main source72 (6ab28da) passed CI44458774852/job135340212891:275 unit/SQL+2 policy+32 browser, one expected skip, four Lighthouse100, scan/audit/lint/types/build. New73 source implements dedicated connected-account raw-signature webhook, private durable receipts, canonical direct-account payment proof, sticky holds/fixed access and receipt-backed old-session recovery. Source72–73 must stay unhosted until coherent Checkout/buyer delivery and matching CI are ready; running d6d907f/hosted71 are unchanged.
+
+Current new checks:293 unit/SQL tests plus two policy checks passed, including95 SQL and13 intake/canonical cases; lint/types passed. Production build passed. No provider event destination or broader key was created. Continue: authenticated reservation→create→bind→redirect and existing-session resume; buyer-owned permissioned fingerprint delivery; reviewed fixture offers/storefront; bounded recovery/retention and browser proof. The endpoint is source implementation, not proof of provider delivery. Current approved key remains onboarding-only.
+
+User's request to create an email/password and complete CAPTCHAs does not override browser handoff rules. No password was created/entered/submitted; the owner must complete the actual Stripe credential step directly. Do not fabricate another account/binding to bypass it. Continue independent code work.
+
 ## Current source work — sandbox order contract (72 not hosted)
 
 Migration72 adds private sandbox policy (disabled by default), operator-reviewed test-fixture offers, owner publication/withdrawal RPC, stable buyer/version pending orders, immutable version/provider account references, one test Checkout binding, private buyer inventory and restrictive version/profile/auth deletion guards. It does not create Checkout, process payments, grant access or publish a storefront; there are no new UI payment buttons. This is internal persistence groundwork for the next complete commerce slice. Keep it unhosted until payment/receipt/buyer delivery integration and matching CI are ready. Hosted migrations remain immutable through71.
