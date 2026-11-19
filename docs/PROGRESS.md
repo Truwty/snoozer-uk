@@ -1,5 +1,13 @@
 # Progress — 19 November 2026
 
+## Current work — reviewed sandbox storefront and Checkout caller (75 source only)
+
+Source74 87d9472 passed CI44461446340/job135348937214:303 unit/SQL+2 policy checks,33 browser checks, one expected skip, four Lighthouse100, scan/audit/lint/types/build. Browser coverage includes the buyer receipt empty state/return-parameter isolation/foreign-file404/phone/axe and dedicated intake default-off. Hosted remains d6d907f/migration71.
+
+Source75 connects /store/[username] and owner offer publish/withdraw controls to reviewed immutable fixtures, default-off application/database gates, public-profile/nonarchive/24-hour review/five-minute seller-readiness checks. Public store payload includes captured copy/GBP price/size/version only, no Storage paths/hash/provider IDs. Verified buyers explicitly acknowledge testing. The server reserves one stable buyer/version order, throttles provider attempts, checks the bound merchant and current capabilities, creates direct-account Checkout and durably binds it before returning its validated Stripe URL. A bound attempt resumes that same canonical open session; completed/expired/held attempts reconcile and go to the fixed private receipt page. No client price, account, payment-status or redirect is trusted. Existing premium billing is unchanged.
+
+Local312 unit/SQL tests plus two policy checks, lint/types/build pass, including99 SQL, six start/binding tests and open-session URL regressions. Matching CI is pending. Source72–75 remain unhosted pending bounded receipt recovery/retention and actual provider configuration/proof; do not apply migrations or enable purchases yet. Onboarding key permissions have not been broadened, no commerce destination is configured, and the owner credential step is still pending.
+
 ## Current work — buyer receipt and delivery (74 source only)
 
 Source73 acdfa62 passed CI44460593527/job135346126737:293 unit/SQL+2 policy checks,32 browser checks, one expected skip, four Lighthouse100, scan/audit/lint/types/build. It remains unhosted together with72; the running release and hosted migration71 have not changed.

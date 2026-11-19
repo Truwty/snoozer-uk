@@ -15,3 +15,9 @@ export const creatorOrder = z.object({ id:z.uuid(), buyerId:z.uuid(), sellerId:z
   &&new Set(v.holds).size===v.holds.length&&(v.paidAt===null)===(v.accessUntil===null)
   &&(v.state!=="paid"||!!(v.checkoutId&&v.paymentId&&v.chargeId&&v.paidAt&&v.accessUntil)));
 export type CreatorOrder = z.infer<typeof creatorOrder>;
+
+export function creatorCheckoutUrl(value:unknown) {
+  const target=new URL(z.string().url().parse(value));
+  if(target.origin!=="https://checkout.stripe.com"||target.username||target.password) throw new Error("Unexpected Checkout origin.");
+  return target.href;
+}

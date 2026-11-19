@@ -7,7 +7,7 @@ import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient } from "@/lib/supabase";
 import { canonicalUsername, username } from "@/lib/profile";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "profile-not-found"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found"]);
 
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");

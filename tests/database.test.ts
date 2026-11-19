@@ -351,6 +351,33 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated",unverified);await expect(result("select public.claim_my_creator_order_check($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
   });
 
+  it("exposes only reviewed frozen storefront copy behind enabled policy and a freshly ready seller",async()=>{
+    const fixture=await sandboxOfferFixture();await act("anon");
+    expect(await result("select public.get_creator_sandbox_store('private-pdf') as value")).toBeNull();
+    await enableSandboxOffer(fixture.version);await act("authenticated",alice);await saveProduct(fixture.profile,fixture.product,0,false,1200);
+    expect(await result("select public.list_my_creator_sandbox_offers($1) as value",[fixture.profile])).toMatchObject([{versionId:fixture.version,enabled:true}]);
+    await act("anon");const store=await result<{items:unknown[]}>("select public.get_creator_sandbox_store('private-pdf') as value");
+    expect(store).toMatchObject({username:"private-pdf",displayName:"Sandbox merchant",items:[{versionId:fixture.version,amount:500,currency:"gbp",bytes:100}]});
+    expect(JSON.stringify(store)).not.toContain(fixture.id);expect(JSON.stringify(store)).not.toContain("acct_Creator");expect(JSON.stringify(store)).not.toContain("a".repeat(64));
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set checked_at=now()-interval '6 minutes'");await act("anon");
+    expect(await result("select public.get_creator_sandbox_store('private-pdf') as value")).toBeNull();
+  });
+
+  it("removes expired, archived and withdrawn offers from discovery without exposing private merchant reads",async()=>{
+    const fixture=await sandboxOfferFixture();await enableSandboxOffer(fixture.version);
+    await act("authenticated",bob);
+    await expect(result("select public.list_my_creator_sandbox_offers($1) as value",[fixture.profile])).rejects.toMatchObject({code:"42501"});
+    await expect(result("select public.get_creator_sandbox_merchant($1) as value",[alice])).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");await act("anon");
+    expect(await result("select public.get_creator_sandbox_store('private-pdf')->'items' as value")).toEqual([]);
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()+interval '1 day'");await act("authenticated",alice);
+    await saveProduct(fixture.profile,fixture.product,0,true);await act("anon");
+    expect(await result("select public.get_creator_sandbox_store('private-pdf')->'items' as value")).toEqual([]);
+    await act("authenticated",alice);await saveProduct(fixture.profile,fixture.product,1,false);
+    expect(await result("select public.publish_my_creator_sandbox_offer($1,false) as value",[fixture.version])).toBe(true);
+    await act("anon");expect(await result("select public.get_creator_sandbox_store('private-pdf')->'items' as value")).toEqual([]);
+  });
+
   it("freezes private copy, price and file identity without changing the draft or duplicating bytes", async () => {
     const file = await readyVersionFixture();
     const id = await freezeVersion(file);

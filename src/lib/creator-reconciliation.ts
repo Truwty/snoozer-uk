@@ -1,7 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import { z } from "zod";
-import { creatorCheckoutId, creatorOrder, type CreatorOrder } from "./creator-orders";
+import { creatorCheckoutId, creatorCheckoutUrl, creatorOrder, type CreatorOrder } from "./creator-orders";
 import { assertCreatorPlatform } from "./creator-stripe";
 import { storageAdmin } from "./supabase";
 import type { CreatorReceipt } from "./creator-webhook";
@@ -66,7 +66,7 @@ export async function readCreatorCheckout(stripe:Stripe,order:CreatorOrder,sessi
     if(warnings.has_more&&!warnings.data.length) throw new Error("Incomplete fraud review.");
     if(warnings.data.length&&!proof.holds.includes("fraud")) proof.holds.push("fraud");
   }
-  return proof;
+  return {...proof,checkoutUrl:session.status==="open"?creatorCheckoutUrl(session.url):null};
 }
 
 export async function reconcileCreatorOrder(stripe:Stripe,order:CreatorOrder,receipt?:CreatorReceipt,sessionId=order.checkoutId,signalCharge?:string) {

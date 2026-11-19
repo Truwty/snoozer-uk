@@ -48,6 +48,13 @@ it("does not grant access for open, expired or asynchronous pending sessions",()
   expect(inspectCreatorCheckout(p.session,order).state).toBe("pending");
   expect(()=>inspectCreatorCheckout(p.session,{...order,state:"paid",paymentId:"pi_Order",chargeId:"ch_Order",paidAt:order.createdAt,accessUntil:order.createdAt})).toThrow();
 });
+it("returns a resumable URL only for a canonically open Checkout on the Stripe origin",async()=>{
+  const p=provider();const open={...p.session,status:"open",payment_status:"unpaid",payment_intent:null,url:"https://checkout.stripe.com/c/pay/cs_test_Order"};
+  p.retrieve.mockResolvedValue(open);expect((await readCreatorCheckout(p.stripe,order)).checkoutUrl).toBe(open.url);
+  for(const url of [null,"http://checkout.stripe.com/pay","https://checkout.stripe.com.evil.example/pay","https://user:pass@checkout.stripe.com/pay"]) {
+    p.retrieve.mockResolvedValue({...open,url});await expect(readCreatorCheckout(p.stripe,order)).rejects.toThrow();
+  }
+});
 it("rejects incomplete paid proof, mismatched identities, fees, transfers and changed prices",()=>{
   for(const patch of [{amount_received:499},{status:"processing"},{application_fee_amount:50},{transfer_data:{destination:"acct_Other"}},
     {metadata:{snoozer_order:order.versionId,snoozer_version:order.versionId}},{latest_charge:"ch_Order"},{latest_charge:null}]) {

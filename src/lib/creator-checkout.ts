@@ -2,7 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { z } from "zod";
 import type { CreatorMerchant } from "./creator-merchant";
-import { creatorCheckoutId, creatorOrder, type CreatorOrder } from "./creator-orders";
+import { creatorCheckoutId, creatorCheckoutUrl, creatorOrder, type CreatorOrder } from "./creator-orders";
 import { assertCreatorReturnSite, creatorSandboxConfig, readCreatorSandboxAccount } from "./creator-stripe";
 
 export function creatorCheckoutConfig() {
@@ -35,7 +35,5 @@ export async function createCreatorSandboxCheckout(stripe:Stripe, value:CreatorO
     status:z.literal("open"),payment_status:z.literal("unpaid"),currency:z.literal("gbp"),amount_subtotal:z.literal(order.amount),amount_total:z.literal(order.amount),
     client_reference_id:z.literal(order.id),metadata:z.object({snoozer_order:z.literal(order.id),snoozer_version:z.literal(order.versionId)}),
     expires_at:z.literal(expires),url:z.string().url()}).parse(result);
-  const target=new URL(session.url);
-  if(target.origin!=="https://checkout.stripe.com"||target.username||target.password) throw new Error("Unexpected Checkout origin.");
-  return {id:session.id,url:target.href,expiresAt:new Date(session.expires_at*1000).toISOString()};
+  return {id:session.id,url:creatorCheckoutUrl(session.url),expiresAt:new Date(session.expires_at*1000).toISOString()};
 }

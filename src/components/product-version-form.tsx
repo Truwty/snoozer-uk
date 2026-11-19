@@ -10,7 +10,7 @@ import { ActionMessage } from "./action-message";
 export function ProductVersionForm({ product, file, versions }: { product: ProductDraft; file?: ProductFile; versions: ProductVersion[] }) {
   const [state, submit, pending] = useActionState(manageProductVersion, initialState);
   return <section className="stack" style={{ overflowWrap: "anywhere" }} aria-label="Private product versions"><h3>Private versions</h3>
-    <p>Freeze the saved title, description, price and PDF fingerprint together. Editing your draft keeps these snapshots unchanged. A fingerprint is not a malware scan; versions stay private and cannot be bought.</p>
+    <p>Freeze the saved title, description, price and PDF fingerprint together. Editing your draft keeps these snapshots unchanged. A fingerprint is not a malware scan. Freezing does not publish; sandbox fixtures need separate operator review and explicit publication.</p>
     <p>{versions.length} of 5 private versions. Their shared PDF counts once towards storage and stays attached until all versions are discarded.</p>
     {versions.map((version) => <div className="panel stack" key={version.id}><h4>Revision {version.revision} · {version.title} · £{(version.amount / 100).toFixed(2)}</h4>
       <p>{version.description || "No description."}</p><p>{Math.ceil(version.bytes / 1024)} KB · SHA-256 <code style={{ overflowWrap: "anywhere" }}>{version.sha256}</code></p>

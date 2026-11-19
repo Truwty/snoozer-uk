@@ -69,6 +69,11 @@ test("creator payment intake is isolated and disabled without its own configurat
   expect((await request.post("/api/v1/commerce/stripe/webhook")).status()).toBe(503);
 });
 
+test("sandbox storefront cannot open while the explicit purchase gate is off",async({request})=>{
+  test.skip(process.env.SNOOZER_CREATOR_CHECKOUT_ENABLED==="true","Sandbox purchases are explicitly enabled");
+  expect((await request.get("/store/sandbox-fixture")).status()).toBe(404);
+});
+
 
 test("template search combines filters, preserves URL state and clears empty results", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 812 });
