@@ -5,6 +5,7 @@ vi.mock("server-only",()=>({}));
 const mocks=vi.hoisted(()=>({rpc:vi.fn(),claim:vi.fn(),config:vi.fn(),create:vi.fn(),ready:vi.fn(),read:vi.fn(),reconcile:vi.fn(),stripe:{}}));
 vi.mock("stripe",()=>({default:vi.fn(function(){return mocks.stripe;})}));
 vi.mock("../src/lib/supabase",()=>({storageAdmin:()=>({rpc:mocks.rpc})}));
+vi.mock("../src/lib/creator-store-server",()=>({refreshCreatorStore:vi.fn().mockResolvedValue(true)}));
 vi.mock("../src/lib/creator-checkout",()=>({creatorCheckoutConfig:mocks.config,createCreatorSandboxCheckout:mocks.create}));
 vi.mock("../src/lib/creator-reconciliation",()=>({readCreatorCheckout:mocks.read,reconcileCreatorOrder:mocks.reconcile}));
 vi.mock("../src/lib/creator-stripe",async()=>({...await vi.importActual("../src/lib/creator-stripe"),readCreatorSandboxAccount:mocks.ready}));

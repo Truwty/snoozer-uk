@@ -378,6 +378,25 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("anon");expect(await result("select public.get_creator_sandbox_store('private-pdf')->'items' as value")).toEqual([]);
   });
 
+  it("permits only service lookups of published reviewed fixture sellers even when readiness is stale",async()=>{
+    const fixture=await sandboxOfferFixture();await enableSandboxOffer(fixture.version);
+    await db.exec("reset role; update snoozer.creator_sandbox_accounts set checked_at=now()-interval '6 minutes',ready=false");
+    const target=()=>result("select public.get_creator_store_check_target('private-pdf',null) as value");
+    for(const role of ["anon","authenticated"] as const) {
+      await act(role,bob);await expect(target()).rejects.toMatchObject({code:"42501"});
+    }
+    await act("service_role");expect(await target()).toMatchObject({ownerId:alice,merchant:{accountId:"acct_Creator",ready:false}});
+    expect(await result("select public.get_creator_store_check_target(null,$1) as value",[fixture.version])).toMatchObject({ownerId:alice});
+    expect(await result("select public.get_creator_store_check_target('private-pdf',$1) as value",[fixture.version])).toBeNull();
+    expect(await result("select public.get_creator_store_check_target(null,null) as value")).toBeNull();
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set enabled=false");await act("service_role");expect(await target()).toBeNull();
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set enabled=true,review_expires_at=now()-interval '1 second'");await act("service_role");expect(await target()).toBeNull();
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()+interval '1 day';update snoozer.creator_sandbox_policy set enabled=false");await act("service_role");expect(await target()).toBeNull();
+    await db.exec("reset role; update snoozer.creator_sandbox_policy set enabled=true;update snoozer.product_drafts set archived=true");await act("service_role");expect(await target()).toBeNull();
+    await db.exec("reset role; update snoozer.product_drafts set archived=false");await act("authenticated",alice);await db.query("select public.unpublish_profile($1,1)",[fixture.profile]);
+    await act("service_role");expect(await target()).toBeNull();
+  });
+
   it("leases persisted receipt retries with backoff and exposes aggregate recovery diagnostics only to existing billing staff",async()=>{
     await boundSandboxOrder();await recordCreatorReceipt();
     const list=()=>result<unknown[]>("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,null) as value");

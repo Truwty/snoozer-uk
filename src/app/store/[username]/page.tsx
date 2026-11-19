@@ -4,6 +4,7 @@ import { Brand } from "@/components/shell";
 import { CreatorBuyForm } from "@/components/creator-buy-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorStore } from "@/lib/creator-store";
+import { refreshCreatorStore } from "@/lib/creator-store-server";
 import { canonicalUsername,username } from "@/lib/profile";
 import { anonymousClient } from "@/lib/supabase";
 
@@ -11,6 +12,7 @@ export const metadata={title:"Sandbox creator store",robots:{index:false,follow:
 export default async function Page({params}:{params:Promise<{username:string}>}) {
   if(!creatorCheckoutConfig()) notFound();
   const name=canonicalUsername((await params).username);if(!username.safeParse(name).success) notFound();
+  await refreshCreatorStore(name,null);
   const response=await anonymousClient().rpc("get_creator_sandbox_store",{p_name:name});
   if(response.error) throw new Error("The sandbox store is temporarily unavailable.");
   if(!response.data) notFound();

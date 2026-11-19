@@ -1,5 +1,13 @@
 # Progress — 19 November 2026
 
+## Current work — independent buyer verified; automatic seller readiness refresh
+
+User signed into a separate account; actual tab30 Studio shows @truwty. Do not ask for buyer credentials again. Store29 then reproduced Page not found because the legitimate seller readiness check had aged beyond five minutes. This is an application availability defect, not a reason to impersonate the seller or alter hosted timestamps.
+
+New77 source adds a service-only published/reviewed-fixture seller lookup and server-triggered readiness refresh on store visits and purchase starts. It reuses the existing thirty-second lease/one-minute retry limit, exact platform/account checks, current Stripe capability reader and leased completion RPC. Fresh status is reused for four minutes; failure pauses readiness. Existing five-minute SQL discovery/reservation checks remain unchanged. No public merchant identifiers, new credentials or payment writes added. Withdrawn/expired/archived/unpublished/disabled fixtures cannot trigger the private lookup. Previous migrations≤76 unchanged.
+
+Local328 unit/SQL+2 policy checks, lint/types/build pass; matching CI and hosted77 deployment pending. Five refresh tests and one SQL permission/filter case cover the change. Initial test-only tuple-spread type error corrected. Provider Checkout/buyer-byte/refund/recovery/retention proof remains pending; Phase5 is open.
+
 ## Current checkpoint — approved payment setup and real private PDF verified
 
 Original platform access restored, pinned sandbox acct_1UdFe9PhIIpNUquS, livemode=false. With explicit action-time approval, saved three additional connected-account-only permissions on the existing staging key: Charges and Refunds Read (including early-fraud reads), Checkout Sessions Write (including PaymentIntent reads), and Payment Disputes Read. Original onboarding access retained: six permissions total, same one pre-existing elevated Merchant Configuration permission. No direct refund/dispute/payout/transfer writes or live access added; premium/Ko-fi unchanged.

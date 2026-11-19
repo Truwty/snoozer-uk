@@ -1,5 +1,11 @@
 # Continuation
 
+## Start here — buyer signed in; readiness availability fix awaiting release
+
+Actual final tab30 is Studio @truwty, a genuinely separate buyer. Login handoff is complete; do not ask again or sign this account out. Old owner tab25 shares cookies and no longer represents an authenticated seller session. Store29 reproduced404 solely after the five-minute seller check expired. Fix source77 refreshes real Stripe readiness server-side for valid published reviewed fixtures, using the existing per-seller lease and actual capability reader. Do not fake checked_at or a seller identity. Fresh results reused four minutes, SQL five-minute guards retained; no new credentials. Local328+2/lint/types/build pass, final added SQL archive/unpublish assertions being checked; matching CI/apply77/exact deploy pending. Hosted≤76 remain immutable.
+
+Next: pass matching CI, apply/track only77 with a guard that latest hosted is76, deploy exact tested source. Reload store29 as truwty: a real provider refresh must restore it without owner sign-in. Verify DB readiness advanced through the lease and exact account unchanged, then actual test Checkout/stable binding/events/receipt/byte delivery/refund holds. Controlled application/database gates and the sole inspected sandbox offer remain enabled; fixture review expires20Nov19:39:32UTC. Recovery credential/workflow/retention job remain unset. Preserve all prior profile/product/IONOS fixtures. This entry supersedes historical login handoffs below.
+
 ## Latest checkpoint — approved payment setup saved; real private PDF verified
 
 **Latest release/handoff supersedes the setup paragraphs immediately below:** source4499b395a6087ed3c163e3149d52440510a8a92f passed CI44601322010/job135833196927 (322+2 tests,34 browsers,1 expected skip,4×Lighthouse100, all gates) and exact deploydep-dbvl5961egvs73akhn30 is Live19:50:08UTC. Actual ready/live pass. Checkout application flag=true and SQL sandbox policy enabled/pinned to acct_1UdFe9PhIIpNUquS for the controlled test. Actual seller refresh19:50:50UTC readiness=true. Owner published reviewed versionb1763b8f-194c-4214-be4d-84326a370830; actual £5 sandbox store renders. Self-purchase attempt rejected; subsequent SQL confirmed zero orders/receipts. No real Checkout/provider delivery yet.

@@ -8,10 +8,12 @@ import { creatorOrder } from "./creator-orders";
 import { readCreatorCheckout,reconcileCreatorOrder } from "./creator-reconciliation";
 import { assertCreatorReturnSite,readCreatorSandboxAccount } from "./creator-stripe";
 import { storageAdmin } from "./supabase";
+import { refreshCreatorStore } from "./creator-store-server";
 
 export async function startCreatorPurchase(client:SupabaseClient,buyerId:string,versionId:string,site:URL) {
   z.uuid().parse(buyerId);z.uuid().parse(versionId);assertCreatorReturnSite(site);
   const config=creatorCheckoutConfig();if(!config) throw new Error("Sandbox Checkout is disabled.");
+  await refreshCreatorStore(null,versionId);
   const admin=storageAdmin();
   const reserved=await admin.rpc("reserve_creator_sandbox_order",{p_buyer:buyerId,p_version:versionId});
   if(reserved.error) throw new Error("Purchase reservation failed.");
