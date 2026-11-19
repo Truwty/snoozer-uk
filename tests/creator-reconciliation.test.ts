@@ -97,6 +97,18 @@ it("stops cross-account events and preserves dispute holds before the success ev
   expect(mocks.rpc).toHaveBeenLastCalledWith("reconcile_creator_sandbox_order",expect.objectContaining({p_holds:["dispute"],p_charge:"ch_Order"}));
   p.charge.id="ch_Other";await expect(processCreatorReceipt(p.stripe,order.platformId,{...receipt,type:"charge.dispute.created",objectId:"du_Order"})).rejects.toThrow();
 });
+it("durably ignores unrelated legacy charges without a PaymentIntent and rejects incomplete expansions",async()=>{
+  const p=provider();
+  p.charges.mockResolvedValue({...p.charge,payment_intent:null});
+  const refund={...receipt,type:"charge.refunded",objectId:p.charge.id};
+  await processCreatorReceipt(p.stripe,order.platformId,refund);
+  expect(p.charges).toHaveBeenCalledWith(p.charge.id,{expand:["payment_intent"]},{stripeAccount:order.accountId});
+  expect(mocks.rpc.mock.calls.map(c=>c[0])).toEqual(["record_creator_sandbox_receipt","ignore_creator_sandbox_receipt"]);
+  expect(p.retrieve).not.toHaveBeenCalled();
+  mocks.rpc.mockClear();p.charges.mockResolvedValue({...p.charge,payment_intent:"pi_Order"});
+  await expect(processCreatorReceipt(p.stripe,order.platformId,refund)).rejects.toThrow();
+  expect(mocks.rpc.mock.calls.map(c=>c[0])).toEqual(["record_creator_sandbox_receipt"]);
+});
 it("recovers a canonical Checkout before payment persistence and never acknowledges failed binding or state writes",async()=>{
   const p=provider();const unbound={...order,checkoutId:null,checkoutExpiresAt:null};
   await reconcileCreatorOrder(p.stripe,unbound,receipt,receipt.objectId);

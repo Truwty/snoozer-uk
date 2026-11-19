@@ -1,5 +1,17 @@
 # Continuation
 
+## Latest checkpoint — approved payment setup saved; real private PDF verified
+
+Newest PROGRESS entry supersedes historical handoffs below. Original platform login restored. Approved key expansion/destination/signing secret are saved; do not ask again or create duplicates. Destinationwe_1UdarCPhIIpNUquSYO3SVKM2 is connected-account snapshot/API2026-10-28.endive, ten documented events. Six scoped-key permissions, three new connected-account scopes. Secret active after16aba31 redeploydep-dbvkrnrl550s7385qfpg, Live19:29:49UTC; live/ready pass. Never unnecessarily reveal/re-copy the secret; no rotation/expiry occurred.
+
+Actual private PDF upload/download/freeze/frozen download passed618-byte equality/hash. Inspected harmless PDF reviewed via review_creator_sandbox_fixture; disabled offer exists. Product0592f231-437b-41d5-bc3e-3ed293db4d90, file7948f6b7-73be-4543-8776-81eba817f4c3, versionb1763b8f-194c-4214-be4d-84326a370830, SHAa74fffcb57d93e4120c414b06ea82dbe431914e8645adbb56bb6bffaf4235c93. Review expires24h. Preserve profile draft6/published5 and two archived products. Both purchase gates off; no offer published/orders/receipts.
+
+Source fix accepts payment_intent=null only for unrelated charge-receipt disposition; missing/string/malformed expansions fail closed. Regression failed before fix. Local322 tests+2 policy/lint/types/build pass; matching CI/deploy pending. No migration needed; hosted≤76 immutable. Next matching CI/deploy, real readiness refresh, controlled two-gate enablement/owner publication, actual independent verified buyer. Current app session is seller QA; self-buy correctly denied. Do not fake auth/payment. Supabase UI only sends magic links to the example.com QA mailbox; no accessible generated link, do not send to it.
+
+Workbench `trigger` unsupported; Send test events UI gives CLI instructions only. No provider event delivered. Use actual sandbox Checkout/Dashboard tooling; never export existing keys locally as a workaround. Recovery credential/workflow and native retention job unset/unactivated; prepare concrete extra access for separate action-time approval. Finish creator-recovery.md exit checks before Phase5 completion.
+
+Browser2 retained: Render1, IONOS6, Supabase8 (fixture SQLcc0262f3-24cd-444e-84bc-962cfef28468), Stripe24 (pinned sandbox/masked destination), owner product25. Temporary26/27 closed. Old2/5/9/14/15/16/19/20 handles closed. Do not repeat seller onboarding/platform login. Evidence ../snoozer-commerce-evidence-20261119/. IONOS root/mail and premium/Ko-fi unchanged.
+
 ## Latest handoff — seller ready, original platform login pending
 
 User completed onboarding. Actual status refresh at **19November2026 06:15:39UTC** confirmed current card-payment and payout capabilities active/readinesstrue for the existing bound seller. Evidence outside Git: ../snoozer-commerce-evidence-20261119/seller-capabilities-active.jpg. Do not ask the user to repeat seller onboarding, recreate its account or reset its password.

@@ -110,9 +110,9 @@ export async function processCreatorReceipt(stripe:Stripe,platformId:string,rece
         .parse(await stripe.radar.earlyFraudWarnings.retrieve(id,{},scope));id=signal.charge;
     }
     const charge=z.object({id:z.literal(id),object:z.literal("charge"),livemode:z.literal(false),
-      payment_intent:z.object({id:paymentId,object:z.literal("payment_intent"),livemode:z.literal(false),metadata:z.record(z.string(),z.string())})})
+      payment_intent:z.object({id:paymentId,object:z.literal("payment_intent"),livemode:z.literal(false),metadata:z.record(z.string(),z.string())}).nullable()})
       .parse(await stripe.charges.retrieve(id,{expand:["payment_intent"]},scope));
-    identity=charge.payment_intent.metadata;signalCharge=charge.id;
+    identity=charge.payment_intent?.metadata;signalCharge=charge.id;
   }
   const ids=orderMetadata.safeParse(identity);
   if(!ids.success) {

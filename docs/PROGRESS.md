@@ -1,5 +1,15 @@
 # Progress — 19 November 2026
 
+## Current checkpoint — approved payment setup and real private PDF verified
+
+Original platform access restored, pinned sandbox acct_1UdFe9PhIIpNUquS, livemode=false. With explicit action-time approval, saved three additional connected-account-only permissions on the existing staging key: Charges and Refunds Read (including early-fraud reads), Checkout Sessions Write (including PaymentIntent reads), and Payment Disputes Read. Original onboarding access retained: six permissions total, same one pre-existing elevated Merchant Configuration permission. No direct refund/dispute/payout/transfer writes or live access added; premium/Ko-fi unchanged.
+
+Created enabled connected-account snapshot destinationwe_1UdarCPhIIpNUquSYO3SVKM2, API2026-10-28.endive, ten documented events, dedicated commerce webhook. Signing secret copied directly into Render STRIPE_CREATOR_SANDBOX_WEBHOOK_SECRET, never chat/Git/local files; transfer memory/clipboard cleared. Exact16aba31 redeploydep-dbvkrnrl550s7385qfpg Live19:29:49UTC; actual live/ready bodies pass. No event delivery yet. Secret-expiry dialogs accidentally opened while identifying adjacent UI controls were cancelled; no expiry/rotation submitted.
+
+Actual normal-browser PDF upload, owner download, freeze and frozen download passed:618 bytes, equal original, SHA-256 a74fffcb57d93e4120c414b06ea82dbe431914e8645adbb56bb6bffaf4235c93. Full harmless PDF source inspected before service-only sandbox-fixture review. Product0592f231-437b-41d5-bc3e-3ed293db4d90, file7948f6b7-73be-4543-8776-81eba817f4c3, versionb1763b8f-194c-4214-be4d-84326a370830; reviewed offer disabled. This is not production malware clearance. Previous archived products and profile draft6/published5 preserved. Evidence outside Git: ../snoozer-commerce-evidence-20261119/private-upload-and-download-verified.jpg and private-frozen-version-verified.jpg.
+
+Review found unrelated legacy charges legitimately have payment_intent=null. Regression first failed; two-line shared receipt fix now durably ignores these unrelated receipts while rejecting unexpanded non-null IDs. Purchase proof unchanged. Local322 unit/SQL+2 policy checks, lint/types/build pass; matching CI/deploy pending. Both purchase gates stay off. Real independent-buyer Checkout/provider events/refunds/holds/recovery/retention remain unverified. Phase5 and Phases6–7 remain open.
+
 ## Provider update — sandbox seller onboarding verified
 
 The user completed Stripe-hosted onboarding. A real Snoozer status refresh at **19November2026 06:15:39UTC** confirmed **active sandbox card-payment and payout capabilities**, readinesstrue, for the existing bound seller. Return navigation alone was not used as proof. Evidence: ../snoozer-commerce-evidence-20261119/seller-capabilities-active.jpg. No account was recreated/rebound; the agent entered no password or agreement.

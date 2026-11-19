@@ -8,7 +8,7 @@ Use a dedicated connected-account **snapshot** event destination and STRIPE_CREA
 
 Raw signatures and sandbox/account/object boundaries are checked before storing a receipt. Only bound accounts for the pinned sandbox platform are accepted. Receipts contain provider references/times, not raw customer payloads. A204 means canonical processing/disposition was durably completed;503 requests provider retry. Canonical payment reads are always scoped to the connected account. The browser return cannot grant anything.
 
-The existing approved key has onboarding permissions only. Before real testing, review the provider's actual scoped-key permission labels for Checkout creation/read, PaymentIntent/Charge reads (including expansions), disputes and early-fraud-warning reads with connected-account access. Keep existing account/link permissions; no transfer, payout, refund-write or live permission is required by this implementation. Creating/expanding access and copying credentials to Render requires the browser's action-time approval. Do not request that approval until the exact key/destination changes are prepared for review. Secrets stay out of chat, source, logs and local files.
+19November2026 approved setup is saved: existing onboarding access plus connected-account Charges and Refunds Read, Checkout Sessions Write (including PaymentIntent reads), and Payment Disputes Read. Dedicated snapshot destination/signing secret configured; see PROGRESS.md for evidence. Actual Checkout/event reads must still verify those permissions. No transfer, payout, refund-write or live permission required. Further access expansion requires separate action-time approval. Secrets stay out of chat, source, logs and local files.
 
 ## Bounded retry and diagnostics
 
