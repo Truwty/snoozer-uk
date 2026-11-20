@@ -1389,7 +1389,8 @@ test("gallery images upload to private Storage and follow publication visibility
   const afterFolders = await (await request.get("/" + name)).text();
   expect(afterFolders).not.toContain("Private portfolio");
   expect(afterFolders).not.toContain("Private archive");
-  expect(afterFolders.indexOf('alt="Open water"')).toBeLessThan(afterFolders.indexOf('alt="Blue shoreline"'));
+  expect(afterFolders).toContain('alt="Open water"');
+  expect(afterFolders).not.toContain('alt="Blue shoreline"');
 
   await page.goto("/studio/gallery");
   await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
