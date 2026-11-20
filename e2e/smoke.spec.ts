@@ -9,12 +9,31 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     expect(response?.headers()["content-security-policy"]).toContain("strict-dynamic");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Make yourself");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    // Dismiss any showing consent banner so page controls are reachable.
+    await page.evaluate(() => {
+      const banner = document.querySelector('.consent-banner');
+      if (banner) banner.classList.add('collapsed');
+    });
     await page.getByRole("link", { name: "Create your page" }).click();
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email address" })).toBeVisible();
     expect(errors).toEqual([]);
   });
 }
+
+test("privacy choices can be declined and reopened", async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem("snoozer-analytics-consent-v3"));
+  await page.goto("/");
+  const banner = page.getByRole("region", { name: "Your privacy choices" });
+  await expect(banner).toBeVisible();
+  await page.getByRole("button", { name: "Only necessary" }).click();
+  await expect(banner).toHaveCount(0);
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  await expect(banner).toBeVisible();
+  await page.getByRole("button", { name: "Allow optional analytics" }).click();
+  await expect(banner).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("snoozer-analytics-consent-v3"))).toBe("yes");
+});
 
 test("homepage preview applies Studio themes and layouts with keyboard controls", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 860 });
