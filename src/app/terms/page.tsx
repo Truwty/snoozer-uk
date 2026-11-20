@@ -1,0 +1,42 @@
+import type { Metadata } from "next";
+import { LegalPage } from "@/components/legal-page";
+
+export const metadata: Metadata = {
+  title: "Terms and Conditions",
+  description: "Terms for creating, publishing and using Snoozer profiles and services.",
+  alternates: { canonical: "/terms" },
+};
+
+export default function Terms() {
+  return <LegalPage title="Terms and Conditions">
+    <p className="legal-intro">These terms cover your use of Snoozer. By using the service, you agree to follow them and the laws that apply to you.</p>
+    <section className="legal-section stack">
+      <h2>Your account</h2>
+      <p>Provide accurate account information, keep your sign-in details secure and tell us if you believe your account has been accessed without permission. You are responsible for activity carried out through your account.</p>
+    </section>
+    <section className="legal-section stack">
+      <h2>Your content and public pages</h2>
+      <p>You keep ownership of content you create or upload. You confirm that you have the rights and permissions needed to use it and to make it public. To operate Snoozer, you give us permission to host, store, reproduce and display that content as needed to provide the features you choose, including showing a published profile to visitors and generating its preview image. This permission ends when the content is removed from the service, subject to copies or caches outside our control and records we must retain.</p>
+      <p>Publishing makes profile content public. You are responsible for reviewing your page before publishing and for keeping a separate copy of anything important.</p>
+    </section>
+    <section className="legal-section stack">
+      <h2>Acceptable use</h2>
+      <p>Do not use Snoozer to break the law, infringe another person’s rights, expose private information without permission, distribute harmful or misleading content, interfere with the service, bypass security controls, or upload content you are not allowed to share. Do not misuse links, analytics, referrals, purchases or support features.</p>
+      <p>We may restrict or remove content or access where reasonably necessary to protect people, comply with law, investigate abuse or maintain the service. Where appropriate, we will provide an explanation or a way to contact support.</p>
+    </section>
+    <section className="legal-section stack">
+      <h2>Service availability and purchases</h2>
+      <p>We work to keep Snoozer available but cannot promise uninterrupted or error-free access. Features may change, be suspended or be discontinued. Plan limits and feature availability are shown in Studio.</p>
+      <p>If paid features or purchases are offered, the checkout page and any product-specific terms will explain the price and relevant conditions. Nothing in these terms removes consumer rights that cannot legally be excluded.</p>
+    </section>
+    <section className="legal-section stack">
+      <h2>Liability and changes</h2>
+      <p>Snoozer is provided subject to the protections and limits allowed by applicable law. Nothing here excludes liability where exclusion is unlawful, including liability for fraud or for death or personal injury caused by negligence. You remain responsible for your content, links and use of the service.</p>
+      <p>We may update these terms as Snoozer changes. The current version will be published on this page. Continued use after an update takes effect means you accept the updated terms to the extent permitted by law.</p>
+    </section>
+    <section className="legal-section stack">
+      <h2>Contact</h2>
+      <p>For questions about these terms, email <a href="mailto:SnoozerSupport@Snoozer.uk">SnoozerSupport@Snoozer.uk</a>.</p>
+    </section>
+  </LegalPage>;
+}

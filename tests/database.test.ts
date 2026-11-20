@@ -2487,6 +2487,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await draft()).toMatchObject({ revision: 4, appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
   });
 
+  it("lists only live, indexable profiles in the public sitemap", async () => {
+    await act("authenticated", alice);
+    await claim("sitemap-public");
+    const publicId = (await draft() as { profile_id: string }).profile_id;
+    await result("select public.save_profile($1,0,'Public sitemap profile','Bio','lagoon',true,'[]',true,false,null,null,null) as value", [publicId]);
+
+    await act("authenticated", bob);
+    await claim("sitemap-hidden");
+    const hiddenId = (await draft() as { profile_id: string }).profile_id;
+    await result("select public.save_profile($1,0,'Hidden sitemap profile','Bio','lagoon',false,'[]',true,false,null,null,null) as value", [hiddenId]);
+
+    await act("anon");
+    const rows = await db.query<{ username: string }>("select username from public.list_indexable_profile_sitemap()");
+    expect(rows.rows.map((row) => row.username)).toEqual(["sitemap-public"]);
+  });
+
   it("restores private section locks and keeps them out of public profiles", async () => {
     const section = { heading: "Projects", body: "Current work." };
     const write = (expected: number, publish: boolean, item: unknown) =>

@@ -3,6 +3,8 @@ import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/shell";
 import { signIn } from "../auth/actions";
 
+export const metadata = { title: "Sign in", description: "Sign in to manage your Snoozer profile.", robots: { index: false, follow: false } };
+
 export default async function Page({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   const { reset } = await searchParams;
   return <AuthShell title="Welcome back" description="Sign in to manage your page.">

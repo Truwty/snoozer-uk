@@ -2,36 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 import { browserAttribution } from "@/lib/analytics-context";
-import { browserCode, clearBrowserCodes } from "@/lib/analytics-browser";
-
-// Expanded attribution requires a fresh opt-in; never reuse the old view-only choice.
-const preferenceKey = "snoozer-analytics-consent-v3";
+import { browserCode } from "@/lib/analytics-browser";
+import { readAnalyticsConsent, saveAnalyticsConsent } from "@/lib/analytics-consent";
 
 export function ProfileAnalyticsConsent({ username }: { username: string }) {
   const [allowed, setAllowed] = useState(false);
   const counted = useRef<string | null>(null);
   const [privacySignal, setPrivacySignal] = useState(false);
+  const [preferenceError, setPreferenceError] = useState("");
 
   useEffect(() => {
-    function syncPreference(event?: StorageEvent) {
+    function syncPreference(event?: Event) {
       const signal = navigator.doNotTrack === "1" || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
       setPrivacySignal(signal);
       try {
-        if (["snoozer-analytics-consent", "snoozer-analytics-consent-v2"].includes(event?.key ?? "") && event?.newValue === "no") {
-          localStorage.setItem(preferenceKey, "no");
-          clearBrowserCodes(localStorage);
+        const storageEvent = event instanceof StorageEvent ? event : undefined;
+        if (["snoozer-analytics-consent", "snoozer-analytics-consent-v2"].includes(storageEvent?.key ?? "") && storageEvent?.newValue === "no") {
+          saveAnalyticsConsent(localStorage, false);
         }
-        // A readable but non-writable storage context must not reuse saved consent.
-        const choice = localStorage.getItem(preferenceKey);
-        if (choice) localStorage.setItem(preferenceKey, choice);
-        setAllowed(!signal && localStorage.getItem(preferenceKey) === "yes");
+        let choice = readAnalyticsConsent(localStorage);
+        if (signal && choice === true) {
+          saveAnalyticsConsent(localStorage, false);
+          choice = false;
+        }
+        setAllowed(!signal && choice === true);
+        setPreferenceError("");
       } catch {
         setAllowed(false);
+        setPreferenceError("Your browser could not save this choice. Analytics remain off.");
       }
     }
     syncPreference();
     window.addEventListener("storage", syncPreference);
-    return () => window.removeEventListener("storage", syncPreference);
+    window.addEventListener("snoozer-analytics-consent-change", syncPreference);
+    return () => {
+      window.removeEventListener("storage", syncPreference);
+      window.removeEventListener("snoozer-analytics-consent-change", syncPreference);
+    };
   }, []);
 
   useEffect(() => {
@@ -66,22 +73,21 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
 
   function changePreference(next: boolean) {
     try {
-      localStorage.setItem(preferenceKey, next ? "yes" : "no");
-      if (!next) {
-        localStorage.setItem("snoozer-analytics-consent", "no");
-        localStorage.setItem("snoozer-analytics-consent-v2", "no");
-        clearBrowserCodes(localStorage);
-      }
+      saveAnalyticsConsent(localStorage, next);
+      setAllowed(next);
+      setPreferenceError("");
+      window.dispatchEvent(new Event("snoozer-analytics-consent-change"));
     } catch {
-      // The choice stays in memory if the browser blocks storage.
+      setAllowed(false);
+      setPreferenceError("Your browser could not save this choice. Analytics remain off.");
     }
-    setAllowed(next);
   }
 
   return <details className="analytics-preference">
     <summary>Analytics preferences</summary>
     <p>Help creators see page views, link clicks, daily browser counts, coarse traffic-source and device groups, and Snoozer campaign codes. This optional choice applies across Snoozer profiles on this browser. A random code stored on your browser is independent for each profile and UTC day. We store its scoped hash briefly to deduplicate daily browser counts, without your IP address, full referrer or full user agent. Expired browser codes are removed on a later visit; they are never reused. Turning off stops future collection and removes these browser codes. Previously recorded aggregate counts remain.</p>
     {privacySignal && <p>Your browser privacy signal has disabled analytics.</p>}
+    {preferenceError && <p className="message error" role="status">{preferenceError}</p>}
     <button className="button small" type="button" disabled={privacySignal} onClick={() => changePreference(!allowed)}>
       {allowed ? "Turn off profile analytics" : "Allow profile analytics"}
     </button>

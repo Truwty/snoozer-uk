@@ -8,7 +8,7 @@ import { refreshCreatorStore } from "@/lib/creator-store-server";
 import { canonicalUsername,username } from "@/lib/profile";
 import { anonymousClient } from "@/lib/supabase";
 
-export const metadata={title:"Sandbox creator store",robots:{index:false,follow:false}};
+export const metadata={title:"Sandbox creator store",description:"A private test store for checking Snoozer creator checkout flows.",robots:{index:false,follow:false}};
 export default async function Page({params}:{params:Promise<{username:string}>}) {
   if(!creatorCheckoutConfig()) notFound();
   const name=canonicalUsername((await params).username);if(!username.safeParse(name).success) notFound();

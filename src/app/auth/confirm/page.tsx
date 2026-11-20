@@ -3,6 +3,8 @@ import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/shell";
 import { confirmEmail } from "../actions";
 
+export const metadata = { title: "Verify your email", description: "Confirm your email address to start using Snoozer.", robots: { index: false, follow: false } };
+
 export default async function Page({ searchParams }: { searchParams: Promise<{ token_hash?: string }> }) {
   const { token_hash: token } = await searchParams;
   return <AuthShell title="Verify your email" description="Confirm your email to start building your Snoozer page.">

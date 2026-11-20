@@ -6,6 +6,11 @@ import { Brand } from "@/components/shell";
 import { HomeProfileDemo } from "@/components/home-profile-demo";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 
+export const metadata = {
+  title: "A place to be yourself",
+  description: "Create a personal page for your links, photos and projects, then share it anywhere with one Snoozer address.",
+};
+
 export default function Home() {
   const support = kofiProfileUrl(process.env.KOFI_PLATFORM_PROFILE_URL);
   return <main className="shell home">
@@ -38,11 +43,6 @@ export default function Home() {
       <Disclosure title="Can I change my theme later?"><p>Yes. Change your appearance in Studio and check it in the live preview before publishing.</p></Disclosure>
     </section>
     <section className="home-section final-cta"><h2>A place for what you make.</h2><Link className="button" href="/sign-up">Create your page</Link></section>
-    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#contact">Contact</a></nav>{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
-    <section className="policy-notes home-section stack" aria-label="Site information">
-      <details id="privacy"><summary>Privacy information — staging draft</summary><div className="stack"><p>Snoozer uses Supabase for accounts, profile data and uploaded files, Render for hosting, Stripe for configured billing, and Ko-fi for support-event integration. Published profile content can be read by visitors. Account sessions are necessary for Studio.</p><p>Optional analytics record daily counts, coarse source/device groups and registered campaign codes. With fresh consent and writable browser storage, a random code is scoped to each profile and UTC day and hashed before database storage. The app does not store your IP address, full referrer or full user agent in its analytics tables. Hosting providers have separate logging policies.</p><p>Profile analytics preferences and player controls are available on published pages. Turning analytics off stops future collection and removes browser codes; previous aggregate counts remain under plan retention. Deleting a profile removes its associated analytics.</p><p>Referral credit is optional at signup and requires email verification within 24 hours. Consented attribution connects an account to the sharing creator until withdrawal or account deletion. Creators see 90-day aggregate counts without names or emails; profile stages are hidden until five verified accounts. Signup referral requests are stored in account metadata; withdrawal clears those fields and retains only an exclusion marker until account deletion. Use Growth in Studio to review or withdraw.</p><p>TODO(owner): add the legal operator, contact details, applicable privacy rights and provider-specific retention before production launch.</p></div></details>
-      <details id="terms"><summary>Terms information — staging draft</summary><div className="stack"><p>This staging service is for testing Snoozer. Use only content and links you have permission to publish. Do not upload illegal content, expose other people’s private information or attempt to bypass security controls. Keep a copy of important content.</p><p>Published pages are public. Drafts remain in Studio until you publish. Available quotas and sandbox offers are shown in Plan and usage. Sandbox checkout is for testing and does not represent live billing availability.</p><p>TODO(owner): add operator identity, governing terms, cancellation/refund and complaints details before production launch.</p></div></details>
-      <details id="contact"><summary>Contact</summary><div className="stack">{support && <a className="text-link" href={support} rel="noreferrer">Contact through the configured Ko-fi profile</a>}<p>TODO(owner): add a monitored support address and the legal operator’s contact details before production launch.</p></div></details>
-    </section>
+    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav>{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
   </main>;
 }
