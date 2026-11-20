@@ -1,5 +1,13 @@
 # Progress — 19 November 2026
 
+## Priority incident — canonical domain repair,20November2026
+
+User explicitly requested repair of IONOS/Render and a correct snoozer.uk address bar, superseding the previous no-cutover checkpoint. IONOS had no apex A or www record; its Zoho MX/SPF/DKIM/verification records remained present. Render already had exactly snoozer.uk (verified/certificate pending) and www.snoozer.uk (waiting DNS, redirects to apex), so no extra domain/service or paid infrastructure was added.
+
+Restored apex A216.24.57.1 and www CNAMEsnoozer-uk-staging.onrender.com, both TTL300, through IONOS UI; successful saves verified. No email record changed. HTTPS apex now reaches the app but its old canonical setting causes404. Actual Render NEXT_PUBLIC_SITE_URL was https://snoozer-uk-staging.onrender.com; saved https://snoozer.uk without deploying yet.
+
+Source fix recognizes only Render's injected exact RENDER_EXTERNAL_HOSTNAME as a deployment alias. Browser GET/HEAD visits redirect308 to the configured canonical origin with path/query preserved; existing API callbacks and ownership marker retain their old endpoint behavior. Unbound/forged hosts still fail closed. Three proxy regressions pass, full332 unit/SQL+2 policy/lint/types/build pass. Initial unit harness lacked server-only mock; corrected without production change. Matching CI/deploy, Render TLS/www verification, Supabase exact auth redirect update and actual address-bar checks remain pending. Prior≤77 migrations/order/history preserved; commerce phase is still unfinished.
+
 ## Current provider proof — real buyer payment/download; snapshot context correction
 
 Source3fb1492b3a484f7598d2d49c3493140a77c87421 passed CI44604232799 retry job135845590989:328+2 tests,34 browser checks/1 expected skip/four Lighthouse100/all gates. Initial attempt135843518748 failed disposable Supabase startup with no SQLSTATE; retry passed unchanged. Migration77 applied/tracked atomically after guard76; normalized source MD5fbdb2e203e1a49adb5ca78b6c138cc83, service-only execution verified. **Hosted≤77 immutable.** Exact deploydep-dbvleso8v5cc73b1mrv0 Live20:10:43UTC. Actual store visit refreshed real seller readiness20:11:26UTC and restored the storefront without seller sign-in.

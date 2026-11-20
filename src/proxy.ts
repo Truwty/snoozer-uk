@@ -24,10 +24,17 @@ export async function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", csp);
   headers.delete(domainHostHeader); headers.delete(domainUserHeader);
   const host = (request.headers.get("host") ?? request.nextUrl.host).toLowerCase();
-  const custom = host !== siteUrl().host.toLowerCase();
+  const deploymentAlias = host !== siteUrl().host.toLowerCase() && host === process.env.RENDER_EXTERNAL_HOSTNAME?.toLowerCase();
+  const custom = host !== siteUrl().host.toLowerCase() && !deploymentAlias;
   let domainTarget: string | undefined;
   let domainFailure: 404 | 503 | undefined;
   const marker = request.nextUrl.pathname === "/.well-known/snoozer-domain" && ["GET", "HEAD"].includes(request.method);
+  let canonicalTarget: URL | undefined;
+  if (deploymentAlias && ["GET", "HEAD"].includes(request.method) && !request.nextUrl.pathname.startsWith("/api/") && !marker) {
+    canonicalTarget = siteUrl();
+    canonicalTarget.pathname = request.nextUrl.pathname;
+    canonicalTarget.search = request.nextUrl.search;
+  }
   if (custom && !marker) {
     if (!domainName.safeParse(host).success || !supabaseUrl || !supabaseKey) domainFailure = 404;
     else {
@@ -51,7 +58,7 @@ export async function proxy(request: NextRequest) {
   let missing = false;
   let destination: URL | undefined;
   let redirectStatus: 307 | 308 = 307;
-  if (!custom && slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
+  if (!custom && !canonicalTarget && slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
     && supabaseUrl && supabaseKey && ["GET", "HEAD"].includes(request.method)) {
     // Next's async dynamic notFound fallback can be blank without JavaScript.
     const { data, error } = await anonymousClient().rpc("resolve_public_address", { p_name: canonicalUsername(slug) });
@@ -63,7 +70,8 @@ export async function proxy(request: NextRequest) {
       redirectStatus = target.data === canonicalUsername(slug) ? 308 : 307;
     }
   }
-  const response = domainFailure ? new NextResponse(domainFailure === 503 ? "This profile domain is temporarily unavailable." : "Page not found.", { status: domainFailure })
+  const response = canonicalTarget ? NextResponse.redirect(canonicalTarget, { status: 308 })
+    : domainFailure ? new NextResponse(domainFailure === 503 ? "This profile domain is temporarily unavailable." : "Page not found.", { status: domainFailure })
     : domainTarget ? NextResponse.rewrite(new URL(`/${domainTarget}${request.nextUrl.search}`, request.url), { request: { headers } })
     : destination ? NextResponse.redirect(destination, { status: redirectStatus }) : missing
     ? NextResponse.rewrite(new URL("/profile-not-found", request.url), { status: 404, request: { headers } })
@@ -75,7 +83,7 @@ export async function proxy(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   if (siteUrl().protocol === "https:") response.headers.set("Strict-Transport-Security", "max-age=31536000");
 
-  if (!custom && request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
+  if (!custom && !canonicalTarget && request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
     const client = createServerClient(supabaseUrl, supabaseKey, {
       global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000) }) },
       cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:" },

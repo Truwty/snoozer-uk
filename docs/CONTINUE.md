@@ -1,5 +1,13 @@
 # Continuation
 
+## Current priority — finish snoozer.uk domain repair
+
+20Nov user explicitly authorized fixing IONOS/Render and keeping snoozer.uk in the address bar. IONOS was missing all website DNS; saved A@216.24.57.1 and CNAMEwww→snoozer-uk-staging.onrender.com,TTL300, preserving Zoho mail. Render already has two domains, root primary/www→root. No new paid resource. HTTPS apex reaches old app but404s because canonical URL was staging. Saved Render NEXT_PUBLIC_SITE_URL=https://snoozer.uk with Save only; not active until next build/deploy.
+
+New proxy patch preserves API/ownership-marker access on Render's exact injected deployment hostname and redirects its browser GET/HEAD visits to canonical URL with path/query intact. Foreign/unbound/forged hosts still404.332+2 tests/lint/types/build pass; matching CI and exact deployment pending. Then verify root/www HTTPS, homepage/sign-in/templates/profile paths/canonical metadata/address-bar URL, old provider endpoint handling and live/ready. Update Supabase Site URL and exact confirmation/reset redirect allowlist for root if access permits. Preserve existing test callbacks/recovery origins. Prior context34f6fb1 is committed source but never deployed; this release includes it, no migration needed. Hosted≤77 immutable and original paid order/PDF untouched. Do not mark Phase5 complete.
+
+Browser2 now had only IONOS tab1; all old handles stale. Fresh fixIonos=1, fixRender=2, fixPublic=3. Do not reuse old commerceRender/tab1 or commerceKeys/tab24. User signed-in IONOS/Render. Keep the final healthy public domain tab as deliverable.
+
 ## Latest checkpoint — real buyer bytes proved; fix matching snapshot context
 
 Newest PROGRESS entry has precise source/provider IDs. Hosted≤77 immutable, source3fb1492 Live20:10:43UTC exactdeploydep-dbvleso8v5cc73b1mrv0. CI44604232799 retry passed328+2/34 browser/1 skip/4×100/all gates.77 MD5fbdb2e203e1a49adb5ca78b6c138cc83 matches, anon/auth targetfalse/service true. Automatic genuine readiness refresh restored store without impersonating the seller. Buyertruwty63ef283c-dcbb-496a-8e5f-f8db25dfaccd stays signed in; no credential handoff needed.
