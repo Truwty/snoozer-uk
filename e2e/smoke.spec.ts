@@ -17,6 +17,19 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
   });
 }
 
+test("Privacy and Terms footer links open their legal pages", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("link", { name: "Privacy", exact: true }).click();
+  await expect(page).toHaveURL(/\/privacy\/?$/);
+  await expect(page.getByRole("heading", { name: "Privacy Policy", exact: true })).toBeVisible();
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Terms", exact: true }).click();
+  await expect(page).toHaveURL(/\/terms\/?$/);
+  await expect(page.getByRole("heading", { name: "Terms and Conditions", exact: true })).toBeVisible();
+});
+
 test("privacy choices can be declined and reopened", async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem("snoozer-analytics-consent-v3"));
   await page.goto("/");
