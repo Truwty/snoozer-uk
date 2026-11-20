@@ -2808,4 +2808,57 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select count(*)::integer as value from snoozer.publication_schedules where state='blocked' and reason='quota'")).toBe(1);
   });
 
+  it("ranks only consented recorded views, hides undiscoverable profiles and persists totals past retention", async () => {
+    await act("authenticated", alice);
+    await expect(claim("leaderboard")).rejects.toMatchObject({ code: "23505" });
+    await claim("board-alice");
+    await db.query("select public.save_profile(0,'Alice live','Bio','lagoon',true,'[]'::jsonb,true,false)");
+    const aliceId = (await draft() as { profile_id: string }).profile_id;
+
+    await act("authenticated", bob);
+    await claim("board-bob");
+    await db.query("select public.save_profile(0,'Bob hidden','Bio','lagoon',false,'[]'::jsonb,true,false)");
+
+    await act("service_role");
+    const record = (name: string, actor: string | null = null) =>
+      db.query("select public.record_profile_event_with_browser($1,gen_random_uuid(),'view',$2,null,null,'direct',null,'desktop',null)", [name, actor]);
+    for (let i = 0; i < 3; i++) await record("board-alice");
+    await record("board-alice", alice); // Owner views never count.
+    await record("board-bob");
+
+    await act("anon");
+    const ranking = (period: "all" | "month") =>
+      db.query<{ username: string; views: string | number }>("select username, views from public.get_views_leaderboard($1)", [period]);
+    expect((await ranking("all")).rows.map((row) => [row.username, String(row.views)])).toEqual([["board-alice", "3"]]);
+    expect((await ranking("month")).rows.map((row) => [row.username, String(row.views)])).toEqual([["board-alice", "3"]]);
+    await expect(db.query("select * from snoozer.profile_view_leaderboard")).rejects.toMatchObject({ code: "42501" });
+    await expect(ranking("yesterday" as "all")).rejects.toMatchObject({ code: "22023" });
+
+    // Rows from the previous UTC month add to lifetime totals, not this month.
+    await db.exec("reset role");
+    await db.query("insert into snoozer.profile_view_days(profile_id,day,views) values ($1,(date_trunc('month',now() at time zone 'UTC')::date - 1),2)", [aliceId]);
+    await act("anon");
+    expect((await ranking("all")).rows.map((row) => String(row.views))).toEqual(["5"]);
+    expect((await ranking("month")).rows.map((row) => String(row.views))).toEqual(["3"]);
+
+    // Daily analytics expiry must not delete cumulative leaderboard totals.
+    await db.exec("reset role");
+    await db.query("delete from snoozer.profile_view_days where profile_id=$1", [aliceId]);
+    await act("anon");
+    expect((await ranking("all")).rows.map((row) => String(row.views))).toEqual(["5"]);
+
+    // Opting into discoverability makes another active published profile visible.
+    await db.exec("reset role");
+    await db.exec("update snoozer.published_profiles set indexable=true where display_name='Bob hidden'");
+    await act("anon");
+    expect((await ranking("all")).rows.map((row) => row.username)).toEqual(["board-alice", "board-bob"]);
+
+    // Unpublishing removes the profile immediately, without deleting its counters.
+    await act("authenticated", alice);
+    await db.query("select public.unpublish_profile(1)");
+    await act("anon");
+    expect((await ranking("all")).rows.map((row) => row.username)).toEqual(["board-bob"]);
+  });
+
+
 });
