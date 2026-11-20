@@ -58,3 +58,11 @@ jobs:
       - run: npm run build
       - run: npx playwright install --only-shell chromium
       - run: npm run test:e2e -- --workers=2
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-failure-diagnostics
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

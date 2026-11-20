@@ -9,10 +9,7 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     expect(response?.headers()["content-security-policy"]).toContain("strict-dynamic");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Make yourself");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    const banner = page.getByRole("region", { name: "Your privacy choices" });
-    await expect(banner).toBeVisible();
-    await page.getByRole("button", { name: "Only necessary", exact: true }).click();
-    await expect(banner).toHaveCount(0);
+    // Playwright's storageState already keeps optional analytics disabled.
     await page.getByRole("link", { name: "Create your page" }).click();
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email address" })).toBeVisible();
@@ -97,10 +94,7 @@ test("sandbox storefront cannot open while the explicit purchase gate is off",as
 test("template search combines filters, preserves URL state and clears empty results", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 812 });
   await page.goto("/templates");
-  const banner = page.getByRole("region", { name: "Your privacy choices" });
-  await expect(banner).toBeVisible();
-  await page.getByRole("button", { name: "Only necessary", exact: true }).click();
-  await expect(banner).toHaveCount(0);
+  // The global Playwright storage state already opts out of optional analytics.
   await page.getByLabel("Search templates", { exact: true }).fill("notebook compact");
   await page.getByRole("combobox", { name: "Template theme", exact: true }).selectOption("midnight");
   await page.getByRole("button", { name: "Find templates", exact: true }).click();
