@@ -1348,7 +1348,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
   await editorTab(page, "Design");
   await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
-  const previewCard = page.getByRole("region", { name: "Page preview" }).locator(".profile-card");
+  const previewCard = page.getByRole("region", { name: "Page preview" });
   await expect(previewCard).toHaveAttribute("data-background-image", "true");
   await expect(previewCard).toHaveAttribute("style", new RegExp(blueShorelineId));
   await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
