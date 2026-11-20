@@ -1406,7 +1406,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.goto("/" + name);
   const fullPageBackground = page.locator("main.public-page");
   await expect(fullPageBackground).toHaveAttribute("data-background-image", "true");
-  await expect(fullPageBackground).toHaveCSS("background-size", "cover");
+  await expect(fullPageBackground).toHaveCSS("background-size", "cover, cover");
   await expect.poll(() => fullPageBackground.evaluate((element) =>
     getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
   const publicPage = page.locator("main.public-page .profile-card");
