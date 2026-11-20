@@ -5,7 +5,14 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
-  use: { baseURL, trace: "retain-on-failure" },
+  use: {
+    baseURL,
+    trace: "retain-on-failure",
+    storageState: {
+      cookies: [],
+      origins: [{ origin: baseURL, localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }] }],
+    },
+  },
   projects: [{ name: "chromium", use: {
     ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
   } }],

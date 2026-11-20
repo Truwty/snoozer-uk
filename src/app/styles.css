@@ -446,11 +446,6 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
 .legal-section a { min-height: auto; }
 .legal-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s3); color: var(--text-muted); }
 .consent-banner { position: fixed; z-index: 20; inset-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); width: min(100% - 2rem, 70rem); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s5); padding: var(--s5); border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); color: var(--text); box-shadow: 0 1rem 3rem rgb(0 0 0 / 22%); }
-.consent-banner.collapsed { pointer-events: none; }
-.consent-banner.collapsed .consent-copy { opacity: 0; transform: translateY(100%); transition: opacity .2s ease, transform .2s ease; }
-.consent-banner.collapsed .actions { opacity: 0; transform: translateY(100%); transition: opacity .2s ease, transform .2s ease; }
-.consent-banner:not(.collapsed) .consent-copy { opacity: 1; transform: translateY(0); transition: opacity .2s ease, transform .2s ease; }
-.consent-banner:not(.collapsed) .actions { opacity: 1; transform: translateY(0); transition: opacity .2s ease, transform .2s ease; }
 .consent-banner .actions { justify-content: end; flex: none; }
 .consent-copy { display: grid; gap: var(--s2); max-width: 50rem; }
 .consent-copy h2 { font-size: 1.2rem; }

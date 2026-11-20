@@ -34,10 +34,18 @@ async function mailLink(request: APIRequestContext, email: string, subject: stri
   return link;
 }
 
-test.beforeEach(() => {
+test.beforeEach(async ({ context }) => {
   if (!project || !["http://127.0.0.1:54321", "http://localhost:54321"].includes(project) || !publishableKey || !adminKey) {
     throw new Error("These tests require credentials for the disposable loopback stack only.");
   }
+  await context.addInitScript(() => {
+    try {
+      const key = "snoozer-analytics-consent-v3";
+      if (localStorage.getItem(key) === null) localStorage.setItem(key, "no");
+    } catch {
+      // Storage can be unavailable in some document contexts.
+    }
+  });
 });
 
 async function editorTab(page: Page, name: string) {
@@ -54,11 +62,14 @@ test("profile analytics requires consent, counts published link clicks and expor
   test.setTimeout(90000);
   const name = "analytics-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
+  const githubResource = `snoozer-fixtures/${name}`;
+  const discordInvite = name;
+  const discordResource = `i:${discordInvite}`;
   const profileLinks = [
     { label: "Work", url: "https://example.com/" },
     { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
-    { label: "Repository", url: "https://github.com/snoozer-fixtures/public-example" },
-    { label: "Community", url: "https://discord.gg/SnoozerFixture" },
+    { label: "Repository", url: `https://github.com/${githubResource}` },
+    { label: "Community", url: `https://discord.gg/${discordInvite}` },
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
     { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
   ];
@@ -84,24 +95,44 @@ test("profile analytics requires consent, counts published link clicks and expor
     const id = draft.data.profile_id;
     // Provider responses are isolated, explicit fixtures in the disposable stack.
     // No GitHub or Discord credentials or network calls are needed in CI.
-    const githubClaim = await admin.rpc("claim_public_widget", { p_provider: "github", p_resource: "snoozer-fixtures/public-example" });
+    const githubClaim = await admin.rpc("claim_public_widget", {
+      p_provider: "github", p_resource: githubResource,
+    });
+    expect(githubClaim.error).toBeNull();
     expect(githubClaim.data.state).toBe("refresh");
-    expect((await admin.rpc("complete_public_widget", {
-      p_provider: "github", p_resource: "snoozer-fixtures/public-example", p_lease: githubClaim.data.lease,
-      p_payload: { version: 1, provider: "github", resource: "snoozer-fixtures/public-example", title: "Disposable repository fixture",
-        description: "Public metadata test fixture", stats: [{ label: "Stars", value: 7 }, { label: "Forks", value: 2 }],
-        fetchedAt: new Date().toISOString() }, p_retry_after: 0,
-    })).data).toBe(true);
-    const discordClaim = await admin.rpc("claim_public_widget", { p_provider: "discord", p_resource: "i:SnoozerFixture" });
+
+    const githubComplete = await admin.rpc("complete_public_widget", {
+      p_provider: "github", p_resource: githubResource, p_lease: githubClaim.data.lease,
+      p_payload: {
+        version: 1, provider: "github", resource: githubResource,
+        title: "Disposable repository fixture", description: "Public metadata test fixture",
+        stats: [{ label: "Stars", value: 7 }, { label: "Forks", value: 2 }],
+        fetchedAt: new Date().toISOString(),
+      },
+      p_retry_after: 0,
+    });
+    expect(githubComplete.error).toBeNull();
+    expect(githubComplete.data).toBe(true);
+
+    const discordClaim = await admin.rpc("claim_public_widget", {
+      p_provider: "discord", p_resource: discordResource,
+    });
+    expect(discordClaim.error).toBeNull();
     expect(discordClaim.data.state).toBe("refresh");
-    expect((await admin.rpc("complete_public_widget", {
-      p_provider: "discord", p_resource: "i:SnoozerFixture", p_lease: discordClaim.data.lease, p_payload: null, p_retry_after: 0,
-    })).data).toBe(true);
+
+    const discordComplete = await admin.rpc("complete_public_widget", {
+      p_provider: "discord", p_resource: discordResource,
+      p_lease: discordClaim.data.lease, p_payload: null, p_retry_after: 0,
+    });
+    expect(discordComplete.error).toBeNull();
+    expect(discordComplete.data).toBe(true);
     const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
     const publicPage = await visitor.newPage();
     const events: string[] = [];
     publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
     await publicPage.goto("/" + name);
+    await publicPage.getByRole("button", { name: "Only necessary", exact: true }).click();
+    await expect(publicPage.getByRole("region", { name: "Your privacy choices" })).toHaveCount(0);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
@@ -225,7 +256,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toHaveCount(0);
     await publicPage.getByRole("button", { name: "Load Discord summary", exact: true }).click();
     await expect(publicPage.getByText("Summary unavailable or temporarily rate limited. Use the original link above, or try again later.", { exact: true })).toBeVisible();
-    await expect(publicPage.getByRole("link", { name: "Community", exact: true })).toHaveAttribute("href", "https://discord.gg/SnoozerFixture");
+    await expect(publicPage.getByRole("link", { name: "Community", exact: true })).toHaveAttribute("href", `https://discord.gg/${discordInvite}`);
     await publicPage.route("https://player.twitch.tv/**", (route) => route.abort());
     await publicPage.getByRole("button", { name: "Load Twitch player", exact: true }).click();
     const stream = publicPage.getByTitle("Twitch: Stream");

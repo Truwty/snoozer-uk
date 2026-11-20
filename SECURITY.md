@@ -44,7 +44,7 @@ We take the security of **Snoozer.uk** and its self-hosting community seriously.
 
 ### What to Include in Your Report
 
-To help us reproduce and patch the issue rapidly, please provide:
+To help us reproduce and patch the issue rapidly, please provide;
 
 * **Vulnerability Category:** (e.g., RLS bypass, privilege escalation, stored XSS on public profiles, SSRF, auth flaw)
 * **Affected Versions / Commit:** The specific commit SHA, release tag, or branch (`main`) tested.

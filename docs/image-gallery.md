@@ -2,7 +2,7 @@
 
 Open **Studio → Image gallery** to upload, reorder, or remove up to eight images. Give each image a short description for screen readers. The file can be a single JPEG, PNG or WebP up to 4 MiB and 16 megapixels. Publish from Studio when the gallery is ready. Removing an image from the draft leaves the current public page unchanged until the next publish.
 
-In **Studio → Design**, select a draft gallery image as the page background. Upload a custom image here first, then choose it in Design. The selected background is not repeated in the public gallery. It is included in the immutable publication with the image, and disappears from the rendered background if the image is removed from that publication or blocked.
+In **Studio → Design**, select a draft gallery image as the profile-card background. Upload a custom image here first, then choose it in Design. The selected background is not repeated in the public gallery. It is included in the immutable publication with the image, and disappears from the rendered background if the image is removed from that publication or blocked.
 
 Snoozer issues a signed write URL for a private staging path; the original file goes directly to Supabase Storage. The server validates the raster, applies orientation, strips metadata, resizes to fit within 1280 × 1280, and stores a WebP derivative up to 1 MiB in a separate private bucket. Only an upload that completes the expected-revision transaction becomes visible in the draft. A pending attempt can be retried or discarded. It expires after two hours; each profile can start up to 12 attempts per UTC day and retain up to 48 gallery items across drafts, staging and history.
 

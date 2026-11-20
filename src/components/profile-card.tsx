@@ -24,10 +24,16 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     "--link-foreground": linkColours.foreground,
   } as CSSProperties : undefined;
   const background = profileBackgroundImage(profile);
-  const visibleGallery = profile.gallery.filter((item) => item.id !== background?.id);
+  const backgroundImage = background && galleryBase
+    ? `url("${galleryBase}/${encodeURIComponent(background.id)}")`
+    : undefined;
+  const backgroundStyle = backgroundImage
+    ? { "--profile-background-image": backgroundImage } as CSSProperties
+    : undefined;
 
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
-    data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}>
+    data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
+    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}>
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       {avatarSrc
@@ -74,10 +80,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      {galleryBase && visibleGallery.length > 0 && <section className="profile-gallery">
+      {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">
-          {visibleGallery.map((item) => <li key={item.id}>
+          {profile.gallery.filter((item) => item.id !== (backgroundImage ? background?.id : undefined)).map((item) => <li key={item.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
               width={item.width} height={item.height} loading="lazy" />
