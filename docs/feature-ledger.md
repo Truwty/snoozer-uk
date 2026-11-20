@@ -188,7 +188,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | ID | Capability | Status |
 | --- | --- | --- |
 | 12.1 | Avatar Cropper | Deferred |
-| 12.2 | Background Image | Select a processed image from the draft gallery as the profile-card background; preview and publication/history behavior verified in unit, SQL and disposable browser tests. A separate background upload pipeline is not used |
+| 12.2 | Background Image | Select a processed image from the draft gallery as the page background behind the profile card; publication/history behavior verified in unit, SQL and disposable browser tests. A separate background upload pipeline is not used |
 | 12.3 | Background Video | Deferred |
 | 12.4 | Audio Uploads | Deferred |
 | 12.5 | Gallery And Folders | Image galleries and private folders verified in disposable Supabase CI |

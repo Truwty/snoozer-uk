@@ -1349,8 +1349,11 @@ test("gallery images upload to private Storage and follow publication visibility
   await editorTab(page, "Design");
   await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
   const previewCard = page.getByRole("region", { name: "Page preview" });
-  await expect(previewCard).toHaveAttribute("data-background-image", "true");
-  await expect(previewCard).toHaveAttribute("style", new RegExp(blueShorelineId));
+  const previewPage = page.locator(".preview-card");
+  await expect(previewPage).toHaveAttribute("data-background-image", "true");
+  await expect(previewPage).toHaveAttribute("style", new RegExp(blueShorelineId));
+  await expect.poll(() => previewPage.evaluate((element) =>
+    getComputedStyle(element, "::before").backgroundImage)).toContain(blueShorelineId);
   await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
@@ -1358,11 +1361,16 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(liveImage.status()).toBe(200);
   expect(liveImage.headers()["content-type"]).toBe("image/webp");
   const html = await (await request.get("/" + name)).text();
-  expect(html).toContain('data-background-image="true"');
+  expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
   expect(html).toContain(blueShorelineId);
   expect(html).toContain('alt="Open water"');
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
+  await page.goto("/" + name);
+  const publicPage = page.locator("main.public-page");
+  await expect(publicPage).toHaveAttribute("data-background-image", "true");
+  await expect.poll(() => publicPage.evaluate((element) =>
+    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
 
   await page.goto("/studio/gallery/folders");
   await page.setViewportSize({ width: 375, height: 812 });

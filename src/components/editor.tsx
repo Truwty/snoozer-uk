@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { profileBackgroundImage, profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { studioTemplates } from "@/lib/studio-templates";
 import { VisualSelect } from "./visual-select";
@@ -35,6 +35,14 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
   const galleryWarning = galleryMemoryWarning(saved.gallery);
+  const previewProfile = template ? {
+    ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
+    sections: content.sections.length ? content.sections : template.sections,
+  } : { ...saved, ...content };
+  const previewBackground = profileBackgroundImage(previewProfile);
+  const previewBackgroundStyle = previewBackground ? {
+    "--profile-background-image": `url("/studio/gallery/image/${encodeURIComponent(previewBackground.id)}")`,
+  } as CSSProperties : undefined;
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
@@ -325,11 +333,9 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
-      <div className={"preview-card preview-" + previewSize}>
-        <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
-          ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
-          sections: content.sections.length ? content.sections : template.sections,
-        } : { ...saved, ...content }}
+      <div className={"preview-card preview-" + previewSize}
+        data-background-image={previewBackground ? "true" : undefined} style={previewBackgroundStyle}>
+        <ProfileCard preview galleryBase="/studio/gallery/image" profile={previewProfile}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
       </div>
     </aside>

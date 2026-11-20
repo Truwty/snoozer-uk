@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
+import { profileBackgroundImage } from "@/lib/profile";
 import { profileMetadata } from "@/lib/profile-metadata";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
@@ -27,7 +29,11 @@ export default async function Page({ params }: Props) {
   const profile = await readPublished(name);
   if (!profile) notFound();
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
-  return <main className="public-page">
+  const background = profileBackgroundImage(profile);
+  const backgroundStyle = background ? {
+    "--profile-background-image": `url("/media/gallery/${profile.username}/${encodeURIComponent(background.id)}")`,
+  } as CSSProperties : undefined;
+  return <main className="public-page" data-background-image={background ? "true" : undefined} style={backgroundStyle}>
     <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link>
