@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { appearanceTransferLimit, exportAppearance, importAppearance, type AppearanceSettings } from "@/lib/appearance-transfer";
+import type { ProfileContent } from "@/lib/profile";
 
 export function AppearanceTransfer({ settings, onApply }: {
-  settings: AppearanceSettings;
+  settings: Pick<ProfileContent, "theme" | "appearance">;
   onApply: (settings: AppearanceSettings) => void;
 }) {
   const code = useRef<HTMLTextAreaElement>(null);

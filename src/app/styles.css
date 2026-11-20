@@ -88,6 +88,7 @@ textarea { resize: vertical; }
 .public-page .profile-card { width: min(34rem, calc(100vw - max(1rem, env(safe-area-inset-left)) - max(1rem, env(safe-area-inset-right)))); }
 .public-credit { min-height: 44px; display: grid; align-items: center; color: var(--muted); font-size: .875rem; }
 .profile-card { container-type: inline-size; --card-radius: 1.5rem; --block-radius: .75rem; --card-gap: .8rem; --card-pad: clamp(1.15rem, 15cqi - 2rem, 3rem); --page: var(--midnight-page); --text: var(--midnight-text); --detail: var(--midnight-detail); --chip: var(--midnight-chip); --wash: var(--midnight-wash); color: var(--text); background: var(--page); border-radius: var(--card-radius); position: relative; overflow: hidden; isolation: isolate; text-align: center; border: 1px solid var(--chip); }
+.profile-card[data-background-image="true"] { background-image: linear-gradient(160deg, color-mix(in srgb, var(--page) 82%, transparent), color-mix(in srgb, var(--page) 93%, transparent)), var(--profile-background-image); background-position: center; background-size: cover; }
 .profile-card[data-density="compact"] { --card-gap: .55rem; --card-pad: clamp(.9rem, 11cqi - 1.5rem, 2rem); }
 .profile-card[data-density="airy"] { --card-gap: 1.2rem; --card-pad: clamp(1.35rem, 16cqi - 2rem, 3.4rem); }
 .profile-card[data-corners="square"] { --card-radius: 0; --block-radius: 0; }
@@ -147,6 +148,11 @@ textarea { resize: vertical; }
 .profile-gallery-grid, .gallery-editor-grid { display: grid; gap: .65rem; list-style: none; margin: 0; padding: 0; }
 .profile-gallery-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
 .gallery-editor-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+.background-image-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8rem), 1fr)); gap: .6rem; }
+.background-image-option { display: grid; align-content: start; gap: .45rem; min-width: 0; min-height: 7rem; padding: .5rem; border: 1px solid var(--edge); border-radius: .75rem; background: var(--ground); color: var(--ink); text-align: start; overflow-wrap: anywhere; }
+.background-image-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.background-image-option img { width: 100%; height: 5rem; object-fit: cover; border-radius: .45rem; }
+.background-image-none > span:first-child { display: grid; place-items: center; width: 100%; height: 5rem; border-radius: .45rem; background: linear-gradient(135deg, var(--midnight-swatch), var(--lagoon-swatch), var(--daybreak-swatch)); color: white; font-size: 1.5rem; font-weight: 750; }
 .media-folder-form { align-items: end; }
 .media-folder-settings { margin-top: 1rem; }
 .gallery-editor-grid li { min-width: 0; overflow-wrap: anywhere; }

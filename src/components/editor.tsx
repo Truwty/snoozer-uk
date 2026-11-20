@@ -46,11 +46,17 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
     edit((current) => ({
       ...current,
       content: {
-        ...current.content, theme: template.theme, appearance: template.appearance ?? current.content.appearance,
+        ...current.content, theme: template.theme, appearance: { ...current.content.appearance, ...template.appearance },
         sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
       },
     }));
     setTemplateId("");
+  }
+
+  function setBackgroundImage(id?: string) {
+    const appearance = { ...content.appearance };
+    delete appearance.backgroundImage;
+    set("appearance", id ? { ...content.appearance, backgroundImage: id } : appearance);
   }
 
   function move(from: number, to: number) {
@@ -148,6 +154,28 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
           <option value="rise">Soft rise</option>
         </select></label>
         <small className="muted">Decorative backgrounds animate once. Your visitor’s reduced-motion setting always takes priority.</small>
+        <fieldset className="stack">
+          <legend className="section-title">Profile background image</legend>
+          <p className="muted">Choose an image from your gallery. A soft theme overlay keeps text readable, and the selected image won’t be repeated in the public gallery.</p>
+          <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
+          {!saved.gallery.length && <p className="muted">Upload an image in your gallery to use it here.</p>}
+          <div className="background-image-options" role="group" aria-label="Profile background image">
+            <button type="button" className="background-image-option background-image-none"
+              aria-label="Use no background image" aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
+              onClick={() => setBackgroundImage()}>
+              <span aria-hidden="true">Aa</span><span>No image</span>
+            </button>
+            {saved.gallery.map((image) => <button type="button" className="background-image-option"
+              key={image.id} aria-label={`Use ${image.alt} as profile background`}
+              aria-pressed={content.appearance.backgroundImage === image.id}
+              onClick={() => setBackgroundImage(image.id)}>
+              {/* The authenticated Studio route serves this already processed image. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/studio/gallery/image/${image.id}`} alt="" width={image.width} height={image.height} loading="lazy" />
+              <span>{image.alt}</span>
+            </button>)}
+          </div>
+        </fieldset>
         <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });
@@ -189,7 +217,8 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
         </>}
       </fieldset>
       <AppearanceTransfer settings={content} onApply={(settings) => {
-        edit((current) => ({ ...current, content: { ...current.content, ...settings } }));
+        edit((current) => ({ ...current, content: { ...current.content, ...settings,
+          appearance: { ...settings.appearance, ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}) } } }));
         setTemplateId("");
       }} />
       </section>
@@ -298,7 +327,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
       </section>}
       <div className={"preview-card preview-" + previewSize}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
-          ...saved, ...content, theme: template.theme, appearance: template.appearance ?? content.appearance,
+          ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
         } : { ...saved, ...content }}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />

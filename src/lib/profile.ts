@@ -19,6 +19,7 @@ export const profileAppearance = z.strictObject({
   layout: z.enum(profileLayouts).default(defaultAppearance.layout),
   accent: z.enum(linkAccents).default(defaultAppearance.accent),
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
+  backgroundImage: z.uuid().optional(),
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 
@@ -102,3 +103,8 @@ export const draftProfile = publishedProfile.extend({
 export type ProfileContent = z.infer<typeof profileContent>;
 export type DraftProfile = z.infer<typeof draftProfile>;
 export type PublishedProfile = z.infer<typeof publishedProfile>;
+
+export function profileBackgroundImage(profile: Pick<PublishedProfile, "appearance" | "gallery">) {
+  const id = profile.appearance.backgroundImage;
+  return id ? profile.gallery.find((image) => image.id === id) ?? null : null;
+}

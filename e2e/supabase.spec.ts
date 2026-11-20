@@ -1331,6 +1331,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("img", { name: "Open water" })).toBeVisible();
   const privatePath = (await page.getByRole("img", { name: "Blue shoreline" }).getAttribute("src"))!;
   const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
+  const blueShorelineId = privatePath.split("/").at(-1)!;
   expect((await page.request.get(privatePath)).headers()["content-type"]).toBe("image/webp");
   expect((await request.get(privatePath)).status()).toBe(404);
   expect((await request.get(publicPath)).status()).toBe(404);
@@ -1345,14 +1346,22 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("link", { name: "Back to Studio" }).click();
   await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toContainText("12.5 MiB");
   await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
+  await editorTab(page, "Design");
+  await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
+  const previewCard = page.getByRole("region", { name: "Page preview" }).locator(".profile-card");
+  await expect(previewCard).toHaveAttribute("data-background-image", "true");
+  await expect(previewCard).toHaveAttribute("style", new RegExp(blueShorelineId));
+  await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
   const liveImage = await request.get(publicPath);
   expect(liveImage.status()).toBe(200);
   expect(liveImage.headers()["content-type"]).toBe("image/webp");
   const html = await (await request.get("/" + name)).text();
-  expect(html.indexOf('alt="Open water"')).toBeLessThan(html.indexOf('alt="Blue shoreline"'));
+  expect(html).toContain('data-background-image="true"');
+  expect(html).toContain(blueShorelineId);
   expect(html).toContain('alt="Open water"');
+  expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
 
   await page.goto("/studio/gallery/folders");
@@ -1390,6 +1399,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toHaveCount(0);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
+  expect(await (await request.get("/" + name)).text()).not.toContain('data-background-image="true"');
   expect((await page.request.get(privatePath)).status()).toBe(200);
   await page.goto("/studio/gallery/folders");
   const retained = page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Blue shoreline" }) });
@@ -1402,6 +1412,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("link", { name: "Back to Studio" }).click();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
+  expect(await (await request.get("/" + name)).text()).toContain('data-background-image="true"');
 
   // The Studio preview also contains this image, but uses the owner-only URL.
   await page.goto("/" + name);

@@ -2447,6 +2447,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(write(0, true, { ...compact, accent: "#010203" })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, { ...compact, accent: null })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, { ...compact, entrance: "bounce" })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, { ...compact, backgroundImage: "not-an-id" })).rejects.toMatchObject({ code: "22023" });
     await expect(write(0, true, null)).rejects.toMatchObject({ code: "22023" });
     expect(await draft()).toMatchObject({ revision: 0 });
 
@@ -2461,6 +2462,29 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.query("select public.restore_publication(2,4)");
     expect(await draft()).toMatchObject({ revision: 5, appearance: compact });
     expect(await published("appearance-alice")).not.toHaveProperty("appearance");
+  });
+
+  it("publishes a selected gallery background and restores it with its gallery image", async () => {
+    await act("authenticated", alice);
+    await claim("background-image");
+    const profileId = (await draft() as { profile_id: string }).profile_id;
+    await act("service_role");
+    const image = await result<{ id: string }>("select public.prepare_gallery_upload($1,0,'Blue shoreline') as value", [alice]);
+    await result("select public.prepare_gallery_upload($1,0,null,$2) as value", [alice, image.id]);
+    expect(await result("select public.commit_gallery_upload($1,0,$2,$3,800,600) as value", [alice, image.id, avatar])).toBe(true);
+
+    await act("authenticated", alice);
+    const appearance = { density: "balanced", corners: "soft", backgroundImage: image.id };
+    await result("select public.save_profile($1,1,'Creator','Bio','lagoon',false,'[]',true,false,null,$2) as value",
+      [profileId, JSON.stringify(appearance)]);
+    expect(await draft()).toMatchObject({ appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
+    expect(await published("background-image")).toMatchObject({ appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
+
+    await db.query("select public.edit_gallery($1,2,$2,'remove')", [profileId, image.id]);
+    expect(await draft()).toMatchObject({ revision: 3, gallery: [] });
+    expect(await published("background-image")).toMatchObject({ appearance, gallery: [{ id: image.id }] });
+    await db.query("select public.restore_publication($1,2,3)", [profileId]);
+    expect(await draft()).toMatchObject({ revision: 4, appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
   });
 
   it("restores private section locks and keeps them out of public profiles", async () => {

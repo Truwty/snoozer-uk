@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, profileAppearance, profileContent, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
   it("accepts only bounded built-in motion presets without executable appearance settings", () => {
     for (const entrance of ["none", "fade", "rise"]) expect(profileAppearance.parse({ ...defaultAppearance, entrance }).entrance).toBe(entrance);
     for (const entrance of ["loop", "bounce", "url(https://example.com)", null]) expect(profileAppearance.safeParse({ ...defaultAppearance, entrance }).success).toBe(false);
     expect(profileAppearance.safeParse({ ...defaultAppearance, duration: 999999 }).success).toBe(false);
+  });
+
+  it("allows a gallery image as the profile background only when that image is in the profile gallery", () => {
+    const id = "00000000-0000-4000-8000-000000000011";
+    const appearance = profileAppearance.parse({ ...defaultAppearance, backgroundImage: id });
+    const gallery = [{ id, alt: "Blue shoreline", width: 800, height: 600 }];
+    expect(profileBackgroundImage({ appearance, gallery })).toEqual(gallery[0]);
+    expect(profileBackgroundImage({ appearance, gallery: [] })).toBeNull();
+    expect(profileAppearance.safeParse({ ...defaultAppearance, backgroundImage: "not-an-id" }).success).toBe(false);
   });
 
   it("canonicalises ASCII usernames and rejects confusables", () => {
