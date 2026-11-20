@@ -81,8 +81,9 @@ test("profile analytics requires consent, counts published link clicks and expor
     userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36" });
   await visitor.addInitScript(() => {
     try {
-      localStorage.setItem("snoozer-analytics-consent", "yes");
-      localStorage.setItem("snoozer-analytics-consent-v2", "yes");
+      // Start this separate visitor context with optional analytics disabled.
+      // The test exercises explicit opt-in through "Allow profile analytics".
+      localStorage.setItem("snoozer-analytics-consent-v3", "no");
     } catch { /* Some third-party frames block storage. */ }
   });
   try {
@@ -131,8 +132,6 @@ test("profile analytics requires consent, counts published link clicks and expor
     const events: string[] = [];
     publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
     await publicPage.goto("/" + name);
-    await publicPage.getByRole("button", { name: "Only necessary", exact: true }).click();
-    await expect(publicPage.getByRole("region", { name: "Your privacy choices" })).toHaveCount(0);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
@@ -1380,11 +1379,12 @@ test("gallery images upload to private Storage and follow publication visibility
   await editorTab(page, "Design");
   await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
   const previewCard = page.getByRole("region", { name: "Page preview" });
-  const previewPage = previewCard.locator(".profile-card");
+  // ProfileCard itself is the named region, not a descendant of it.
+  const previewPage = previewCard;
   await expect(previewPage).toHaveAttribute("data-background-image", "true");
   await expect(previewPage).toHaveAttribute("style", new RegExp(blueShorelineId));
   await expect.poll(() => previewPage.evaluate((element) =>
-    getComputedStyle(element, "::before").backgroundImage)).toContain(blueShorelineId);
+    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
   await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
