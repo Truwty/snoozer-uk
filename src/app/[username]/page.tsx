@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { profileMetadata } from "@/lib/profile-metadata";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import { ProfileAnalyticsConsent } from "@/components/profile-analytics-consent";
 import { ProfileCard } from "@/components/profile-card";
+import { profileBackgroundImage } from "@/lib/profile";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { readPublished } from "@/lib/profiles-server";
 import { notFound } from "next/navigation";
@@ -27,7 +29,12 @@ export default async function Page({ params }: Props) {
   const profile = await readPublished(name);
   if (!profile) notFound();
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
-  return <main className="public-page">
+  // A selected gallery photo backgrounds the whole published page, not only the card.
+  const background = profileBackgroundImage(profile);
+  const pageStyle = background
+    ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
+    : undefined;
+  return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
     <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link>

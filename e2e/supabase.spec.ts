@@ -1396,13 +1396,19 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(liveImage.status()).toBe(200);
   expect(liveImage.headers()["content-type"]).toBe("image/webp");
   const html = await (await request.get("/" + name)).text();
-  // ProfileCard owns the background attribute; <main> is only the layout wrapper.
+  // The selected image backgrounds the whole public page, as well as the card.
+  expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
   expect(html).toMatch(/<section\b[^>]*class="profile-card[^"]*"[^>]*data-background-image="true"/);
   expect(html).toContain(blueShorelineId);
   expect(html).toContain('alt="Open water"');
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
+  const fullPageBackground = page.locator("main.public-page");
+  await expect(fullPageBackground).toHaveAttribute("data-background-image", "true");
+  await expect(fullPageBackground).toHaveCSS("background-size", "cover");
+  await expect.poll(() => fullPageBackground.evaluate((element) =>
+    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
   const publicPage = page.locator("main.public-page .profile-card");
   await expect(publicPage).toHaveAttribute("data-background-image", "true");
   await expect.poll(() => publicPage.evaluate((element) =>

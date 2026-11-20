@@ -84,6 +84,13 @@ textarea { resize: vertical; }
 .preview-phone { --preview-card-width: calc(375px - 2rem); }
 .preview-narrow { --preview-card-width: calc(320px - 2rem); }
 .public-page { min-height: 100svh; display: grid; place-content: center; justify-items: center; gap: 1.15rem; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); background: radial-gradient(ellipse at 50% 8%, var(--public-wash), transparent 65%); }
+/* The selected profile photo fills the page behind the card, not just the card. */
+.public-page[data-background-image="true"] {
+  background-image: linear-gradient(180deg, rgb(7 10 18 / 24%), rgb(7 10 18 / 42%)), var(--profile-background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 .public-page .profile-card { box-shadow: 0 1.25rem 4rem var(--profile-shadow); }
 .public-page .profile-card { width: min(34rem, calc(100vw - max(1rem, env(safe-area-inset-left)) - max(1rem, env(safe-area-inset-right)))); }
 .public-credit { min-height: 44px; display: grid; align-items: center; color: var(--muted); font-size: .875rem; }
@@ -463,5 +470,13 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
    buttons at the bottom of a scrollable page. The extra space is only
    added when the small settings button is present. */
 body:has(.consent-settings) {
+  padding-block-end: calc(6rem + env(safe-area-inset-bottom));
+}
+/* Avoid an uncovered dark strip below a photo-backed page: reserve
+   the Privacy settings control's space inside the image-backed main. */
+body:has(> .public-page[data-background-image="true"]) {
+  padding-block-end: 0;
+}
+.public-page[data-background-image="true"] {
   padding-block-end: calc(6rem + env(safe-area-inset-bottom));
 }
