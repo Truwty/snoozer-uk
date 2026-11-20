@@ -50,6 +50,22 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   redirect("/studio");
 }
 
+// OAuth is initiated on the server so Supabase's PKCE verifier is stored in
+// its secure session cookie. Do not link users to Discord's raw URL Generator.
+export async function signInWithDiscord() {
+  if (!supabaseUrl || !supabaseKey) redirect("/sign-in?discord=unavailable");
+  const client = await sessionClient();
+  const { data, error: authError } = await client.auth.signInWithOAuth({
+    provider: "discord",
+    options: {
+      redirectTo: new URL("/auth/callback", siteUrl()).href,
+      scopes: "identify email",
+    },
+  });
+  if (authError || !data.url) redirect("/sign-in?discord=failed");
+  redirect(data.url);
+}
+
 export async function requestReset(_: ActionState, form: FormData): Promise<ActionState> {
   const address = email.safeParse(form.get("email"));
   if (!address.success) return error("Enter a valid email address.");

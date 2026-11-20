@@ -22,7 +22,7 @@ enabled = true
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/confirm", "http://localhost:3000/reset-password"]
+additional_redirect_urls = ["http://localhost:3000/auth/confirm", "http://localhost:3000/reset-password", "http://localhost:3000/auth/callback"]
 minimum_password_length = 12
 
 [auth.email]

@@ -17,6 +17,15 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
   });
 }
 
+test("Discord sign-in is available on account entry pages", async ({ page }) => {
+  for (const path of ["/sign-in", "/sign-up"]) {
+    await page.goto(path);
+    const discord = page.getByRole("button", { name: "Continue with Discord" });
+    await expect(discord).toBeVisible();
+    await expect(discord).toBeEnabled();
+  }
+});
+
 test("Privacy and Terms footer links open their legal pages", async ({ page }) => {
   await page.goto("/");
 
