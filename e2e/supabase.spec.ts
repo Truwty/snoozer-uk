@@ -77,14 +77,18 @@ test("profile analytics requires consent, counts published link clicks and expor
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(account.error).toBeNull();
   const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-  const visitor = await browser.newContext({ baseURL: "http://localhost:3000",
-    userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36" });
-  await visitor.addInitScript(() => {
-    try {
-      // Start this separate visitor context with optional analytics disabled.
-      // The test exercises explicit opt-in through "Allow profile analytics".
-      localStorage.setItem("snoozer-analytics-consent-v3", "no");
-    } catch { /* Some third-party frames block storage. */ }
+  // Set initial consent once. addInitScript would overwrite the visitor's
+  // later opt-in on every navigation and break campaign reload assertions.
+  const visitor = await browser.newContext({
+    baseURL: "http://localhost:3000",
+    userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36",
+    storageState: {
+      cookies: [],
+      origins: [{
+        origin: "http://localhost:3000",
+        localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }],
+      }],
+    },
   });
   try {
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
@@ -1392,13 +1396,14 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(liveImage.status()).toBe(200);
   expect(liveImage.headers()["content-type"]).toBe("image/webp");
   const html = await (await request.get("/" + name)).text();
-  expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
+  // ProfileCard owns the background attribute; <main> is only the layout wrapper.
+  expect(html).toMatch(/<section\b[^>]*class="profile-card[^"]*"[^>]*data-background-image="true"/);
   expect(html).toContain(blueShorelineId);
   expect(html).toContain('alt="Open water"');
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
-  const publicPage = page.locator("main.public-page");
+  const publicPage = page.locator("main.public-page .profile-card");
   await expect(publicPage).toHaveAttribute("data-background-image", "true");
   await expect.poll(() => publicPage.evaluate((element) =>
     getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
