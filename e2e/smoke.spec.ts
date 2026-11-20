@@ -26,6 +26,26 @@ test("Discord sign-in is available on account entry pages", async ({ page }) => 
   }
 });
 
+test("homepage leaderboard link opens both Top 50 period tabs", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Leaderboard" }).click();
+  await expect(page).toHaveURL("/leaderboard");
+  await expect(page.getByRole("heading", { name: "Views Leaderboard" })).toBeVisible();
+  const periods = page.getByRole("navigation", { name: "Leaderboard period" });
+  const all = periods.getByRole("link", { name: "All Time Views" });
+  const month = periods.getByRole("link", { name: "Monthly Top Views" });
+  await expect(all).toHaveAttribute("aria-current", "page");
+  await month.click();
+  await expect(page).toHaveURL(/\/leaderboard\?period=month$/);
+  await expect(month).toHaveAttribute("aria-current", "page");
+  await all.click();
+  await expect(page).toHaveURL("/leaderboard");
+  await expect(all).toHaveAttribute("aria-current", "page");
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
 test("Privacy and Terms footer links open their legal pages", async ({ page }) => {
   await page.goto("/");
 
