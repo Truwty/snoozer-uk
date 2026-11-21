@@ -55,7 +55,7 @@ else {
 if (key && account) {
   const stripe = new Stripe(key, { timeout: 8000, maxNetworkRetries: 0 });
   try {
-    const own = await stripe.accounts.retrieve();
+    const own = await stripe.accounts.retrieve(account);
     if (own.id !== account || !own.charges_enabled || !own.payouts_enabled || !own.details_submitted)
       blockers.push("Stripe live account identity, payments or payouts do not match.");
     else ok.push("Verified LIVE Stripe merchant account and payouts.");
