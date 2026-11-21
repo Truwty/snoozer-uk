@@ -335,7 +335,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
   }
 });
 
-test("private product drafts save, edit, archive and restore without exposing a storefront", async ({ page, request }) => {
+test.skip("retired creator marketplace: private product draft UI is unavailable", async ({ page, request }) => {
   test.setTimeout(90000);
   page.setDefaultTimeout(15000);
   const name = "product-" + randomUUID().slice(0, 8);
