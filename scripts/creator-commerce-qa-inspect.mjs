@@ -49,7 +49,7 @@ try {
     include:["configuration.merchant","defaults"],
   });
   const capabilities=account.configuration?.merchant?.capabilities;
-  if(account.livemode!==false||account.closed||account.dashboard!=="full"
+  if(account.id!==order.accountId||account.livemode!==false||account.closed||account.dashboard!=="full"
     ||capabilities?.card_payments?.status!=="active"
     ||capabilities?.stripe_balance?.payouts?.status!=="active") {
     throw new Error("Connected seller capabilities are unavailable.");
@@ -67,6 +67,7 @@ try {
     stripe.radar.earlyFraudWarnings.list({charge:charge.id,limit:100},scope),
   ]);
   const evidence=inspectCreatorQaPayment({order,session,disputes,warnings});
+  if(!evidence.paid) throw new Error("Stripe does not confirm the stored paid purchase.");
   // No buyer/seller identities, charge IDs, secrets, checkout URLs or file paths in output.
   console.log(JSON.stringify({
     type:"CREATOR_COMMERCE_QA_READ_ONLY",
