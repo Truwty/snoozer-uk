@@ -31,7 +31,7 @@ create table snoozer.creator_membership_receipts(
  id text not null check(id ~ '^evt_[A-Za-z0-9]{1,128}$'),
  membership_id uuid not null references snoozer.creator_membership_subscriptions(id) on delete restrict,
  event_type text not null check(char_length(event_type)<=100),
- object_id text not null check(object_id ~ '^[A-Za-z0-9_]{1,263}$'),
+ object_id text not null check(char_length(object_id) between 1 and 263 and object_id ~ '^[A-Za-z0-9_]+$'),
  occurred_at timestamptz not null, retry_count integer not null default 0 check(retry_count between 0 and 10),
  next_attempt_at timestamptz not null default now(),
  created_at timestamptz not null default now(), processed_at timestamptz,
