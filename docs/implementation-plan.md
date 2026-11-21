@@ -2,7 +2,7 @@
 
 The numbered feature inventory is tracked in [feature-ledger.md](feature-ledger.md). Each feature needs a permission model, durable storage where applicable, positive and negative tests, and evidence from its normal user journey. Free-tier constraints govern capacity and scheduling.
 
-Milestone 4 core/staging exit passed on 18 November 2026. See [scope and evidence](milestone-4-review.md); advanced deferred inventory remains implementation work. Next delivery milestone: 5.
+Milestone 4 core/staging exit passed on 18 November 2026. See [scope and evidence](milestone-4-review.md); advanced deferred inventory remains implementation work. Milestone 5's third-party seller roadmap was cancelled by the owner; the current revenue milestone is Snoozer Premium only.
 
 | Milestone | Scope and delivery order | Exit evidence |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Milestone 4 core/staging exit passed on 18 November 2026. See [scope and evidenc
 | 2 | Responsive Studio, autosave and conflict handling, history and rollback, accessible block ordering and undo, layouts and visual effects, safe token engine, templates, gallery, processing, quotas and asset moderation | Keyboard and mobile editing, reduced motion, safe storage and processing, rollback checks |
 | 3 | Versioned plan catalogue, usage, Checkout, Billing Portal, signed Stripe events and reconciliation, invoices, disputes and refunds, grants and gifts, verified Ko-fi receipts and support links, staff diagnostics | Provider test-mode flows, forged/replayed/out-of-order event tests, no browser entitlement grants |
 | 4 | Consent-aware events and click redirects, aggregation, retention, charts and exports, experiments groundwork, platform widgets and consent-scoped integrations | Verified attribution, bot controls, no cross-owner leakage, revoked integration and provider failure tests |
-| 5 | Advanced layouts/effects and SEO, aliases and verified domains, publishing schedules, portfolios, template discovery, safe digital-product storefront, buyer access, referral and growth | Domain takeover checks, scheduled jobs, permissioned downloads and approved commerce model |
+| 5 | Advanced layouts/effects and SEO, aliases and verified domains, publishing schedules, portfolios, template discovery, referrals and growth. Third-party creator commerce is removed | Domain takeover checks, scheduled jobs, referral controls and Premium-only checkout isolation |
 | 6 | Workspace roles and approvals, API keys and webhooks, moderation, appeal and admin audit, directory/community, notifications, account export/deletion, operational dashboards, rate limits and load/recovery drills | Role matrix, staff step-up auth, privacy workflow, quota and backup restore evidence |
 | 7 | Owner-approved terms/privacy/tax, SMTP, production config, DNS/TLS, deployment and rollback, launch accessibility/performance/security gates | Real production smoke tests and verified deployment. Live payment activation requires approved legal/tax settings and secure live credentials |
 
