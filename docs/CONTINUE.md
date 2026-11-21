@@ -1,5 +1,10 @@
 # Continuation
 
+## Creator Ko-fi notification reporting — verified source and hosted schema (21 Nov 2026)
+
+[PR #23](https://github.com/Truwty/snoozer-uk/pull/23) merged into main as a9a838c after [full CI #44928544016](https://github.com/Truwty/snoozer-uk/actions/runs/44928544016) passed unit/PGlite, lint/types, disposable Supabase, production build and Playwright. Hosted additive schema 20261121171537_creator_kofi_reporting applied and source filename aligned. Verified: zero configured creator hooks and zero recorded notifications, owner-only settings access, anonymous denial, service-only ingestion, direct client table denial, historic one paid PDF order and processed receipt intact and membership Checkout disabled. This is an opt-in **unverified external notification feed**, not net income, refund settlement, tax liability, invoice, member access or proof of provider acceptance. User-provided Ko-fi webhook token and test payment are still required for each creator; no customer secrets were stored. Render release pending. Phase 5 remains OPEN.
+
+
 ## Opt-in external Ko-fi creator reporting — source candidate
 
 Phase 5 §13.10: added an owner-only per-profile Ko-fi webhook verification token digest, explicitly enabled/disabled reporting, idempotent externally reported donation notifications, currency-preserving private totals, strict per-owner read and service-only write, a test-mode-independent callback endpoint, and Studio UI. Raw webhook tokens are never stored and supporter names/emails/messages are discarded. This does NOT prove settlement, net revenue, refunds, tax registration, other currencies, memberships or a Snoozer entitlement. A Ko-fi account holder must configure their own webhook URL and send a test notification; no provider payout/read-back API is available here. SQL/unit and webhook tests added. CI, hosted migration, deployment and actual provider acceptance pending. Ko-fi's API sends payment notifications and does not report cancelled memberships. Phase 5 remains OPEN.
