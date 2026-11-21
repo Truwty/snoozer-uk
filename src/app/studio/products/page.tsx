@@ -56,6 +56,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
     <section className="panel stack"><p className="eyebrow">STUDIO / PRODUCTS</p><h1>Product drafts</h1>
       <p>Prepare your digital product catalogue privately. Freezing a version does not publish it. Only separately reviewed test fixtures can be enabled for sandbox purchases; live selling is unavailable.</p>
       <Link href="/studio/products/seller">Stripe sandbox seller setup</Link>
+      {draft&&<Link href={studioHref("/studio/products/disclosure",draft.profile_id)}>Manage affiliate disclosure</Link>}
       {draft&&<Link href={studioHref("/studio/products/collections",draft.profile_id)}>Manage creator collections</Link>}
       {draft && <Link href={studioHref("/studio/products/analytics",draft.profile_id)}>View private sandbox storefront analytics</Link>}
       {checkoutEnabled&&draft&&<Link href={`/store/${draft.username}`}>View sandbox store</Link>}
