@@ -36,6 +36,6 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
           </li>)}</ul>
         </section>;
       })}</div>}
-    <aside className="help-contact"><h2>Still need help?</h2><p>Can’t find what you're looking for? Get in touch with Snoozer support.</p><a className="button primary" href="mailto:SnoozerSupport@Snoozer.uk">Contact support</a></aside>
+    <aside className="help-contact"><h2>Still need help?</h2><p>Can’t find what you’re looking for? Get in touch with Snoozer support.</p><a className="button primary" href="mailto:SnoozerSupport@Snoozer.uk">Contact support</a></aside>
   </main>;
 }

@@ -1500,16 +1500,15 @@ test("sign-ins persist across navigation and independent accounts switch without
     await page.locator(".account-dropdown > summary").click();
     await expect(page.getByText(nameA, { exact: true })).toBeVisible();
 
-    // Only A is revoked on Logout. B's cookie stays available for switching.
+    // Only A is revoked on Logout. B's saved session becomes active.
     await page.getByRole("button", { name: "Logout" }).click();
     await expect(page).toHaveURL("/");
     await page.locator(".account-dropdown > summary").click();
+    await expect(page.getByText(nameB, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Switch Accounts" }).click();
     await expect(page.getByRole("dialog").locator(".account-entry")).toHaveCount(1);
-    const remaining = page.getByRole("dialog").locator(".account-entry");
-    await remaining.locator(".account-row-actions > summary").click();
-    await remaining.getByRole("button", { name: "Switch to account" }).click();
-    await expect(page).toHaveURL(/\/studio/);
+    await page.getByRole("button", { name: "Close account manager" }).click();
+    await page.goto("/studio");
     await page.reload();
     await page.locator(".account-dropdown > summary").click();
     await expect(page.getByText(nameB, { exact: true })).toBeVisible();
