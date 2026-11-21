@@ -2,7 +2,7 @@
 
 ## Proposed buyer support triage — source branch awaiting CI
 
-Implemented state-based guidance for existing verified buyers under `/studio/purchases`, using the currently private order projection and the already-authorized purchase refresh action. Scenarios distinguish active risk holds, pending Checkout, expired Checkout, active paid delivery and paid without current access. Advises no repeat charge on pending payments and no sensitive credentials in support requests. No new persistence, payment mutations, provider access, download bypass or expiry extension. Added pure negative/boundary unit tests. CI and deployment are **not yet verified**, and monitored case processing remains an unfinished specification item. Phase 5 provider test gates remain OPEN.
+Implemented state-based guidance for existing verified buyers under `/studio/purchases`, using the currently private order projection and the already-authorized purchase refresh action. Scenarios distinguish active risk holds, pending Checkout, expired Checkout, active paid delivery and paid without current access. Advises no repeat charge on pending payments and no sensitive credentials in support requests. No new persistence, payment mutations, provider access, download bypass or expiry extension. Fixed both storefront and buyer-page `/#contact` dead links to use the established homepage support mailbox; added a contact-link regression assertion. Added pure negative/boundary unit tests. CI and deployment are **not yet verified**, and monitored case processing remains an unfinished specification item. Phase 5 provider test gates remain OPEN.
 
 ## Completed QA fingerprint preflight (merged and deployed)
 
