@@ -1,6 +1,6 @@
 # Snoozer Premium — only paid product
 
-**21 November 2026: implementation in progress. Live charging has NOT been activated.**
+**21 November 2026: creator marketplace removed, Premium products created. Live charging remains disabled pending prices and credentials.**
 
 Snoozer does not operate a creator marketplace or Stripe Connect seller flow. The three products in the main Snoozer LIVE Stripe account are:
 | Product | Live Stripe Product | Status |
@@ -38,6 +38,6 @@ Checkout sets `automatic_tax: { enabled: false }`. The site does **not** automat
 7. Verify signup confirmation, password recovery and billing notification email delivery; review Supabase leaked-password protection, support runbooks, accessible mobile Checkout, backup/restore, fraud monitoring and rollback.
 
 ## Marketplace removal
-[PR #29](https://github.com/Truwty/snoozer-uk/pull/29) deletes seller/marketplace application routes and modules, adjusts Studio/homepage UI and includes a permanent database freeze/revocation migration. Existing paid test-order records and old migration history remain for financial audit only. The prior marketplace feature specification is superseded and must not be used to recreate it.
+[PR #29](https://github.com/Truwty/snoozer-uk/pull/29) passed full CI, merged into main and deployed [commit `55b9564`](https://github.com/Truwty/snoozer-uk/commit/55b9564533a6192d985c6dbda3a65e46704112fa). It removed seller/marketplace application routes and modules, adjusted Studio/homepage UI and applied permanent database freeze/revocation migration `20261121205733`. Existing paid test-order records and old migration history remain for financial audit only. The prior marketplace feature specification is superseded and must not be used to recreate it.
 
 **Reference:** <https://docs.stripe.com/billing/subscriptions/overview> and <https://docs.stripe.com/webhooks>.
