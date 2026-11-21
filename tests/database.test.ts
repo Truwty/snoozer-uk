@@ -205,7 +205,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await reserveOrder(fixture.version)).toMatchObject({id:order.id,amount:400});
     expect(await redeem("MISSING")).toMatchObject({id:order.id,amount:400});
     await act("authenticated",bob);
-    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,amount:400}]);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,amount:400,originalAmount:500,paidAt:null,holds:[]}]);
     await act("authenticated",alice);
     expect((await list())!.codes.find(c=>c.id===id)).toMatchObject({used:1,disabled:false});
     expect(await result("select public.disable_my_creator_discount($1,$2) as value",[fixture.profile,id])).toBe(true);
@@ -672,7 +672,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select count(*)::integer as value from snoozer.creator_sandbox_receipts where processed_at is not null and order_id=$1",[order.id])).toBe(3);
     expect(await result("select retained_until>=paid_at+interval '90 days' as value from snoozer.creator_sandbox_orders where id=$1",[order.id])).toBe(true);
     await act("authenticated",bob);
-    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",held:true,accessUntil:first.accessUntil}]);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",held:true,accessUntil:first.accessUntil,paidAt:expect.any(String),holds:expect.arrayContaining(["refund"])}]);
   });
 
   it("revokes buyer delivery for isolated refund, dispute and fraud receipts while preserving original paid timestamps",async()=>{
