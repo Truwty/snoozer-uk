@@ -7,13 +7,34 @@ import { ProductVersionForm } from "@/components/product-version-form";
 import { CreatorOfferForm } from "@/components/creator-offer-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorOffers } from "@/lib/creator-store";
-import { productVersions } from "@/lib/product-versions";
+import { productVersions, type ProductVersion } from "@/lib/product-versions";
+import { creatorQaDraft } from "@/lib/creator-qa-studio";
+import { inspectCreatorQaFrozenVersion } from "@/lib/creator-qa-frozen-preflight";
 import { productFile } from "@/lib/product-files";
 import { z } from "zod";
 import { productInventory } from "@/lib/products";
 import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 
 export const metadata = { title: "Product drafts", robots: { index: false, follow: false } };
+
+// Private owner-only display: metadata parity is NOT a provider review, file scan,
+// independent byte inspection or authorization to publish a product.
+function QaFrozenVersionCheck({ version, reference }: {
+  version: ProductVersion;
+  reference: { bytes: number; sha256: string };
+}) {
+  const result = inspectCreatorQaFrozenVersion(version, reference);
+  return <div className="panel stack" style={{overflowWrap:"anywhere"}}>
+    <h4>Frozen QA revision {version.revision}</h4>
+    <p>Frozen version UUID for operator inspection: <code>{version.id}</code></p>
+    <p role="status">{result.matchesReferenceMetadata
+      ? "Frozen version metadata matches the synthetic QA reference."
+      : "Frozen version metadata does not match the synthetic QA reference. Do not submit this version for review."}</p>
+    {!result.matchesReferenceMetadata && <ul>{result.mismatches.map(issue=><li key={issue}>{issue}</li>)}</ul>}
+    <p><a href={`/studio/products/version/${version.id}`} download>Download this exact private revision for independent inspection</a></p>
+    <p className="muted">This is only a comparison of stored frozen title, price, byte count and SHA-256. A trusted operator must independently inspect and hash the downloaded frozen bytes, run the existing read-only database preflight, then explicitly approve the version. A matching display never grants approval or publication.</p>
+  </div>;
+}
 
 export default async function Page({ searchParams }: { searchParams: Promise<StudioProfileQuery> }) {
   const { profile } = await searchParams;
@@ -54,6 +75,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
           <ProductDraftForm key={product.revision} profileId={draft.profile_id} product={product} canActivate={inventory.data.activeUsed < inventory.data.activeLimit} />
           {files.success && !fileResponse?.error ? <ProductFileForm key={files.data.find((file) => file.productId === product.id)?.state ?? "empty"} profileId={draft.profile_id} productId={product.id} file={files.data.find((file) => file.productId === product.id)} /> : <p role="alert">Private files are unavailable. Reload to try again.</p>}
           {versions.success && !versionResponse?.error && files.success && !fileResponse?.error ? <ProductVersionForm product={product} file={files.data.find((file) => file.productId === product.id)} versions={versions.data.filter((version) => version.productId === product.id)} /> : <p role="alert">Private versions are unavailable. Reload to try again.</p>}
+          {versions.success && !versionResponse?.error && (product.title === creatorQaDraft.title || versions.data.some(version=>version.productId===product.id && version.title===creatorQaDraft.title)) &&
+            <section className="stack" aria-label="Isolated sandbox QA frozen version preflight">
+              <h3>Isolated QA frozen-version preflight</h3>
+              <p>Use a new version without any existing purchase. Metadata mismatch must be corrected by creating a separate private revision, not editing previously purchased bytes.</p>
+              {versions.data.filter(version=>version.productId===product.id).length === 0
+                ? <p>No frozen QA version yet. Upload the synthetic PDF and freeze a version above.</p>
+                : versions.data.filter(version=>version.productId===product.id).map(version=>
+                  <QaFrozenVersionCheck key={version.id} version={version} reference={{bytes:qaBytes.length,sha256:qaReferenceSha}} />)}
+            </section>}
           <section className="stack" aria-label="Sandbox test offers"><h3>Sandbox test offers</h3>
             {!checkoutEnabled&&<p>New test purchases are disabled. Existing offers can still be withdrawn.</p>}
             {offers.success&&!offerResponse?.error?offers.data.filter(offer=>versions.success&&versions.data.some(v=>v.id===offer.versionId&&v.productId===product.id)).map(offer=><CreatorOfferForm key={offer.versionId} offer={offer} canPublish={checkoutEnabled}/>):<p role="alert">Test offers are unavailable. Reload to try again.</p>}
