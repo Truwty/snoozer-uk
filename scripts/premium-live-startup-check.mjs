@@ -24,14 +24,15 @@ const classifyError = (error) => {
 };
 
 async function audit() {
-  const key = process.env.STRIPE_PREMIUM_LIVE_API_KEY;
+  const rawKey = process.env.STRIPE_PREMIUM_LIVE_API_KEY;
+  const key = rawKey?.trim();
   const accountId = process.env.STRIPE_PREMIUM_LIVE_ACCOUNT_ID;
   const portalId = process.env.STRIPE_PREMIUM_LIVE_PORTAL_CONFIGURATION;
   const checkoutEnabled = process.env.SNOOZER_PREMIUM_LIVE_ENABLED === "true";
   const report = {
     audit: "snoozer-premium-live-key",
     checkoutEnabled,
-    key: "not_configured",
+    key: rawKey ? "invalid_format" : "missing",
     prices: "not_checked",
     account: "not_checked",
     billingPortal: "not_checked",
