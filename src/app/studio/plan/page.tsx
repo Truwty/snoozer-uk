@@ -118,10 +118,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
       {premium === "cancelled" && <p role="status">You left Checkout without a confirmed purchase. You have not been upgraded.</p>}
       {!showSandbox && liveOffers.length > 0 && <section className="stack" aria-label="Snoozer Premium upgrades">
         <h2>Upgrade to Snoozer Premium</h2>
-        <p>Billed automatically each month or year until cancelled. Applicable tax is calculated by Stripe at Checkout. You can cancel through your billing portal; access depends on your verified paid billing period. Read the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link> before subscribing.</p>
+        <p>Billed automatically each month or year until cancelled. Stripe Tax is not enabled, so no automatic tax calculation will be added at Checkout. You can cancel through your billing portal; access depends on your verified paid billing period. Read the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link> before subscribing.</p>
         <div className="plan-offers">{liveOffers.map(item => <form action={startPremiumLiveCheckout} className="panel stack plan-offer" key={item.price_id}>
           <h3>{labels[item.plan]}</h3>
-          <p className="offer-price">{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(item.unit_amount/100)} <small>per {item.billing_interval === "month" ? "month" : "year"}, plus any applicable taxes</small></p>
+          <p className="offer-price">{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(item.unit_amount/100)} <small>per {item.billing_interval === "month" ? "month" : "year"}</small></p>
           <input type="hidden" name="plan" value={item.plan}/>
           <input type="hidden" name="interval" value={item.billing_interval}/>
           <button className="button primary" type="submit">Subscribe to {labels[item.plan]} ({item.billing_interval === "month" ? "monthly" : "yearly"})</button>
