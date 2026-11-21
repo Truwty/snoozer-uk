@@ -224,6 +224,45 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await list())!.codes.find(c=>c.id!==id&&c.used>0)).toBeUndefined();
   });
 
+  it("isolates creator membership proposals, checks revisions and gates public previews", async () => {
+    const fixture=await sandboxOfferFixture();
+    const saveOffer=(id:string|null,revision=0,visible=false,remove=false,price=500,benefits="Monthly updates")=>
+      result<string>("select public.save_my_creator_membership_offer($1,$2,$3,'Supporter',$4,$5,$6,$7) as value",[fixture.profile,id,revision,benefits,price,visible,remove]);
+    const list=()=>result<{id:string;revision:number;visible:boolean}[]>("select public.list_my_creator_membership_offers($1) as value",[fixture.profile]);
+    const preview=()=>result<unknown[]>("select public.get_creator_sandbox_membership_offers('private-pdf') as value");
+    await act("authenticated",alice);
+    const id=(await saveOffer(null))!;
+    expect(await list()).toMatchObject([{id,revision:0,visible:false}]);
+    await expect(saveOffer(null,0,true,false,99)).rejects.toMatchObject({code:"22023"});
+    await expect(saveOffer(null,0,true,false,500," ")).rejects.toMatchObject({code:"22023"});
+    await act("authenticated",bob);
+    await expect(list()).rejects.toMatchObject({code:"42501"});
+    await expect(saveOffer(id)).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(list()).rejects.toMatchObject({code:"42501"});
+    await act("anon");
+    await expect(list()).rejects.toMatchObject({code:"42501"});
+    expect(await preview()).toEqual([]);
+    await act("authenticated",alice);
+    await saveOffer(id,0,true);
+    await expect(saveOffer(id,0)).rejects.toMatchObject({code:"40001"});
+    expect(await preview()).toEqual([]);
+    await enableSandboxOffer(fixture.version);
+    await act("anon");
+    expect(await preview()).toEqual([{id,title:"Supporter",benefits:"Monthly updates",monthlyPence:500}]);
+    await act("authenticated",alice);
+    for(let i=0;i<4;i++) await saveOffer(null);
+    await expect(saveOffer(null)).rejects.toMatchObject({code:"P1226"});
+    await saveOffer(id,1,false);
+    expect(await preview()).toEqual([]);
+    await saveOffer(id,2,true);
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
+    await act("anon");expect(await preview()).toEqual([]);
+    await act("authenticated",alice);
+    await saveOffer(id,3,false,true);
+    expect(await list()).toHaveLength(4);
+  });
+
   it("restricts seller test-store analytics to a verified profile owner and never leaks buyer identifiers", async () => {
     const fixture = await sandboxOfferFixture();
     await enableSandboxOffer(fixture.version);

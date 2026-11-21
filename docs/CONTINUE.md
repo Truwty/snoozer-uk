@@ -1,5 +1,13 @@
 # Continuation
 
+## Creator membership offers (§13.11) — preview increment
+
+Added a private verified-owner CRUD catalogue for up to five proposed monthly tiers per profile (£1–£100, title, benefits, revision and explicit visibility), with public previews gated by the existing nonempty canonical sandbox storefront. No checkout, subscription, entitlement, revenue or provider mutations. SQL/unit/SSR regression tests added; CI, hosted migration and deployment pending. Recurring creator payment lifecycle and genuine provider acceptance remain open. See [membership runbook](creator-memberships.md).
+
+## Previous release verified
+
+[CI](https://github.com/Truwty/snoozer-uk/actions/runs/44880062043) passed on `11e675c`; Render `dep-dc0kllbm8hqs73eqrvn0` Live 2026-11-21 07:41:46 UTC. Discounts and receipt download code deployed, hosted discount migration tracked, separate authenticated human/provider acceptance remains open.
+
 ## Discount codes (§13.5) — CI and hosted schema verified
 
 Exact source commit [5538bfb](https://github.com/Truwty/snoozer-uk/commit/5538bfb5b72d740f0256d5cbfc5adf37170b6e29) passed [CI #44879648821](https://github.com/Truwty/snoozer-uk/actions/runs/44879648821), including lint, types, unit/SQL, disposable Supabase, build and E2E. Hosted additive migration succeeded and is tracked as `20261121072318_creator_sandbox_discounts`; source filename aligned. Read-only verification showed zero discount codes, one original paid order, zero new price snapshots, authenticated owner RPC grant, anonymous and direct-table read denial, and service-only discounted reservation. Render deployment and genuine independent discounted Checkout/risk events remain unverified. No live payment gates altered.
