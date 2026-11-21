@@ -25,6 +25,11 @@ flagged("SNOOZER_PREMIUM_LIVE_ENABLED");
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const approvedProducts = {
+  plus: "prod_VfgMlUsOz4GELl",
+  pro: "prod_VfgMPjnzui1zGl",
+  studio: "prod_VfgMvCX05yAJSj",
+};
 const catalogue = [];
 if (!url || !service) blockers.push("Hosted Supabase service credentials are required for this operator preflight.");
 else {
@@ -78,7 +83,8 @@ if (key && account) {
         || livePrice.unit_amount !== price.unit_amount
         || livePrice.recurring?.interval !== price.billing_interval
         || livePrice.recurring.interval_count !== 1
-        || livePrice.recurring.usage_type !== "licensed") {
+        || livePrice.recurring.usage_type !== "licensed"
+        || (typeof livePrice.product === "string" ? livePrice.product : livePrice.product.id) !== approvedProducts[price.plan]) {
         blockers.push("A live Price does not match the database-approved amount or billing interval.");
       }
     } catch { blockers.push("A database Price could not be read from the LIVE account."); }
