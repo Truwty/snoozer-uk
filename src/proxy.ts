@@ -8,8 +8,32 @@ import { anonymousClient } from "@/lib/supabase";
 import { canonicalUsername, username } from "@/lib/profile";
 
 const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard"]);
+// Creator marketplace is retired. Keep Premium subscriptions under /studio/plan
+// and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
+// is intentionally disabled. Never reopen seller onboarding.
+const retiredCreatorRoutePrefixes = [
+  "/store",
+  "/studio/products",
+  "/studio/memberships",
+  "/studio/product-reports",
+  "/studio/donations",
+  "/api/v1/commerce/kofi",
+  "/api/v1/commerce/memberships",
+] as const;
+
+export function isRetiredCreatorRoute(pathname: string) {
+  return retiredCreatorRoutePrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + "/"));
+}
+
 
 export async function proxy(request: NextRequest) {
+  if (isRetiredCreatorRoute(request.nextUrl.pathname)) {
+    return new NextResponse("Not found.", { status: 404, headers: {
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    } });
+  }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
   const storage = supabaseUrl ? new URL(supabaseUrl).origin : "";

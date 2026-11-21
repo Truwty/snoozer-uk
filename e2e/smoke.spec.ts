@@ -127,6 +127,18 @@ test("creator payment intake is isolated and disabled without its own configurat
   expect((await request.post("/api/v1/commerce/stripe/recover",{data:{limit:1}})).status()).toBe(503);
 });
 
+test("creator marketplace is retired but Premium endpoints remain available",async({request})=>{
+  for(const path of ["/store/anyone","/studio/products","/studio/products/seller",
+    "/studio/products/memberships","/studio/memberships","/studio/donations",
+    "/studio/product-reports","/api/v1/commerce/kofi/webhook"]) {
+    const result=await request.get(path,{maxRedirects:0});
+    expect(result.status(),path).toBe(404);
+  }
+  // A test callback without valid configuration/signature is not a payment grant.
+  const premium=await request.post("/api/v1/billing/stripe/webhook",{data:""});
+  expect([400,401,403,503]).toContain(premium.status());
+});
+
 test("sandbox storefront cannot open while the explicit purchase gate is off",async({request})=>{
   test.skip(process.env.SNOOZER_CREATOR_CHECKOUT_ENABLED==="true","Sandbox purchases are explicitly enabled");
   expect((await request.get("/store/sandbox-fixture")).status()).toBe(404);

@@ -1,5 +1,7 @@
 # Phase 5 release acceptance checklist
 
+> **SUPERSEDED 21 November 2026:** The owner retired third-party creator commerce. These historic acceptance items are no longer a product roadmap or permission to re-enable seller features. Only Snoozer Premium is to be sold; see docs/CONTINUE.md.
+
 ## Engineering release confirmed — 21 November 2026
 
 - [x] PR #22 — private buyer support cases, restricted staff queue, per-access audit; hosted schema 20261121165902; final CI 44927569033; released to Render.
