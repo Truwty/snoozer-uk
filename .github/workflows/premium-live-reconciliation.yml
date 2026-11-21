@@ -1,0 +1,29 @@
+name: Premium live subscription reconciliation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '31 */6 * * *'
+permissions: {}
+concurrency:
+  group: premium-live-reconciliation
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: vars.PREMIUM_LIVE_SWEEP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      SERVICE_ORIGIN: ${{ vars.PREMIUM_LIVE_SWEEP_ORIGIN }}
+      OPERATOR_TOKEN: ${{ secrets.STRIPE_PREMIUM_LIVE_RECOVERY_TOKEN }}
+    steps:
+      - name: Reconcile a bounded batch without creating charges
+        shell: bash
+        run: |
+          if [[ ! "$SERVICE_ORIGIN" =~ ^https://[a-zA-Z0-9.-]+$ || ${#OPERATOR_TOKEN} -lt 32 ]]; then
+            echo "Premium recovery origin or secret unavailable."
+            exit 1
+          fi
+          curl --silent --show-error --fail-with-body --max-time 300 \
+            --request POST --header "Authorization: Bearer $OPERATOR_TOKEN" \
+            --header "Content-Type: application/json" --data '{"limit":5}' \
+            "$SERVICE_ORIGIN/api/v1/billing/stripe/live-recover"
