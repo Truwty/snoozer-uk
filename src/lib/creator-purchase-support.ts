@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import { creatorPurchases } from "./creator-purchases";
 
+export const purchaseSupportHref = "mailto:SnoozerSupport@Snoozer.uk";
+
 type Order = z.infer<typeof creatorPurchases>[number];
 
 /**
