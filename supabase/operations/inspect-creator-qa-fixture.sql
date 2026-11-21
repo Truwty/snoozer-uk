@@ -12,6 +12,7 @@ with target as (
 )
 select
   v.id as version_id,
+  d.owner_id as creator_owner_id,
   v.sha256 as frozen_sha256,
   v.bytes as frozen_bytes,
   v.amount as price_in_pence,
