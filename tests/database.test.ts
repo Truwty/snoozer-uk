@@ -308,6 +308,51 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await publicGroups("private-pdf")).toEqual([]);
   });
 
+  it("keeps affiliate disclosures owner-written and gated behind the reviewed sandbox store", async () => {
+    const fixture=await sandboxOfferFixture();
+    const read=(profile:string)=>result<{revision:number;disclosure:string;enabled:boolean}>(
+      "select public.get_my_creator_affiliate_disclosure($1) as value",[profile]);
+    const saveDisclosure=(profile:string,expected:number,disclosure:string,enabled:boolean)=>
+      result<boolean>("select public.save_my_creator_affiliate_disclosure($1,$2,$3,$4) as value",
+        [profile,expected,disclosure,enabled]);
+    const publicDisclosure=(name:string)=>result<string|null>(
+      "select public.get_creator_sandbox_affiliate_disclosure($1) as value",[name]);
+    await act("authenticated",alice);
+    expect(await read(fixture.profile)).toEqual({revision:0,disclosure:"",enabled:false});
+    await expect(saveDisclosure(fixture.profile,0,"",true)).rejects.toMatchObject({code:"22023"});
+    await expect(saveDisclosure(fixture.profile,0,"bad\u0000control",true)).rejects.toMatchObject({code:"22023"});
+    expect(await saveDisclosure(fixture.profile,0,"Some links may earn commission.",true)).toBe(true);
+    expect(await read(fixture.profile)).toMatchObject({revision:0,enabled:true});
+    await act("anon");
+    expect(await publicDisclosure("private-pdf")).toBeNull();
+    await expect(read(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(saveDisclosure(fixture.profile,0,"Ad",true)).rejects.toMatchObject({code:"42501"});
+
+    await act("authenticated",bob);
+    await expect(read(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(saveDisclosure(fixture.profile,0,"Ad",true)).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(read(fixture.profile)).rejects.toMatchObject({code:"42501"});
+
+    await act("service_role");
+    await enableSandboxOffer(fixture.version);
+    await act("anon");
+    expect(await publicDisclosure("private-pdf")).toBe("Some links may earn commission.");
+    expect(await publicDisclosure("unknown-seller")).toBeNull();
+    await act("authenticated",alice);
+    expect(await saveDisclosure(fixture.profile,0,"I may receive a referral commission.",true)).toBe(true);
+    await expect(saveDisclosure(fixture.profile,0,"Stale",true)).rejects.toMatchObject({code:"40001"});
+    expect((await read(fixture.profile))!.revision).toBe(1);
+    expect(await saveDisclosure(fixture.profile,1,"I may receive a referral commission.",false)).toBe(true);
+    await act("anon");
+    expect(await publicDisclosure("private-pdf")).toBeNull();
+
+    await db.exec("reset role; update snoozer.creator_affiliate_disclosures set enabled=true");
+    await db.exec("update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
+    await act("anon");
+    expect(await publicDisclosure("private-pdf")).toBeNull();
+  });
+
   it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
     const fixture=await sandboxOfferFixture();
     await db.exec("reset role");
