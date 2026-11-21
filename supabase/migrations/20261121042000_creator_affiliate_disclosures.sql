@@ -60,7 +60,7 @@ returns text language sql stable security definer set search_path='' as $$
  select d.disclosure
  from snoozer.creator_affiliate_disclosures d
  join snoozer.profiles p on p.id=d.profile_id and p.owner_id=d.owner_id and p.username::text=p_name
- where d.enabled and public.get_creator_sandbox_store(p_name) is not null
+ where d.enabled and jsonb_array_length(coalesce(public.get_creator_sandbox_store(p_name)->'items','[]'::jsonb))>0
 $$;
 
 revoke execute on function public.get_my_creator_affiliate_disclosure(uuid),
