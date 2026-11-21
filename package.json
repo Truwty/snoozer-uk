@@ -20,7 +20,8 @@
     "billing:preflight": "node --env-file-if-exists=.env.local scripts/billing-sandbox-preflight.mjs",
     "billing:diagnostics": "node --env-file-if-exists=.env.local scripts/billing-diagnostics.mjs",
     "cleanup:avatars": "node --env-file-if-exists=.env.local scripts/cleanup-avatars.mjs",
-    "cleanup:analytics": "node --env-file-if-exists=.env.local scripts/purge-analytics.mjs"
+    "cleanup:analytics": "node --env-file-if-exists=.env.local scripts/purge-analytics.mjs",
+    "billing:live:preflight": "node --env-file-if-exists=.env.local scripts/premium-live-preflight.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
