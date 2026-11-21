@@ -17,7 +17,7 @@ const types = new Set([
   "charge.dispute.closed", "radar.early_fraud_warning.created",
 ]);
 
-async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Event) {
+export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Event) {
   if (!types.has(event.type)) return;
   const id = eventId.parse(event.id);
   const objectId = z.string().min(4).max(150).parse(event.data.object?.id);
