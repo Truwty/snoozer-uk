@@ -33,7 +33,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
   };
   return <>
     <details className="account-dropdown" ref={menu}>
-      <summary className="account-trigger" aria-label={current ? `Account: ${active}` : "Accounts"}>
+      <summary className="account-trigger" aria-label={current ? `Dashboard — ${active}` : "Sign in — account options"}>
         <Avatar name={active} src={current?.avatar}/>
         <span>{current ? "Dashboard" : "Sign in"}</span>
         <svg aria-hidden="true" className="account-chevron" width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -54,11 +54,11 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
       </div>
     </details>
 
-    <dialog className="accounts-dialog" ref={dialog} onClick={(event) => {
+    <dialog className="accounts-dialog" aria-labelledby="accounts-dialog-title" ref={dialog} onClick={(event) => {
       if (event.target === dialog.current) dialog.current?.close();
     }}>
       <div className="accounts-dialog-header">
-        <div><h2>Manage Accounts</h2><p>Switch seamlessly between signed-in accounts.</p></div>
+        <div><h2 id="accounts-dialog-title">Manage Accounts</h2><p>Switch seamlessly between signed-in accounts.</p></div>
         <button type="button" className="accounts-close" aria-label="Close account manager" onClick={() => dialog.current?.close()}>×</button>
       </div>
       <div className="accounts-list">

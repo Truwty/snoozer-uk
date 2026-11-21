@@ -1475,7 +1475,7 @@ test("sign-ins persist across navigation and independent accounts switch without
     await page.goto("/pricing");
     await page.reload();
     await page.locator(".account-dropdown > summary").click();
-    await expect(page.getByText(nameA, { exact: true })).toBeVisible();
+    await expect(page.locator(".account-popover").getByText(nameA, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Switch Accounts" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("link", { name: "Add an account" }).click();
@@ -1498,20 +1498,20 @@ test("sign-ins persist across navigation and independent accounts switch without
     await page.goto("/help");
     await page.reload();
     await page.locator(".account-dropdown > summary").click();
-    await expect(page.getByText(nameA, { exact: true })).toBeVisible();
+    await expect(page.locator(".account-popover").getByText(nameA, { exact: true })).toBeVisible();
 
     // Only A is revoked on Logout. B's saved session becomes active.
     await page.getByRole("button", { name: "Logout" }).click();
     await expect(page).toHaveURL("/");
     await page.locator(".account-dropdown > summary").click();
-    await expect(page.getByText(nameB, { exact: true })).toBeVisible();
+    await expect(page.locator(".account-popover").getByText(nameB, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Switch Accounts" }).click();
     await expect(page.getByRole("dialog").locator(".account-entry")).toHaveCount(1);
     await page.getByRole("button", { name: "Close account manager" }).click();
     await page.goto("/studio");
     await page.reload();
     await page.locator(".account-dropdown > summary").click();
-    await expect(page.getByText(nameB, { exact: true })).toBeVisible();
+    await expect(page.locator(".account-popover").getByText(nameB, { exact: true })).toBeVisible();
 
     const visibleCookies = await page.evaluate(() => document.cookie);
     expect(visibleCookies).not.toContain("snoozer_saved_accounts_v1");
