@@ -1,6 +1,6 @@
 # Progress — 21 November 2026
 
-## 21 November 2026 — refund/dispute/fraud risk-event hardening in development
+## 21 November 2026 — refund/dispute/fraud risk-event regression hardening merged
 
 Resumed immediately after the **original signed Checkout completion** had been manually resent successfully (Stripe HTTP 204) and the exact stored Supabase receipt was verified **processed**. Existing refund/dispute/fraud handling and sticky SQL holds were inspected before modifying anything; the architecture already reconciles canonical connected-account payment/charge state and uses verified payment IDs. This change extends regression **coverage**, not a replacement commerce implementation.
 
@@ -8,7 +8,7 @@ Resumed immediately after the **original signed Checkout completion** had been m
 - `tests/database.test.ts`: added a real embedded-PostgreSQL migration-backed case checking that each risk signal remains held, the buyer's download is denied, a later Checkout completion does not clear holds, and the first paid/access timestamps never move.
 - [`docs/creator-commerce-sandbox-signal-tests.md`](creator-commerce-sandbox-signal-tests.md) documents the isolated genuine provider test sequence, read-only SQL verification and safe release gates. Existing original paid purchase and live Stripe resources were **not** modified.
 
-**Verification:** CI on the new branch/PR is the remaining step; do not claim these new regressions passed until a matching green run appears. The **actual provider milestone** (separate isolated test-mode refunds/disputes/fraud events and verified buyer access holds) is **not yet complete**. The previous original-event recovery is already verified. Scheduled failed-event retry, QA offer withdrawal and new-Checkout gate closure also remain outstanding. Never substitute mock events for signed Stripe deliveries.
+**Verification PASSED:** [CI #158](https://github.com/Truwty/snoozer-uk/actions/runs/44848708164) on PR #5 completed successfully (45 test files, 39 Playwright passed, 1 expected skip, all four Lighthouse accessibility 100), then merged to `main` as commit `2916377`. This verifies test coverage and build, not genuine sandbox refund/dispute/fraud deliveries. The **actual provider milestone** (separate isolated test-mode refunds/disputes/fraud events and verified buyer access holds) is **not yet complete**. The previous original-event recovery is already verified. Scheduled failed-event retry, QA offer withdrawal and new-Checkout gate closure also remain outstanding. Never substitute mock events for signed Stripe deliveries.
 
 
 ## 21 November 2026, 01:02 UTC — real Stripe checkout webhook recovered and persisted
