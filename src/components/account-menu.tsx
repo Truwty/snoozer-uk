@@ -33,7 +33,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
   };
   return <>
     <details className="account-dropdown" ref={menu}>
-      <summary className="account-trigger" aria-label={current ? `Dashboard — ${active}` : "Sign in — account options"}>
+      <summary className="account-trigger">
         <Avatar name={active} src={current?.avatar}/>
         <span>{current ? "Dashboard" : "Sign in"}</span>
         <svg aria-hidden="true" className="account-chevron" width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
