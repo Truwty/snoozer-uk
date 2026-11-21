@@ -368,6 +368,19 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await create.getByRole("button", { name: "Create product draft", exact: true }).click();
     const item = page.locator("details").filter({ hasText: "Private creator handbook" });
     await expect(item.locator("summary")).toContainText("Private draft");
+    await page.getByRole("link",{name:"Manage creator collections"}).click();
+    await expect(page.getByRole("heading",{name:"Creator collections"})).toBeVisible();
+    await expect(page.getByText("No collections yet. Create one below to group existing drafts.")).toBeVisible();
+    const newCollection=page.getByRole("region",{name:"New collection"});
+    await newCollection.getByLabel("Collection name").fill("Getting started guides");
+    await newCollection.getByLabel("Collection description").fill("Starter PDF downloads");
+    await newCollection.getByLabel(/Private creator handbook/).check();
+    await newCollection.getByLabel(/Show this collection in the sandbox store/).check();
+    await newCollection.getByRole("button",{name:"Create collection"}).click();
+    await expect(page.locator("details summary").filter({hasText:"Getting started guides"})).toContainText("Public when eligible");
+    await page.getByRole("link",{name:"Back to Products"}).click();
+    await expect(page.locator("details summary").filter({hasText:"Private creator handbook"})).toBeVisible();
+
     await item.locator("summary").click();
     await item.getByLabel("Price (GBP)", { exact: true }).fill("25.50");
     await item.getByRole("button", { name: "Save product draft", exact: true }).click();
