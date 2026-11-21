@@ -230,7 +230,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 13.14 | Tax-Ready Receipts Where Supported | Deferred |
 | 13.15 | Fraud Review | Current direct-charge/early-fraud reads and sticky dispute/fraud holds pass CI44460593527/44463174220. Bounded retry/backoff/dead-letter/read-only diagnostics pass CI and schema76 is hosted; real provider warning/case resolution and operational job execution unverified |
 | 13.16 | Product Moderation | Service-only reviewed sandbox-fixture SHA attestation with24-hour expiry and explicit owner publication passes CI44462265410. This is not production malware/content moderation; those remain open |
-| 13.17 | Buyer Support Flow | Private sandbox purchase references/status and draft contact anchor implemented; monitored operator contact, case handling and live support policy remain open |
+| 13.17 | Buyer Support Flow | Buyer-owned sandbox purchase page now provides tested state-specific support guidance for pending/expired/paid/inactive/held orders, discourages duplicate payment, and directs buyers to the existing contact route with their order reference. No automatic risk-hold release or payment claim. Monitored ticket intake, case management, identity-safe support tooling and live support policy remain open |
 
 ## 14. ANALYTICS AND EXPERIMENTS
 
