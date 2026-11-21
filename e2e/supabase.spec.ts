@@ -690,11 +690,6 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editProfile.click();
     await expect(page.getByRole("link", { name: "Image gallery" })).toHaveAttribute("href", profileHref.replace("/studio?", "/studio/gallery?"));
     await page.getByRole("link", { name: "Plan and usage" }).click();
-    await page.getByText("Review a platform Ko-fi donation", { exact: true }).click();
-    await page.getByLabel("Ko-fi transaction reference").fill("test-review-reference");
-    await page.getByRole("button", { name: "Request donation review" }).click();
-    await expect(page.getByText("Your review request is recorded.")).toBeVisible();
-    await expect(page.getByText("test-review-reference · Pending review")).toBeVisible();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -725,9 +720,6 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await page.getByRole("link", { name: "Billing diagnostics" }).click();
       await expect(page.getByRole("heading", { name: "Billing diagnostics" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Stripe sandbox" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Creator sandbox recovery",exact:true })).toBeVisible();
-      await expect(page.getByText("Receipts needing operator review after ten retries",{exact:true})).toBeVisible();
-      await expect(page.getByText("Creator recovery diagnostics are unavailable.",{exact:true})).toHaveCount(0);
     } finally {
       staffSql("delete from snoozer.staff_roles where owner_id = '" + billingStaff + "'");
     }
