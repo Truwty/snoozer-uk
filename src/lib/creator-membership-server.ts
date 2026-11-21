@@ -113,8 +113,8 @@ export async function verifyMyMembership(client:SupabaseClient,buyer:string,id:s
  if(cancel&&!current.cancelAtEnd&&current.state!=="cancelled") throw new Error("Cancellation reconciliation pending.");
  return {record:current,active:membershipAccess(current)};
 }
-export async function stageMembershipEvent(m:MemberRecord,event:string,type:string,hold:MemberHold|null) {
- const response=await storageAdmin().rpc("stage_creator_membership_receipt",{p_id:m.id,p_account:m.accountId,p_event:event,p_type:type,p_hold:hold});
+export async function stageMembershipEvent(m:MemberRecord,event:string,type:string,objectId:string,occurredAt:string,hold:MemberHold|null) {
+ const response=await storageAdmin().rpc("stage_creator_membership_receipt",{p_id:m.id,p_account:m.accountId,p_event:event,p_type:type,p_object:objectId,p_occurred:occurredAt,p_hold:hold});
  if(response.error||typeof response.data!=="boolean") throw new Error("Membership receipt unavailable.");
  return response.data;
 }

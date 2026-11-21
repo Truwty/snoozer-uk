@@ -252,11 +252,14 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const proof=(event:string|null=null,holds:string[]=[])=>
       result("select public.apply_creator_membership_proof($1,'acct_Creator','sub_Member',now(),'active',now()+interval '30 days',false,$2,$3) as value",[m.id,holds,event]);
     expect(await proof()).toMatchObject({state:"active",holds:[],pendingReceipt:false});
-    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','refund') as value",[m.id])).toBe(true);
+    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','ch_Member','2026-11-21T08:00:00Z','refund') as value",[m.id])).toBe(true);
     expect(await result("select public.get_creator_membership_subscription($1) as value",[m.id])).toMatchObject({holds:["refund"],pendingReceipt:true});
+    expect(await result("select public.list_creator_membership_retries('acct_Platform',1,null) as value")).toMatchObject([{id:"evt_MemberRefund",objectId:"ch_Member"}]);
+    expect(await result("select public.claim_creator_membership_retry('acct_Platform','evt_MemberRefund') as value")).toBe(true);
+    expect(await result("select public.claim_creator_membership_retry('acct_Platform','evt_MemberRefund') as value")).toBe(false);
     expect(await proof("evt_MemberRefund")).toMatchObject({state:"active",holds:["refund"],pendingReceipt:false});
     expect(await proof()).toMatchObject({holds:["refund"]});
-    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','refund') as value",[m.id])).toBe(false);
+    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','ch_Member','2026-11-21T08:00:00Z','refund') as value",[m.id])).toBe(false);
     await act("authenticated",alice);
     expect(await result("select public.list_my_creator_memberships() as value")).toEqual([]);
     expect(await result("select public.owns_my_creator_membership($1) as value",[m.id])).toBe(false);

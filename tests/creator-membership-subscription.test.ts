@@ -1,4 +1,5 @@
-import {expect,it} from "vitest";
+import {expect,it,vi} from "vitest";
+vi.mock("server-only",()=>({}));
 import {memberRecord,membershipAccess} from "../src/lib/creator-membership-subscription";
 import {inspectMembershipCheckout,inspectMembershipSubscription,inspectMembershipInvoice,membershipCheckoutConfig} from "../src/lib/creator-membership-provider";
 const id="00000000-0000-4000-8000-000000000001",buyer="00000000-0000-4000-8000-000000000002",seller="00000000-0000-4000-8000-000000000003",offer="00000000-0000-4000-8000-000000000004";

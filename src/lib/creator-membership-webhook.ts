@@ -32,7 +32,7 @@ const kinds={
  "radar.early_fraud_warning.updated":["radar.early_fraud_warning","issfr_"],
 } as const;
 const schema=z.object({object:z.literal("event"),id:z.string().regex(/^evt_[A-Za-z0-9]{1,128}$/),
- account:stripeAccountId,context:stripeAccountId.nullable().optional(),livemode:z.literal(false),type:z.string(),
+ account:stripeAccountId,context:stripeAccountId.nullable().optional(),livemode:z.literal(false),type:z.string(),created:z.number().int().positive().max(253402300799),
  data:z.object({object:z.object({id:z.string(),object:z.string(),livemode:z.literal(false)})})})
  .refine(v=>v.context==null||v.context===v.account);
 export function parseMembershipEvent(value:unknown) {
@@ -40,7 +40,7 @@ export function parseMembershipEvent(value:unknown) {
  if(!Object.hasOwn(kinds,event.type)) return null;
  const [object,prefix]=kinds[event.type as keyof typeof kinds],id=event.data.object.id;
  if(event.data.object.object!==object||!id.startsWith(prefix)||!/^[A-Za-z0-9]+$/.test(id.slice(prefix.length))||id.length>263) throw new Error("Invalid membership event.");
- return {id:event.id,account:event.account,type:event.type,objectId:id};
+ return {id:event.id,account:event.account,type:event.type,objectId:id,occurredAt:new Date(event.created*1000).toISOString()};
 }
 type Event=NonNullable<ReturnType<typeof parseMembershipEvent>>;
 const idSchema=z.string().regex(/^[A-Za-z0-9_]{1,260}$/);
@@ -103,7 +103,7 @@ export async function processMembershipEvent(stripe:Stripe,platform:string,event
   if(!m) return;
   const session=inspectMembershipCheckout(value,m);
   const bound=await bindMembership(m,session);
-  if(!await stageMembershipEvent(bound,event.id,event.type,null)) return;
+  if(!await stageMembershipEvent(bound,event.id,event.type,event.objectId,event.occurredAt,null)) return;
   if(bound.subscriptionId) await applyMembershipProof(stripe,bound,event.id);
   else {
    if(session.status==="expired") await expireMembership(bound);
@@ -113,14 +113,14 @@ export async function processMembershipEvent(stripe:Stripe,platform:string,event
  }
  if(event.type.startsWith("customer.subscription.")||event.type.startsWith("invoice.")) {
   const m=event.type.startsWith("invoice.")?await invoiceMember(stripe,event.objectId,event,platform):await fromSubscription(stripe,event.objectId,event.account,platform);
-  if(m&&await stageMembershipEvent(m,event.id,event.type,null)) await applyMembershipProof(stripe,m,event.id);
+  if(m&&await stageMembershipEvent(m,event.id,event.type,event.objectId,event.occurredAt,null)) await applyMembershipProof(stripe,m,event.id);
   return;
  }
  const hold:MemberHold=event.type==="charge.refunded"?"refund":event.type.startsWith("charge.dispute.")?"dispute":"fraud";
  const members=await riskMembers(stripe,event,platform);
  // Stage all risk holds first; a failed provider read cannot skip a sibling.
  const pending:MemberRecord[]=[];
- for(const m of members) if(await stageMembershipEvent(m,event.id,event.type,hold)) pending.push(m);
+ for(const m of members) if(await stageMembershipEvent(m,event.id,event.type,event.objectId,event.occurredAt,hold)) pending.push(m);
  for(const m of pending) await applyMembershipProof(stripe,m,event.id);
 }
 export async function receiveMembershipWebhook(request:Request,secret:string,handle:(event:Event)=>Promise<void>) {
