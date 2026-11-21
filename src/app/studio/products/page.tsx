@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buildCreatorQaPdf, qaPdfSha256 } from "../../../../scripts/creator-commerce-qa-fixture.mjs";
 import { Brand } from "@/components/shell";
 import { ProductDraftForm } from "@/components/product-draft-form";
 import { ProductFileForm } from "@/components/product-file-form";
@@ -27,6 +28,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const offerResponse=draft?await client.rpc("list_my_creator_sandbox_offers",{p_profile:draft.profile_id}):null;
   const offers=creatorOffers.safeParse(offerResponse?.data);
   const checkoutEnabled=!!creatorCheckoutConfig();
+  const qaBytes = buildCreatorQaPdf();
+  const qaReferenceSha = qaPdfSha256(qaBytes);
   return <main className="shell stack">
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", profile === undefined ? undefined : draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack"><p className="eyebrow">STUDIO / PRODUCTS</p><h1>Product drafts</h1>
@@ -39,6 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <div className="actions">
           <a className="button secondary" href="/studio/products/qa-fixture" download="snoozer-isolated-sandbox-qa.pdf">Download test PDF</a>
         </div>
+        <p className="muted">Reference downloaded fixture: {qaBytes.length} bytes · SHA-256 <code style={{ overflowWrap: "anywhere" }}>{qaReferenceSha}</code>. Calculate the SHA-256 of the <strong>actual frozen upload</strong> independently before operator approval. This reference alone does not approve an offer.</p>
         <p>Next: select <strong>Fill sandbox QA draft</strong> under New product, save it, upload this exact PDF and freeze a private version. Then a trusted operator must inspect the frozen PDF and review its SHA-256 before you can publish a short-lived test offer.</p>
         <p className="muted">Use a new product and a separate verified buyer. Never reuse the existing paid £5 order. Test-mode payments and refunds are not triggered by this setup.</p>
       </section>}
