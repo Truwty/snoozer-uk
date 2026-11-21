@@ -174,6 +174,67 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
   }
 
+  it("restricts seller test-store analytics to a verified profile owner and never leaks buyer identifiers", async () => {
+    const fixture = await sandboxOfferFixture();
+    await enableSandboxOffer(fixture.version);
+    const pending = (await reserveOrder(fixture.version))!;
+    const report = (profile: string) => result<{
+      retainedOrders:number;pendingOrders:number;expiredOrders:number;paidOrders:number;
+      heldPaidOrders:number;downloadableOrders:number;grossTestPence:number;
+      days:{day:string;orders:number;paid:number;grossTestPence:number}[];
+    }>("select public.read_my_creator_storefront_analytics($1) as value",[profile]);
+
+    await act("authenticated",alice);
+    const before = (await report(fixture.profile))!;
+    expect(before).toMatchObject({
+      retainedOrders:1,pendingOrders:1,expiredOrders:0,paidOrders:0,
+      heldPaidOrders:0,downloadableOrders:0,grossTestPence:0,
+    });
+    expect(before.days).toHaveLength(14);
+    expect(before.days.at(-1)).toMatchObject({orders:1,paid:0,grossTestPence:0});
+    expect(JSON.stringify(before)).not.toContain(bob);
+    expect(JSON.stringify(before)).not.toContain("paymentId");
+    expect(JSON.stringify(before)).not.toContain(pending.id);
+
+    await act("authenticated",bob);
+    await expect(report(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await claim("seller-analytics-buyer");
+    const otherProfile=(await draft() as {profile_id:string}).profile_id;
+    const other=(await report(otherProfile))!;
+    expect(other).toMatchObject({retainedOrders:0,pendingOrders:0,paidOrders:0,grossTestPence:0});
+    expect(other.days).toHaveLength(14);
+
+    await act("anon");
+    await expect(report(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(report(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await act("service_role");
+    await expect(report(fixture.profile)).rejects.toMatchObject({code:"42501"});
+
+    // Isolated SQL-only fixture; this is NOT a provider Checkout or refund test.
+    await db.exec("reset role");
+    await db.query(`update snoozer.creator_sandbox_orders set
+      checkout_id='cs_test_Analytics',checkout_expires_at=now()+interval '1 hour',
+      payment_id='pi_Analytics',charge_id='ch_Analytics',state='paid',
+      paid_at=now(),access_until=now()+interval '30 days'
+      where id=$1`,[pending.id]);
+    await act("authenticated",alice);
+    const paid=(await report(fixture.profile))!;
+    expect(paid).toMatchObject({
+      retainedOrders:1,pendingOrders:0,paidOrders:1,heldPaidOrders:0,
+      downloadableOrders:1,grossTestPence:500,
+    });
+    expect(paid.days.at(-1)).toMatchObject({orders:1,paid:1,grossTestPence:500});
+    await db.exec("reset role");
+    await db.query("update snoozer.creator_sandbox_orders set holds=array['refund']::text[] where id=$1",[pending.id]);
+    await act("authenticated",alice);
+    const held=(await report(fixture.profile))!;
+    expect(held).toMatchObject({
+      paidOrders:1,heldPaidOrders:1,downloadableOrders:0,grossTestPence:500,
+    });
+    expect(JSON.stringify(held)).not.toContain("ch_Analytics");
+  });
+
   it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
     const fixture=await sandboxOfferFixture();
     await db.exec("reset role");
