@@ -174,6 +174,56 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
   }
 
+  it("reserves discount and stock together, preserves price on retry and restricts access", async () => {
+    const fixture=await sandboxOfferFixture();
+    const create=(code:string,percent=20,uses=1,days=7)=>result<string>(
+      "select public.create_my_creator_discount($1,$2,$3,$4,$5,$6) as value",[fixture.profile,fixture.version,code,percent,uses,days]);
+    const list=()=>result<{codes:{id:string;used:number;disabled:boolean}[]}>("select public.list_my_creator_discounts($1) as value",[fixture.profile]);
+    const redeem=(code:string,buyer=bob)=>result<{id:string;amount:number}>("select public.reserve_creator_sandbox_discount_order($1,$2,$3) as value",[buyer,fixture.version,code]);
+    await act("authenticated",alice);
+    const id=(await create("SAVE20"))!;
+    await create("OTHER20",20,2);
+    await create("EXPIRES",20,2);
+    await expect(create("SAVE20")).rejects.toMatchObject({code:"23505"});
+    await expect(create("BAD",91)).rejects.toMatchObject({code:"22023"});
+    await expect(create("bad")).rejects.toMatchObject({code:"22023"});
+    await expect(redeem("SAVE20")).rejects.toMatchObject({code:"42501"});
+    await result("select public.set_my_creator_sandbox_stock($1,$2,1) as value",[fixture.profile,fixture.version]);
+    await act("authenticated",bob);
+    await expect(list()).rejects.toMatchObject({code:"42501"});
+    await expect(create("BOB20")).rejects.toMatchObject({code:"42501"});
+    await expect(result("select public.disable_my_creator_discount($1,$2) as value",[fixture.profile,id])).rejects.toMatchObject({code:"42501"});
+    await act("anon"); await expect(list()).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified); await expect(list()).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role; update snoozer.creator_sandbox_discounts set expires_at=now()-interval '1 second' where code='EXPIRES'");
+    await enableSandboxOffer(fixture.version);
+    await expect(redeem("MISSING")).rejects.toMatchObject({code:"P1225"});
+    await expect(redeem("EXPIRES")).rejects.toMatchObject({code:"P1225"});
+    await expect(redeem("SAVE20",alice)).rejects.toMatchObject({code:"42501"});
+    const order=(await redeem("SAVE20"))!;
+    expect(order.amount).toBe(400);
+    expect(await reserveOrder(fixture.version)).toMatchObject({id:order.id,amount:400});
+    expect(await redeem("MISSING")).toMatchObject({id:order.id,amount:400});
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,amount:400}]);
+    await act("authenticated",alice);
+    expect((await list())!.codes.find(c=>c.id===id)).toMatchObject({used:1,disabled:false});
+    expect(await result("select public.disable_my_creator_discount($1,$2) as value",[fixture.profile,id])).toBe(true);
+    await act("service_role"); expect(await redeem("SAVE20")).toMatchObject({id:order.id,amount:400});
+    await db.exec("reset role");
+    await expect(db.query("update snoozer.creator_sandbox_orders set charged_amount=500 where id=$1",[order.id])).rejects.toMatchObject({code:"22023"});
+    await db.query(`update snoozer.creator_sandbox_orders set checkout_id='cs_test_Discount',checkout_expires_at=now()+interval '1 hour',payment_id='pi_Discount',charge_id='ch_Discount',state='paid',paid_at=now(),access_until=now()+interval '30 days' where id=$1`,[order.id]);
+    await act("authenticated",alice);
+    expect(await result("select public.read_my_creator_storefront_analytics($1) as value",[fixture.profile])).toMatchObject({grossTestPence:400,paidOrders:1});
+    // End the synthetic order's access window, then test stock/code rollback.
+    await db.exec("reset role"); await db.query("update snoozer.creator_sandbox_orders set access_until=now()-interval '1 second' where id=$1",[order.id]);
+    await act("service_role");
+    await expect(redeem("SAVE20")).rejects.toMatchObject({code:"P1225"});
+    await expect(redeem("OTHER20")).rejects.toMatchObject({code:"P1222"});
+    await act("authenticated",alice);
+    expect((await list())!.codes.find(c=>c.id!==id&&c.used>0)).toBeUndefined();
+  });
+
   it("restricts seller test-store analytics to a verified profile owner and never leaks buyer identifiers", async () => {
     const fixture = await sandboxOfferFixture();
     await enableSandboxOffer(fixture.version);

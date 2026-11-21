@@ -1,5 +1,9 @@
 # Progress — 21 November 2026
 
+## Discount codes (§13.5) — source candidate
+
+Implemented owner-only controls, frozen-version percentage codes, atomic stock and discount reservation and immutable effective prices. Regression tests added; CI, hosted migration/deployment and real provider acceptance are NOT verified. Existing sandbox purchase and risk gates remain unchanged. See [discount runbook](creator-discounts.md). Phase 5 remains open.
+
 ## Partial Tips and Donations (§13.10, merged and deployed)
 
 Reused existing published profile Ko-fi links for an optional **external** tipping panel on eligible sandbox stores. Safe, canonical HTTPS Ko-fi links are selected from the actually published profile for the matching store username; lookalike, missing or unpublished links are omitted. Visible notice states Ko-fi may charge real money and that external tips never grant product access, a Snoozer receipt or entitlement. No separate donation processing, payment reconciliation, Stripe/Ko-fi webhook, database migration or Checkout gate change. Positive/negative/edge-case URL and SSR panel tests added. [Runbook](creator-tips.md) marks remaining provider/donation-accounting functionality deferred. [CI #258](https://github.com/Truwty/snoozer-uk/actions/runs/44871843506) passed every stage; [PR #18](https://github.com/Truwty/snoozer-uk/pull/18) merged as `6261e80`, Render deployment `dep-dc0iuvm1egvs7383l4d0` **Live** 2026-11-21 05:44:56 UTC. No schema migration, new donation records or Checkout changes. Postmerge hosted read-only audit: one original paid order, one processed receipt, no pending receipts, zero inventory caps, zero active reviewed offers. This is only external Ko-fi link discovery, **not** provider-verified creator tipping; human hosted public-store inspection and complete Phase 5 provider risk acceptance remain open.

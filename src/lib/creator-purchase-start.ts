@@ -4,18 +4,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createCreatorSandboxCheckout,creatorCheckoutConfig } from "./creator-checkout";
 import { creatorMerchant } from "./creator-merchant";
+import { discountCode } from "./creator-discounts";
 import { creatorOrder } from "./creator-orders";
 import { readCreatorCheckout,reconcileCreatorOrder } from "./creator-reconciliation";
 import { assertCreatorReturnSite,readCreatorSandboxAccount } from "./creator-stripe";
 import { storageAdmin } from "./supabase";
 import { refreshCreatorStore } from "./creator-store-server";
 
-export async function startCreatorPurchase(client:SupabaseClient,buyerId:string,versionId:string,site:URL) {
+export async function startCreatorPurchase(client:SupabaseClient,buyerId:string,versionId:string,site:URL,code:string|null=null) {
   z.uuid().parse(buyerId);z.uuid().parse(versionId);assertCreatorReturnSite(site);
   const config=creatorCheckoutConfig();if(!config) throw new Error("Sandbox Checkout is disabled.");
   await refreshCreatorStore(null,versionId);
   const admin=storageAdmin();
-  const reserved=await admin.rpc("reserve_creator_sandbox_order",{p_buyer:buyerId,p_version:versionId});
+  const reserved=code===null
+    ?await admin.rpc("reserve_creator_sandbox_order",{p_buyer:buyerId,p_version:versionId})
+    :await admin.rpc("reserve_creator_sandbox_discount_order",{p_buyer:buyerId,p_version:versionId,p_code:discountCode.parse(code)});
+  if(reserved.error?.code==="P1225") throw new Error("Creator discount unavailable.");
   if(reserved.error) throw new Error("Purchase reservation failed.");
   const order=creatorOrder.parse(reserved.data);
   if(order.buyerId!==buyerId||order.versionId!==versionId||order.platformId!==config.platformId) throw new Error("Purchase reservation mismatch.");

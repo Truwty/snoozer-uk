@@ -58,6 +58,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
       <p className="muted">Creator tips: to show an external Ko-fi support link on your sandbox store, add your own HTTPS Ko-fi profile address in your ordinary Studio profile links and publish the profile. The panel does not take Snoozer payments or unlock products.</p>
       <Link href="/studio/products/seller">Stripe sandbox seller setup</Link>
       {draft&&<Link href={studioHref("/studio/products/inventory",draft.profile_id)}>Manage limited digital inventory</Link>}
+      {draft&&<Link href={studioHref("/studio/products/discounts",draft.profile_id)}>Manage sandbox discount codes</Link>}
       {draft&&<Link href={studioHref("/studio/products/disclosure",draft.profile_id)}>Manage affiliate disclosure</Link>}
       {draft&&<Link href={studioHref("/studio/products/collections",draft.profile_id)}>Manage creator collections</Link>}
       {draft && <Link href={studioHref("/studio/products/analytics",draft.profile_id)}>View private sandbox storefront analytics</Link>}
