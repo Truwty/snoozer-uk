@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import type { CreatorMerchant } from "../src/lib/creator-merchant";
 import { creatorOrder, type CreatorOrder } from "../src/lib/creator-orders";
 import { createCreatorSandboxCheckout, creatorCheckoutConfig } from "../src/lib/creator-checkout";
+import { creatorSandboxConfig } from "../src/lib/creator-stripe";
 vi.mock("server-only",()=>({}));
 afterEach(()=>vi.unstubAllEnvs());
 const now=Date.parse("2026-11-19T01:00:00Z");
@@ -30,7 +31,10 @@ it("requires a separate Checkout gate, pinned seller/test key and signing secret
   vi.stubEnv("SNOOZER_CREATOR_SANDBOX_ENABLED","true");vi.stubEnv("STRIPE_CREATOR_SANDBOX_PLATFORM_ID",order.platformId);
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY","unit-fixture");vi.stubEnv("STRIPE_CREATOR_SANDBOX_API_KEY",["rk","test","x".repeat(32)].join("_"));
   vi.stubEnv("SNOOZER_CREATOR_CHECKOUT_ENABLED","false");vi.stubEnv("STRIPE_CREATOR_SANDBOX_WEBHOOK_SECRET","whsec_"+"x".repeat(32));
-  expect(creatorCheckoutConfig()).toBeNull();vi.stubEnv("SNOOZER_CREATOR_CHECKOUT_ENABLED","true");expect(creatorCheckoutConfig()?.platformId).toBe(order.platformId);
+  expect(creatorCheckoutConfig()).toBeNull();
+  // Closing new Checkout must not disable existing buyer refresh or webhook handling.
+  expect(creatorSandboxConfig()?.platformId).toBe(order.platformId);
+  vi.stubEnv("SNOOZER_CREATOR_CHECKOUT_ENABLED","true");expect(creatorCheckoutConfig()?.platformId).toBe(order.platformId);
   vi.stubEnv("STRIPE_CREATOR_SANDBOX_WEBHOOK_SECRET","");expect(creatorCheckoutConfig()).toBeNull();
 });
 it("enforces the default-off gate at the provider write boundary",async()=>{
