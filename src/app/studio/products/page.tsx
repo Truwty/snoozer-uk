@@ -8,7 +8,7 @@ import { CreatorOfferForm } from "@/components/creator-offer-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorOffers } from "@/lib/creator-store";
 import { productVersions, type ProductVersion } from "@/lib/product-versions";
-import { creatorQaDraft } from "@/lib/creator-qa-studio";
+import { creatorQaDraft, creatorDiscountQaDraft } from "@/lib/creator-qa-studio";
 import { inspectCreatorQaFrozenVersion } from "@/lib/creator-qa-frozen-preflight";
 import { productFile } from "@/lib/product-files";
 import { z } from "zod";
@@ -71,7 +71,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
           <a className="button secondary" href="/studio/products/qa-fixture" download="snoozer-isolated-sandbox-qa.pdf">Download test PDF</a>
         </div>
         <p className="muted">Reference downloaded fixture: {qaBytes.length} bytes · SHA-256 <code style={{ overflowWrap: "anywhere" }}>{qaReferenceSha}</code>. Calculate the SHA-256 of the <strong>actual frozen upload</strong> independently before operator approval. This reference alone does not approve an offer.</p>
-        <p>Next: select <strong>Fill sandbox QA draft</strong> under New product, save it, upload this exact PDF and freeze a private version. Then a trusted operator must inspect the frozen PDF and review its SHA-256 before you can publish a short-lived test offer.</p>
+        <p>Next: select <strong>Fill sandbox QA draft</strong> under New product (or <strong>Fill discount QA draft</strong> for a separate £2.00 version), save it, upload this exact PDF and freeze a private version. Then a trusted operator must inspect the frozen PDF and review its SHA-256 before you can publish a short-lived test offer.</p>
         <p className="muted">Use a new product and a separate verified buyer. Never reuse the existing paid £5 order. Test-mode payments and refunds are not triggered by this setup.</p>
       </section>}
       {!draft ? <p>Claim a profile in Studio before creating products.</p> : !inventory.success || response?.error ? <p role="alert">Your product catalogue is unavailable. Reload to try again.</p> : <>
@@ -82,7 +82,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
           <ProductDraftForm key={product.revision} profileId={draft.profile_id} product={product} canActivate={inventory.data.activeUsed < inventory.data.activeLimit} />
           {files.success && !fileResponse?.error ? <ProductFileForm key={files.data.find((file) => file.productId === product.id)?.state ?? "empty"} profileId={draft.profile_id} productId={product.id} file={files.data.find((file) => file.productId === product.id)} /> : <p role="alert">Private files are unavailable. Reload to try again.</p>}
           {versions.success && !versionResponse?.error && files.success && !fileResponse?.error ? <ProductVersionForm product={product} file={files.data.find((file) => file.productId === product.id)} versions={versions.data.filter((version) => version.productId === product.id)} /> : <p role="alert">Private versions are unavailable. Reload to try again.</p>}
-          {versions.success && !versionResponse?.error && (product.title === creatorQaDraft.title || versions.data.some(version=>version.productId===product.id && version.title===creatorQaDraft.title)) &&
+          {versions.success && !versionResponse?.error && (product.title === creatorQaDraft.title || product.title === creatorDiscountQaDraft.title || versions.data.some(version=>version.productId===product.id && (version.title===creatorQaDraft.title || version.title===creatorDiscountQaDraft.title))) &&
             <section className="stack" aria-label="Isolated sandbox QA frozen version preflight">
               <h3>Isolated QA frozen-version preflight</h3>
               <p>Use a new version without any existing purchase. Metadata mismatch must be corrected by creating a separate private revision, not editing previously purchased bytes.</p>

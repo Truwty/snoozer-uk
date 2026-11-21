@@ -2,7 +2,7 @@
 import { useActionState, useId, useState } from "react";
 import { saveProductDraft } from "@/app/studio/products/actions";
 import { initialState } from "@/lib/actions";
-import { creatorQaDraft } from "@/lib/creator-qa-studio";
+import { creatorQaDraft, creatorDiscountQaDraft } from "@/lib/creator-qa-studio";
 import { priceInput, type ProductDraft } from "@/lib/products";
 import { ActionMessage } from "./action-message";
 
@@ -29,6 +29,11 @@ export function ProductDraftForm({ profileId, product, canActivate = true }: { p
         setDescription(creatorQaDraft.description);
         setPrice(creatorQaDraft.price);
       }}>Fill sandbox QA draft</button>}
+      {!product && <button className="button secondary" type="button" disabled={pending} onClick={() => {
+        setTitle(creatorDiscountQaDraft.title);
+        setDescription(creatorDiscountQaDraft.description);
+        setPrice(creatorDiscountQaDraft.price);
+      }}>Fill discount QA draft</button>}
       <button className="button" name="archived" value={String(product?.archived ?? false)} disabled={pending}>{product ? "Save product draft" : "Create product draft"}</button>
       {product && <button className="button secondary" name="archived" value={String(!product.archived)} disabled={pending || (product.archived && !canActivate)}>{product.archived ? "Restore product draft" : "Archive product draft"}</button>}
     </div>

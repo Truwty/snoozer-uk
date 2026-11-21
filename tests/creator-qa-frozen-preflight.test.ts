@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inspectCreatorQaFrozenVersion } from "../src/lib/creator-qa-frozen-preflight";
-import { creatorQaDraft } from "../src/lib/creator-qa-studio";
+import { creatorQaDraft, creatorDiscountQaDraft } from "../src/lib/creator-qa-studio";
 
 const expected = { bytes: 618, sha256: "a".repeat(64) };
 const frozen = { title: creatorQaDraft.title, amount: 50, bytes: 618, sha256: expected.sha256 };
@@ -23,4 +23,12 @@ describe("owner-side isolated QA frozen-version reference preflight", () => {
   it("rejects all four mismatches rather than hiding the remaining problems", () => {
     expect(inspectCreatorQaFrozenVersion({title:"Other",amount:51,bytes:617,sha256:"b".repeat(64)},expected).mismatches).toHaveLength(4);
   });
+});
+
+it("matches a distinct £2 discount QA preset but rejects altered discount prices and hashes", () => {
+  const discount={...frozen,title:creatorDiscountQaDraft.title,amount:200};
+  expect(inspectCreatorQaFrozenVersion(discount,expected)).toEqual({matchesReferenceMetadata:true,mismatches:[]});
+  expect(inspectCreatorQaFrozenVersion({...discount,amount:50},expected).mismatches).toEqual(["Frozen discount QA price must be £2.00."]);
+  expect(inspectCreatorQaFrozenVersion({...discount,sha256:"b".repeat(64)},expected).matchesReferenceMetadata).toBe(false);
+  expect(inspectCreatorQaFrozenVersion({...frozen,amount:200},expected).matchesReferenceMetadata).toBe(false);
 });

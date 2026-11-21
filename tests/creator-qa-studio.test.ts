@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { GET } from "../src/app/studio/products/qa-fixture/route";
 import { buildCreatorQaPdf, qaPdfSha256 } from "../scripts/creator-commerce-qa-fixture.mjs";
-import { creatorOfferStatus, creatorQaDraft } from "../src/lib/creator-qa-studio";
+import { creatorOfferStatus, creatorQaDraft, creatorDiscountQaDraft } from "../src/lib/creator-qa-studio";
 import { productPrice, productDescription, productTitle } from "../src/lib/products";
 
 const mocks = vi.hoisted(() => ({ getUser: vi.fn() }));
@@ -57,4 +57,12 @@ it("expired enabled offers are reported as unavailable, and pending reviews as u
   expect(creatorOfferStatus({enabled:false,reviewExpiresAt:"2026-11-20T00:00:00Z"},now)).toBe("Review expired — not available for purchase");
   expect(creatorOfferStatus({enabled:true,reviewExpiresAt:"2026-11-22T00:00:00Z"},now)).toBe("Published for sandbox testing");
   expect(creatorOfferStatus({enabled:false,reviewExpiresAt:"2026-11-22T00:00:00Z"},now)).toBe("Reviewed — not published");
+});
+
+it("uses a separate discount-compatible draft, not a changed historical preset", () => {
+  expect(productPrice.parse(creatorDiscountQaDraft.price)).toBe(200);
+  expect(productTitle.parse(creatorDiscountQaDraft.title)).toBe(creatorDiscountQaDraft.title);
+  expect(productDescription.parse(creatorDiscountQaDraft.description)).toBe(creatorDiscountQaDraft.description);
+  expect(productPrice.parse(creatorQaDraft.price)).toBe(50);
+  expect(creatorDiscountQaDraft.title).not.toBe(creatorQaDraft.title);
 });
