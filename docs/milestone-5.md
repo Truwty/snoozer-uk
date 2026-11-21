@@ -1,5 +1,10 @@
 # Milestone 5 — premium and creator growth
 
+## Creator recurring subscriptions — verified source and hosted schema (21 Nov 2026)
+
+[PR #21](https://github.com/Truwty/snoozer-uk/pull/21) merged into main as [e144ccc](https://github.com/Truwty/snoozer-uk/commit/e144ccc450cde47662c15fc16e7415d8f73f9213). [Full CI #44923692980](https://github.com/Truwty/snoozer-uk/actions/runs/44923692980) passed (lint/types, 406 unit/SQL tests, disposable Supabase, production build, Playwright). Additive hosted migration `20261121162149_creator_membership_subscriptions` applied successfully; the migration filename matches recorded hosted history. Verified: **zero** subscriptions; recurring sandbox gate **false**; service-role-only reservation; authenticated buyer-only history; anon and authenticated direct-table access denied; prior **one paid PDF order and one processed receipt** unchanged. No provider buyer subscription event, tax-registration verification, seller review refresh, genuine independent buyer/refund/dispute/risk acceptance or live checkout has been exercised. Render deployment still requires verified rollout. **Phase 5 remains OPEN**, do not enable production payments or declare acceptance complete.
+
+
 ## Creator recurring memberships — integration candidate
 
 Separate disabled-by-default recurring membership policy and explicit 24h reviewed revision, durable immutable buyer/offer snapshots, test-mode direct-charge hosted Checkout and idempotent binding, private buyer management, provider-verified monthly invoice/charge/risk proof, signed dedicated connected-account webhook and durable linked receipts, sticky holds, refresh and cancel-at-period-end. New Checkout requires separate environment flag, separate signed webhook secret, existing creator gates, exact reviewed revision and database policy. No live payment or tax registration enabled. Source/CI/hosted/provider acceptance remain pending; no unrelated historic order mutations. See creator-memberships.md. Phase 5 remains open.
