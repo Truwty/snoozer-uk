@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { GET } from "../src/app/studio/products/qa-fixture/route";
-import { buildCreatorQaPdf } from "../scripts/creator-commerce-qa-fixture.mjs";
+import { buildCreatorQaPdf, qaPdfSha256 } from "../scripts/creator-commerce-qa-fixture.mjs";
 import { creatorOfferStatus, creatorQaDraft } from "../src/lib/creator-qa-studio";
 import { productPrice, productDescription, productTitle } from "../src/lib/products";
 
@@ -21,6 +21,8 @@ it("delivers the existing exact deterministic synthetic PDF only to confirmed St
   const expected = buildCreatorQaPdf();
   expect(actual).toEqual(expected);
   expect(createHash("sha256").update(actual).digest("hex")).toBe(createHash("sha256").update(expected).digest("hex"));
+  expect(qaPdfSha256(expected)).toBe(createHash("sha256").update(actual).digest("hex"));
+  expect(qaPdfSha256()).toBe(qaPdfSha256(actual));
   expect(response.headers.get("content-type")).toBe("application/octet-stream");
   expect(response.headers.get("content-disposition")).toContain('attachment; filename="snoozer-isolated-sandbox-qa.pdf"');
   expect(response.headers.get("content-length")).toBe(String(actual.byteLength));
