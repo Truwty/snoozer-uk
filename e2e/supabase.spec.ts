@@ -1060,7 +1060,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.locator(".account-switcher summary").click();
+    await page.getByRole("button", { name: "Sign out of this account" }).click();
     await expect(page).toHaveURL("/");
 
     await page.goto("/forgot-password");
