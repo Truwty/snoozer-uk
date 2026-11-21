@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { sessionClient } from "@/lib/supabase";
+import { rememberSignedInAccount } from "@/lib/account-switching";
 
 // This route receives the code AFTER Discord has returned it to Supabase.
 // Supabase's PKCE verifier lives in the HTTP-only cookie created when login began.
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
       if (data.session) await client.auth.signOut({ scope: "local" });
       return failed();
     }
+    await rememberSignedInAccount();
     return NextResponse.redirect(new URL("/studio", siteUrl()), 303);
   } catch {
     return failed();
