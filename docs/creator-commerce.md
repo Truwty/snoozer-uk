@@ -81,6 +81,9 @@ Fingerprint-verified owner version download (71 hosted, sourced6d907f): owner-sc
 
 Actual seller provider evidence: separate Snoozer account acct_1UdI9LBYH85ysT1B was created by the user after Lingua/Ko-fi rejected Connect. Stripe's setup selected its onboarding sandbox acct_1UdFe9PhIIpNUquS. Direct-charge platform choice and the user-approved scoped test key are configured in staging; existing premium billing is unchanged. Snoozer's owner action created/bound acct_1UdILTPhIINaXcvC and delivered a real hosted onboarding link. Ready remainsfalse pending business-owner completion/current capability refresh. The agent entered no identity, password or agreement. No creator payment event destination, Checkout or buyer entitlement exists yet.
 
+
 ## Phase 5 PDF static active-content intake and download gate — implementation candidate
 
 Adds a bounded conservative parser-independent PDF name-token screen at private upload and freeze plus each fresh paid buyer delivery. Refuses JavaScript/actions, embedded files, launch/open actions, XFA/forms, opaque object streams and encryption, including hex-escaped PDF name variants. Current plain PDF framing, stored byte hash, owner/buyer ownership and current Stripe payment/risk verification remain in place. This is NOT full PDF parsing, malware/antivirus scanning, link reputation protection or moderator approval. Possible false positives and compressed stream limits are documented; no new live Checkout gate. Unit and buyer-route negative delivery tests added. CI, Render rollout and external AV/moderation are pending; do not declare Phase 5 completely secure.
+
+

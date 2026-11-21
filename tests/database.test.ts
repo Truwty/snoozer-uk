@@ -58,7 +58,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.creator_support_access_log, snoozer.creator_support_cases, snoozer.creator_support_staff;");
+    await db.exec("reset role; truncate snoozer.creator_product_moderation_access, snoozer.creator_product_quarantine, snoozer.creator_product_reports, snoozer.creator_product_moderators;");
+    await db.exec("truncate snoozer.creator_support_access_log, snoozer.creator_support_cases, snoozer.creator_support_staff;");
     await db.exec("reset role; truncate snoozer.creator_sandbox_accounts cascade;");
     await db.exec("update snoozer.creator_sandbox_policy set enabled=false,platform_id=null");
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
@@ -835,6 +836,55 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select retained_until>=paid_at+interval '90 days' as value from snoozer.creator_sandbox_orders where id=$1",[order.id])).toBe(true);
     await act("authenticated",bob);
     expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",held:true,accessUntil:first.accessUntil,paidAt:expect.any(String),holds:expect.arrayContaining(["refund"])}]);
+  });
+
+  it("reports only published reviewed PDFs and quarantines their listings and future downloads without altering orders",async()=>{
+    const order=await boundSandboxOrder();
+    await recordCreatorReceipt();
+    const paid=(await reconcileCreator(order.id))!;
+    expect(paid).toMatchObject({state:"paid",holds:[]});
+    const note="The downloaded sandbox PDF appears potentially malicious and must be reviewed before any further delivery.";
+    const submit=(version=order.version,reason="malware",detail=note)=>result<string>(
+      "select public.open_my_creator_product_report($1,$2,$3) as value",[version,reason,detail]);
+    await act("anon");
+    await expect(submit()).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(submit()).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",bob);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toMatchObject({orderId:order.id});
+    const id=(await submit())!;
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await submit()).toBe(id);
+    expect(await result("select public.list_my_creator_product_reports() as value")).toMatchObject([{id,state:"open",versionId:order.version}]);
+    await expect(submit("00000000-0000-4000-8000-000000000099")).rejects.toMatchObject({code:"42501"});
+    await expect(submit(order.version,"malware","Too short")).rejects.toMatchObject({code:"22023"});
+    await expect(result("select public.read_creator_product_reports(50) as value")).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",alice);
+    expect(await result("select public.can_moderate_creator_products() as value")).toBe(false);
+    await expect(result("select public.resolve_creator_product_report($1,'quarantine') as value",[id])).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role");
+    await db.query("insert into snoozer.creator_product_moderators(actor_id) values ($1)",[alice]);
+    await act("authenticated",alice);
+    expect(await result("select public.can_moderate_creator_products() as value")).toBe(true);
+    expect(await result("select public.read_creator_product_reports(50) as value")).toMatchObject([{id,versionId:order.version,reason:"malware"}]);
+    expect(await result("select public.resolve_creator_product_report($1,'quarantine') as value",[id])).toBe(true);
+    expect(await result("select public.resolve_creator_product_report($1,'quarantine') as value",[id])).toBe(false);
+    await act("authenticated",bob);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",accessActive:false,paidAt:paid.paidAt,holds:[]}]);
+    expect(await result("select public.list_my_creator_product_reports() as value")).toMatchObject([{id,state:"quarantined"}]);
+    await act("anon");
+    const store=await result<{items:Array<{versionId:string}>}>("select public.get_creator_sandbox_store('private-pdf') as value");
+    expect(store?.items).toEqual([]);
+    await db.exec("reset role");
+    const dbRow=await db.query<{state:string}>("select state from snoozer.creator_sandbox_orders where id=$1",[order.id]);
+    expect(dbRow.rows[0].state).toBe("paid");
+    await expect(db.query("update snoozer.creator_sandbox_offers set enabled=true where version_id=$1",[order.version])).rejects.toMatchObject({code:"42501"});
+    const audit=await db.query<{action:string}>("select action from snoozer.creator_product_moderation_access order by id");
+    expect(audit.rows.map(a=>a.action)).toEqual(["list","quarantine"]);
+    await act("authenticated",bob);
+    await expect(db.query("select * from snoozer.creator_product_quarantine")).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select * from snoozer.creator_product_moderation_access")).rejects.toMatchObject({code:"42501"});
   });
 
   it("revokes buyer delivery for isolated refund, dispute and fraud receipts while preserving original paid timestamps",async()=>{
