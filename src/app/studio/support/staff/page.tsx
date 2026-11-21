@@ -21,7 +21,7 @@ export default async function Page() {
     <h2>{supportIssueLabels[c.issue]}</h2>
     <p>Case <code>{c.id}</code> · buyer <code>{c.buyerId}</code></p>
     <p>{c.referenceKind}: <code>{c.referenceId}</code> · opened <time dateTime={c.createdAt}>{new Date(c.createdAt).toUTCString()}</time></p>
-    <p><strong>Buyer's message:</strong> {c.message}</p>
+    <p><strong>Buyer message:</strong> {c.message}</p>
     <StaffSupportReply id={c.id}/>
    </article>)}
   </section>
