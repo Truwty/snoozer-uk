@@ -3,6 +3,7 @@ import { ClaimForm } from "@/components/claim-form";
 import { CopyLink } from "@/components/copy-link";
 import { Disclosure } from "@/components/ui";
 import { Brand } from "@/components/shell";
+import { SiteHeader } from "@/components/site-header";
 import { HomeProfileDemo } from "@/components/home-profile-demo";
 
 export const metadata = {
@@ -12,14 +13,7 @@ export const metadata = {
 
 export default function Home() {
   return <main className="shell home">
-    <header className="nav">
-      <Brand />
-      <nav aria-label="Primary navigation" className="actions">
-        <Link href="/leaderboard" className="button small">Leaderboard</Link>
-        <Link href="/sign-in" className="button small">Sign in</Link>
-        <Link href="/sign-up" className="button small">Get started</Link>
-      </nav>
-    </header>
+    <SiteHeader />
     <section className="hero">
       <div className="hero-copy">
         <p className="eyebrow"><span className="spark" aria-hidden="true">✦</span> LINK IN BIO · PROFILE STUDIO</p>
@@ -50,6 +44,6 @@ export default function Home() {
       <Disclosure title="Can I change my theme later?"><p>Yes. Change your appearance in Studio and check it in the live preview before publishing.</p></Disclosure>
     </section>
     <section className="home-section final-cta"><h2>A place for what you make.</h2><Link className="button" href="/sign-up">Create your page</Link></section>
-    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav></footer>
+    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/help">Help Center</Link><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/pricing">Pricing</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav></footer>
   </main>;
 }

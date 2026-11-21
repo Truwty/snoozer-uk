@@ -3,7 +3,6 @@ import { siteUrl } from "@/lib/env";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { requireAccount } from "@/lib/profiles-server";
 import { paidGiftCode, sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
@@ -34,7 +33,7 @@ export default async function GiftsPage({ searchParams }: { searchParams: Promis
   const orders = ordersShape.safeParse(orderResponse.data);
 
   return <main className="shell">
-    <header className="nav"><Brand /><Link className="button small" href="/studio/plan">Back to plan and usage</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href="/studio/plan">Back to plan and usage</Link></header>
     <section className="stack plan-page">
       <h1>{showSandbox ? "Sandbox plan gifts" : "Plan gifts"}</h1>
       {!showSandbox ? <p>Gift checkout is not available on this deployment.</p> : <>

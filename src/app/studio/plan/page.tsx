@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { GiftCodeForm } from "@/components/gift-code-form";
 import { ClaimForm } from "@/components/claim-form";
-import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
 import { maximumProfileLinkLimit, username } from "@/lib/profile";
@@ -70,7 +69,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const linksUsed = draft?.links.length ?? 0;
 
   return <main className="shell">
-    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
     <section className="stack plan-page">
       <h1>Plan and usage</h1>
       {showSandbox && sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}

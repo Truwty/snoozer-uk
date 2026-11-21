@@ -2,7 +2,6 @@ import { PageHeader } from "@/components/ui";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MediaFolderEditor } from "@/components/media-folder-editor";
-import { Brand } from "@/components/shell";
 import { mediaLibrary } from "@/lib/media-folders";
 import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 
@@ -19,7 +18,7 @@ export default async function MediaFoldersPage({ searchParams }: { searchParams:
   if (!library.data) redirect("/studio");
 
   return <main className="shell stack">
-    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio/gallery", selected)}>Back to image gallery</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/gallery", selected)}>Back to image gallery</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
       <PageHeader title="Media folders" />

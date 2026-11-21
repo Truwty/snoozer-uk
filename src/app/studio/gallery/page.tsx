@@ -2,7 +2,6 @@ import { PageHeader } from "@/components/ui";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GalleryEditor } from "@/components/gallery-editor";
-import { Brand } from "@/components/shell";
 import { pendingGalleryItem } from "@/lib/gallery";
 import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 
@@ -19,7 +18,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   const pending = data ? pendingGalleryItem.parse(data) : null;
 
   return <main className="shell stack">
-    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
       <PageHeader title="Image gallery" />

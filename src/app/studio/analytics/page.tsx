@@ -4,7 +4,6 @@ import Link from "next/link";
 import { dailyAnalytics, linkAnalytics, analyticsCampaigns, trafficAnalytics, browserAnalytics, browserCtr } from "@/lib/analytics";
 import { AnalyticsCampaigns } from "@/components/analytics-campaigns";
 import { siteUrl } from "@/lib/env";
-import { Brand } from "@/components/shell";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
 
@@ -27,7 +26,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const browsers = browserAnalytics.safeParse(browserResponse?.data);
 
   return <main className="shell analytics-shell">
-    <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack">
       <h1>Profile analytics</h1>
       {draft ? <p className="muted">@{draft.username} · Views and clicks from visitors who allowed analytics. Dates are UTC. Signed-in owner visits are excluded.</p>

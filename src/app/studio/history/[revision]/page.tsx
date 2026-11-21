@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Brand } from "@/components/shell";
 import { ProfileCard } from "@/components/profile-card";
 import { RestorePublication } from "@/components/restore-publication";
 import { profileRevision } from "@/lib/profile";
@@ -26,7 +25,6 @@ export default async function Page({ params, searchParams }: {
   const publication = publicationPreview.parse(data);
 
   return <main className="shell narrow stack">
-    <Brand />
     <Link href={studioHref("/studio/history", profile === undefined ? undefined : draft.profile_id)}>← Publish history</Link>
     <section className="stack">
       <h1>Version {publication.revision}</h1>

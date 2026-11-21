@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
-import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { requireAccount } from "@/lib/profiles-server";
 
@@ -35,7 +34,7 @@ export default async function BillingDiagnosticsPage() {
   if (error?.code === "42501") notFound();
   const parsed = diagnostics.safeParse(data);
   return <main className="shell">
-    <header className="nav"><Brand /><Link className="button small" href="/studio/plan">Back to plan and usage</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href="/studio/plan">Back to plan and usage</Link></header>
     <section className="panel stack">
       <h1>Billing diagnostics</h1>
       {error || !parsed.success ? <p role="alert">Billing diagnostics are temporarily unavailable.</p>
