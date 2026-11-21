@@ -20,6 +20,7 @@ export default async function Page() {
   {m.pendingReceipt&&<p>Provider reconciliation pending; access withheld.</p>}
   <a href={`/studio/memberships/access/${m.id}`}>Verify and open membership record</a>
   <MembershipControls id={m.id} canCancel={m.canCancel}/>
+  <Link href={`/studio/support?kind=membership&reference=${m.id}`}>Open a private support case</Link>
   <a href={purchaseSupportHref}>Contact support</a>
  </article>)}
  </section></main>;
