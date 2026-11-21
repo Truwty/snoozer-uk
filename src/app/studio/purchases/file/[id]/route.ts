@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { refreshCreatorPurchase } from "@/lib/creator-purchases-server";
-import { productFile,productFileBucket,productFilePath } from "@/lib/product-files";
+import { checkProductPdf,productFile,productFileBucket,productFilePath } from "@/lib/product-files";
 import { sessionClient,storageAdmin } from "@/lib/supabase";
 
 const purchaseFile=productFile.extend({orderId:z.uuid(),versionId:z.uuid(),sha256:z.string().regex(/^[0-9a-f]{64}$/)});
@@ -31,6 +31,7 @@ export async function GET(_:Request,{params}:{params:Promise<{id:string}>}) {
     const stored=await storageAdmin().storage.from(productFileBucket).download(productFilePath(file.data));
     if(stored.error||!stored.data||stored.data.size!==file.data.bytes) return unavailable(503);
     const bytes=new Uint8Array(await stored.data.arrayBuffer());
+    checkProductPdf(bytes);
     if(createHash("sha256").update(bytes).digest("hex")!==file.data.sha256) return unavailable(503);
     return new Response(bytes,{headers:{"Content-Type":"application/octet-stream","Content-Disposition":'attachment; filename="sandbox-purchase.pdf"',
       "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"sandbox; default-src 'none'"}});

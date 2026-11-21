@@ -1,5 +1,11 @@
 # Continuation
 
+## Phase 5 PDF static active-content intake and download gate — implementation candidate
+
+Adds a bounded conservative parser-independent PDF name-token screen at private upload and freeze plus each fresh paid buyer delivery. Refuses JavaScript/actions, embedded files, launch/open actions, XFA/forms, opaque object streams and encryption, including hex-escaped PDF name variants. Current plain PDF framing, stored byte hash, owner/buyer ownership and current Stripe payment/risk verification remain in place. This is NOT full PDF parsing, malware/antivirus scanning, link reputation protection or moderator approval. Possible false positives and compressed stream limits are documented; no new live Checkout gate. Unit and buyer-route negative delivery tests added. CI, Render rollout and external AV/moderation are pending; do not declare Phase 5 completely secure.
+
+
+
 ## Reviewed-product quarantine — CI and hosted schema checkpoint (21 Nov 2026)
 
 [PR #25](https://github.com/Truwty/snoozer-uk/pull/25) merged at `3391b07` after [full CI #44930638946](https://github.com/Truwty/snoozer-uk/actions/runs/44930638946) passed lint, typecheck, unit/PGlite, disposable Supabase, production build and Playwright. Hosted additive migration `20261121173803_creator_product_quarantine` applied, source filename reconciled. Initial **zero** moderators, reports, quarantined versions; RLS/direct-table denial and authenticated-only report and buyer download grants checked, quarantine offer trigger installed. Existing one paid PDF order and processed webhook receipt preserved; membership checkout gate remains false. Moderation staff appointment, actual independent reporter, verified file scanner and hosted quarantine workflow NOT accepted; production malware screening not implemented. Render rollout pending. Phase 5 remains OPEN.
