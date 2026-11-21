@@ -1,35 +1,43 @@
-# Snoozer Premium — production activation and acceptance
+# Snoozer Premium — only paid product
 
-**Status (21 November 2026): not ready to charge.** This document covers the **platform's own** Plus, Pro and Studio plans only. Third-party creator commerce remains retired, including Stripe Connect test sellers, PDFs and creator memberships.
+**21 November 2026: implementation in progress. Live charging has NOT been activated.**
 
-## Implemented engineering boundary
+Snoozer does not operate a creator marketplace or Stripe Connect seller flow. The three products in the main Snoozer LIVE Stripe account are:
+| Product | Live Stripe Product | Status |
+| --- | --- | --- |
+| Snoozer Plus | `prod_VfgMlUsOz4GELl` | Active; recurring price not yet approved |
+| Snoozer Pro | `prod_VfgMPjnzui1zGl` | Active; recurring price not yet approved |
+| Snoozer Studio | `prod_VfgMvCX05yAJSj` | Active; recurring price not yet approved |
 
-- Isolated `premium_live_*` tables with RLS and no direct client privileges; service-only price, Checkout, receipt and grant functions. `get_my_premium_live_billing` exposes only the authenticated owner's boolean customer status and high-level subscription state.
-- Live-only Stripe API key and account-ID pinning, Checkout with automatic tax, customer-bound session, idempotent payment operations, independent webhooks, customer self-service portal, conservative invoice/charge/refund/dispute/fraud verification before entitlement grant.
-- Three independent fail-closed launch switches: `SNOOZER_PREMIUM_LIVE_ENABLED`, `SNOOZER_PREMIUM_TAX_CONFIRMED`, `SNOOZER_PREMIUM_LEGAL_CONFIRMED` (all currently **false** on Render), plus database `snoozer.premium_live_policy.checkout_enabled`, `tax_reviewed` and `legal_reviewed` (all **false** by default).
-- Live webhook endpoint `we_1UeKYyBYH85ysT1BSqAlpvsk` for the 14 subscribed event types has been created in **disabled** state. Its signing secret was saved to Render server environment. The production portal configuration `bpc_1UeKY2BYH85ysT1BioyXeK9C` is live and active for cancellation at the end of term, invoices and payment method changes. Subscription price changes are intentionally **disabled** until tested.
-- Historical Stripe sandbox and creator test financial records are not mixed with production prices or grants.
+The products represent real version-1 plan allowances in `snoozer.plan_versions`:
+Plus: 3 profiles, 100 links per profile, 2 GB media and 1 domain;
+Pro: 10 profiles, 500 links, 10 GB media and 3 domains;
+Studio: 50 profiles, 2,000 links, 50 GB media and 10 domains.
 
-## External operator sign-offs required before activating (cannot be guessed)
+**No one has approved production amounts for monthly or yearly billing.** The historical £3.99/month Plus entry is a sandbox QA fixture, *not* authority to charge it in live mode. Do not create a `price_*` or publish a payment link using invented amounts. After owner approval, create six **live-mode** GBP recurring prices (three plans × monthly/yearly), then bind exactly those price IDs and integer pence values in `snoozer.premium_live_prices`. Stripe product, price, plan, currency, amount and cadence must all match.
 
-1. **Approve real prices**. In Stripe LIVE, define distinct products and recurring GBP prices for Plus, Pro, Studio, monthly and yearly (six approved offers if all intervals are advertised). Enter the EXACT returned `price_*` IDs, integer pence, plan version and interval in `snoozer.premium_live_prices` via a reviewed schema data migration. Do not copy the £3.99 sandbox QA amount as a commercial offer without explicit approval. Never substitute test-mode IDs.
-2. **Confirm UK tax/VAT legal obligations** with a qualified adviser/owner. The Stripe business-head-office setting is active, but there are no verified tax registrations. Register only in jurisdictions where the business is actually registered. Set Stripe Tax classifications and confirm Price tax behaviour (inclusive/exclusive) deliberately. The Checkout implementation uses `automatic_tax.enabled=true`; no taxes will be collected in unregistered locations solely because this flag exists. Review international digital services treatment, invoices, exemptions, VAT evidence and retention. Stripe Tax status `active` is **not** a VAT-compliance sign-off.
-3. **Legal terms** must identify the actual seller/legal business, price and renewal basis, cancellation timing, refund and consumer rights, digital-service start/withdrawal rules, customer support contact, privacy processors and retention. Current public Terms and Privacy pages are general notices; owner/legal review and any necessary edits are REQUIRED. Do not automatically accept digital content withdrawal waivers.
-4. **Restricted production key**: create a server-only Stripe LIVE restricted API key with narrowly scoped Account, Customer, Price, Checkout Session, Subscription, Invoice, Invoice Payments, PaymentIntent, Charge, Dispute, Radar early-fraud-warning and Billing Portal read/write as needed. Save as `STRIPE_PREMIUM_LIVE_API_KEY` in Render, never in public JS, GitHub, logs, tickets or chat. Configure a separate live webhook signing secret; it was saved server-side at creation.
-5. **Subscription-management policy**: existing live Billing Portal permits cancellation, invoices and updating cards. Price switching is OFF until six real prices, proration policy, portal `subscription_update` and paid-invoice mapping are verified. Until then, existing subscriptions can be cancelled through the portal; after their actual end, users may start a different tier when Checkout is approved.
-6. **Email**: independently send and receive signup confirmation, password recovery, change-email/password alerts, and paid/failed-payment/cancellation/invoice notifications with an approved test inbox. Verify SMTP sender authentication (SPF, DKIM, DMARC), deliverability, bounces and safe redaction. Recent auth logs alone do not prove delivery.
-7. **Provider acceptance**: on an isolated safely controlled merchant test, verify Checkout, 3DS and asynchronous events, renewal, cancellation, payment failure, partial/full refund, dispute, fraud warning and retry/out-of-order event behaviour. Confirm `snoozer.entitlement_grants` changes only after canonical Stripe checks; signed events must never grant based on redirect or payload alone. Test wrong-user, test-mode and Stripe Connect events are denied.
-8. **Operational controls**: identify support owner and response policy, refund and complaint handling, production webhook retry dead letters, missed-event sweep, Supabase backups/restore drill, Render health and rollback, rate limits, security review, WCAG/mobile and consent/legal review. Avoid claiming production readiness solely from passing CI.
-9. **Activation order**: run `npm run billing:live:preflight` using operator-only server variables; address every blocker, enable Stripe live webhook and confirm signature, then set database policy booleans and finally set the three Render flags. Perform an independent authorised live smoke purchase only after explicit pricing/tax/legal approval. If one step fails, keep the gates OFF.
+## Stripe and application state
+- Main live merchant: `acct_1UdI9LBYH85ysT1B`, verified; charges and payouts enabled.
+- LIVE Billing Portal: `bpc_1UeKY2BYH85ysT1BioyXeK9C`, active, invoice history, payment-method updates and cancellation at period end. Subscription switching remains disabled pending explicit price and proration policy.
+- LIVE signed webhook `we_1UeKYyBYH85ysT1BSqAlpvsk`: configured for 14 events, currently **disabled**. Signing secret stored server-side on Render.
+- New merchant-owned billing path: `/api/v1/billing/stripe/live-webhook`; verified Checkout, reconciliation, sticky refund/fraud holds and owner-only subscription billing. Legacy sandbox billing is **not** the live path.
+- Host DB `snoozer.premium_live_policy`: `checkout_enabled=false`, `legal_reviewed=false`, `tax_reviewed=false` (tax flag retained only as documentary history). No active live prices, customers, sessions, subscriptions or grants as of the audit.
+- Render `STRIPE_PREMIUM_LIVE_ACCOUNT_ID` and portal config are set. `STRIPE_PREMIUM_LIVE_WEBHOOK_SECRET` is stored. A real **restricted LIVE API key has not been provided** to `STRIPE_PREMIUM_LIVE_API_KEY`.
+- Render `SNOOZER_PREMIUM_LIVE_ENABLED=false` and `SNOOZER_PREMIUM_LEGAL_CONFIRMED=false` are launch gates. Platform Premium billing must never use Connect or test keys.
 
-**Never enable live Checkout by guessing a price, fabricating a test purchase, reusing Stripe test mode or treating Stripe Tax setup as tax-registration proof.**
+## Stripe Tax intentionally deferred at owner's request
+Checkout sets `automatic_tax: { enabled: false }`. The site does **not** automatically calculate VAT/sales tax. The merchant remains responsible for determining taxes legally due, any tax registrations, reporting and invoice treatment. Live Stripe Tax has no verified registrations; we have not registered the business or asserted an exemption. **Do not describe a charge as tax-compliant solely because payment works.** Stripe Tax can be added later when legally determined; it is not a technical prerequisite for non-tax-calculated Checkout.
 
-## Traceability
+## Remaining steps to take real payments
+1. Owner confirms exact GBP amounts for Plus, Pro and Studio monthly and annually. Create Stripe LIVE recurring Prices for these approved amounts with correct subscription/tax behaviour; insert their real IDs into `snoozer.premium_live_prices`.
+2. Owner creates a restricted LIVE secret key in the main Stripe Dashboard and stores it as Render `STRIPE_PREMIUM_LIVE_API_KEY`. Never post a secret into Git, chat or public `NEXT_PUBLIC_*` variables. It needs only the permission set used by `src/lib/premium-live-service.ts`, `premium-live-webhook.ts` and `premium-live-reconciliation.ts`.
+3. Review current Terms, consumer cancellation/refund disclosures, subscription price/renewal messaging, privacy and support contact. Confirm the real seller identity. Enable `snoozer.premium_live_policy.legal_reviewed` and Render `SNOOZER_PREMIUM_LEGAL_CONFIRMED` **only after review**.
+4. Complete provider acceptance: subscription Checkout with real verified customer and webhook, renewal, card failure, cancellation, refund, dispute, webhook retries, separate buyer accounts, active/expired entitlements and invoice proofs. Test with Stripe's isolated test environment first; do not claim live success without an authorized independent real payment.
+5. Enable the LIVE webhook only after verifying the deployed handler and signing secret. Configure optional read-only recovery and bounded reconciliation. Use `npm run billing:live:preflight` to find missing dependencies.
+6. Enable database `checkout_enabled` and Render `SNOOZER_PREMIUM_LIVE_ENABLED` only after all real-payment acceptance and legal requirements pass; immediately verify production can create/complete a valid subscription and revoke access on failed/refunded payment.
+7. Verify signup confirmation, password recovery and billing notification email delivery; review Supabase leaked-password protection, support runbooks, accessible mobile Checkout, backup/restore, fraud monitoring and rollback.
 
-- Production foundation PR: [#28](https://github.com/Truwty/snoozer-uk/pull/28)
-- Retired creator marketplace: [#27](https://github.com/Truwty/snoozer-uk/pull/27)
-- Production read-only preflight: `scripts/premium-live-preflight.mjs`
-- Migrations: `20261121202249_premium_live_billing.sql`
-- Billing route: `/api/v1/billing/stripe/live-webhook`
-- Stripe product & tax: https://docs.stripe.com/tax/set-up
-- Stripe webhook implementation: https://docs.stripe.com/webhooks
+## Marketplace removal
+[PR #29](https://github.com/Truwty/snoozer-uk/pull/29) deletes seller/marketplace application routes and modules, adjusts Studio/homepage UI and includes a permanent database freeze/revocation migration. Existing paid test-order records and old migration history remain for financial audit only. The prior marketplace feature specification is superseded and must not be used to recreate it.
+
+**Reference:** <https://docs.stripe.com/billing/subscriptions/overview> and <https://docs.stripe.com/webhooks>.
