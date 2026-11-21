@@ -65,7 +65,7 @@ export async function openPremiumLiveCheckout(ownerId: string, chosenPlan: unkno
       line_items: [{ price: attempt.priceId, quantity: 1 }],
       billing_address_collection: "required",
       customer_update: { address: "auto" },
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: false },
       success_url: new URL("?premium=processing", dest).href,
       cancel_url: new URL("?premium=cancelled", dest).href,
       expires_at: attempt.expires,
