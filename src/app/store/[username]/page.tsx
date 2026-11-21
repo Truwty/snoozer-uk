@@ -4,6 +4,7 @@ import { Brand } from "@/components/shell";
 import { CreatorBuyForm } from "@/components/creator-buy-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorStore } from "@/lib/creator-store";
+import { publicCreatorCollections } from "@/lib/creator-collections";
 import { purchaseSupportHref } from "@/lib/creator-purchase-support";
 import { refreshCreatorStore } from "@/lib/creator-store-server";
 import { canonicalUsername,username } from "@/lib/profile";
@@ -19,11 +20,31 @@ export default async function Page({params}:{params:Promise<{username:string}>})
   if(!response.data) notFound();
   const store=creatorStore.parse(response.data);
   if(store.username!==name) notFound();
+  const collectionsResponse=await anonymousClient().rpc("get_creator_sandbox_collections",{p_name:name});
+  if(collectionsResponse.error) throw new Error("Sandbox collections are temporarily unavailable.");
+  const collectionGroups=publicCreatorCollections.parse(collectionsResponse.data);
+  const selected=collectionGroups.map(group=>({
+    ...group,
+    items:group.versionIds.flatMap(versionId=>store.items.filter(item=>item.versionId===versionId)),
+  })).filter(group=>group.items.length>0);
+
   return <main className="shell stack"><header className="nav"><Brand/><Link className="button small" href="/studio/purchases">Your purchases</Link></header>
     <section className="panel stack"><p className="eyebrow">SANDBOX / CREATOR STORE</p><h1>{store.displayName}’s test store</h1>
       <p>Operator-reviewed test PDFs only. No live selling. Sign in with a verified account to test Checkout; you cannot buy your own product.</p>
       <p>Downloads expire 30 days after first payment verification. Refunds, disputes and fraud review pause delivery. Order references remain for at least 90 days; pending attempts require reconciliation. Test receipts are not tax invoices.</p>
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
+      {selected.length>0&&<section className="stack" aria-label="Reviewed product collections">
+        <h2>Collections</h2>
+        {selected.map(group=><section className="panel stack" key={group.id}>
+          <h3>{group.title}</h3>
+          {group.description&&<p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{group.description}</p>}
+          <ul>{group.items.map(item=><li key={item.versionId}>
+            <Link href={`/store/${store.username}/${item.versionId}`}>{item.title}</Link>
+            {" "}· £{(item.amount/100).toFixed(2)} GBP
+          </li>)}</ul>
+        </section>)}
+        <p className="muted">Groups do not change product review, Checkout availability or buyer access.</p>
+      </section>}
       {store.items.length===0?<p>No test products are currently available.</p>:store.items.map(item=><article className="panel stack" key={item.versionId}>
         <h2>{item.title}</h2><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{item.description||"No description."}</p>
         <Link href={`/store/${store.username}/${item.versionId}`}>View full test product details</Link>
