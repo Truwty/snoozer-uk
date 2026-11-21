@@ -64,6 +64,7 @@ export default async function Page({
       <CreatorBuyForm versionId={item.versionId} soldOut={limited?.remaining===0} />
       <div className="actions">
         <Link href={`/${store.username}`}>Creator profile</Link>
+        <Link href={`/studio/product-reports?version=${item.versionId}`}>Report this product</Link>
         <a href={purchaseSupportHref}>Purchase support</a>
       </div>
     </article>

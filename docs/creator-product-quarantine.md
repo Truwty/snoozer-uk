@@ -1,0 +1,11 @@
+# Creator product abuse reporting and moderator quarantine
+
+This implements an independent, fail-closed REVIEW workflow for operator-reviewed sandbox PDFs. It is NOT automatic malware/virus scanning or production moderation certification.
+
+Verified users can report a currently public, operator-reviewed frozen PDF version via the product details link. Reports have a bounded issue type, private details, deduplication and per-user rate limits. Other users cannot read them. A separately provisioned moderation staff allowlist (initially EMPTY) can audit the oldest pending reports. Every queue read and decision creates an append-only access record. Only a confirmed moderation decision can dismiss a report or permanently quarantine that frozen version.
+
+Quarantine inserts a durable block, disables any active matching offer, and makes the existing verified-buyer download RPC return no file for that version. The buyer purchase-history projection also marks access unavailable. The seller may NOT re-enable the same reviewed version: a database trigger denies future enable operations. A deliberate independent operator review is necessary before any other version could be published. Existing Stripe orders, paid timestamps, refunds, receipts and entitlements remain historically intact.
+
+No staff are granted by default. Appointment must be done by an authorised database operator after verifying human identity and duties. Moderators cannot bypass quarantine through the site, settle refunds, re-enable products or grant Stripe access. The service does not execute antivirus scans, upload samples to a third party or promise a manual response-time SLA. A genuine staffed team and independent file scanner remain necessary for production operation.
+
+Release: run full CI and SQL/regression tests; apply additive migration once to staging and align Git migration filename. Verify no staff/reports/quarantines, service grant protections, read-only original order and existing membership/Ko-fi records. Deploy exact green main. Then perform an isolated provider-approved QA listing report/quarantine experiment with an authorised moderator and verified reporter. No real refund/dispute or malware scan acceptance is established by synthetic SQL tests.
