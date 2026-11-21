@@ -255,8 +255,8 @@ begin
   select a.owner_id into owner from snoozer.premium_live_checkouts a
   join snoozer.premium_live_customers c on c.owner_id=a.owner_id
   where a.subscription_id=p_subscription and c.customer_id=p_customer;
-  if owner is null or not exists(select 1 from snoozer.premium_live_receipts r
-      where r.event_id=p_event) then return false; end if;
+  if owner is null or (p_event is not null and not exists(select 1 from snoozer.premium_live_receipts r
+      where r.event_id=p_event)) then return false; end if;
   insert into snoozer.premium_live_invoice_holds(invoice_id,subscription_id,customer_id,reason,event_id)
     values(p_invoice,p_subscription,p_customer,p_reason,p_event)
   on conflict(invoice_id) do nothing;
