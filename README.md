@@ -22,6 +22,10 @@
 
 ---
 
+## Premium-only commercial model
+
+Only Snoozer sells its own **Plus, Pro and Studio subscriptions**. There is **no creator marketplace, no external seller onboarding, no creator storefront, and no Stripe Connect Checkout**. Historical database migration files and financial records remain for audit, not for activation. LIVE Stripe products are configured; prices and real payments require merchant approval. See [the Premium launch guide](docs/premium-live-launch.md).
+
 ## 🎯 Why Snoozer.uk?
 
 Most link-in-bio platforms lock basic customization behind subscriptions, inject third-party ad pixels, and harvest visitor analytics. **Snoozer.uk** provides a fast, auditable, self-hostable alternative that puts creators in complete control of their data.
