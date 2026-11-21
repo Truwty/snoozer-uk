@@ -1,5 +1,16 @@
 # Progress — 21 November 2026
 
+## 21 November 2026 — refund/dispute/fraud risk-event hardening in development
+
+Resumed immediately after the **original signed Checkout completion** had been manually resent successfully (Stripe HTTP 204) and the exact stored Supabase receipt was verified **processed**. Existing refund/dispute/fraud handling and sticky SQL holds were inspected before modifying anything; the architecture already reconciles canonical connected-account payment/charge state and uses verified payment IDs. This change extends regression **coverage**, not a replacement commerce implementation.
+
+- `tests/creator-reconciliation.test.ts`: added all six risk event types (refund, dispute created/updated/closed, early fraud warning created/updated) with connected-seller provider call assertions, fail-closed mismatched signal charge checks and partial/full refund/current warning cases.
+- `tests/database.test.ts`: added a real embedded-PostgreSQL migration-backed case checking that each risk signal remains held, the buyer's download is denied, a later Checkout completion does not clear holds, and the first paid/access timestamps never move.
+- [`docs/creator-commerce-sandbox-signal-tests.md`](creator-commerce-sandbox-signal-tests.md) documents the isolated genuine provider test sequence, read-only SQL verification and safe release gates. Existing original paid purchase and live Stripe resources were **not** modified.
+
+**Verification:** CI on the new branch/PR is the remaining step; do not claim these new regressions passed until a matching green run appears. The **actual provider milestone** (separate isolated test-mode refunds/disputes/fraud events and verified buyer access holds) is **not yet complete**. The previous original-event recovery is already verified. Scheduled failed-event retry, QA offer withdrawal and new-Checkout gate closure also remain outstanding. Never substitute mock events for signed Stripe deliveries.
+
+
 ## 21 November 2026, 01:02 UTC — real Stripe checkout webhook recovered and persisted
 
 **PASSED: original signed Checkout webhook resend and durable processed receipt.** The owner supplied an actual Stripe Workbench screenshot from the **New business** test sandbox, event destination **Snoozer creator sandbox receipts**, showing a manually resent **`checkout.session.completed`** event **`evt_1UdbhYPhIINaXcvCnSkz0tih`**: **HTTP 204**, **Delivered · Recovered**, attempt **21 Nov 2026 01:02:10 UTC**. This was the same original event that failed on 19 Nov. We did not simulate or replace the signed event.

@@ -286,6 +286,49 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.list_my_creator_sandbox_orders() as value")).toMatchObject([{id:order.id,state:"paid",held:true,accessUntil:first.accessUntil}]);
   });
 
+  it("revokes buyer delivery for isolated refund, dispute and fraud receipts while preserving original paid timestamps",async()=>{
+    const order=await boundSandboxOrder();
+    await recordCreatorReceipt();
+    const first=(await reconcileCreator(order.id))!;
+    expect(first).toMatchObject({state:"paid",holds:[]});
+    await act("authenticated",bob);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id]))
+      .toMatchObject({orderId:order.id});
+
+    await act("service_role");
+    const signals=[
+      {id:"evt_PartialRefund",type:"charge.refunded",object:"ch_Order",hold:"{refund}",expected:["refund"]},
+      {id:"evt_DisputeOpen",type:"charge.dispute.created",object:"du_Order",hold:"{dispute}",expected:["dispute","refund"]},
+      {id:"evt_FraudWarning",type:"radar.early_fraud_warning.created",object:"issfr_Order",hold:"{fraud}",expected:["dispute","fraud","refund"]},
+      {id:"evt_DisputeClosed",type:"charge.dispute.closed",object:"du_Order",hold:"{}",expected:["dispute","fraud","refund"]},
+      {id:"evt_FraudUpdated",type:"radar.early_fraud_warning.updated",object:"issfr_Order",hold:"{}",expected:["dispute","fraud","refund"]},
+    ];
+    for(const signal of signals) {
+      expect(await recordCreatorReceipt(signal.id,signal.type,signal.object)).toBe(true);
+      // Canonical provider inspection supplies the new holds. The SQL merge
+      // retains all earlier holds even if a later warning is closed or cleared.
+      const saved=await reconcileCreator(order.id,"paid",signal.hold,signal.id);
+      expect(saved).toMatchObject({state:"paid",holds:signal.expected,paidAt:first.paidAt,accessUntil:first.accessUntil});
+      await act("authenticated",bob);
+      expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+      await act("service_role");
+    }
+
+    // A duplicate checkout completion must never re-enable access or extend it.
+    expect(await reconcileCreator(order.id,"paid","{}","evt_Order"))
+      .toMatchObject({holds:["dispute","fraud","refund"],paidAt:first.paidAt,accessUntil:first.accessUntil});
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.creator_sandbox_receipts where processed_at is not null and order_id=$1",[order.id]))
+      .toBe(6);
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_sandbox_orders() as value"))
+      .toMatchObject([{id:order.id,held:true,accessActive:false}]);
+    await act("authenticated",alice);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    await act("anon");
+    await expect(result("select public.get_my_creator_order_file($1) as value",[order.id])).rejects.toMatchObject({code:"42501"});
+  });
+
   it("enforces provider scope and immutable payment bindings before saving any access",async()=>{
     const order=await boundSandboxOrder();await recordCreatorReceipt();
     await expect(reconcileCreator(order.id,"paid","{}","evt_Order","acct_Other")).rejects.toMatchObject({code:"40001"});
