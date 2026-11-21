@@ -1,5 +1,18 @@
 # Continuation
 
+## Decision: Creator marketplace retired — 21 November 2026
+
+**Owner instruction:** Snoozer.uk must sell only Snoozer's own Premium plans. Do not implement, enable or advertise third-party creator sales, seller onboarding, digital-PDF products, creator membership tiers, creator storefronts or creator Ko-fi intake. This explicit business decision supersedes all earlier Phase 5 Creator Commerce acceptance checklists, milestones and prompts.
+
+**Safeguards applied to hosted infrastructure:** the independent `snoozer.creator_sandbox_policy` and `snoozer.creator_membership_policy` both read `enabled=false`. The one legacy reviewed test PDF offer was set to `enabled=false`; existing zero creator membership offers and zero Ko-fi hooks confirmed. The Render service received merged environment variables `SNOOZER_CREATOR_SANDBOX_ENABLED=false`, `SNOOZER_CREATOR_CHECKOUT_ENABLED=false` and `SNOOZER_CREATOR_MEMBERSHIP_CHECKOUT_ENABLED=false`, without touching platform Premium billing variables. Both enabled TEST Connect creator webhook endpoints were disabled in Stripe Sandbox: `we_1UdarCPhIIpNUquSYO3SVKM2` (PDF) and `we_1UeHCPPhIIpNUquSb0Co2Ro2` (memberships); the older duplicate was already disabled. The main Snoozer live/test Stripe account and Premium /api/v1/billing endpoints remain separate.
+
+**Repository:** retirement guard in `src/proxy.ts` responds 404 to `/store/*`, `/studio/products/*` (including seller onboarding), `/studio/memberships/*`, `/studio/donations/*`, `/studio/product-reports/*`, and `/api/v1/commerce/kofi/*` / `/api/v1/commerce/memberships/*`. Studio navigation no longer advertises third-party commerce. `/studio/plan`, `/api/v1/billing/*`, existing platform premium billing logic, and historical `/studio/purchases` record access remain unchanged. Previously written creator code and schema are intentionally retained dormant to avoid accidentally breaking Premium or deleting financial/audit records.
+
+**Retention and limitations:** one old £5 TEST PDF purchase and webhook receipt stay recorded for evidence. Its previous seller-account credentials/test download flow are no longer enabled; do not promise a new download. This is **not a live consumer order**. Connected Stripe test accounts are not deleted/closed; merchant records and any independent Stripe account ownership remain intact. No live Stripe payment endpoint or subscription has been changed. Do not re-enable the marketplace from stale docs, tests or templates. If a later decommission of legacy database objects or connected accounts is requested, audit retention obligations and dependencies before irreversible deletion.
+
+**Release verification:** check CI on the retirement PR and Render's actual Live deployment of the merged commit. Until CI/deployment confirms, only the hosted policy/env/Stripe gates are confirmed; the new route/UI guard is repository-source work.
+
+
 ## Stripe/Creator Commerce task 1–8 audit — 21 November 2026
 
 **Work performed against Stripe and hosted Supabase (not a simulated green check).** The Sandbox Connect platform remains TEST ONLY, and live Creator Commerce is not enabled.
