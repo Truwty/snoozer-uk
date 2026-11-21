@@ -1,5 +1,14 @@
 # Progress — 21 November 2026
 
+## 21 November 2026 — next milestone: integrated recovery regression and provider risk evidence
+
+**Baseline rechecked:** merged PR #5 was fully green; `main` CI #161 passed. Hosted Supabase has one genuine paid unheld order with valid buyer access and one already-processed `checkout.session.completed` receipt (`retry_count=0`). There are still **no new isolated test orders**, risk-event receipts, pending receipts or active reviewed offers. The original expired offer is still enabled but cannot satisfy the expiry gate. **No hosted/Stripe mutation was authorised or made as part of this code change.**
+
+**New isolated branch code:** `tests/database.test.ts` now includes a complete retry-controller + actual SQL-lease integration test: persist a synthetic database-only receipt in disposable PGlite; fail the provider callback once; assert 503 and persisted pending receipt; assert backoff prevents immediate retry; expire only the disposable lease; assert successful second process + paid/access time retention; run the new read-only `supabase/operations/inspect-creator-commerce-risk-evidence.sql` report for that isolated order; apply a test-only refund receipt/hold and prove the report detects it and authenticated buyer file projection is withheld. Existing production processing and migration code remain unchanged.
+
+**Verification status:** this branch's CI is not yet independently confirmed in this entry. After green matching CI, merge without deploying payment changes (no production code changed). Neither a mock retry nor read-only SQL reporting proves actual Stripe refund/dispute/fraud delivery or genuine job recovery on hosted Supabase. Next provider milestones require a separate user-approved harmless QA Checkout, actual Stripe test-mode risk events and subsequent scheduled receipt recovery. Preserve all previously purchased files and timestamps; keep live sales OFF.
+
+
 ## 21 November 2026 — refund/dispute/fraud risk-event regression hardening merged
 
 Resumed immediately after the **original signed Checkout completion** had been manually resent successfully (Stripe HTTP 204) and the exact stored Supabase receipt was verified **processed**. Existing refund/dispute/fraud handling and sticky SQL holds were inspected before modifying anything; the architecture already reconciles canonical connected-account payment/charge state and uses verified payment IDs. This change extends regression **coverage**, not a replacement commerce implementation.
