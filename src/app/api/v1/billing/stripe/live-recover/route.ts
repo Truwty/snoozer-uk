@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
   try {
     const stripe = new Stripe(config.key, { timeout: 8000, maxNetworkRetries: 0 });
-    const account = await stripe.accounts.retrieve();
+    const account = await stripe.accounts.retrieve(config.accountId);
     if (account.id !== config.accountId) throw new Error("Unexpected provider account.");
     if ("eventId" in params) {
       const event = await stripe.events.retrieve(params.eventId);
