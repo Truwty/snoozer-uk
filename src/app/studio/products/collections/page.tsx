@@ -34,7 +34,7 @@ export default async function Page({searchParams}:{searchParams:Promise<StudioPr
               <CreatorCollectionForm profileId={draft.profile_id} products={products.data.items}/>
             </section>
             :<p role="status">Five collection limit reached. Remove one before creating another.</p>}
-          <p className="muted">An empty or non-eligible public group never appears in the store. Deleting a collection does not delete products, PDF files, reviews or buyers' purchases.</p>
+          <p className="muted">An empty or non-eligible public group never appears in the store. Deleting a collection does not delete products, PDF files, reviews or buyer purchases.</p>
         </>}
     </section>
   </main>;
