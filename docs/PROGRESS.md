@@ -1,5 +1,14 @@
 # Progress — 21 November 2026
 
+## 21 November 2026 — read-only connected-account QA verification tooling
+
+**New checkpoint:** Verified the previous merged CI [#166](https://github.com/Truwty/snoozer-uk/actions/runs/44850931756) succeeded. Current hosted DB still contains **one original paid/unheld order and its one processed signed Checkout receipt**; no new QA order, pending receipt, or active reviewed offer; one expired-but-enabled offer remains. Actual connected test Stripe seller is open with active card-payments/payout capabilities, and ten-type snapshot destination enabled. Current Stripe test platform lists **0 disputes and 0 early fraud warnings**. The Render live deploy remains `07e5926`, and production auto-deploy is disabled.
+
+**Implemented (isolated feature branch, CI validation pending):** A standalone, read-only operator command `npm run commerce:qa:inspect -- --project <ref> --qa-order <uuid>`. It uses explicitly selected Supabase project URL, the existing service-role read RPC for a *new isolated QA order*, and Stripe test-only GET APIs to verify platform identity, connected account capability, Checkout/payment/charge binding, refunds, disputes, early fraud warnings and stored sticky holds. It never creates or edits a payment, user, order, receipt, hold, offer, flag or provider event and prints no private customer/provider identifiers. Node tests cover partial refunds, dispute+fraud combination, mismatched charge/account, incorrect modes, incomplete risk pages and expired access. `docs/creator-commerce-sandbox-signal-tests.md` now includes the command alongside existing independent Workbench delivery and Supabase receipt proof.
+
+**Still outstanding:** A genuine separately approved QA purchase (none exists), real signed refund/dispute/early-fraud-warning webhook receipt and buyer delivery hold, real failed-receipt scheduled retry, QA offer expiry cleanup, gate shutdown and live selling approval. **Do not substitute this read-only check for signed webhook evidence.** Existing original paid history remains unmodified.
+
+
 ## 21 November 2026 — next milestone: integrated recovery regression and provider risk evidence
 
 **Baseline rechecked:** merged PR #5 was fully green; `main` CI #161 passed. Hosted Supabase has one genuine paid unheld order with valid buyer access and one already-processed `checkout.session.completed` receipt (`retry_count=0`). There are still **no new isolated test orders**, risk-event receipts, pending receipts or active reviewed offers. The original expired offer is still enabled but cannot satisfy the expiry gate. **No hosted/Stripe mutation was authorised or made as part of this code change.**

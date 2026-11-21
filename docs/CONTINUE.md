@@ -1,5 +1,14 @@
 # Continuation
 
+## Current next-milestone work — isolated provider evidence CLI (21 November 2026)
+
+**Baseline verified again:** `main` CI [#166](https://github.com/Truwty/snoozer-uk/actions/runs/44850931756) is green. Hosted Snoozer Supabase still has **1 original paid, unheld purchase; 1 processed Checkout receipt; 0 pending receipts; 0 new QA orders; 0 active reviewed offers; 1 expired-but-enabled offer**. The connected test Stripe platform/seller and its ten-signal snapshot destination remain enabled; read-only queries show **zero disputes and zero early fraud warnings**. Render's latest deployed source is still `07e5926` with auto deploy off. None of this is proof of the unfinished genuine risk-event milestone.
+
+**New work on the isolated QA-readiness branch:** `scripts/creator-commerce-qa-inspect.mjs`, `scripts/creator-commerce-qa-core.mjs` and their tests provide a **read-only provider-vs-Snoozer order verification command**, using the existing service-role order RPC and canonical Stripe GET APIs (Checkout, connected seller, disputes, early fraud warnings). It explicitly selects the target Supabase project and one **new isolated QA order UUID**, rejects any mismatch, checks observed provider risk against the database's sticky holds, and prints no private customer, provider ID, payment URL or credential. The related npm command is `npm run commerce:qa:inspect -- --project edgptbiwswcdmmxzwhxv --qa-order <NEW_QA_ORDER_UUID>`. Details: [isolated provider testing runbook](creator-commerce-sandbox-signal-tests.md).
+
+**Important limit:** This script cannot create the *required* new reviewed PDF offer or an authenticated independent buyer session. It is only runnable **after an explicitly approved new QA purchase** exists. It does not itself verify webhook receipt persistence or automatically retry failed receipts; use the prior read-only SQL audit plus genuine Stripe Workbench evidence. No original £5 purchase, sandbox flags, database rows, Stripe transactions or Render deployment were altered by this change. Genuine refund/dispute/fraud test events, actual scheduled failed-receipt recovery and final QA-gate closure **remain open**. Do not enable live sales.
+
+
 ## Follow-on checkpoint — isolated receipt retry / risk-event audit implementation (21 November 2026)
 
 The previous [PR #5](https://github.com/Truwty/snoozer-uk/pull/5) risk-event regression coverage was merged; the latest `main` CI #161 passed. A **fresh read-only hosted query** still finds **one paid, unheld original order, one processed checkout receipt, zero new QA orders, zero pending receipts, zero active reviewed offers and one expired-but-enabled offer**. This means **genuine isolated refund/dispute/fraud delivery remains untested**, not a source-code task that can be reported as complete.

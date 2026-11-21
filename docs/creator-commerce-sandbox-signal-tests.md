@@ -33,6 +33,18 @@ Run each scenario against its **own independent new test order**, unless the sce
 
 If the current Stripe sandbox does not support generating a particular event category, mark that scenario **blocked**, not passed. Do not mutate webhook receipts, change the hosted clock, manufacture provider event IDs, or grant extra API permissions to work around it.
 
+## New read-only provider check for an isolated order
+
+The script `scripts/creator-commerce-qa-inspect.mjs` checks an **existing NEW isolated test order** against the actual Stripe sandbox API and the private service-role order read RPC. It does **not** create, refund, update, retry, or delete anything. It checks the exact project, bound connected account and canonical Checkout/payment/charge, then lists test disputes and early-fraud warnings and compares those risk signals with Snoozer's persisted sticky holds.
+
+Only run in the intended operator environment with the *test* Stripe API key and Supabase service role credential already configured in `.env.local`. Never commit these credentials or run the command in a browser:
+
+```powershell
+npm run commerce:qa:inspect -- --project edgptbiwswcdmmxzwhxv --qa-order <NEW_ISOLATED_ORDER_UUID>
+```
+
+The command fails closed on mismatched project/Stripe account, missing or live-mode charge evidence, incomplete provider risk pages or a provider signal lacking its matching stored hold. If no actual risk event exists, it returns a **blocked** exit code; it does not invent success. It deliberately omits buyer identities, Stripe IDs, URLs and credentials from its output. The report checks the *current* Stripe risk view and the stored hold; it does **not** prove the signed event reached the receipt table. For that, use the existing [read-only isolated-order receipt report](../supabase/operations/inspect-creator-commerce-risk-evidence.sql) together with Stripe Workbench delivery evidence.
+
 ## Read-only hosted verification
 
 Replace only `<ISOLATED_ORDER_UUID>` with the *new* test order's UUID. Run in the correct Snoozer Supabase SQL Editor as an authorised operator:
