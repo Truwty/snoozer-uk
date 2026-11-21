@@ -45,7 +45,7 @@ In the **correct** Supabase project's SQL Editor, open:
 
 Replace only the *all-zero version UUID* with the new version UUID; then run. The all-zero default returns **no rows** and is safe to run without a fixture.
 
-Compare the stored SHA and byte count from Studio against the independent downloaded frozen PDF, never against the reference fingerprint alone. Verify `creator_owner_id`, `frozen_sha256`, `frozen_bytes`, `ready_file_matches_snapshot=true`, `draft_archived=false`, `version_already_has_orders=false`, the test price/currency, and account binding. Compare the frozen hash with your independently inspected exact PDF. Any mismatch is **STOP**.
+Compare the stored SHA and byte count from Studio against the independent downloaded frozen PDF, never against the reference fingerprint alone. Verify `creator_owner_id`, `frozen_sha256`, `frozen_bytes`, `ready_file_matches_snapshot=true`, `draft_archived=false`, `version_already_has_orders=false`, the test price/currency, and account binding. Compare the frozen hash with your independently inspected exact PDF. A review offer is now associated with the **exact frozen version**, so a valid or published offer for another revision of the same product is not reported for this candidate. `offer_enabled` reports the stored switch while `published_test_offer` is true only for the matching, currently unexpired offer. If a review has expired, withdraw it using the existing owner action; do not treat the stored enabled bit as live purchase eligibility. Any mismatch is **STOP**.
 
 The previously approved but expired offer is **not** a substitute. Creating an entirely new product/version avoids reusing old immutable receipts and files.
 
