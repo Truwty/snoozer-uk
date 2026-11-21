@@ -5,6 +5,7 @@ import { premiumLiveCheckoutConfig, premiumLivePortalConfig, premiumLiveReadConf
 import { premiumAttempt, premiumCustomerId, premiumInterval, premiumLiveOffer, premiumPlan, verifyLiveCheckoutSession, verifiedLiveStripeUrl } from "./premium-live-proof";
 import { storageAdmin } from "./supabase";
 import { siteUrl } from "./env";
+import { snoozerPremiumLiveProducts } from "./premium-live-products";
 
 export async function premiumLiveOffers() {
   if (!premiumLiveCheckoutConfig()) return [];
@@ -56,7 +57,9 @@ export async function openPremiumLiveCheckout(ownerId: string, chosenPlan: unkno
     const price = await stripe.prices.retrieve(attempt.priceId);
     if (!price.livemode || !price.active || price.currency !== "gbp" || price.unit_amount !== attempt.amount
       || price.recurring?.interval !== interval || price.recurring.interval_count !== 1
-      || price.recurring.usage_type !== "licensed") throw new Error("Stripe Price does not match the approved catalogue.");
+      || price.recurring.usage_type !== "licensed"
+      || (typeof price.product === "string" ? price.product : price.product.id) !== snoozerPremiumLiveProducts[plan])
+      throw new Error("Stripe Price does not match the approved Snoozer Premium product.");
     const dest = new URL("/studio/plan", siteUrl());
     session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -65,7 +68,7 @@ export async function openPremiumLiveCheckout(ownerId: string, chosenPlan: unkno
       line_items: [{ price: attempt.priceId, quantity: 1 }],
       billing_address_collection: "required",
       customer_update: { address: "auto" },
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: false },
       success_url: new URL("?premium=processing", dest).href,
       cancel_url: new URL("?premium=cancelled", dest).href,
       expires_at: attempt.expires,

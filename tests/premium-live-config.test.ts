@@ -31,6 +31,9 @@ describe("Premium LIVE fail-closed activation", () => {
     expect(premiumLiveCheckoutConfig()).toBeNull();
     vi.stubEnv("SNOOZER_PREMIUM_LEGAL_CONFIRMED", "true");
     expect(premiumLiveCheckoutConfig()).not.toBeNull();
+    // Tax is an independent obligation, not an API activation switch.
+    vi.stubEnv("SNOOZER_PREMIUM_TAX_CONFIRMED", "false");
+    expect(premiumLiveCheckoutConfig()).not.toBeNull();
     vi.stubEnv("STRIPE_PREMIUM_LIVE_WEBHOOK_SECRET", "whsec_invalid");
     expect(premiumLiveCheckoutConfig()).toBeNull();
   });

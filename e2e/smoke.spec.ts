@@ -121,29 +121,23 @@ test("Stripe intake is unavailable without server configuration", async ({ reque
   expect(response.status()).toBe(503);
 });
 
-test("creator payment intake is isolated and disabled without its own configuration",async({request})=>{
-  test.skip(process.env.SNOOZER_CREATOR_SANDBOX_ENABLED==="true","Creator sandbox is explicitly configured");
-  expect((await request.post("/api/v1/commerce/stripe/webhook")).status()).toBe(503);
-  expect((await request.post("/api/v1/commerce/stripe/recover",{data:{limit:1}})).status()).toBe(503);
-});
-
-test("creator marketplace is retired but Premium endpoints remain available",async({request})=>{
-  for(const path of ["/store/anyone","/studio/products","/studio/products/seller",
+test("removed creator marketplace responds 404 for every route and method",async({request})=>{
+  for(const path of [
+    "/store/anyone","/studio/products","/studio/products/seller",
     "/studio/products/memberships","/studio/memberships","/studio/donations",
-    "/studio/product-reports","/api/v1/commerce/kofi/webhook"]) {
-    const result=await request.get(path,{maxRedirects:0});
-    expect(result.status(),path).toBe(404);
+    "/studio/purchases","/studio/purchases/receipt/invalid",
+    "/studio/support","/studio/product-reports",
+    "/api/v1/commerce/stripe/webhook","/api/v1/commerce/stripe/recover",
+    "/api/v1/commerce/kofi/webhook","/api/v1/commerce/memberships/webhook",
+  ]) {
+    const get=await request.get(path,{maxRedirects:0});
+    expect(get.status(),path).toBe(404);
+    const post=await request.post(path,{maxRedirects:0});
+    expect(post.status(),path).toBe(404);
   }
-  // A test callback without valid configuration/signature is not a payment grant.
-  const premium=await request.post("/api/v1/billing/stripe/webhook",{data:""});
+  const premium=await request.post("/api/v1/billing/stripe/live-webhook",{data:""});
   expect([400,401,403,503]).toContain(premium.status());
 });
-
-test("sandbox storefront cannot open while the explicit purchase gate is off",async({request})=>{
-  test.skip(process.env.SNOOZER_CREATOR_CHECKOUT_ENABLED==="true","Sandbox purchases are explicitly enabled");
-  expect((await request.get("/store/sandbox-fixture")).status()).toBe(404);
-});
-
 
 test("template search combines filters, preserves URL state and clears empty results", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 812 });

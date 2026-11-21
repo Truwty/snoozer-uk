@@ -19,12 +19,17 @@ const key = requireValue("STRIPE_PREMIUM_LIVE_API_KEY", /^(rk|sk)_live_[A-Za-z0-
 const account = requireValue("STRIPE_PREMIUM_LIVE_ACCOUNT_ID", /^acct_[A-Za-z0-9]{1,128}$/);
 const secret = requireValue("STRIPE_PREMIUM_LIVE_WEBHOOK_SECRET", /^whsec_[A-Za-z0-9_]{20,512}$/);
 const portalId = requireValue("STRIPE_PREMIUM_LIVE_PORTAL_CONFIGURATION", /^bpc_[A-Za-z0-9]{1,128}$/);
-flagged("SNOOZER_PREMIUM_TAX_CONFIRMED");
+ok.push("Stripe Tax intentionally not activated. Independent tax obligations remain the merchant responsibility.");
 flagged("SNOOZER_PREMIUM_LEGAL_CONFIRMED");
 flagged("SNOOZER_PREMIUM_LIVE_ENABLED");
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const approvedProducts = {
+  plus: "prod_VfgMlUsOz4GELl",
+  pro: "prod_VfgMPjnzui1zGl",
+  studio: "prod_VfgMvCX05yAJSj",
+};
 const catalogue = [];
 if (!url || !service) blockers.push("Hosted Supabase service credentials are required for this operator preflight.");
 else {
@@ -38,7 +43,7 @@ else {
       blockers.push("Premium SQL migration or privileged RPC is missing.");
     else {
       const p = policy.data;
-      for (const field of ["checkoutEnabled","taxReviewed","legalReviewed"])
+      for (const field of ["checkoutEnabled","legalReviewed"])
         if (p[field] !== true) blockers.push("Database " + field + " is not approved.");
       for (const row of prices.data) catalogue.push(row);
       for (const plan of ["plus","pro","studio"])
@@ -60,11 +65,6 @@ if (key && account) {
       blockers.push("Stripe live account identity, payments or payouts do not match.");
     else ok.push("Verified LIVE Stripe merchant account and payouts.");
   } catch { blockers.push("Could not verify merchant account with the intended LIVE API key."); }
-  try {
-    const tax = await stripe.tax.settings.retrieve();
-    if (tax.status !== "active") blockers.push("Stripe Tax head-office setup is not active.");
-    else ok.push("Stripe Tax business settings active (not a tax-registration claim).");
-  } catch { blockers.push("Could not read Stripe Tax configuration."); }
   if (portalId) {
     try {
       const portal = await stripe.billingPortal.configurations.retrieve(portalId);
@@ -83,7 +83,8 @@ if (key && account) {
         || livePrice.unit_amount !== price.unit_amount
         || livePrice.recurring?.interval !== price.billing_interval
         || livePrice.recurring.interval_count !== 1
-        || livePrice.recurring.usage_type !== "licensed") {
+        || livePrice.recurring.usage_type !== "licensed"
+        || (typeof livePrice.product === "string" ? livePrice.product : livePrice.product.id) !== approvedProducts[price.plan]) {
         blockers.push("A live Price does not match the database-approved amount or billing interval.");
       }
     } catch { blockers.push("A database Price could not be read from the LIVE account."); }

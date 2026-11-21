@@ -1,7 +1,0 @@
-# Seller-issued Stripe test invoice PDFs — current paid memberships
-
-This is a BUYER-ONLY convenience link to the test seller account's latest currently paid membership invoice, not a generated Snoozer tax receipt. The buyer must be verified, own the membership reference, have a fresh successful canonical provider proof and have no persisted refund, dispute, fraud or unresolved receipt holds. The route then verifies the subscription, exact paid invoice amount and covered monthly period, seller account scope, GBP, provider test mode and returns HTTP 303 to a STRICT HTTPS pay.stripe.com/invoice/acct_SELLER/test_TOKEN/pdf link. No open redirects, payment credentials or invoice links are persisted. Return values are no-store, noindex and no-referrer.
-
-It does not apply to digital PDF purchases, former subscriptions, expired or held memberships, unrelated Stripe accounts or manual external Ko-fi payments. The TEST invoice can show seller-supplied tax fields but does not prove VAT registration, tax liability, independent accounting or legal invoice compliance. Seller and platform jurisdictions, invoice numbering and records must be verified with Stripe Tax and qualified tax advisers before live payments. No tax configuration is mutated by this feature.
-
-Release requires full CI, exact source deployment and a real independent buyer paid subscription/Stripe invoice test. That provider test remains blocked while the sandbox seller is not recently ready, there is no reviewed published product and membership Checkout policy is disabled.

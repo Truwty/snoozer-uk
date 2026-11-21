@@ -1,3 +1,0 @@
-# Buyer sandbox record detail
-
-The existing verified-buyer-only order list now adds the frozen list price, first verified paid timestamp and recorded sticky restriction categories. Both private Purchases and receipt export show the effective charge and savings; refund-related holds do not assert the refund amount or settlement, and risk-review labels do not accuse the buyer. No provider IDs, tax claims, state transitions, entitlement changes or credentials are exposed. Older SQL projections remain supported during rollout. CI, hosted migration and deployment must be verified before release. Genuine provider risk events remain a separate acceptance requirement.
