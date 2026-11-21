@@ -183,18 +183,18 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const inspect=async()=>((await db.query<{
       version_id:string;creator_owner_id:string;frozen_sha256:string;frozen_bytes:number;price_in_pence:number;
       ready_file_matches_snapshot:boolean;seller_platform_bound:boolean;
-      approval_still_current:boolean;published_test_offer:boolean;version_already_has_orders:boolean;
+      approval_still_current:boolean;published_test_offer:boolean;offer_enabled:boolean;version_already_has_orders:boolean;
     }>(scoped)).rows[0]);
     expect(await inspect()).toMatchObject({
       version_id:fixture.version,creator_owner_id:alice,frozen_sha256:"a".repeat(64),frozen_bytes:100,price_in_pence:500,
       ready_file_matches_snapshot:true,seller_platform_bound:false,
-      approval_still_current:true,published_test_offer:false,version_already_has_orders:false,
+      approval_still_current:true,published_test_offer:false,offer_enabled:false,version_already_has_orders:false,
     });
     await enableSandboxOffer(fixture.version);
     await db.exec("reset role");
     expect(await inspect()).toMatchObject({
       ready_file_matches_snapshot:true,seller_platform_bound:true,
-      approval_still_current:true,published_test_offer:true,version_already_has_orders:false,
+      approval_still_current:true,published_test_offer:true,offer_enabled:true,version_already_has_orders:false,
     });
     await act("service_role");
     await reserveOrder(fixture.version);
@@ -202,9 +202,31 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await inspect()).toMatchObject({version_already_has_orders:true});
     // A stale review must not be represented as current, even if enabled.
     await db.exec("update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
-    expect(await inspect()).toMatchObject({approval_still_current:false,published_test_offer:true});
+    expect(await inspect()).toMatchObject({approval_still_current:false,published_test_offer:false,offer_enabled:true});
     await act("service_role");
     await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+  });
+
+  it("never borrows the published offer of a different frozen revision of the same product", async () => {
+    const fixture=await sandboxOfferFixture();
+    await enableSandboxOffer(fixture.version);
+    await act("authenticated",alice);
+    await saveProduct(fixture.profile,fixture.product,0,false,500);
+    await act("service_role");
+    const newVersion=(await freezeVersion(fixture,1))!;
+    expect(newVersion).toBeTruthy();
+    expect(await result("select public.review_creator_sandbox_fixture($1,$2,$3) as value",[alice,newVersion,"a".repeat(64)])).toBe(true);
+    await act("authenticated",alice);
+    expect(await result("select public.publish_my_creator_sandbox_offer($1,true) as value",[newVersion])).toBe(true);
+    await db.exec("reset role");
+    const template=await readFile(new URL("../supabase/operations/inspect-creator-qa-fixture.sql",import.meta.url),"utf8");
+    const query=(version:string)=>template.replace("00000000-0000-0000-0000-000000000000",version);
+    const oldRows=(await db.query<{version_id:string;approval_still_current:boolean;published_test_offer:boolean;offer_enabled:boolean}>(query(fixture.version))).rows;
+    const newRows=(await db.query<{version_id:string;approval_still_current:boolean;published_test_offer:boolean;offer_enabled:boolean}>(query(newVersion))).rows;
+    expect(oldRows).toHaveLength(1);
+    expect(oldRows[0]).toMatchObject({version_id:fixture.version,approval_still_current:false,published_test_offer:false,offer_enabled:false});
+    expect(newRows).toHaveLength(1);
+    expect(newRows[0]).toMatchObject({version_id:newVersion,approval_still_current:true,published_test_offer:true,offer_enabled:true});
   });
 
   it("keeps order creation disabled until a reviewed fixture, explicit policy and fresh seller readiness exist", async () => {
