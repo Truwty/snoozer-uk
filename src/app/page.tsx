@@ -3,6 +3,7 @@ import { ClaimForm } from "@/components/claim-form";
 import { CopyLink } from "@/components/copy-link";
 import { Disclosure } from "@/components/ui";
 import { Brand } from "@/components/shell";
+import { SiteHeader } from "@/components/site-header";
 import { HomeProfileDemo } from "@/components/home-profile-demo";
 
 export const metadata = {
@@ -12,14 +13,7 @@ export const metadata = {
 
 export default function Home() {
   return <main className="shell home">
-    <header className="nav">
-      <Brand />
-      <nav aria-label="Primary navigation" className="actions">
-        <Link href="/leaderboard" className="button small">Leaderboard</Link>
-        <Link href="/sign-in" className="button small">Sign in</Link>
-        <Link href="/sign-up" className="button small">Get started</Link>
-      </nav>
-    </header>
+    <SiteHeader />
     <section className="hero">
       <div className="hero-copy">
         <p className="eyebrow"><span className="spark" aria-hidden="true">✦</span> LINK IN BIO · PROFILE STUDIO</p>
