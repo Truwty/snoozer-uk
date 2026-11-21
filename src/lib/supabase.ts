@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { siteUrl, supabaseConfig } from "./env";
+import { activeAccountCookie, persistentCookieAge, selectedAccountSlot, sessionCookieName, type AccountSlot } from "./account-slots";
 
 const options = {
   auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
@@ -24,12 +25,13 @@ export function storageAdmin() {
   return createClient(url, key, options);
 }
 
-export async function sessionClient() {
+export async function sessionClient(explicitSlot?: AccountSlot) {
   const { url, key } = supabaseConfig();
   const jar = await cookies();
+  const slot = explicitSlot ?? selectedAccountSlot(jar.get(activeAccountCookie)?.value);
   return createServerClient(url, key, {
     global: options.global,
-    cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:" },
+    cookieOptions: { name: sessionCookieName(slot), httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:", path: "/", maxAge: persistentCookieAge },
     cookies: {
       getAll: () => jar.getAll(),
       setAll: (values) => {
