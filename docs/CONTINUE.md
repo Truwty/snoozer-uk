@@ -1,5 +1,28 @@
 # Continuation
 
+## Snoozer Premium-only launch — production foundation (21 November 2026)
+
+**Business direction:** The creator marketplace was permanently retired under PR #27; Snoozer will only sell its own Plus, Pro and Studio subscription plans. Older Phase 5 seller/PDF/membership acceptance checklists are historical and MUST NOT be used to re-enable Connect.
+
+**LIVE Stripe evidence verified:** primary Snoozer account `acct_1UdI9LBYH85ysT1B` accepts charges and payouts, no currently due account requirements. Live account had no products, recurring prices, checkout sessions or subscriptions when last checked. Stripe Tax business settings are active but zero tax registrations were found. **Active Stripe Tax settings do not prove UK VAT compliance or authorize collecting tax.**
+
+**Completed production Stripe configuration:**
+- Created LIVE self-service Billing Portal `bpc_1UeKY2BYH85ysT1BioyXeK9C`, verified active, invoice history and payment method update enabled, cancellation at period end enabled; plan-switching intentionally disabled until approved recurring price sets and proration policy.
+- Created LIVE non-Connect platform webhook `we_1UeKYyBYH85ysT1BSqAlpvsk` for 14 billing, subscription, refund/dispute and Radar warning event types. It was **immediately DISABLED**. Its signing secret was inserted directly into the Render server environment without exposing it. It must not be enabled until the exact merged source and signing credentials are verified.
+- Merged Render environment settings: `SNOOZER_PREMIUM_LIVE_ENABLED=false`, `SNOOZER_PREMIUM_TAX_CONFIRMED=false`, `SNOOZER_PREMIUM_LEGAL_CONFIRMED=false`, pinned account ID and Billing Portal configuration ID. A restricted LIVE Stripe API key has NOT been supplied; there is no active production Checkout.
+- No live products, Prices, charges or consumer subscriptions were created as part of this work.
+
+**Engineering work: [PR #28](https://github.com/Truwty/snoozer-uk/pull/28)** branch `premium-live-foundations-20261121`, built as an isolated additive production path preserving existing Premium sandbox code and retired Connect shutdown:
+- Private RLS `premium_live_*` SQL tables, service-role-only provider-linked customer, price, Checkout, receipt, risk and entitlement RPCs. All activation booleans default false. Migration `20261121200500_premium_live_billing.sql` must be applied only after full disposable CI passes, then verify hosted flags and restricted grants.
+- Fail-closed LIVE-only Checkout and customer portal, signed snapshot webhook isolated under `/api/v1/billing/stripe/live-webhook`, canonical subscription/invoice/payment/charge verification, sticky refund/dispute/fraud holds, bounded operator replay/sweep under `/api/v1/billing/stripe/live-recover`, opt-in scheduled reconciliation workflow, account-protected Studio upgrade and billing controls.
+- Unit tests for test-mode/cross-user/foreign invoice rejection and explicit independent tax/legal/checkout gates. Read-only operator audit `npm run billing:live:preflight` and full `docs/premium-live-launch.md` acceptance guidance.
+- CI originally found JSX/lint errors, then Stripe SDK v23 API incompatibilities. Fixes were pushed; inspect latest matching GitHub Actions run before merge. **Never report unmerged code as deployed.**
+
+**Remaining Priority 1 blockers, not a mandate to fake success:** confirm final six commercial prices and exact GBP amounts from the owner; create live Products/Prices only after tax treatment is confirmed; create a restricted LIVE Stripe API key server-side; establish actual UK VAT registration/tax treatment and legal customer terms/renewal/refund disclosure; verify email sender and genuine confirmation/reset/billing mail delivery; complete separately controlled 3DS/payment/renewal/failure/cancel/refund/dispute/fraud webhook provider acceptance and customer-access checks; operational backup/restore, support response and launch-security audit. Live charging MUST stay disabled until these pass. Historic test Stripe prices (including a £3.99/month Plus QA fixture) are NOT commercial price approvals.
+
+**Next execution:** finish PR #28 CI and correct any failures, apply additive schema and verify no grants or live activation, merge PR, trigger Render deployment and validate the exact live commit. Run independent tax/legal/SMTP/provider signoffs separately; enable live Checkout only after all nine Priority 1 acceptance conditions genuinely pass. Do not invent prices, registrations, delivered email or real payment tests.
+
+
 ## Decision: Creator marketplace retired — 21 November 2026
 
 **Owner instruction:** Snoozer.uk must sell only Snoozer's own Premium plans. Do not implement, enable or advertise third-party creator sales, seller onboarding, digital-PDF products, creator membership tiers, creator storefronts or creator Ko-fi intake. This explicit business decision supersedes all earlier Phase 5 Creator Commerce acceptance checklists, milestones and prompts.
