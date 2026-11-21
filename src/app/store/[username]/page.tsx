@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Brand } from "@/components/shell";
 import {membershipCheckoutConfig} from "@/lib/creator-membership-provider";
 import { z } from "zod";
+import {MembershipCheckout} from "@/components/creator-membership-checkout";
 import {CreatorMembershipPanel} from "@/components/creator-membership-panel";
 import { CreatorTipPanel } from "@/components/creator-tip-panel";
 import { creatorTipUrl } from "@/lib/creator-tips";
@@ -66,7 +67,7 @@ export default async function Page({params}:{params:Promise<{username:string}>})
       </aside>}
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
       <CreatorTipPanel href={tips}/>
-      {store.items.length>0&&<CreatorMembershipPanel offers={memberships} checkoutOffers={checkoutOffers} name={name}/> }
+      {store.items.length>0&&<CreatorMembershipPanel offers={memberships} checkoutControls={Object.fromEntries(checkoutOffers.map(id=>[id,<MembershipCheckout key={id} offer={id} name={name}/>]))}/> }
       {selected.length>0&&<section className="stack" aria-label="Reviewed product collections">
         <h2>Collections</h2>
         {selected.map(group=><section className="panel stack" key={group.id}>

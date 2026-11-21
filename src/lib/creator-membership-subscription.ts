@@ -16,7 +16,7 @@ export const memberRecord=z.object({id:z.uuid(),buyerId:z.uuid(),sellerId:z.uuid
 export type MemberRecord=z.infer<typeof memberRecord>;
 export type MemberHold=z.infer<typeof memberHold>;
 export const memberHistory=z.array(z.object({id:z.uuid(),title:productTitle,monthlyPence:z.number().int().min(100).max(10000),state:memberState,
- periodEnd:date.nullable(),cancelAtEnd:z.boolean(),held:z.boolean(),pendingReceipt:z.boolean()})).max(10);
+ periodEnd:date.nullable(),cancelAtEnd:z.boolean(),canCancel:z.boolean(),held:z.boolean(),pendingReceipt:z.boolean()})).max(10);
 export function membershipAccess(record:MemberRecord,now=Date.now()) {
  return record.state==="active"&&!record.pendingReceipt&&!record.holds.length&&!!record.periodEnd&&!!record.checkedAt
   &&Date.parse(record.periodEnd)>now&&Date.parse(record.checkedAt)<=now+5000&&Date.parse(record.checkedAt)>now-30000;

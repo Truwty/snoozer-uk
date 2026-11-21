@@ -18,7 +18,7 @@ export default async function Page() {
   {m.cancelAtEnd&&<p>Renewal cancellation recorded.</p>}
   {m.held&&<p>Membership withheld for payment-risk review.</p>}
   {m.pendingReceipt&&<p>Provider reconciliation pending; access withheld.</p>}
-  <MembershipControls id={m.id} canCancel={m.state!=="pending"&&m.state!=="cancelled"&&!m.cancelAtEnd}/>
+  <MembershipControls id={m.id} canCancel={m.canCancel}/>
   <a href={purchaseSupportHref}>Contact support</a>
  </article>)}
  </section></main>;

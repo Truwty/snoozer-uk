@@ -4,7 +4,7 @@ import type {SupabaseClient} from "@supabase/supabase-js";
 import {z} from "zod";
 import {creatorMerchant} from "./creator-merchant";
 import {creatorCheckoutConfig} from "./creator-checkout";
-import {memberRecord,membershipAccess,type MemberRecord,type MemberHold} from "./creator-membership-subscription";
+import {memberRecord,membershipAccess,memberSubscriptionId,memberCustomerId,type MemberRecord,type MemberHold} from "./creator-membership-subscription";
 import {inspectMembershipCheckout,membershipCheckoutConfig,membershipConfig,openMembershipCheckout,readMembershipProof} from "./creator-membership-provider";
 import {assertCreatorPlatform,assertCreatorReturnSite} from "./creator-stripe";
 import {refreshCreatorStore} from "./creator-store-server";
@@ -72,11 +72,12 @@ export async function startMembership(client:SupabaseClient,buyer:string,offer:s
  const admin=storageAdmin();
  const reserved=await admin.rpc("reserve_creator_membership",{p_buyer:buyer,p_offer:offer});
  if(reserved.error) throw new Error("Membership reservation unavailable.");
- const m=memberRecord.parse(reserved.data);
+ let m=memberRecord.parse(reserved.data);
  if(m.buyerId!==buyer||m.offerId!==offer||m.platformId!==config.platformId) throw new Error("Membership reservation mismatch.");
  const redirect=new URL("/studio/memberships",site).href;
  if(m.subscriptionId||m.state!=="pending") return redirect;
- await checkedMembership(client,buyer,m.id);
+ m=await checkedMembership(client,buyer,m.id);
+ if(m.subscriptionId||m.state!=="pending") return redirect;
  const merchantResponse=await admin.rpc("get_creator_sandbox_merchant",{p_owner:m.sellerId});
  if(merchantResponse.error) throw new Error("Seller unavailable.");
  const merchant=creatorMerchant.parse(merchantResponse.data);
@@ -92,17 +93,24 @@ export async function verifyMyMembership(client:SupabaseClient,buyer:string,id:s
  const {config,stripe}=membershipStripe();
  if(m.platformId!==config.platformId) throw new Error("Platform mismatch.");
  await assertCreatorPlatform(stripe,config.platformId);
- let current=await refreshMembership(stripe,m);
+ // A bound buyer must be able to stop renewal even if an invoice is unpaid
+ // or current entitlement verification is unavailable.
+ let current=m;
  if(cancel) {
-  if(!current.subscriptionId) throw new Error("No bound subscription to cancel.");
-  // Cancellation remains possible even when new Checkout is disabled or a risk hold exists.
-  if(current.state!=="cancelled"&&!current.cancelAtEnd) {
-   await stripe.subscriptions.update(current.subscriptionId,{cancel_at_period_end:true},
-    {stripeAccount:current.accountId,idempotencyKey:"snoozer-membership-cancel-"+current.id});
-   current=await refreshMembership(stripe,current);
-   if(!current.cancelAtEnd&&current.state!=="cancelled") throw new Error("Cancellation could not be confirmed.");
+  if(!m.subscriptionId) throw new Error("No bound subscription to cancel.");
+  const scope={stripeAccount:m.accountId};
+  const identity=z.object({id:memberSubscriptionId,object:z.literal("subscription"),livemode:z.literal(false),customer:memberCustomerId,
+   status:z.string(),cancel_at_period_end:z.boolean(),metadata:z.object({snoozer_membership:z.literal(m.id),snoozer_membership_offer:z.literal(m.offerId)})});
+  const sub=identity.parse(await stripe.subscriptions.retrieve(m.subscriptionId,{},scope));
+  if(sub.id!==m.subscriptionId||sub.customer!==m.customerId) throw new Error("Subscription mismatch.");
+  if(sub.status!=="canceled"&&!sub.cancel_at_period_end) {
+   const saved=identity.parse(await stripe.subscriptions.update(m.subscriptionId,{cancel_at_period_end:true},
+    {...scope,idempotencyKey:"snoozer-membership-cancel-"+m.id}));
+   if(saved.id!==m.subscriptionId||saved.customer!==m.customerId||(!saved.cancel_at_period_end&&saved.status!=="canceled")) throw new Error("Cancellation could not be confirmed.");
   }
  }
+ current=await refreshMembership(stripe,m);
+ if(cancel&&!current.cancelAtEnd&&current.state!=="cancelled") throw new Error("Cancellation reconciliation pending.");
  return {record:current,active:membershipAccess(current)};
 }
 export async function stageMembershipEvent(m:MemberRecord,event:string,type:string,hold:MemberHold|null) {

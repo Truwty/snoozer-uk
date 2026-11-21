@@ -118,15 +118,10 @@ export async function processMembershipEvent(stripe:Stripe,platform:string,event
  }
  const hold:MemberHold=event.type==="charge.refunded"?"refund":event.type.startsWith("charge.dispute.")?"dispute":"fraud";
  const members=await riskMembers(stripe,event,platform);
- // A recurring test flow permits a single subscription per payment. Unexpected
- // multi-invoice allocations remain failed deliveries for operator investigation.
- if(members.length>1) {
-  // The risk must still be made sticky on every affected membership. Use a
-  // separate canonical proof to record a hold; do not acknowledge the event.
-  for(const member of members) {const proofEvent=await stageMembershipEvent(member,event.id,event.type,hold);if(proofEvent) await applyMembershipProof(stripe,member,event.id);break;}
-  throw new Error("Unexpected multi-subscription payment allocation.");
- }
- for(const m of members) if(await stageMembershipEvent(m,event.id,event.type,hold)) await applyMembershipProof(stripe,m,event.id);
+ // Stage all risk holds first; a failed provider read cannot skip a sibling.
+ const pending:MemberRecord[]=[];
+ for(const m of members) if(await stageMembershipEvent(m,event.id,event.type,hold)) pending.push(m);
+ for(const m of pending) await applyMembershipProof(stripe,m,event.id);
 }
 export async function receiveMembershipWebhook(request:Request,secret:string,handle:(event:Event)=>Promise<void>) {
  const signature=request.headers.get("stripe-signature");
