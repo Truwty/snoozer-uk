@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { purchaseSupportGuidance } from "../src/lib/creator-purchase-support";
+import { purchaseSupportGuidance, purchaseSupportHref } from "../src/lib/creator-purchase-support";
 
 describe("sandbox buyer support guidance", () => {
+  it("uses the established support mailbox rather than a missing home anchor", () => {
+    expect(purchaseSupportHref).toBe("mailto:SnoozerSupport@Snoozer.uk");
+    expect(purchaseSupportHref).not.toBe("/#contact");
+  });
   it("prioritises active risk holds even for paid purchases", () => {
     const result = purchaseSupportGuidance({ state: "paid", held: true, accessActive: false });
     expect(result.heading).toBe("Delivery on hold");
