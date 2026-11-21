@@ -1,5 +1,10 @@
 # Progress — 21 November 2026
 
+## Current paid creator-membership Stripe test invoice PDFs — source candidate
+
+Buyer-only `/studio/memberships/invoice/[id]` route checks verified session, buyer ownership, fresh provider membership payment and sticky risk holds, exact connected-account subscription/paid invoice scope, then redirects exclusively to the provider-issued HTTPS `pay.stripe.com` TEST PDF URL. Never constructs a PDF from user input, stores invoice URLs, discloses payment IDs, or treats the invoice as independent VAT/tax registration proof. This is a convenience for currently eligible sandbox subscriber invoices, not a complete historical seller tax ledger; after cancellation users may need the provider-issued copy from Stripe email. Unit, URL-allowlist, foreign-user and stale payment regressions added; full CI, migration-free Render rollout and genuine provider acceptance pending. Phase 5 remains OPEN for registered tax jurisdictions, legal invoicing, real buyer/seller risk and hosted acceptance.
+
+
 ## Creator Ko-fi notification reporting — verified source and hosted schema (21 Nov 2026)
 
 [PR #23](https://github.com/Truwty/snoozer-uk/pull/23) merged into main as a9a838c after [full CI #44928544016](https://github.com/Truwty/snoozer-uk/actions/runs/44928544016) passed unit/PGlite, lint/types, disposable Supabase, production build and Playwright. Hosted additive schema 20261121171537_creator_kofi_reporting applied and source filename aligned. Verified: zero configured creator hooks and zero recorded notifications, owner-only settings access, anonymous denial, service-only ingestion, direct client table denial, historic one paid PDF order and processed receipt intact and membership Checkout disabled. This is an opt-in **unverified external notification feed**, not net income, refund settlement, tax liability, invoice, member access or proof of provider acceptance. User-provided Ko-fi webhook token and test payment are still required for each creator; no customer secrets were stored. Render release pending. Phase 5 remains OPEN.
