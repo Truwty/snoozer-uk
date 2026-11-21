@@ -1,5 +1,7 @@
 # Feature ledger
 
+> **Owner change 21 November 2026:** Section 13 third-party Creator Commerce is permanently retired, NOT an unfinished selling roadmap. Only Snoozer-owned Premium subscriptions will be offered. Live Premium foundations shipped in PR #28; true live checkout remains OFF pending pricing, tax, legal, API-key, mail and provider tests. See docs/premium-live-launch.md.
+
 Deferred entries are implementation work. Milestone 4 scope/entitlement decisions and reasons are in [milestone-4-review.md](milestone-4-review.md). Provider-dependent results are tracked in PROGRESS.md. The roadmap also covers the specification’s cross-cutting sections and acceptance gates.
 
 ## 4. IDENTITY AND AUTHENTICATION
