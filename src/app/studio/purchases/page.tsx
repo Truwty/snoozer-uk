@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Brand } from "@/components/shell";
 import { PurchaseRefresh } from "@/components/purchase-refresh";
 import { creatorPurchases } from "@/lib/creator-purchases";
-import { purchaseSupportGuidance } from "@/lib/creator-purchase-support";
+import { purchaseSupportGuidance, purchaseSupportHref } from "@/lib/creator-purchase-support";
 import { requireAccount } from "@/lib/profiles-server";
 
 export const metadata={title:"Sandbox purchases",robots:{index:false,follow:false}};
@@ -22,7 +22,7 @@ export default async function Page() {
           <h3>{purchaseSupportGuidance(order).heading}</h3>
           <p>{purchaseSupportGuidance(order).guidance}</p>
           <PurchaseRefresh id={order.id}/>
-          <Link href="/#contact">Contact Snoozer support</Link>
+          <a href={purchaseSupportHref}>Email Snoozer support</a>
         </section>
       </article>)}
     </section></main>;
