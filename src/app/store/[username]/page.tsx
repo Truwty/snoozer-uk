@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Brand } from "@/components/shell";
+import { CreatorTipPanel } from "@/components/creator-tip-panel";
+import { creatorTipUrl } from "@/lib/creator-tips";
+import { readPublished } from "@/lib/profiles-server";
 import { CreatorBuyForm } from "@/components/creator-buy-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorStore } from "@/lib/creator-store";
@@ -21,6 +24,11 @@ export default async function Page({params}:{params:Promise<{username:string}>})
   if(!response.data) notFound();
   const store=creatorStore.parse(response.data);
   if(store.username!==name) notFound();
+  // Optional third-party link comes only from the independently published
+  // profile, and never affects canonical test-store eligibility or Checkout.
+  const publicProfile=await readPublished(name).catch(()=>null);
+  const tips=publicProfile?.username===name?creatorTipUrl(publicProfile.links):null;
+
   const stockResponse=await anonymousClient().rpc("get_creator_sandbox_stock",{p_name:name});
   if(stockResponse.error) throw new Error("Limited inventory status is temporarily unavailable.");
   const stock=publicStock.parse(stockResponse.data);
@@ -48,6 +56,7 @@ export default async function Page({params}:{params:Promise<{username:string}>})
         <p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{disclosure}</p>
       </aside>}
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
+      <CreatorTipPanel href={tips}/>
       {selected.length>0&&<section className="stack" aria-label="Reviewed product collections">
         <h2>Collections</h2>
         {selected.map(group=><section className="panel stack" key={group.id}>

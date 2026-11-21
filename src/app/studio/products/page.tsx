@@ -55,6 +55,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
     <header className="nav"><Brand /><Link className="button small" href={studioHref("/studio", profile === undefined ? undefined : draft?.profile_id)}>Back to Studio</Link></header>
     <section className="panel stack"><p className="eyebrow">STUDIO / PRODUCTS</p><h1>Product drafts</h1>
       <p>Prepare your digital product catalogue privately. Freezing a version does not publish it. Only separately reviewed test fixtures can be enabled for sandbox purchases; live selling is unavailable.</p>
+      <p className="muted">Creator tips: to show an external Ko-fi support link on your sandbox store, add your own HTTPS Ko-fi profile address in your ordinary Studio profile links and publish the profile. The panel does not take Snoozer payments or unlock products.</p>
       <Link href="/studio/products/seller">Stripe sandbox seller setup</Link>
       {draft&&<Link href={studioHref("/studio/products/inventory",draft.profile_id)}>Manage limited digital inventory</Link>}
       {draft&&<Link href={studioHref("/studio/products/disclosure",draft.profile_id)}>Manage affiliate disclosure</Link>}
