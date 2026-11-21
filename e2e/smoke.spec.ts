@@ -184,3 +184,29 @@ test("unbound custom hosts cannot expose account routes and marker contains only
   expect(await marker.text()).toBe("snoozer-domain-v1");
   expect(marker.headers()["content-type"]).toContain("text/plain");
 });
+
+
+test("top navigation opens Pricing and searchable Snoozer Help Center on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "Primary navigation" });
+  await expect(nav.getByRole("link", { name: "Pricing" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Help Center" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Leaderboard" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Templates" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Discord", exact: true })).toHaveCount(0);
+  await nav.getByRole("link", { name: "Pricing" }).click();
+  await expect(page.getByRole("heading", { name: "Make more space for you." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Plus", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pro", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" }).click();
+  await expect(page.getByRole("heading", { name: "How can we help you?" })).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search help guides" }).fill("account");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("link", { name: /Stay signed in and switch accounts/ })).toBeVisible();
+  await page.getByRole("link", { name: /Stay signed in and switch accounts/ }).click();
+  await expect(page.getByRole("heading", { name: "Stay signed in and switch accounts" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
