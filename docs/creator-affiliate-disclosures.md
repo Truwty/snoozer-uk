@@ -13,13 +13,13 @@ This Phase 5 §13.13 slice gives a verified creator a private, owner-scoped way 
 
 ## Schema and permissions
 
-- Additive migration `20261121042000_creator_affiliate_disclosures.sql` creates private `snoozer.creator_affiliate_disclosures` with RLS enabled and no direct Data API grants.
+- Additive migration `20261121042952_creator_affiliate_disclosures.sql` creates private `snoozer.creator_affiliate_disclosures` with RLS enabled and no direct Data API grants.
 - `get_my_creator_affiliate_disclosure(uuid)` and `save_my_creator_affiliate_disclosure(uuid,integer,text,boolean)` run as empty-search-path SECURITY DEFINER functions, require `snoozer.verified_user()` to own the profile and can be called only by authenticated role. Writes lock the verified user's row and reject stale revisions, controls, oversized content and enabled empty text.
-- `get_creator_sandbox_affiliate_disclosure(text)` is callable by anon/authenticated but returns only enabled text for a public store that already passes `get_creator_sandbox_store`. An unavailable store returns null, not private disclosure data.
+- `get_creator_sandbox_affiliate_disclosure(text)` is callable by anon/authenticated but returns only enabled text for a public store that already passes `get_creator_sandbox_store`. A store with no currently approved **reviewed offers** (including when all old reviews have expired), or an unavailable store, returns null; this is enforced by checking the canonical store projection has at least one listed version, not just a non-null JSON store object. Private disclosure text is never exposed in either case.
 - This setting never changes product approval, billing, seller readiness, Stripe payments, order creation, revenue, download entitlements or risk holds.
 
 ## Verification and rollout
 
-Run the full GitHub Actions pipeline including PGlite SQL cross-owner, anon, unverified, empty text, stale writes, enabled/disabled and expired-store checks, the typed-schema tests and authenticated browser journey. Apply once via the Supabase migration capability after CI is green, note the **actual hosted migration version** and align the local filename if it differs. Verify grants, source/hosted version parity, unchanged original £5 paid order and receipt, and exact SHA/Render deploy before marking this slice shipped. A human authenticated owner check on the live site is separate from CI browser proof.
+After correcting the SQL control-byte fixture and the empty-approved-store disclosure bug, [full CI #234](https://github.com/Truwty/snoozer-uk/actions/runs/44865966237) passed PGlite owner/private/public/expiry checks, typed schema, build and authenticated Playwright. Hosted Supabase migration successfully applied and recorded `20261121042952_creator_affiliate_disclosures`; source filename now matches. Verified grants and unchanged original payment records. Await final-head CI and deployment. Verify grants, source/hosted version parity, unchanged original £5 paid order and receipt, and exact SHA/Render deploy before marking this slice shipped. A human authenticated owner check on the live site is separate from CI browser proof.
 
 Phase 5 still requires a separate real buyer, approved QA PDF and genuine refund/dispute/fraud plus failed-receipt recovery before commerce acceptance can close.
