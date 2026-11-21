@@ -5,6 +5,7 @@ import { Brand } from "@/components/shell";
 import { CreatorBuyForm } from "@/components/creator-buy-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorStore } from "@/lib/creator-store";
+import { publicStock } from "@/lib/creator-stock";
 import { purchaseSupportHref } from "@/lib/creator-purchase-support";
 import { refreshCreatorStore } from "@/lib/creator-store-server";
 import { canonicalUsername, username } from "@/lib/profile";
@@ -39,6 +40,11 @@ export default async function Page({
   if (store.username !== name) notFound();
   const item = store.items.find(product => product.versionId === versionId);
   if (!item) notFound();
+  const stockResponse=await anonymousClient().rpc("get_creator_sandbox_stock",{p_name:name});
+  if(stockResponse.error) throw new Error("Limited inventory status is temporarily unavailable.");
+  const stock=publicStock.parse(stockResponse.data);
+  const limited=stock.find(row=>row.versionId===item.versionId);
+
 
   return <main className="shell stack">
     <header className="nav">
@@ -54,7 +60,8 @@ export default async function Page({
       <p style={{ whiteSpace: "pre-wrap" }}>{item.description || "No description provided."}</p>
       <p>Operator-reviewed test file only. Not a live product. Sign in with a verified account to open Stripe test Checkout; creators cannot purchase their own file.</p>
       <p>Download access lasts 30 days after payment verification. Refunds, disputes and fraud review pause access. Checkout returns do not prove payment. Test receipts are not tax invoices.</p>
-      <CreatorBuyForm versionId={item.versionId} />
+      {limited&&<p>{limited.remaining} limited test slots unreserved. An unpaid Checkout reservation also consumes a slot.</p>}
+      <CreatorBuyForm versionId={item.versionId} soldOut={limited?.remaining===0} />
       <div className="actions">
         <Link href={`/${store.username}`}>Creator profile</Link>
         <a href={purchaseSupportHref}>Purchase support</a>
