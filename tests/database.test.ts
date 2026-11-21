@@ -353,6 +353,70 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await publicDisclosure("private-pdf")).toBeNull();
   });
 
+  it("enforces immutable frozen-version slot caps at the atomic Checkout reservation boundary", async () => {
+    const fixture=await sandboxOfferFixture();
+    const setStock=(profile:string,version:string,cap:number|null)=>result<boolean>(
+      "select public.set_my_creator_sandbox_stock($1,$2,$3) as value",[profile,version,cap]);
+    const sellerList=(profile:string)=>result<{versionId:string;totalSlots:number|null;reserved:number}[]>(
+      "select public.list_my_creator_sandbox_stock($1) as value",[profile]);
+    const stockForStore=(name:string)=>result<{versionId:string;remaining:number}[]>(
+      "select public.get_creator_sandbox_stock($1) as value",[name]);
+
+    await act("authenticated",alice);
+    expect((await sellerList(fixture.profile))![0]).toMatchObject({
+      versionId:fixture.version,totalSlots:null,reserved:0,
+    });
+    await expect(setStock(fixture.profile,fixture.version,0)).rejects.toMatchObject({code:"22023"});
+    await expect(setStock(fixture.profile,fixture.version,51)).rejects.toMatchObject({code:"22023"});
+    expect(await setStock(fixture.profile,fixture.version,2)).toBe(true);
+    expect(await setStock(fixture.profile,fixture.version,1)).toBe(true);
+    expect((await sellerList(fixture.profile))![0]).toMatchObject({
+      versionId:fixture.version,totalSlots:1,reserved:0,
+    });
+    await act("authenticated",bob);
+    await expect(sellerList(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(setStock(fixture.profile,fixture.version,10)).rejects.toMatchObject({code:"42501"});
+    await act("anon");
+    await expect(sellerList(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(setStock(fixture.profile,fixture.version,10)).rejects.toMatchObject({code:"42501"});
+    expect(await stockForStore("private-pdf")).toEqual([]);
+    await act("authenticated",unverified);
+    await expect(sellerList(fixture.profile)).rejects.toMatchObject({code:"42501"});
+
+    await act("service_role");
+    await enableSandboxOffer(fixture.version);
+    await act("anon");
+    expect(await stockForStore("private-pdf")).toEqual([{versionId:fixture.version,remaining:1}]);
+    await db.exec("reset role");
+    await db.query("insert into auth.users(id,email_confirmed_at) values($1,now())",
+      ["00000000-0000-4000-8000-000000000004"]);
+    await act("service_role");
+    const original=(await reserveOrder(fixture.version,bob))!;
+    expect((await reserveOrder(fixture.version,bob))!.id).toBe(original.id);
+    await act("anon");
+    expect(await stockForStore("private-pdf")).toEqual([{versionId:fixture.version,remaining:0}]);
+    await act("service_role");
+    await expect(reserveOrder(fixture.version,"00000000-0000-4000-8000-000000000004"))
+      .rejects.toMatchObject({code:"P1222"});
+    expect((await result<number>(
+      "select count(*)::integer as value from snoozer.creator_sandbox_orders where version_id=$1",
+      [fixture.version]))).toBe(1);
+
+    await act("authenticated",alice);
+    await expect(setStock(fixture.profile,fixture.version,2)).rejects.toMatchObject({code:"P1223"});
+    await expect(setStock(fixture.profile,fixture.version,null)).rejects.toMatchObject({code:"P1223"});
+    await db.exec("reset role");
+    await db.query("update snoozer.creator_sandbox_orders set state='expired' where id=$1",[original.id]);
+    await act("service_role");
+    await expect(reserveOrder(fixture.version,"00000000-0000-4000-8000-000000000004"))
+      .rejects.toMatchObject({code:"P1222"});
+    await act("authenticated",alice);
+    expect((await sellerList(fixture.profile))![0]).toMatchObject({
+      totalSlots:1,reserved:1,
+    });
+    // Independent available version is still unlimited by default.
+  });
+
   it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
     const fixture=await sandboxOfferFixture();
     await db.exec("reset role");
