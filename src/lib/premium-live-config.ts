@@ -25,7 +25,6 @@ export function premiumLiveCheckoutConfig() {
   const provider = premiumLiveWebhookConfig();
   return provider
     && process.env.SNOOZER_PREMIUM_LIVE_ENABLED === "true"
-    && process.env.SNOOZER_PREMIUM_TAX_CONFIRMED === "true"
     && process.env.SNOOZER_PREMIUM_LEGAL_CONFIRMED === "true"
     ? provider : null;
 }
