@@ -1,5 +1,9 @@
 # Progress — 21 November 2026
 
+## Proposed QA fingerprint preflight (unmerged, unverified)
+
+The Studio products QA instructions now display the deterministic synthetic PDF reference byte length and SHA-256, reusing the protected fixture download generator. The actual frozen upload still requires independent inspection and hash comparison by a trusted operator. No payment, approval, account, gate, migration or provider event was altered. This is a development branch awaiting CI/PR review and is **not** evidence that live refund, dispute, fraud or recovery exit checks passed. See [CONTINUE.md](CONTINUE.md).
+
 ## 21 November 2026 — Studio-guided isolated QA setup merged (PR #9)
 
 **Verified baseline:** main `1cdf015b` passed CI #175. Hosted DB still has one original unheld paid order, exactly one processed Checkout receipt and no new QA product, risk events or pending receipts. Its stale QA offer is expired even though `enabled=true`; SQL review expiry prevents new sales. Auto-deploy is off; Render is still at a previously deployed commit.
