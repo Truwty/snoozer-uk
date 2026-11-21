@@ -29,7 +29,7 @@
 - Production foundation PR: [#28](https://github.com/Truwty/snoozer-uk/pull/28)
 - Retired creator marketplace: [#27](https://github.com/Truwty/snoozer-uk/pull/27)
 - Production read-only preflight: `scripts/premium-live-preflight.mjs`
-- Migrations: `20261121200500_premium_live_billing.sql`
+- Migrations: `20261121202249_premium_live_billing.sql`
 - Billing route: `/api/v1/billing/stripe/live-webhook`
 - Stripe product & tax: https://docs.stripe.com/tax/set-up
 - Stripe webhook implementation: https://docs.stripe.com/webhooks
