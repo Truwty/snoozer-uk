@@ -71,3 +71,51 @@ begin
     execute format('revoke execute on function %s from public, anon, authenticated, service_role', f.signature);
   end loop;
 end $retire$;
+
+-- Prevent a different paid Stripe Price from silently reassigning a subscribed user
+-- to another Premium tier. A change of tier requires an explicit verified flow.
+create or replace function public.apply_premium_live_reconciliation(
+  p_subscription text,p_customer text,p_revision integer,
+  p_stripe_status text,p_price text,p_invoice text,
+  p_starts timestamptz,p_ends timestamptz,p_verified_paid boolean
+) returns boolean language plpgsql security definer set search_path='' as $$
+declare attempt snoozer.premium_live_checkouts;
+declare offer snoozer.premium_live_prices;
+declare gr text := 'live:'||p_subscription;
+declare is_eligible boolean := false;
+begin
+  select * into attempt from snoozer.premium_live_checkouts a
+  where a.subscription_id=p_subscription and a.status='bound'
+    and a.reconciliation_revision=p_revision
+    and exists(select 1 from snoozer.premium_live_customers c
+      where c.owner_id=a.owner_id and c.customer_id=p_customer)
+  for update;
+  if not found then return false; end if;
+  if p_stripe_status not in ('active','trialing','canceled','incomplete','incomplete_expired','past_due','paused','unpaid')
+    then raise exception 'Invalid Stripe subscription status'; end if;
+  select * into offer from snoozer.premium_live_prices where price_id=p_price;
+  is_eligible := p_stripe_status='active' and p_verified_paid is true
+    and found and offer.price_id=attempt.price_id and p_invoice ~ '^in_[A-Za-z0-9]{1,128}$'
+    and p_starts<=now() and p_ends>now()
+    and not exists(select 1 from snoozer.premium_live_invoice_holds h
+       where h.invoice_id=p_invoice and h.subscription_id=p_subscription and h.customer_id=p_customer);
+  if is_eligible then
+    insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at)
+    values(attempt.owner_id,offer.plan,offer.plan_version,'stripe',gr,p_starts,p_ends)
+    on conflict(source,source_ref) do update set
+      plan=excluded.plan,plan_version=excluded.plan_version,starts_at=excluded.starts_at,
+      expires_at=excluded.expires_at,revoked_at=null
+      where snoozer.entitlement_grants.owner_id=excluded.owner_id;
+  else
+    update snoozer.entitlement_grants set revoked_at=now()
+    where source='stripe' and source_ref=gr and owner_id=attempt.owner_id and revoked_at is null;
+  end if;
+  update snoozer.premium_live_checkouts set
+    last_invoice=case when p_invoice ~ '^in_[A-Za-z0-9]{1,128}$' then p_invoice else last_invoice end,
+    last_status=p_stripe_status,last_checked_at=now(),
+    status=case when p_stripe_status in ('canceled','incomplete_expired') then 'ended' else status end,
+    reconciliation_revision=reconciliation_revision+1
+  where id=attempt.id;
+  return true;
+end $$;
+
