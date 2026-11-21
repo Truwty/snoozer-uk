@@ -354,6 +354,11 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Product drafts", exact: true }).click();
     await expect(page.getByText("No product drafts for this profile yet.")).toBeVisible();
+    await page.getByRole("link",{name:"Manage limited digital inventory"}).click();
+    await expect(page.getByRole("heading",{name:"Limited digital inventory"})).toBeVisible();
+    await expect(page.getByText("No frozen product versions yet. Upload and freeze a private PDF in Products first.")).toBeVisible();
+    await page.getByRole("link",{name:"Back to Products"}).click();
+
     await page.getByRole("link", {name:"View private sandbox storefront analytics"}).click();
     await expect(page.getByRole("heading",{name:"Sandbox storefront analytics"})).toBeVisible();
     await expect(page.getByText("No retained test purchases for this profile. No sample sales are fabricated.")).toBeVisible();
