@@ -1,5 +1,16 @@
 # Progress — 21 November 2026
 
+## 21 November 2026 — isolated QA PDF preparation and review preflight (development)
+
+**Baseline check:** `main` CI #171 passed. Hosted state unchanged: 1 original paid/unheld order, 1 processed signed Checkout receipt, 0 pending receipts, 0 new isolated orders, 0 current reviewed QA offers, and 1 expired-enabled previous offer. Stripe sandbox and Render integrations are unchanged. The real provider risk milestone is blocked on a **new, separately reviewed synthetic PDF and independent test buyer order**.
+
+**New branch implementation:** `scripts/creator-commerce-qa-fixture.mjs` generates deterministic, static one-page PDF bytes (no JavaScript, URLs, forms, embedded files, customer identifiers or dependency installs) without overwriting existing output. Added a `commerce:qa:fixture` npm command and three additional Node tests, plus a read-only frozen-version operator inspection query at `supabase/operations/inspect-creator-qa-fixture.sql` with an all-zero safe placeholder. Extended existing migration-backed SQL tests to assert the query distinguishes unbound seller policy, reviewed-but-disabled offer, published offer, existing orders and expired reviews; stored version hashes are compared against the inspected downloaded bytes. Added [the QA fixture and manual operator review runbook](creator-qa-fixture.md) and cross-linked the provider risk test plan.
+
+**Safety:** this branch performs no live/sandbox payment action, account creation, webhook replay, new SQL schema migration, server route replacement, automatic fixture approval, hosted database mutations, or Render deployment. Its role is to make the *next actual QA test* easy to prepare without reusing the original payment. Operator inspection and explicit 24-hour review remain mandatory.
+
+**Pending:** matching green PR CI and merge; then owner-controlled upload/freeze of the newly generated inert PDF, explicit manual trusted-operator approval of its exact SHA and short-lived publication, independent test-mode buyer Checkout, real connected-account refund/dispute/fraud receipts and denial of buyer downloads, actual failed-event scheduler recovery, offer withdrawal and shutdown of new-checkout gates. Live Creator Commerce remains OFF.
+
+
 ## 21 November 2026 — read-only connected-account QA verification tooling merged
 
 **New checkpoint:** Verified the previous merged CI [#166](https://github.com/Truwty/snoozer-uk/actions/runs/44850931756) succeeded. Current hosted DB still contains **one original paid/unheld order and its one processed signed Checkout receipt**; no new QA order, pending receipt, or active reviewed offer; one expired-but-enabled offer remains. Actual connected test Stripe seller is open with active card-payments/payout capabilities, and ten-type snapshot destination enabled. Current Stripe test platform lists **0 disputes and 0 early fraud warnings**. The Render live deploy remains `07e5926`, and production auto-deploy is disabled.
