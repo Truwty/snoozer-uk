@@ -19,7 +19,7 @@ const key = requireValue("STRIPE_PREMIUM_LIVE_API_KEY", /^(rk|sk)_live_[A-Za-z0-
 const account = requireValue("STRIPE_PREMIUM_LIVE_ACCOUNT_ID", /^acct_[A-Za-z0-9]{1,128}$/);
 const secret = requireValue("STRIPE_PREMIUM_LIVE_WEBHOOK_SECRET", /^whsec_[A-Za-z0-9_]{20,512}$/);
 const portalId = requireValue("STRIPE_PREMIUM_LIVE_PORTAL_CONFIGURATION", /^bpc_[A-Za-z0-9]{1,128}$/);
-flagged("SNOOZER_PREMIUM_TAX_CONFIRMED");
+ok.push("Stripe Tax intentionally not activated. Independent tax obligations remain the merchant responsibility.");
 flagged("SNOOZER_PREMIUM_LEGAL_CONFIRMED");
 flagged("SNOOZER_PREMIUM_LIVE_ENABLED");
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,7 +38,7 @@ else {
       blockers.push("Premium SQL migration or privileged RPC is missing.");
     else {
       const p = policy.data;
-      for (const field of ["checkoutEnabled","taxReviewed","legalReviewed"])
+      for (const field of ["checkoutEnabled","legalReviewed"])
         if (p[field] !== true) blockers.push("Database " + field + " is not approved.");
       for (const row of prices.data) catalogue.push(row);
       for (const plan of ["plus","pro","studio"])
