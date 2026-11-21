@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Brand } from "@/components/shell";
 import { PurchaseRefresh } from "@/components/purchase-refresh";
 import { creatorPurchases } from "@/lib/creator-purchases";
+import { purchaseSupportGuidance } from "@/lib/creator-purchase-support";
 import { requireAccount } from "@/lib/profiles-server";
 
 export const metadata={title:"Sandbox purchases",robots:{index:false,follow:false}};
@@ -17,7 +18,12 @@ export default async function Page() {
         <p>Purchase reference: <code>{order.id}</code></p>
         {order.accessUntil&&<p>Download expiry: <time dateTime={order.accessUntil}>{new Date(order.accessUntil).toUTCString()}</time></p>}
         {order.accessActive&&<a className="text-link" href={`/studio/purchases/file/${order.id}`} download>Verify payment and download PDF</a>}
-        <PurchaseRefresh id={order.id}/><Link href="/#contact">Purchase support</Link>
+        <section aria-label="Purchase assistance" className="stack">
+          <h3>{purchaseSupportGuidance(order).heading}</h3>
+          <p>{purchaseSupportGuidance(order).guidance}</p>
+          <PurchaseRefresh id={order.id}/>
+          <Link href="/#contact">Contact Snoozer support</Link>
+        </section>
       </article>)}
     </section></main>;
 }
