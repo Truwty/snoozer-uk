@@ -1,5 +1,9 @@
 # Progress — 21 November 2026
 
+## Membership catalogue — verified CI and hosted schema
+
+Source `1f90dde` passed [full CI 44881636793](https://github.com/Truwty/snoozer-uk/actions/runs/44881636793). Hosted migration `20261121074938_creator_membership_offers` applied and recorded; filename aligned to avoid duplicate DDL. Read-only checks: zero proposals, authenticated owner RPC enabled, anonymous private RPC and direct-table read denied, public projection available, original one paid order and processed receipt unchanged. Render deployment `dep-dc0kq74s728c73aj46b0` triggered for the tested source; final Live status not yet verified at this checkpoint. No recurring charge, entitlement or live payment enabled. [PR #19](https://github.com/Truwty/snoozer-uk/pull/19) separately adds discount-compatible £2 QA preset and browser owner CRUD regression; not yet merged. Phase 5 remains OPEN for actual provider acceptance and deferred commerce functionality.
+
 ## Creator membership offers (§13.11) — preview increment
 
 Added a private verified-owner CRUD catalogue for up to five proposed monthly tiers per profile (£1–£100, title, benefits, revision and explicit visibility), with public previews gated by the existing nonempty canonical sandbox storefront. No checkout, subscription, entitlement, revenue or provider mutations. SQL/unit/SSR regression tests added; CI, hosted migration and deployment pending. Recurring creator payment lifecycle and genuine provider acceptance remain open. See [membership runbook](creator-memberships.md).
