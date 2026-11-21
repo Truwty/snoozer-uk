@@ -301,3 +301,42 @@ grant execute on function public.list_premium_live_offers(),
   public.hold_premium_live_invoice(text,text,text,text,text)
   to service_role;
 grant execute on function public.get_my_premium_live_billing() to authenticated;
+
+
+-- Allows reliable retry after Stripe itself confirms expiry; no guessed clock-only release.
+create function public.expire_premium_live_checkout(
+  p_owner uuid,p_customer text,p_session text
+) returns boolean language plpgsql security definer set search_path='' as $$
+begin
+  update snoozer.premium_live_checkouts a set status='expired'
+    where a.owner_id=p_owner and a.session_id=p_session and a.status='pending'
+    and a.subscription_id is null
+    and exists(select 1 from snoozer.premium_live_customers c
+      where c.owner_id=p_owner and c.customer_id=p_customer);
+  return found;
+end $$;
+revoke execute on function public.expire_premium_live_checkout(uuid,text,text)
+  from public,anon,authenticated,service_role;
+grant execute on function public.expire_premium_live_checkout(uuid,text,text) to service_role;
+
+create function public.get_premium_live_customer(p_owner uuid)
+returns text language sql stable security definer set search_path='' as $$
+  select customer_id from snoozer.premium_live_customers where owner_id=p_owner
+$$;
+revoke execute on function public.get_premium_live_customer(uuid)
+  from public,anon,authenticated,service_role;
+grant execute on function public.get_premium_live_customer(uuid) to service_role;
+
+-- Bounded provider reconciliation can safely revisit active subscriptions after missed events.
+create function public.list_premium_live_reconcile_candidates(p_limit integer default 5)
+returns table(subscription_id text)
+language sql stable security definer set search_path='' as $$
+  select a.subscription_id from snoozer.premium_live_checkouts a
+  where a.status='bound' and a.subscription_id is not null
+    and (a.last_checked_at is null or a.last_checked_at < now() - interval '3 hours')
+  order by a.last_checked_at nulls first,a.created_at
+  limit least(greatest(p_limit,1),10)
+$$;
+revoke execute on function public.list_premium_live_reconcile_candidates(integer)
+  from public,anon,authenticated,service_role;
+grant execute on function public.list_premium_live_reconcile_candidates(integer) to service_role;
