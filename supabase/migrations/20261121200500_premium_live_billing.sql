@@ -340,3 +340,31 @@ $$;
 revoke execute on function public.list_premium_live_reconcile_candidates(integer)
   from public,anon,authenticated,service_role;
 grant execute on function public.list_premium_live_reconcile_candidates(integer) to service_role;
+
+
+-- Read-only, privileged launch preflight. It never changes pricing or policy.
+create function public.premium_live_preflight()
+returns jsonb language sql stable security definer set search_path='' as $$
+select jsonb_build_object(
+  'checkoutEnabled',p.checkout_enabled,
+  'taxReviewed',p.tax_reviewed,
+  'legalReviewed',p.legal_reviewed,
+  'approvedOffers',(select count(*) from snoozer.premium_live_prices where retired_at is null),
+  'coveredPlans',(select coalesce(jsonb_agg(distinct plan), '[]'::jsonb) from snoozer.premium_live_prices where retired_at is null),
+  'customers',(select count(*) from snoozer.premium_live_customers),
+  'currentSubscriptions',(select count(*) from snoozer.premium_live_checkouts where status='bound'),
+  'unprocessedReceipts',(select count(*) from snoozer.premium_live_receipts where processed_at is null)
+) from snoozer.premium_live_policy p where p.singleton=true
+$$;
+revoke execute on function public.premium_live_preflight() from public,anon,authenticated,service_role;
+grant execute on function public.premium_live_preflight() to service_role;
+
+create function public.list_premium_live_catalogue()
+returns table(price_id text,plan text,plan_version integer,billing_interval text,currency text,unit_amount integer)
+language sql stable security definer set search_path='' as $$
+  select p.price_id,p.plan,p.plan_version,p.billing_interval,p.currency,p.unit_amount
+  from snoozer.premium_live_prices p where p.retired_at is null
+  order by p.plan,p.billing_interval
+$$;
+revoke execute on function public.list_premium_live_catalogue() from public,anon,authenticated,service_role;
+grant execute on function public.list_premium_live_catalogue() to service_role;
