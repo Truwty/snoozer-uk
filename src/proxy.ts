@@ -6,8 +6,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient } from "@/lib/supabase";
 import { canonicalUsername, username } from "@/lib/profile";
+import { activeAccountCookie, persistentCookieAge, selectedAccountSlot, sessionCookieName } from "@/lib/account-slots";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "pricing", "help"]);
 // Creator marketplace removed. Keep Snoozer-owned Premium subscriptions under /studio/plan
 // and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
 // is intentionally disabled. Never reopen seller onboarding.
@@ -108,10 +109,17 @@ export async function proxy(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   if (siteUrl().protocol === "https:") response.headers.set("Strict-Transport-Security", "max-age=31536000");
 
-  if (!custom && !canonicalTarget && request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
+  const slot = selectedAccountSlot(request.cookies.get(activeAccountCookie)?.value);
+  const authCookie = sessionCookieName(slot);
+  const hasActiveSession = request.cookies.getAll().some(({ name }) => authCookie
+    ? (name === authCookie || name.startsWith(authCookie + "."))
+    : /^sb-[a-zA-Z0-9-]+-auth-token(?:\.|$)/.test(name));
+  // Refresh on every platform route, not only Studio. Auth cookies expire if refresh
+  // only happens on one route and that route isn't visited before token expiry.
+  if (!custom && !canonicalTarget && hasActiveSession && supabaseUrl && supabaseKey) {
     const client = createServerClient(supabaseUrl, supabaseKey, {
       global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000) }) },
-      cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:" },
+      cookieOptions: { name: authCookie, httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:", path: "/", maxAge: persistentCookieAge },
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (values) => {
@@ -128,7 +136,7 @@ export async function proxy(request: NextRequest) {
         },
       },
     });
-    if (request.cookies.getAll().some(({ name }) => name.startsWith("sb-"))) await client.auth.getUser();
+    await client.auth.getUser();
   }
   return response;
 }
