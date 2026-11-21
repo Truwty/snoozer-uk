@@ -398,6 +398,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
     await expect(reserveOrder(fixture.version,"00000000-0000-4000-8000-000000000004"))
       .rejects.toMatchObject({code:"P1222"});
+    await db.exec("reset role"); // Restricted service_role cannot read private order tables directly.
     expect((await result<number>(
       "select count(*)::integer as value from snoozer.creator_sandbox_orders where version_id=$1",
       [fixture.version]))).toBe(1);
