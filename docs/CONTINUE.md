@@ -1,5 +1,16 @@
 # Continuation
 
+## Current implementation — Studio-guided isolated QA setup (21 November 2026)
+
+Resumed after PR #8's deterministic fixture generator and CI #175. **Read-only hosted baseline** still shows one original paid/unheld £5 order, one processed signed Checkout receipt, zero pending, zero new isolated QA drafts/orders/offers, and **one expired-but-enabled older offer**. No genuine isolated Stripe refund, dispute or fraud warning receipts exist. The last recorded deployed Render commit is older than current `main` and auto deploy is disabled.
+
+This branch removes the next practical seller-side setup bottleneck **using the existing authenticated Studio**. It adds a confirmed-account-only, private/no-store, inert attachment route `/studio/products/qa-fixture` that serves the *same exact synthetic PDF bytes* as `scripts/creator-commerce-qa-fixture.mjs` (no uploaded file or separate static copy); a **Fill sandbox QA draft** button which prefills the existing private-draft save form at £0.50 (no automatic database write); and an in-Studio sequence to download, save, upload and freeze the separate QA version. The offer panel now labels an expired review **"Review expired — not available for purchase"** and disables re-publication while retaining the existing withdrawal action. New regression coverage checks account restrictions, PDF byte equality, safe headers, preset validation and expired-offer status.
+
+**No credentials, paid orders, file versions, hosted SQL rows, Stripe payments, account permissions or live Checkout switches were modified.** The owner must still sign in and *submit* the draft/upload/freeze forms, a trusted operator must inspect the exact frozen PDF hash and approve its 24-hour sandbox review, and a separate verified test buyer must perform the real Stripe Checkout. Do not auto-approve a PDF or bypass buyer identity. Use [the exact existing operator runbook](creator-qa-fixture.md) and [provider risk test plan](creator-commerce-sandbox-signal-tests.md).
+
+**Validation:** record matching branch CI results before merging. Once green, merge and preserve the live deploy gate; do not deploy/enable Checkout without confirming the target Render service and sandbox flags. Remaining Phase 5 provider exit checks: actual isolated signed refund/dispute/fraud events and blocked downloads, a genuine failed-receipt scheduled retry, safe stale-offer withdrawal and both *new-Checkout-only* gate closures. No live commerce approval.
+
+
 ## Latest development — prepare isolated QA fixture for genuine provider risk testing (21 November 2026)
 
 **Baseline reverified:** latest `main` `ecafa702` is green ([CI #171](https://github.com/Truwty/snoozer-uk/actions/runs/44852684227)). Hosted Supabase still has **one paid unheld original order, one processed Checkout receipt, zero pending receipts, zero new QA orders, zero current reviewed offers and one expired-but-enabled offer**. Render still serves source `07e5926` (auto deploy off); it is not necessary to replace successful payment/reconciliation code. No genuine isolated refunds, disputes or early fraud warnings have been processed.

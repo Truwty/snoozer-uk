@@ -33,6 +33,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
       <p>Prepare your digital product catalogue privately. Freezing a version does not publish it. Only separately reviewed test fixtures can be enabled for sandbox purchases; live selling is unavailable.</p>
       <Link href="/studio/products/seller">Stripe sandbox seller setup</Link>
       {checkoutEnabled&&draft&&<Link href={`/store/${draft.username}`}>View sandbox store</Link>}
+      {draft && <section className="panel stack" aria-labelledby="isolated-qa-setup">
+        <h2 id="isolated-qa-setup">Prepare a separate sandbox QA product</h2>
+        <p>This setup uses a synthetic test PDF and a private draft. It does not create a payment, publish a product or approve content for buyers.</p>
+        <div className="actions">
+          <a className="button secondary" href="/studio/products/qa-fixture" download="snoozer-isolated-sandbox-qa.pdf">Download test PDF</a>
+        </div>
+        <p>Next: select <strong>Fill sandbox QA draft</strong> under New product, save it, upload this exact PDF and freeze a private version. Then a trusted operator must inspect the frozen PDF and review its SHA-256 before you can publish a short-lived test offer.</p>
+        <p className="muted">Use a new product and a separate verified buyer. Never reuse the existing paid £5 order. Test-mode payments and refunds are not triggered by this setup.</p>
+      </section>}
       {!draft ? <p>Claim a profile in Studio before creating products.</p> : !inventory.success || response?.error ? <p role="alert">Your product catalogue is unavailable. Reload to try again.</p> : <>
         <p>{inventory.data.activeUsed} of {inventory.data.activeLimit} active drafts · {inventory.data.totalUsed} of {inventory.data.totalLimit} total across your account. Archived products retain their details.</p>
         {inventory.data.items.length === 0 && <p>No product drafts for this profile yet.</p>}
