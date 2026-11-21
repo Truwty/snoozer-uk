@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { accountPlan, can } from "../src/lib/entitlements";
 import { publicationList, publicationPreview } from "../src/lib/publication";
+import { recoverCreatorReceipts } from "../src/lib/creator-recovery";
 
 const alice = "00000000-0000-4000-8000-000000000001";
 const bob = "00000000-0000-4000-8000-000000000002";
@@ -458,6 +459,82 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,'evt_Order') as value")).toMatchObject([{id:"evt_Order"}]);
     await act("authenticated",alice);
     expect(await result("select public.read_creator_sandbox_diagnostics()->'deadLetterReceipts' as value")).toBe(1);
+  });
+
+  it("retries a persisted failed receipt through the real handler and SQL lease, then audits an isolated refund hold",async()=>{
+    const order=await boundSandboxOrder();
+    const token="creator-retry-fixture-"+"x".repeat(32);
+    expect(await recordCreatorReceipt("evt_Transient")).toBe(true);
+
+    const request=()=>new Request("https://snoozer.uk/api/v1/commerce/stripe/recover",{
+      method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},body:"{}"
+    });
+    const load=async (input:{id?:string;limit:number})=>
+      result<unknown[]>("select public.list_creator_sandbox_receipt_retries('acct_Platform',$1,$2) as value",[input.limit,input.id??null]);
+    const claimReceipt=async (id:string)=>
+      await result<boolean>("select public.claim_creator_sandbox_receipt_retry($1,'acct_Platform') as value",[id])===true;
+    let attempts=0;
+    const process=async (item:{id:string})=>{
+      attempts++;
+      if(attempts===1) throw new Error("Controlled transient provider failure");
+      await reconcileCreator(order.id,"paid","{}",item.id);
+    };
+
+    const failed=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
+    expect(failed.status).toBe(503);
+    expect(await failed.json()).toEqual({attempted:1,processed:0,failed:1});
+    expect(await result("select retry_count as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(1);
+    expect(await result("select processed_at is null as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(true);
+    expect(await result("select state as value from snoozer.creator_sandbox_orders where id=$1",[order.id])).toBe("pending");
+
+    const throttled=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
+    expect(throttled.status).toBe(200);
+    expect(await throttled.json()).toEqual({attempted:0,processed:0,failed:0});
+    expect(attempts).toBe(1);
+
+    // Expire only the disposable database lease; no hosted clocks or provider IDs are modified.
+    await db.exec("reset role; update snoozer.creator_sandbox_receipts set next_attempt_at=now()-interval '1 second' where id='evt_Transient'");
+    await act("service_role");
+    const recovered=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
+    expect(recovered.status).toBe(200);
+    expect(await recovered.json()).toEqual({attempted:1,processed:1,failed:0});
+    expect(attempts).toBe(2);
+    expect(await result("select retry_count as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(2);
+    expect(await result("select processed_at is not null as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(true);
+    expect(await result("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,null) as value")).toEqual([]);
+
+    const original=(await result<{paidAt:string;accessUntil:string;holds:string[]}>(
+      "select public.get_creator_sandbox_order($1) as value",[order.id]))!;
+    expect(Date.parse(original.accessUntil)-Date.parse(original.paidAt)).toBe(30*86400000);
+
+    const template=await readFile(new URL("../supabase/operations/inspect-creator-commerce-risk-evidence.sql",import.meta.url),"utf8");
+    const report=template.replace("00000000-0000-0000-0000-000000000000",order.id);
+    const evidence=async()=>{
+      await db.exec("reset role");
+      return (await db.query<{
+        checkout_receipts_processed:number;refund_receipts_processed:number;dispute_receipts_processed:number;
+        fraud_warning_receipts_processed:number;linked_pending_receipts:number;seller_pending_risk_receipts:number;
+        refund_hold_consistent:boolean;dispute_hold_consistent:boolean;fraud_hold_consistent:boolean;
+        database_access_eligible_only:boolean;holds:string[];
+      }>(report)).rows[0];
+    };
+    expect(await evidence()).toMatchObject({checkout_receipts_processed:1,refund_receipts_processed:0,
+      linked_pending_receipts:0,seller_pending_risk_receipts:0,refund_hold_consistent:true,database_access_eligible_only:true});
+
+    await act("service_role");
+    await recordCreatorReceipt("evt_Refund","charge.refunded","ch_Order");
+    const afterRefund=(await reconcileCreator(order.id,"paid","{refund}","evt_Refund"))!;
+    expect(afterRefund).toMatchObject({holds:["refund"],paidAt:original.paidAt,accessUntil:original.accessUntil});
+    expect(await evidence()).toMatchObject({checkout_receipts_processed:1,refund_receipts_processed:1,
+      linked_pending_receipts:0,seller_pending_risk_receipts:0,refund_hold_consistent:true,
+      dispute_hold_consistent:true,fraud_hold_consistent:true,database_access_eligible_only:false,holds:["refund"]});
+
+    await act("authenticated",bob);
+    expect(await result("select public.get_my_creator_order_file($1) as value",[order.id])).toBeNull();
+    await act("service_role");
+    const idle=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
+    expect(await idle.json()).toEqual({attempted:0,processed:0,failed:0});
+    expect(attempts).toBe(2);
   });
 
   it("retains unresolved holds and account receipt backlogs, then removes expired unheld order history without deleting product bytes",async()=>{
