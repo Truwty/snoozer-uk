@@ -34,7 +34,11 @@ export async function SiteHeader() {
 
   // Legacy Supabase session cookies have no account registry yet; still offer
   // account switching and migration on the first successful explicit login.
-  const visibleAccounts = accounts.length > maxSavedAccounts ? accounts.slice(0, maxSavedAccounts) : accounts;
+  // A brand-new anonymous visitor has no saved identity: don't expose the
+  // legacy primary-slot placeholder as a fake switchable account.
+  const visibleAccounts = !current && accounts.length === 1
+    && accounts[0].slot === "primary" && !accounts[0].userId
+      ? [] : accounts.slice(0, maxSavedAccounts);
   return <header className="snoozer-global-header">
     <div className="snoozer-topbar">
       <Brand />

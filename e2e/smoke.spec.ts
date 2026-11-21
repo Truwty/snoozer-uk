@@ -206,3 +206,10 @@ test("the Snoozer topbar routes to real Help Center guides and approved Premium 
   await expect(page.getByRole("heading", { name: "Stay signed in and switch accounts" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
+
+test("new visitors do not see a phantom saved account in the dropdown", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".account-dropdown > summary").click();
+  await expect(page.locator(".account-popover").getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.locator(".account-popover").getByRole("button", { name: "Switch Accounts" })).toHaveCount(0);
+});
