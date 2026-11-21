@@ -41,3 +41,14 @@ it("fails closed on malformed data, unavailable RPC or authentication service",a
   mocks.rpc.mockResolvedValue({data:null,error:{message:"offline"}});expect((await receipt()).status).toBe(503);
   mocks.getUser.mockResolvedValue({data:{user:null},error:{status:500}});expect((await receipt()).status).toBe(503);
 });
+
+it("shows original price, savings, first verification and recorded hold categories without refund settlement claims",async()=>{
+  mocks.rpc.mockResolvedValue({data:[{...order,originalAmount:500,paidAt:"2026-11-21T00:01:00Z",held:true,holds:["refund","fraud"],accessActive:false}],error:null});
+  const response=await receipt();expect(response.status).toBe(200);
+  const body=await response.text();expect(body).toContain("Original frozen list price: GBP 5.00");expect(body).toContain("Discount: GBP 1.25");
+  expect(body).toContain("2026-11-21T00:01:00.000Z");expect(body).toContain("Refund-related hold; Payment risk review hold");
+  expect(body).toContain("does not establish a net refund amount");
+  for(const extra of [{originalAmount:100},{held:false,holds:["refund"]},{held:true,holds:["refund","refund"]}]) {
+    mocks.rpc.mockResolvedValue({data:[{...order,...extra}],error:null});expect((await receipt()).status).toBe(503);
+  }
+});

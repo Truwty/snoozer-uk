@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { creatorPurchases } from "@/lib/creator-purchases";
+import { creatorPurchases,purchaseHoldLabels } from "@/lib/creator-purchases";
 import { sessionClient } from "@/lib/supabase";
 
 const headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"sandbox; default-src 'none'","X-Robots-Tag":"noindex, nofollow"};
@@ -27,7 +27,10 @@ export async function GET(_:Request,{params}:{params:Promise<{id:string}>}) {
       "Purchase reference: "+order.id,
       "Product: "+order.title,
       "Original confirmed test charge: GBP "+(order.amount/100).toFixed(2),
+      ...(order.originalAmount!==undefined?["Original frozen list price: GBP "+(order.originalAmount/100).toFixed(2),"Discount: GBP "+((order.originalAmount-order.amount)/100).toFixed(2)]:[]),
       "Order created (UTC): "+new Date(order.createdAt).toISOString(),
+      ...(order.paidAt?["First payment verification (UTC): "+new Date(order.paidAt).toISOString()]:[]),
+      ...(order.held&&purchaseHoldLabels(order.holds).length?["Recorded delivery restrictions: "+purchaseHoldLabels(order.holds).join("; ")]:[]),
       "Recorded status: "+(order.held?"Payment previously confirmed; delivery paused for risk review":"Payment previously confirmed"),
       "Download window ends (UTC): "+(order.accessUntil?new Date(order.accessUntil).toISOString():"Unavailable"),
       "Record generated (UTC): "+new Date().toISOString(),
