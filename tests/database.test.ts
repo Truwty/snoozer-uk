@@ -235,6 +235,79 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(JSON.stringify(held)).not.toContain("ch_Analytics");
   });
 
+  it("keeps creator collections owner-only and public groups restricted to reviewed eligible frozen versions", async () => {
+    const fixture=await sandboxOfferFixture();
+    const saveCollection=(profile:string,id:string|null,rev:number,items:string[],title="My guides",visible=true,remove=false)=>
+      result<string>("select public.save_my_creator_collection($1,$2,$3,$4,$5,$6,$7::uuid[],$8) as value",
+        [profile,id,rev,title,"A group of tested guides.",visible,items,remove]);
+    const list=(profile:string)=>result<{id:string;revision:number;visible:boolean;productIds:string[]}[]>(
+      "select public.list_my_creator_collections($1) as value",[profile]);
+    const publicGroups=(name:string)=>result<{id:string;title:string;versionIds:string[]}[]>(
+      "select public.get_creator_sandbox_collections($1) as value",[name]);
+
+    await act("authenticated",alice);
+    const collection=(await saveCollection(fixture.profile,null,0,[fixture.product]))!;
+    expect((await list(fixture.profile))![0]).toMatchObject({
+      id:collection,revision:0,visible:true,productIds:[fixture.product],
+    });
+    // Visibility switch cannot publish an unapproved/unready offer.
+    expect(await publicGroups(fixture.name)).toEqual([]);
+    await expect(saveCollection(fixture.profile,collection,0,[fixture.product,fixture.product]))
+      .rejects.toMatchObject({code:"22023"});
+    await expect(saveCollection(fixture.profile,collection,0,[fixture.product], "Wrong\nTitle"))
+      .rejects.toMatchObject({code:"22023"});
+
+    await act("authenticated",bob);
+    await expect(list(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(saveCollection(fixture.profile,collection,0,[])).rejects.toMatchObject({code:"42501"});
+    await claim("collection-bob");
+    const otherProfile=(await draft() as {profile_id:string}).profile_id;
+    const otherProduct=(await saveProduct(otherProfile))!;
+    await expect(saveCollection(otherProfile,null,0,[fixture.product]))
+      .rejects.toMatchObject({code:"42501"});
+
+    await act("authenticated",alice);
+    await expect(saveCollection(fixture.profile,collection,0,[otherProduct]))
+      .rejects.toMatchObject({code:"42501"});
+    expect((await list(fixture.profile))![0].productIds).toEqual([fixture.product]);
+
+    await act("anon");
+    await expect(list(fixture.profile)).rejects.toMatchObject({code:"42501"});
+    await expect(saveCollection(fixture.profile,collection,0,[fixture.product]))
+      .rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(list(fixture.profile)).rejects.toMatchObject({code:"42501"});
+
+    await act("service_role");
+    await enableSandboxOffer(fixture.version);
+    await act("anon");
+    const published=(await publicGroups(fixture.name))!;
+    expect(published).toHaveLength(1);
+    expect(published[0]).toMatchObject({id:collection,versionIds:[fixture.version]});
+    expect(JSON.stringify(published)).not.toContain(fixture.product);
+    expect(JSON.stringify(published)).not.toContain(alice);
+    expect(JSON.stringify(published)).not.toContain(bob);
+
+    await act("authenticated",alice);
+    await saveCollection(fixture.profile,collection,0,[fixture.product],"Private now",false);
+    await act("anon");
+    expect(await publicGroups(fixture.name)).toEqual([]);
+    await act("authenticated",alice);
+    await expect(saveCollection(fixture.profile,collection,0,[fixture.product]))
+      .rejects.toMatchObject({code:"40001"});
+    await saveCollection(fixture.profile,collection,1,[fixture.product],"Back on",true);
+    await act("service_role");
+    await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
+    await act("anon");
+    expect(await publicGroups(fixture.name)).toEqual([]);
+
+    await act("authenticated",alice);
+    await saveCollection(fixture.profile,collection,2,[],"Back on",true,true);
+    expect(await list(fixture.profile)).toEqual([]);
+    await act("anon");
+    expect(await publicGroups(fixture.name)).toEqual([]);
+  });
+
   it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
     const fixture=await sandboxOfferFixture();
     await db.exec("reset role");
