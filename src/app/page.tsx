@@ -4,7 +4,6 @@ import { CopyLink } from "@/components/copy-link";
 import { Disclosure } from "@/components/ui";
 import { Brand } from "@/components/shell";
 import { HomeProfileDemo } from "@/components/home-profile-demo";
-import { kofiProfileUrl } from "@/lib/kofi-link";
 
 export const metadata = {
   title: "A place to be yourself",
@@ -12,7 +11,6 @@ export const metadata = {
 };
 
 export default function Home() {
-  const support = kofiProfileUrl(process.env.KOFI_PLATFORM_PROFILE_URL);
   return <main className="shell home">
     <header className="nav">
       <Brand />
@@ -52,6 +50,6 @@ export default function Home() {
       <Disclosure title="Can I change my theme later?"><p>Yes. Change your appearance in Studio and check it in the live preview before publishing.</p></Disclosure>
     </section>
     <section className="home-section final-cta"><h2>A place for what you make.</h2><Link className="button" href="/sign-up">Create your page</Link></section>
-    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav>{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
+    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav></footer>
   </main>;
 }
