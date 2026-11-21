@@ -19,7 +19,7 @@ select
   v.currency,
   d.archived as draft_archived,
   f.state='ready' and f.bytes=v.bytes as ready_file_matches_snapshot,
-  m.account_id is not null and m.platform_id=policy.platform_id as seller_platform_bound,
+  coalesce(m.account_id is not null and m.platform_id=policy.platform_id,false) as seller_platform_bound,
   m.ready and m.checked_at>now()-interval '5 minutes' as recent_seller_readiness,
   coalesce(o.version_id=v.id and o.reviewed_sha256=v.sha256
     and o.review_expires_at>now(),false) as approval_still_current,
