@@ -1,5 +1,10 @@
 # Continuation
 
+## Opt-in external Ko-fi creator reporting — source candidate
+
+Phase 5 §13.10: added an owner-only per-profile Ko-fi webhook verification token digest, explicitly enabled/disabled reporting, idempotent externally reported donation notifications, currency-preserving private totals, strict per-owner read and service-only write, a test-mode-independent callback endpoint, and Studio UI. Raw webhook tokens are never stored and supporter names/emails/messages are discarded. This does NOT prove settlement, net revenue, refunds, tax registration, other currencies, memberships or a Snoozer entitlement. A Ko-fi account holder must configure their own webhook URL and send a test notification; no provider payout/read-back API is available here. SQL/unit and webhook tests added. CI, hosted migration, deployment and actual provider acceptance pending. Ko-fi's API sends payment notifications and does not report cancelled memberships. Phase 5 remains OPEN.
+
+
 ## Buyer support cases — tested source and hosted schema (21 Nov 2026)
 
 [PR #22](https://github.com/Truwty/snoozer-uk/pull/22) merged into main at 9769244 after [full CI #44927006391](https://github.com/Truwty/snoozer-uk/actions/runs/44927006391) passed lint, types, unit/PGlite SQL, disposable Supabase, production build and Playwright. Hosted additive support migration 20261121165902_creator_support_cases applied successfully. Verified: zero buyer cases, zero staff assignments, authenticated buyer-only intake RPC, anonymous intake denied, no direct table or audit-log read, original one paid PDF order and processed receipt retained, recurring Checkout gate false. No real staff member has been assigned or monitored response rota established; human buyer/staff acceptance and Render deployment pending. Support case messages and replies never change payment or entitlement states. Phase 5 remains OPEN.

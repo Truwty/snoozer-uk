@@ -63,6 +63,14 @@ begin
  select profile_id into profile from snoozer.creator_kofi_hooks
  where token_sha256=p_digest and enabled for share;
  if profile is null then return false; end if;
+ select * into existing from snoozer.creator_kofi_notifications
+ where message_id=p_message or (profile_id=profile and transaction_id=p_transaction) for share;
+ if found then
+  if existing.profile_id<>profile or existing.message_id<>p_message or existing.transaction_id<>p_transaction
+    or existing.amount_minor<>p_amount or existing.currency<>p_currency or existing.occurred_at<>p_occurred
+  then raise exception 'Conflicting Ko-fi notification' using errcode='22023'; end if;
+  return true;
+ end if;
  if (select count(*) from snoozer.creator_kofi_notifications where profile_id=profile)>=5000
  then raise exception 'Ko-fi notification retention cap' using errcode='P1310'; end if;
  insert into snoozer.creator_kofi_notifications(message_id,profile_id,transaction_id,amount_minor,currency,occurred_at)

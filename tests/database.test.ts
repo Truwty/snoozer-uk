@@ -225,6 +225,49 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await list())!.codes.find(c=>c.id!==id&&c.used>0)).toBeUndefined();
   });
 
+  it("isolates creator Ko-fi notifications without granting membership or payment entitlements",async()=>{
+    await act("authenticated",alice);await claim("creator-kofi");
+    const profile=(await draft() as {profile_id:string}).profile_id;
+    const report=()=>result<{enabled:boolean;revision:number|null;totals:Array<{currency:string;count:number;amountMinor:number}>;notifications:Array<{id:string}>}>(
+      "select public.get_my_creator_kofi_reporting($1) as value",[profile]);
+    expect(await report()).toMatchObject({enabled:false,revision:null,totals:[],notifications:[]});
+    const digest="a".repeat(64),nextDigest="b".repeat(64);
+    const save=(expected:number,d:string|null,enabled:boolean)=>result<number>(
+      "select public.save_my_creator_kofi_hook($1,$2,$3,$4) as value",[profile,expected,d,enabled]);
+    expect(await save(0,digest,true)).toBe(1);
+    await expect(save(0,digest,false)).rejects.toMatchObject({code:"40001"});
+    const id="00000000-0000-4000-8000-000000000099";
+    const now=new Date().toISOString();
+    const record=(digestValue:string,message=id,transaction="kf-transaction-1",minor=500,currency="GBP")=>result<boolean>(
+      "select public.record_creator_kofi_notification($1,$2,$3,$4,$5,$6) as value",
+      [digestValue,message,transaction,now,minor,currency]);
+    await act("service_role");
+    expect(await record(digest)).toBe(true);
+    expect(await record(digest)).toBe(true);
+    await expect(record(digest,id,"kf-transaction-1",600)).rejects.toMatchObject({code:"22023"});
+    await expect(record(digest,"00000000-0000-4000-8000-000000000098","kf-transaction-1")).rejects.toMatchObject({code:"22023"});
+    expect(await record("f".repeat(64),"00000000-0000-4000-8000-000000000088","other")).toBe(false);
+    await act("authenticated",bob);
+    await expect(report()).rejects.toMatchObject({code:"42501"});
+    await act("anon");
+    await expect(report()).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",alice);
+    expect(await report()).toMatchObject({enabled:true,revision:1,totals:[{currency:"GBP",count:1,amountMinor:500}],notifications:[{id}]});
+    await expect(db.query("select * from snoozer.creator_kofi_notifications")).rejects.toMatchObject({code:"42501"});
+    expect(await save(1,null,false)).toBe(2);
+    await act("service_role");
+    expect(await record(digest)).toBe(false);
+    await act("authenticated",alice);
+    expect(await report()).toMatchObject({enabled:false,revision:2,totals:[{currency:"GBP",count:1,amountMinor:500}]});
+    expect(await save(2,nextDigest,true)).toBe(3);
+    await act("service_role");
+    expect(await record(digest)).toBe(false);
+    expect(await record(nextDigest,"00000000-0000-4000-8000-000000000089","new-transaction",325,"USD")).toBe(true);
+    await act("authenticated",alice);
+    expect((await report())?.totals).toMatchObject([{currency:"GBP",amountMinor:500},{currency:"USD",amountMinor:325}]);
+    expect(await result("select public.get_my_plan() as value")).toMatchObject({plan:"free"});
+  });
+
   it("keeps commerce support cases buyer-owned and audits separately authorised staff replies", async () => {
     const fixture=await sandboxOfferFixture();
     await enableSandboxOffer(fixture.version);
