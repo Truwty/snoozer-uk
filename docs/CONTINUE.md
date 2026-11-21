@@ -1,5 +1,11 @@
 # Continuation
 
+## Proposed next development — QA fixture fingerprint preflight (21 November 2026)
+
+A narrow unmerged development branch `feat/creator-qa-fingerprint-preflight` presents the synthetic fixture's deterministic byte count and SHA-256 inside the authenticated Studio products QA instructions. This reuses the generator already used by the protected PDF download; it does not create, approve, publish or charge for a product. The reference is expressly **not** accepted as the frozen uploaded file's hash: independent inspection and fingerprint comparison by the trusted operator remain mandatory. The existing QA endpoint test also asserts SHA-256 parity with the generator.
+
+**Pending:** CI and PR review. Do not label this deployed or merged until the relevant checks actually complete. The next real provider checkpoint remains a *new separately owner-approved sandbox QA purchase* followed by actual signed refund/dispute/fraud events, a real failed-receipt scheduled retry, and gate/offer closeout; the existing original £5 purchase must remain untouched. The latest confirmed deployed Render commit is still older than the prior PR #9 source.
+
 ## Latest merged development — Studio-guided isolated QA setup (21 November 2026)
 
 Resumed after PR #8's deterministic fixture generator and CI #175. **Read-only hosted baseline** still shows one original paid/unheld £5 order, one processed signed Checkout receipt, zero pending, zero new isolated QA drafts/orders/offers, and **one expired-but-enabled older offer**. No genuine isolated Stripe refund, dispute or fraud warning receipts exist. The last recorded deployed Render commit is older than current `main` and auto deploy is disabled.
