@@ -34,8 +34,6 @@ export default async function BillingDiagnosticsPage() {
   const { data, error } = await client.rpc("read_staff_billing_diagnostics");
   if (error?.code === "42501") notFound();
   const parsed = diagnostics.safeParse(data);
-  const creatorResponse=!error&&parsed.success?await client.rpc("read_creator_sandbox_diagnostics"):null;
-  const creator=z.object({pendingReceipts:count,deferredReceipts:count,deadLetterReceipts:count,uncertainOrders:count,heldOrders:count}).safeParse(creatorResponse?.data);
   return <main className="shell">
     <header className="nav"><Brand /><Link className="button small" href="/studio/plan">Back to plan and usage</Link></header>
     <section className="panel stack">
@@ -50,16 +48,6 @@ export default async function BillingDiagnosticsPage() {
             </div>)}</dl>
           </section>;
         })}
-      {!error&&parsed.success&&<section className="stack"><h2>Creator sandbox recovery</h2>
-        <p>Test-mode receipt and order counts only. Retry failures use bounded backoff; uncertain orders and payment holds are excluded from automatic cleanup.</p>
-        {!creator.success||creatorResponse?.error?<p role="alert">Creator recovery diagnostics are unavailable.</p>:<dl>
-          <div><dt>Receipts awaiting reconciliation</dt><dd>{creator.data.pendingReceipts}</dd></div>
-          <div><dt>Receipts in retry backoff</dt><dd>{creator.data.deferredReceipts}</dd></div>
-          <div><dt>Receipts needing operator review after ten retries</dt><dd>{creator.data.deadLetterReceipts}</dd></div>
-          <div><dt>Old unbound Checkout attempts</dt><dd>{creator.data.uncertainOrders}</dd></div>
-          <div><dt>Orders held for payment review</dt><dd>{creator.data.heldOrders}</dd></div>
-        </dl>}
-      </section>}
     </section>
   </main>;
 }
