@@ -1,5 +1,18 @@
 # Continuation
 
+## Premium-only production foundation — merged, hosted and deployed 21 November 2026
+
+[PR #28](https://github.com/Truwty/snoozer-uk/pull/28) merged to `main` as [commit `f03e231`](https://github.com/Truwty/snoozer-uk/commit/f03e231186ba6e16c339833b3bbb8f3121f4cb5d). [Full CI #44946031912](https://github.com/Truwty/snoozer-uk/actions/runs/44946031912) **passed** lint, TypeScript, unit tests, disposable Supabase migration, build and Playwright. Render deploy `dep-dc0vtgijnfac73f83m4g` confirmed **Live** at 20:29:31 UTC with the exact app commit; checked post-deployment Render ERROR logs from 20:27 UTC returned zero entries.
+
+Hosted Supabase migration **`20261121202249_premium_live_billing`** applied successfully with the identical checked-in SQL. Verified immediately after installation: `checkoutEnabled=false`, `taxReviewed=false`, `legalReviewed=false`, 0 current live Premium prices, 0 live customers, 0 subscription records, 0 receipts, 0 live entitlement grants, and 0 unprocessed receipts. Verified RLS on all six new private tables, no anonymous/authenticated direct Checkout RPC privilege, no direct customer-table SELECT for authenticated accounts, service-only Checkout RPC privilege and authenticated high-level billing status only.
+
+Stripe LIVE platform `acct_1UdI9LBYH85ysT1B` remains verified with charges/payouts enabled and no currently due identity requirements. LIVE Billing Portal `bpc_1UeKY2BYH85ysT1BioyXeK9C` is active, invoice history/payment-method updates and period-end cancellation enabled; plan switch stays disabled. New LIVE non-Connect webhook `we_1UeKYyBYH85ysT1BSqAlpvsk` configured for 14 events and **disabled**; signing secret stored on Render, not in source. Render flags `SNOOZER_PREMIUM_LIVE_ENABLED=false`, `SNOOZER_PREMIUM_TAX_CONFIRMED=false`, `SNOOZER_PREMIUM_LEGAL_CONFIRMED=false`; restricted LIVE API key not provided. No live Stripe products, prices, subscription payments or legally confirmed VAT registrations.
+
+**Production activation is NOT complete.** Remaining human/provider work from the nine-item Priority 1 list: approved exact monthly/yearly GBP prices for Plus, Pro and Studio; reviewed real prices and tax behaviour in live Stripe; qualified owner tax/VAT registration assessment and legally reviewed subscription/refund/privacy/consumer notices; restricted LIVE server key created and stored safely; real end-to-end independent signed Checkout/renewal/payment-failure/refund/dispute/fraud/cancellation/grant tests; verified production email delivery (SMTP, billing notifications and reset emails); support/refund operational readiness and disaster recovery/monitoring acceptance; and review of Supabase advisor findings (notably leaked-password protection warning and security-definer permissions). **Do not flip any live launch gate without these verifications.** The retired creator marketplace must remain OFF.
+
+Source of truth: `docs/premium-live-launch.md` and `npm run billing:live:preflight`. Older Phase 5 creator commerce notes below are historical; do not reactivate them.
+
+
 ## Snoozer Premium-only launch — production foundation (21 November 2026)
 
 **Business direction:** The creator marketplace was permanently retired under PR #27; Snoozer will only sell its own Plus, Pro and Studio subscription plans. Older Phase 5 seller/PDF/membership acceptance checklists are historical and MUST NOT be used to re-enable Connect.
