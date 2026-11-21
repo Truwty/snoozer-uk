@@ -15,7 +15,7 @@ describe("Premium LIVE fail-closed activation", () => {
   it("accepts a valid LIVE key with surrounding paste whitespace", () => {
     configure();
     const fixture = ["rk", "live", "fixtureabc12345678901234567890"].join("_");
-    vi.stubEnv("STRIPE_PREMIUM_LIVE_API_KEY", "  " + fixture + "  \\n");
+    vi.stubEnv("STRIPE_PREMIUM_LIVE_API_KEY", "  " + fixture + "  " + String.fromCharCode(10));
     expect(premiumLiveReadConfig()?.key).toBe(fixture);
   });
   it("requires a separate genuine LIVE key and exact platform account", () => {
