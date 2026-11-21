@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
-      SERVICE_ORIGIN: ${\{ vars.PREMIUM_LIVE_SWEEP_ORIGIN }}
-      OPERATOR_TOKEN: ${\{ secrets.STRIPE_PREMIUM_LIVE_RECOVERY_TOKEN }}
+      SERVICE_ORIGIN: ${{ vars.PREMIUM_LIVE_SWEEP_ORIGIN }}
+      OPERATOR_TOKEN: ${{ secrets.STRIPE_PREMIUM_LIVE_RECOVERY_TOKEN }}
     steps:
       - name: Reconcile a bounded batch without creating charges
         shell: bash
