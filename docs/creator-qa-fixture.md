@@ -22,7 +22,7 @@ This is harmless content for QA, **not** malware/content scanning or production 
 1. Sign in as an already-verified **creator/seller**, using the existing bound Stripe **test** account. The seller and buyer must be separate verified users.
 2. In <https://www.snoozer.uk/studio/products>, create a **new** private draft, clearly named `Snoozer isolated sandbox QA (not for sale)`. Set the price to **£0.50** (the platform's existing lower limit) and a description identifying the synthetic fixture.
 3. Upload this PDF through the existing *Product files* control. Check the upload reports **ready**; do not bypass pending/reservation cleanup.
-4. Freeze a new immutable product version. Copy its newly generated version UUID from the owner’s Studio workflow/authorised DB read. **Do not select any version associated with the original £5 purchase.**
+4. Freeze a new immutable product version. Copy its newly generated version UUID from the link target of **Download private revision** (`/studio/products/version/<UUID>`) or an authorised DB read. **Do not select any version associated with the original £5 purchase.**
 5. An operator must independently open/inspect the exact frozen file and compare SHA-256. Do not publish yet.
 
 No new routes, schema changes or webhook bypasses are needed. All the Studio upload/freeze controls already exist.
