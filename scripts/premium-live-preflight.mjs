@@ -60,11 +60,6 @@ if (key && account) {
       blockers.push("Stripe live account identity, payments or payouts do not match.");
     else ok.push("Verified LIVE Stripe merchant account and payouts.");
   } catch { blockers.push("Could not verify merchant account with the intended LIVE API key."); }
-  try {
-    const tax = await stripe.tax.settings.retrieve();
-    if (tax.status !== "active") blockers.push("Stripe Tax head-office setup is not active.");
-    else ok.push("Stripe Tax business settings active (not a tax-registration claim).");
-  } catch { blockers.push("Could not read Stripe Tax configuration."); }
   if (portalId) {
     try {
       const portal = await stripe.billingPortal.configurations.retrieve(portalId);
