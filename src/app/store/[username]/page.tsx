@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Brand } from "@/components/shell";
+import {membershipCheckoutConfig} from "@/lib/creator-membership-provider";
+import { z } from "zod";
 import {CreatorMembershipPanel} from "@/components/creator-membership-panel";
 import { CreatorTipPanel } from "@/components/creator-tip-panel";
 import { creatorTipUrl } from "@/lib/creator-tips";
@@ -32,6 +34,9 @@ export default async function Page({params}:{params:Promise<{username:string}>})
 
   const membershipResponse=await anonymousClient().rpc("get_creator_sandbox_membership_offers",{p_name:name});
   const memberships=membershipResponse.error?[]:membershipResponse.data;
+  const eligibility=membershipCheckoutConfig()?await anonymousClient().rpc("get_creator_membership_checkout_offers",{p_name:name}):null;
+  const approved=z.array(z.uuid()).max(5).safeParse(eligibility?.data);
+  const checkoutOffers=eligibility&&!eligibility.error&&approved.success?approved.data:[];
 
   const stockResponse=await anonymousClient().rpc("get_creator_sandbox_stock",{p_name:name});
   if(stockResponse.error) throw new Error("Limited inventory status is temporarily unavailable.");
@@ -61,7 +66,7 @@ export default async function Page({params}:{params:Promise<{username:string}>})
       </aside>}
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
       <CreatorTipPanel href={tips}/>
-      {store.items.length>0&&<CreatorMembershipPanel offers={memberships}/> }
+      {store.items.length>0&&<CreatorMembershipPanel offers={memberships} checkoutOffers={checkoutOffers} name={name}/> }
       {selected.length>0&&<section className="stack" aria-label="Reviewed product collections">
         <h2>Collections</h2>
         {selected.map(group=><section className="panel stack" key={group.id}>

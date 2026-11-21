@@ -19,7 +19,7 @@ create table snoozer.creator_membership_subscriptions(
  subscription_id text unique check(subscription_id ~ '^sub_[A-Za-z0-9]{1,128}$'),
  customer_id text check(customer_id ~ '^cus_[A-Za-z0-9]{1,128}$'),
  state text not null default 'pending' check(state in('pending','active','inactive','cancelled')),
- period_end timestamptz, checked_at timestamptz, cancel_at_end boolean not null default false,
+ period_end timestamptz, checked_at timestamptz, buyer_checked_at timestamptz, cancel_at_end boolean not null default false,
  holds text[] not null default '{}' check(holds <@ array['refund','dispute','fraud']::text[] and cardinality(holds)<=3),
  check(buyer_id<>seller_id and account_id<>platform_id),
  check((subscription_id is null)=(customer_id is null)),
@@ -147,9 +147,22 @@ end $$;
 create function public.expire_creator_membership_checkout(p_id uuid,p_account text,p_checkout text) returns boolean
 language plpgsql security definer set search_path='' as $$
 begin
- update snoozer.creator_membership_subscriptions set state='cancelled' where id=p_id and account_id=p_account and checkout_id=p_checkout and subscription_id is null and state='pending';
+ update snoozer.creator_membership_subscriptions set state='cancelled' where id=p_id and account_id=p_account and checkout_id=p_checkout and subscription_id is null and state in('pending','cancelled');
  return found;
 end $$;
+create function public.claim_my_creator_membership_check(p_id uuid) returns boolean
+language plpgsql security definer set search_path='' as $
+declare actor uuid:=snoozer.verified_user();
+begin
+ update snoozer.creator_membership_subscriptions set buyer_checked_at=now() where id=p_id and buyer_id=actor and (buyer_checked_at is null or buyer_checked_at<=now()-interval '10 seconds');
+ return found;
+end $;
+create function public.finish_creator_membership_checkout_receipt(p_id uuid,p_event text) returns boolean
+language plpgsql security definer set search_path='' as $
+begin
+ update snoozer.creator_membership_receipts set processed_at=coalesce(processed_at,now()) where id=p_event and membership_id=p_id and event_type like 'checkout.session.%';
+ return found;
+end $;
 create function public.list_my_creator_memberships() returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare actor uuid:=snoozer.verified_user();
 begin
@@ -160,8 +173,8 @@ end $$;
 create function public.owns_my_creator_membership(p_id uuid) returns boolean language plpgsql stable security definer set search_path='' as $$
 declare actor uuid:=snoozer.verified_user();
 begin return exists(select 1 from snoozer.creator_membership_subscriptions where id=p_id and buyer_id=actor); end $$;
-revoke execute on function snoozer.creator_membership_json(uuid),public.review_creator_membership_offer(uuid,integer),public.get_creator_membership_checkout_offers(text),public.reserve_creator_membership(uuid,uuid),public.get_creator_membership_subscription(uuid),public.find_creator_membership_subscription(text,text),public.bind_creator_membership_checkout(uuid,text,text,text,text),public.stage_creator_membership_receipt(uuid,text,text,text,text),public.apply_creator_membership_proof(uuid,text,text,timestamptz,text,timestamptz,boolean,text[],text),public.expire_creator_membership_checkout(uuid,text,text),public.list_my_creator_memberships(),public.owns_my_creator_membership(uuid) from public,anon,authenticated,service_role;
-grant execute on function public.review_creator_membership_offer(uuid,integer),public.reserve_creator_membership(uuid,uuid),public.get_creator_membership_subscription(uuid),public.find_creator_membership_subscription(text,text),public.bind_creator_membership_checkout(uuid,text,text,text,text),public.stage_creator_membership_receipt(uuid,text,text,text,text),public.apply_creator_membership_proof(uuid,text,text,timestamptz,text,timestamptz,boolean,text[],text),public.expire_creator_membership_checkout(uuid,text,text) to service_role;
+revoke execute on function snoozer.creator_membership_json(uuid),public.review_creator_membership_offer(uuid,integer),public.get_creator_membership_checkout_offers(text),public.reserve_creator_membership(uuid,uuid),public.get_creator_membership_subscription(uuid),public.find_creator_membership_subscription(text,text),public.bind_creator_membership_checkout(uuid,text,text,text,text),public.stage_creator_membership_receipt(uuid,text,text,text,text),public.apply_creator_membership_proof(uuid,text,text,timestamptz,text,timestamptz,boolean,text[],text),public.expire_creator_membership_checkout(uuid,text,text),public.list_my_creator_memberships(),public.owns_my_creator_membership(uuid),public.claim_my_creator_membership_check(uuid),public.finish_creator_membership_checkout_receipt(uuid,text) from public,anon,authenticated,service_role;
+grant execute on function public.review_creator_membership_offer(uuid,integer),public.reserve_creator_membership(uuid,uuid),public.get_creator_membership_subscription(uuid),public.find_creator_membership_subscription(text,text),public.bind_creator_membership_checkout(uuid,text,text,text,text),public.stage_creator_membership_receipt(uuid,text,text,text,text),public.apply_creator_membership_proof(uuid,text,text,timestamptz,text,timestamptz,boolean,text[],text),public.expire_creator_membership_checkout(uuid,text,text),public.finish_creator_membership_checkout_receipt(uuid,text) to service_role;
 grant execute on function public.get_creator_membership_checkout_offers(text) to anon,authenticated;
-grant execute on function public.list_my_creator_memberships(),public.owns_my_creator_membership(uuid) to authenticated;
+grant execute on function public.list_my_creator_memberships(),public.owns_my_creator_membership(uuid),public.claim_my_creator_membership_check(uuid) to authenticated;
 commit;
