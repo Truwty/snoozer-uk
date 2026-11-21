@@ -31,6 +31,6 @@ export function PricingPlans() {
         <ul className="pricing-features">{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
       </article>)}
     </div>
-    <p className="pricing-clarification">These are Snoozer's approved recurring prices in GBP. Live Checkout is being verified before launch. No payment is taken by browsing this page. Once subscriptions are enabled, select a plan in Studio and review the recurring terms before paying.</p>
+    <p className="pricing-clarification">These are Snoozer’s approved recurring prices in GBP. Live Checkout is being verified before launch. No payment is taken by browsing this page. Once subscriptions are enabled, select a plan in Studio and review the recurring terms before paying.</p>
   </section>;
 }
