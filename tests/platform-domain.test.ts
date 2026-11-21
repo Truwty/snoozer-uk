@@ -24,6 +24,28 @@ it("preserves existing provider callbacks and the domain marker on the exact dep
     expect(response.headers.get("location")).toBeNull();expect(response.headers.get("x-middleware-next")).toBe("1");
   }
 });
+it("retires third-party selling without disabling Snoozer Premium or legacy buyer safety",async()=>{
+  for(const [path,method] of [
+    ["/store/creator","GET"],["/store/creator/version","POST"],
+    ["/studio/products","GET"],["/studio/products/seller","POST"],
+    ["/studio/products/memberships","GET"],["/studio/memberships","GET"],
+    ["/studio/donations","GET"],["/studio/product-reports","GET"],
+    ["/api/v1/commerce/kofi/webhook","POST"],
+    ["/api/v1/commerce/memberships/webhook","POST"],
+  ]) {
+    const response=await proxy(request("snoozer.uk",path,method));
+    expect(response.status,path).toBe(404);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  }
+  for(const [path,method] of [
+    ["/studio/plan","GET"],["/studio/purchases","GET"],
+    ["/api/v1/billing/stripe/webhook","POST"],
+    ["/api/v1/commerce/stripe/webhook","POST"],
+  ]) {
+    const response=await proxy(request("snoozer.uk",path,method));
+    expect(response.headers.get("x-middleware-next"),path).toBe("1");
+  }
+});
 it("does not trust similar hosts or a forged forwarded hostname as a platform alias",async()=>{
   for(const host of ["snoozer-uk-staging.onrender.com.evil.example","www.evil.example"]) {
     const response=await proxy(new NextRequest("https://"+host+"/studio",{headers:{host,"x-forwarded-host":"snoozer.uk"}}));
