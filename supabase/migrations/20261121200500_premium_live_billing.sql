@@ -36,7 +36,7 @@ create table snoozer.premium_live_checkouts (
   subscription_id text unique check(subscription_id ~ '^sub_[A-Za-z0-9]{1,128}$'),
   status text not null default 'reserved' check(status in ('reserved','pending','bound','expired','ended')),
   created_at timestamptz not null default date_trunc('second',now()),
-  expires_at timestamptz not null default (date_trunc('second',now()) + interval '30 minutes'),
+  expires_at timestamptz not null default (date_trunc('second',now()) + interval '60 minutes'),
   reconciliation_revision integer not null default 0,
   last_invoice text check(last_invoice is null or last_invoice ~ '^in_[A-Za-z0-9]{1,128}$'),
   last_status text check(last_status is null or last_status in
