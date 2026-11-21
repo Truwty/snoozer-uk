@@ -2,9 +2,9 @@ begin;
 -- Frozen-version allocation counters persist independently of retained orders.
 -- A failed Checkout keeps its slot: no unverified late-payment recycle.
 create table snoozer.creator_sandbox_stock(
- version_id uuid primary key references snoozer.product_versions(id) on delete restrict,
- owner_id uuid not null references auth.users(id) on delete restrict,
- profile_id uuid not null references snoozer.profiles(id) on delete restrict,
+ version_id uuid primary key references snoozer.product_versions(id) on delete cascade,
+ owner_id uuid not null references auth.users(id) on delete cascade,
+ profile_id uuid not null references snoozer.profiles(id) on delete cascade,
  total_slots integer not null check(total_slots between 1 and 50),
  reserved integer not null default 0 check(reserved>=0 and reserved<=total_slots),
  created_at timestamptz not null default now()
