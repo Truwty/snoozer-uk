@@ -181,12 +181,12 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await db.query(template)).rows).toEqual([]);
     const scoped=template.replace("00000000-0000-0000-0000-000000000000",fixture.version);
     const inspect=async()=>((await db.query<{
-      version_id:string;frozen_sha256:string;frozen_bytes:number;price_in_pence:number;
+      version_id:string;creator_owner_id:string;frozen_sha256:string;frozen_bytes:number;price_in_pence:number;
       ready_file_matches_snapshot:boolean;seller_platform_bound:boolean;
       approval_still_current:boolean;published_test_offer:boolean;version_already_has_orders:boolean;
     }>(scoped)).rows[0]);
     expect(await inspect()).toMatchObject({
-      version_id:fixture.version,frozen_sha256:"a".repeat(64),frozen_bytes:100,price_in_pence:500,
+      version_id:fixture.version,creator_owner_id:alice,frozen_sha256:"a".repeat(64),frozen_bytes:100,price_in_pence:500,
       ready_file_matches_snapshot:true,seller_platform_bound:false,
       approval_still_current:true,published_test_offer:false,version_already_has_orders:false,
     });
