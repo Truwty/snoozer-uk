@@ -20,6 +20,11 @@ export default async function Page({params}:{params:Promise<{username:string}>})
   if(!response.data) notFound();
   const store=creatorStore.parse(response.data);
   if(store.username!==name) notFound();
+  const disclosureResponse=await anonymousClient().rpc("get_creator_sandbox_affiliate_disclosure",{p_name:name});
+  if(disclosureResponse.error) throw new Error("Sandbox disclosure is temporarily unavailable.");
+  const disclosure=disclosureResponse.data===null?null:
+    typeof disclosureResponse.data==="string"&&disclosureResponse.data.length<=500?disclosureResponse.data:null;
+
   const collectionsResponse=await anonymousClient().rpc("get_creator_sandbox_collections",{p_name:name});
   if(collectionsResponse.error) throw new Error("Sandbox collections are temporarily unavailable.");
   const collectionGroups=publicCreatorCollections.parse(collectionsResponse.data);
@@ -32,6 +37,10 @@ export default async function Page({params}:{params:Promise<{username:string}>})
     <section className="panel stack"><p className="eyebrow">SANDBOX / CREATOR STORE</p><h1>{store.displayName}’s test store</h1>
       <p>Operator-reviewed test PDFs only. No live selling. Sign in with a verified account to test Checkout; you cannot buy your own product.</p>
       <p>Downloads expire 30 days after first payment verification. Refunds, disputes and fraud review pause delivery. Order references remain for at least 90 days; pending attempts require reconciliation. Test receipts are not tax invoices.</p>
+      {disclosure&&<aside className="panel stack" aria-label="Affiliate disclosure">
+        <strong>Affiliate / sponsorship disclosure</strong>
+        <p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{disclosure}</p>
+      </aside>}
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
       {selected.length>0&&<section className="stack" aria-label="Reviewed product collections">
         <h2>Collections</h2>
