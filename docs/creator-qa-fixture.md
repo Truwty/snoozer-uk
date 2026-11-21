@@ -12,6 +12,10 @@ The PDF endpoint is `/studio/products/qa-fixture`. It is an attachment with `pri
 
 The original command-line generator described below remains supported, and both routes reuse its deterministic source content. Use either route, never both as separate approved products.
 
+## Discount acceptance preset
+
+For a separate discounted Checkout test, select **Fill discount QA draft** instead of the original 50p preset. It fills a distinct title and £2.00 price. Upload the same inert deterministic PDF as a NEW private product/version; never change an already purchased version. The owner preflight checks £2.00 for the distinct title and the same exact byte/hash reference. Independent inspection, explicit operator approval, short-lived test-only publication, and a separate verified buyer are still required. A 25% one-use discount gives an expected £1.50 charge; confirm the hosted Stripe test Checkout amount, persisted order, buyer receipt and file delivery before recording success. No automatic review or purchase is performed.
+
 ## 1. Generate and inspect a harmless exact-byte test PDF
 
 From the repository root on Windows PowerShell:

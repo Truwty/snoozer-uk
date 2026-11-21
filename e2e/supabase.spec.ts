@@ -366,7 +366,26 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await page.getByRole("link",{name:"Back to products"}).click();
     await expect(page.getByText("No product drafts for this profile yet.")).toBeVisible();
 
+    await page.getByRole("link",{name:"Manage membership proposals"}).click();
+    await expect(page.getByRole("heading",{name:"Creator membership proposals"})).toBeVisible();
+    await page.getByLabel("Tier name").fill("QA Supporter");
+    await page.getByLabel("Proposed monthly price (GBP)").fill("5.25");
+    await page.getByLabel("Proposed benefits").fill("Monthly updates");
+    await page.getByRole("button",{name:"Save membership proposal"}).click();
+    await expect(page.getByLabel("Tier name").first()).toHaveValue("QA Supporter");
+    await page.reload();
+    await expect(page.getByLabel("Tier name").first()).toHaveValue("QA Supporter");
+    await expect(page.getByLabel("Proposed monthly price (GBP)").first()).toHaveValue("5.25");
+    await expect(page.getByLabel("Show proposal on eligible sandbox store").first()).not.toBeChecked();
+    await page.getByRole("button",{name:"Remove proposal"}).click();
+    await expect(page.getByLabel("Tier name")).toHaveCount(1);
+    await expect(page.getByLabel("Tier name")).toHaveValue("");
+    await page.getByRole("link",{name:"Back to Products"}).click();
+
     const create = page.getByRole("region", { name: "New product", exact: true });
+    await create.getByRole("button",{name:"Fill discount QA draft",exact:true}).click();
+    await expect(create.getByLabel("Product title",{exact:true})).toHaveValue("Snoozer isolated discount QA (not for sale)");
+    await expect(create.getByLabel("Price (GBP)",{exact:true})).toHaveValue("2.00");
     await create.getByLabel("Product title", { exact: true }).fill("Private creator handbook");
     await create.getByLabel("Product description", { exact: true }).fill("A private digital product draft.");
     await create.getByLabel("Price (GBP)", { exact: true }).fill("19.99");
