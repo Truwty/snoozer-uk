@@ -39,3 +39,13 @@ The product limits follow `snoozer.plan_versions`, version 1: Plus has 3 profile
 [PR #29](https://github.com/Truwty/snoozer-uk/pull/29) passed CI, was merged into main, and was deployed on Render at commit [`55b9564`](https://github.com/Truwty/snoozer-uk/commit/55b9564533a6192d985c6dbda3a65e46704112fa). Marketplace routes, sellers, creator Checkout, creator membership offers, Ko-fi donation selling and supporting code were removed, and legacy functions locked down. Old migrations and one paid **sandbox test** order remain for audit.
 
 Official references: https://docs.stripe.com/billing/subscriptions/overview · https://docs.stripe.com/keys · https://docs.stripe.com/webhooks
+
+## Verify the restricted LIVE key without disclosing it
+
+The owner reports adding `STRIPE_PREMIUM_LIVE_API_KEY` directly to the Render environment. No assistant or GitHub user should copy the secret out of Render.
+
+Every `npm start` on Render now executes a **read-only** check using that same environment. It issues Stripe GET requests for (1) the exact six known active GBP Premium prices, (2) the pinned main Snoozer account and (3) the configured Billing Portal. It only logs sanitised status values, and always allows Snoozer's public website to start, even if Stripe is unreachable. No customers, sessions, charges, or subscriptions are created.
+
+Look in Render **Logs** for a JSON entry with `"audit":"snoozer-premium-live-key"`. Expected statuses are `"key":"authenticated_for_snoozer_prices"`, `"prices":"verified_six"`, `"account":"verified"`, `"billingPortal":"verified"`. If one permission is missing, a read-only operation may show `insufficient_permissions`; adjust *only* that permission in Stripe, never grant all permissions reflexively. Read-only verification is not evidence that write operations, webhooks or full paid Checkout are functional.
+
+For manual repeatable verification in an environment where the secret is already installed, run `npm run billing:live:key-check`. Keep `SNOOZER_PREMIUM_LIVE_ENABLED=false` and the database policy `checkout_enabled=false` until successful legal/billing lifecycle acceptance.
