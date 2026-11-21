@@ -58,6 +58,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
+    await db.exec("reset role; truncate snoozer.creator_support_access_log, snoozer.creator_support_cases, snoozer.creator_support_staff;");
     await db.exec("reset role; truncate snoozer.creator_sandbox_accounts cascade;");
     await db.exec("update snoozer.creator_sandbox_policy set enabled=false,platform_id=null");
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
