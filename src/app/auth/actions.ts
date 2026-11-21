@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { sessionClient } from "@/lib/supabase";
+import { activeAccount, forgetRememberedAccount, rememberSignedInAccount, setActiveAccount } from "@/lib/account-switching";
 
 const email = z.email().max(254);
 const newPassword = z.string().min(12).max(72).refine((value) => Buffer.byteLength(value) <= 72);
@@ -47,6 +48,7 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
     if (result.error?.status === 429) return error("Too many attempts. Try again later.");
     return error("Couldn’t sign in. Check your details and make sure you’ve verified your email.");
   }
+  await rememberSignedInAccount();
   redirect("/studio");
 }
 
@@ -87,6 +89,7 @@ export async function confirmEmail(_: ActionState, form: FormData): Promise<Acti
     const attribution = await client.rpc("accept_my_referral");
     if (attribution.error || !["accepted", "already_recorded"].includes(attribution.data)) redirect("/studio/growth?referral=unconfirmed");
   }
+  await rememberSignedInAccount();
   redirect("/studio");
 }
 
@@ -107,8 +110,11 @@ export async function resetPassword(_: ActionState, form: FormData): Promise<Act
 }
 
 export async function signOut() {
-  const client = await sessionClient();
+  const slot = await activeAccount();
+  const client = await sessionClient(slot);
   const { error } = await client.auth.signOut({ scope: "local" });
   if (error) redirect("/studio?logout=failed");
-  redirect("/");
+  const remaining = await forgetRememberedAccount(slot);
+  await setActiveAccount(remaining[0]?.slot ?? "primary");
+  redirect(remaining.length ? "/studio" : "/");
 }
