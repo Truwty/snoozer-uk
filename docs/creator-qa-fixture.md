@@ -6,6 +6,8 @@ This is a **test-only** operator playbook. It creates no real product, order, pa
 
 A signed-in, confirmed creator can now open `/studio/products`, download the **same synthetic PDF bytes** using the **Download test PDF** link, and press **Fill sandbox QA draft** in the New product form. The button only fills the fields (title, synthetic description and £0.50 price); the creator still deliberately submits **Create product draft**, then uploads and freezes the file through the existing owner-only flows.
 
+The Studio also displays the deterministic PDF byte count and reference SHA-256 so the owner can identify the downloaded fixture. **This is not proof of the frozen uploaded file**: the operator must separately hash and inspect the actual frozen bytes, and any disagreement must stop approval.
+
 The PDF endpoint is `/studio/products/qa-fixture`. It is an attachment with `private, no-store`, `nosniff` and sandbox CSP; unauthenticated/unconfirmed sessions cannot retrieve it. This does **not** approve any QA offer or initiate a Checkout. Operators should still independently inspect the actual frozen PDF bytes and compare their SHA-256; do not assume a previously downloaded attachment's hash.
 
 The original command-line generator described below remains supported, and both routes reuse its deterministic source content. Use either route, never both as separate approved products.
