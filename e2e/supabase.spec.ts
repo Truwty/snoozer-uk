@@ -380,6 +380,17 @@ test("private product drafts save, edit, archive and restore without exposing a 
     await expect(page.locator("details summary").filter({hasText:"Getting started guides"})).toContainText("Public when eligible");
     await page.getByRole("link",{name:"Back to Products"}).click();
     await expect(page.locator("details summary").filter({hasText:"Private creator handbook"})).toBeVisible();
+    await page.getByRole("link",{name:"Manage affiliate disclosure"}).click();
+    await expect(page.getByRole("heading",{name:"Affiliate disclosure"})).toBeVisible();
+    await page.getByLabel("Affiliate or sponsorship disclosure").fill("I may earn a commission from recommendations.");
+    await page.getByLabel(/Display this disclosure on my eligible sandbox storefront/).check();
+    await page.getByRole("button",{name:"Save disclosure"}).click();
+    await expect(page.getByText("Disclosure saved and enabled for the eligible sandbox storefront. This is not legal approval.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Affiliate or sponsorship disclosure")).toHaveValue("I may earn a commission from recommendations.");
+    await expect(page.getByLabel(/Display this disclosure on my eligible sandbox storefront/)).toBeChecked();
+    await page.getByRole("link",{name:"Back to Products"}).click();
+
 
     await item.locator("summary").click();
     await item.getByLabel("Price (GBP)", { exact: true }).fill("25.50");
