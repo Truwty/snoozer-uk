@@ -12,6 +12,10 @@ This Phase 5 §13.12 slice is a **private, read-only** seller report. It reuses 
 - No buyer identity data is returned. Empty accounts show zero metrics and an explicit empty state. Database or provider failures show an unavailable message without changing any commerce state.
 - Every owner can see their **own** sandbox data without an upgraded subscription, subject to the existing verified-account and profile ownership checks. No public-facing analytics endpoint or IP/device tracking was added.
 
+## Release and verified evidence
+
+[PR #14](https://github.com/Truwty/snoozer-uk/pull/14) merged as `9bdac81`, with [full CI #212](https://github.com/Truwty/snoozer-uk/actions/runs/44862797211) passing all gates. Hosted Supabase migration `20261121034500_creator_storefront_analytics` is installed and tracked; prior leaderboard migration history `20261120008000` was reconciled without DDL replay. Function grants: authenticated=true; anon=false; service_role=false. Render manual deploy `dep-dc0ha9d9el5s73e4i590` confirmed **Live** at 2026-11-21 03:52:31 UTC. Original order and receipt counts unchanged. Real owner-browser sign-in on the hosted production-domain page has **not** been separately observed. This report does not verify external provider risk events or live payouts.
+
 ## Release checks
 
 1. Run `npm run lint && npm run typecheck && npm test && npm run build`.
