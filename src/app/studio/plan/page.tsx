@@ -16,6 +16,9 @@ import { sandboxPaidGiftConfiguration } from "@/lib/stripe-sandbox-paid-gift";
 import { sandboxCheckoutKey } from "@/lib/stripe-sandbox-checkout-config";
 import { sandboxPortalConfiguration } from "@/lib/stripe-sandbox-portal";
 import { openSandboxPortal } from "./portal";
+import { premiumLiveOffers } from "@/lib/premium-live-service";
+import { premiumLivePortalConfig } from "@/lib/premium-live-config";
+import { startPremiumLiveCheckout, openPremiumLiveBillingPortal } from "./live-actions";
 import { startSandboxCheckout } from "./checkout";
 
 export const metadata = { title: "Plan and usage", robots: { index: false, follow: false } };
@@ -49,7 +52,7 @@ async function sandboxOffers() {
   ))).filter((item) => item !== null);
 }
 
-export default async function PlanPage({ searchParams }: { searchParams: Promise<StudioProfileQuery & { checkout?: string; portal?: string }> }) {
+export default async function PlanPage({ searchParams }: { searchParams: Promise<StudioProfileQuery & { checkout?: string; portal?: string; premium?: string }> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
   const { client } = await requireAccount();
   const { data, error } = await client.rpc("get_my_plan");
@@ -58,9 +61,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const showSandbox = !["snoozer.uk", "www.snoozer.uk"].includes(siteUrl().hostname);
   const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
-  const [offers, { checkout, portal, profile: requested }, portalCustomer, reviewResponse, staffAccess, profileResponse] = await Promise.all([
-    sandboxOffers(), searchParams,
+  const [offers, liveOffers, { checkout, portal, premium, profile: requested }, portalCustomer, liveBilling, reviewResponse, staffAccess, profileResponse] = await Promise.all([
+    sandboxOffers(), premiumLiveOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
+    premiumLivePortalConfig() ? client.rpc("get_my_premium_live_billing") : null,
     client.rpc("list_my_kofi_donation_reviews"),
     client.rpc("can_read_billing_diagnostics"),
     client.rpc("list_my_profiles"),
@@ -108,7 +112,26 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <ClaimForm additional />
         </details>}
       </div>
-      {showSandbox && checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
+      {premium === "processing" && <p role="status">Returned from Stripe. Your Premium plan activates only after Snoozer verifies Stripe's payment and subscription records. Reload your plan after confirmation.</p>}
+      {premium === "unavailable" && <p role="alert">Premium Checkout is unavailable. No charge was initiated by this attempt. Please contact Snoozer support if an earlier payment may have completed.</p>}
+      {premium === "portal-unavailable" && <p role="alert">Your Premium Billing Portal could not be opened. Contact support if you need to cancel or update your subscription.</p>}
+      {premium === "cancelled" && <p role="status">You left Checkout without a confirmed purchase. You have not been upgraded.</p>}
+      {!showSandbox && liveOffers.length > 0 && <section className="stack" aria-label="Snoozer Premium upgrades">
+        <h2>Upgrade to Snoozer Premium</h2>
+        <p>Billed automatically each month or year until cancelled. Applicable tax is calculated by Stripe at Checkout. You can cancel through your billing portal; access depends on your verified paid billing period. Read the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link> before subscribing.</p>
+        <div className="plan-offers">{liveOffers.map(item => <form action={startPremiumLiveCheckout} className="panel stack plan-offer" key={item.price_id}>
+          <h3>{labels[item.plan]}</h3>
+          <p className="offer-price">{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(item.unit_amount/100)} <small>per {item.billing_interval === "month" ? "month" : "year"}, plus any applicable taxes</small></p>
+          <input type="hidden" name="plan" value={item.plan}/>
+          <input type="hidden" name="interval" value={item.billing_interval}/>
+          <button className="button primary" type="submit">Subscribe to {labels[item.plan]} ({item.billing_interval === "month" ? "monthly" : "yearly"})</button>
+        </form>)}</div>
+      </section>}
+      {!showSandbox && premiumLivePortalConfig() && !liveBilling?.error &&
+        liveBilling?.data?.hasCustomer === true && <form action={openPremiumLiveBillingPortal}>
+          <button className="button small" type="submit">Manage Premium subscription, invoices and cancellation</button>
+        </form>}
+      {showSandbox && checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>
       {showSandbox && checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
       {showSandbox && portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}
       {showSandbox && !portalCustomer?.error && typeof portalCustomer?.data === "string" && <form action={openSandboxPortal}>
