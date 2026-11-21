@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { z } from "zod";
 import { Brand } from "@/components/shell";
 import { CreatorCollectionForm } from "@/components/creator-collection-form";
 import { creatorCollections } from "@/lib/creator-collections";
