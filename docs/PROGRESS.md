@@ -1,5 +1,14 @@
 # Progress — 21 November 2026
 
+## 21 November 2026 — Studio-guided isolated QA product setup (new work)
+
+**Verified baseline:** main `1cdf015b` passed CI #175. Hosted DB still has one original unheld paid order, exactly one processed Checkout receipt and no new QA product, risk events or pending receipts. Its stale QA offer is expired even though `enabled=true`; SQL review expiry prevents new sales. Auto-deploy is off; Render is still at a previously deployed commit.
+
+**Implemented on isolated feature branch (CI pending):** `src/app/studio/products/qa-fixture/route.ts` serves the **existing** deterministic one-page synthetic PDF only after a fresh confirmed-account `getUser` check, as a no-store, sandbox-CSP, nosniff attachment. No new file is uploaded or published. `ProductDraftForm` has a `Fill sandbox QA draft` button that fills the normal owner-saved private title/description/£0.50 fields without posting automatically; `/studio/products` now explains download, private draft, PDF upload, freeze and subsequent operator review in one place. The existing expired-but-enabled offer is explicitly marked unavailable, and publishing it is disabled in the client; server and SQL checks remain authoritative. Added unit tests for exact PDF generator bytes, authenticated route restrictions and headers, preset validation, plus active/expired offer status.
+
+**Outstanding operator steps:** owner-authenticated new draft/upload/freeze of this separately inspected PDF; trusted operator hash comparison and explicit short-lived review; authorised publication and independent sandbox buyer Checkout; genuine risk-event delivery and refund/dispute/fraud holds; scheduled failed-receipt recovery; shutdown of new-Checkout gates. The original £5 purchase remains excluded. **Do not mark provider acceptance complete from UI or mocked tests.**
+
+
 ## 21 November 2026 — isolated QA PDF preparation and review preflight (merged)
 
 **Baseline check:** `main` CI #171 passed. Hosted state unchanged: 1 original paid/unheld order, 1 processed signed Checkout receipt, 0 pending receipts, 0 new isolated orders, 0 current reviewed QA offers, and 1 expired-enabled previous offer. Stripe sandbox and Render integrations are unchanged. The real provider risk milestone is blocked on a **new, separately reviewed synthetic PDF and independent test buyer order**.
