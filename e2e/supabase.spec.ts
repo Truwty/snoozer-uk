@@ -1453,3 +1453,63 @@ test("sandbox payment webhook fixtures verify signatures and store a single rece
   expect(after.stripeSandbox.unboundCompletionReceipts).toBe(before.stripeSandbox.unboundCompletionReceipts + 1);
   expect(after.kofi.unclaimedReceipts).toBe(before.kofi.unclaimedReceipts + 1);
 });
+
+
+test("multi-account sessions survive browser restart, switch correctly and sign out separately", async ({ page, context, browser }) => {
+  test.setTimeout(90000);
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const a = "switch-a-" + randomUUID().slice(0, 10) + "@example.com";
+  const b = "switch-b-" + randomUUID().slice(0, 10) + "@example.com";
+  try {
+    for (const email of [a, b]) {
+      const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+      expect(created.error).toBeNull();
+    }
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(a);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL("/studio");
+
+    await page.locator(".account-switcher summary").click();
+    await page.getByRole("button", { name: "Add another account" }).click();
+    await expect(page).toHaveURL(/\/sign-in\?add=1/);
+    await page.getByLabel("Email address").fill(b);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL("/studio");
+
+    const cookies = await context.cookies();
+    expect(cookies.find(({ name }) => name === "snoozer-remembered-accounts")?.httpOnly).toBe(true);
+    expect(cookies.find(({ name }) => name === "snoozer-active-account")?.httpOnly).toBe(true);
+    expect(cookies.some(({ name }) => name.startsWith("snoozer-auth-slot-1"))).toBe(true);
+    const state = await context.storageState();
+    const reopened = await browser.newContext({ baseURL: "http://localhost:3000", storageState: state });
+    try {
+      const resumed = await reopened.newPage();
+      await resumed.goto("/studio");
+      await expect(resumed).toHaveURL("/studio");
+      await resumed.locator(".account-switcher summary").click();
+      await expect(resumed.getByText(a, { exact: true })).toBeVisible();
+      await expect(resumed.getByText(b, { exact: true })).toBeVisible();
+      await resumed.locator(".account-entry-form").filter({ has: resumed.locator('input[value="primary"]') }).getByRole("button").click();
+      await expect(resumed).toHaveURL("/studio");
+      await resumed.locator(".account-switcher summary").click();
+      await expect(resumed.locator(".account-entry-button[aria-current='true']")).toContainText(a);
+      await resumed.getByRole("button", { name: "Sign out of this account" }).click();
+      await expect(resumed).toHaveURL("/studio");
+      await resumed.locator(".account-switcher summary").click();
+      await expect(resumed.locator(".account-entry-button[aria-current='true']")).toContainText(b);
+      await expect(resumed.getByText(a, { exact: true })).toHaveCount(0);
+    } finally {
+      await reopened.close();
+    }
+  } finally {
+    // Disposable Supabase user fixtures are isolated to this test run.
+    const listed = await admin.auth.admin.listUsers({ perPage: 1000 });
+    for (const email of [a, b]) {
+      const id = listed.data?.users?.find((user) => user.email === email)?.id;
+      if (id) await admin.auth.admin.deleteUser(id);
+    }
+  }
+});
