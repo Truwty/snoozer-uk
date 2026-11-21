@@ -77,6 +77,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   const save = (expected: number, display: string, links: unknown, publish: boolean) =>
     result("select public.save_profile($1,$2,'Bio','lagoon',false,$3,$4,false) as value", [expected, display, JSON.stringify(links), publish]);
 
+  it("permanently disables removed creator commerce without affecting Snoozer Premium", async () => {
+    await db.exec("reset role");
+    expect(await result("select enabled as value from snoozer.creator_sandbox_policy")).toBe(false);
+    expect(await result("select enabled as value from snoozer.creator_membership_policy")).toBe(false);
+    await expect(db.exec("update snoozer.creator_sandbox_policy set enabled=true")).rejects.toMatchObject({ code: "23514" });
+    await expect(db.exec("update snoozer.creator_membership_policy set enabled=true")).rejects.toMatchObject({ code: "23514" });
+    await act("anon");
+    await expect(result("select public.get_creator_sandbox_store('someone') as value")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    await expect(result("select public.list_my_product_drafts(null) as value")).rejects.toMatchObject({ code: "42501" });
+    await act("service_role");
+    await expect(result("select public.reserve_creator_sandbox_account($1,'acct_test','GB') as value", [alice])).rejects.toMatchObject({ code: "42501" });
+    const live = await result<{checkoutEnabled:boolean;approvedOffers:number}>("select public.premium_live_preflight() as value");
+    expect(live).toMatchObject({ checkoutEnabled: false, approvedOffers: 0 });
+  });
+
   async function domainFixture(name: string, owner = alice, host = name + ".example.com") {
     await act("authenticated", owner); await claim(name);
     const profile = (await draft() as { profile_id: string }).profile_id;
