@@ -10,6 +10,10 @@
 - This change adds test coverage for all six subscribed risk signal variants, one-penny partial and full refunds, provider scope failures, terminal dispute/fraud updates, access revocation and preserved original timestamps.
 - A green CI validates *mocked provider data and disposable PostgreSQL only*. Separate signed Stripe events and real buyer download denial must still be tested in the actual sandbox.
 
+## Preparing a new reviewed, harmless QA product
+
+Use [the isolated QA PDF generator and operator review guide](creator-qa-fixture.md). It provides an inert static PDF, verifies its exact SHA-256 against a newly frozen private product snapshot using [a read-only SQL query](../supabase/operations/inspect-creator-qa-fixture.sql), and preserves the existing **manual**, 24-hour service-only review and owner publication controls. It does not create offers/payments by itself or reuse the expired review or original paid order.
+
 ## Operator preflight (separate isolated purchase only)
 
 1. Confirm the **correct Snoozer test platform** (Stripe Workbench sandbox `New business`), connected seller, bound Supabase project and deployed Render source commit. Never use any live Stripe account.

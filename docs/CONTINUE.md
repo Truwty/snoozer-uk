@@ -1,5 +1,16 @@
 # Continuation
 
+## Latest development — prepare isolated QA fixture for genuine provider risk testing (21 November 2026)
+
+**Baseline reverified:** latest `main` `ecafa702` is green ([CI #171](https://github.com/Truwty/snoozer-uk/actions/runs/44852684227)). Hosted Supabase still has **one paid unheld original order, one processed Checkout receipt, zero pending receipts, zero new QA orders, zero current reviewed offers and one expired-but-enabled offer**. Render still serves source `07e5926` (auto deploy off); it is not necessary to replace successful payment/reconciliation code. No genuine isolated refunds, disputes or early fraud warnings have been processed.
+
+**Current isolated feature branch:** `feature/creator-commerce-isolated-qa-fixture-20261121`. This work directly removes the **new harmless QA PDF** preparation blocker without creating a buyer or altering hosted payments: a dependency-free deterministic `npm run commerce:qa:fixture` generator produces a one-page inert sandbox document, refuses overwrite, prints SHA-256 and saves only to ignored `test-results/creator-commerce/`. New `scripts/creator-commerce-qa-fixture.test.mjs` checks document structure, determinism, inactive content and safe no-overwrite behaviour. New `supabase/operations/inspect-creator-qa-fixture.sql` is a **read-only** operator check for frozen SHA, file readiness, seller bindings, review validity and whether the version already has orders. The safe all-zero UUID query has been parsed/run against hosted Supabase and returned **zero rows**. A new migration-backed PGlite test checks the operator query throughout the existing approval, publication and stale-review gates. No existing SQL review function, Checkout endpoint or webhook behaviour is reimplemented.
+
+The operator walkthrough is [`docs/creator-qa-fixture.md`](creator-qa-fixture.md). The owner must upload/freeze the *new* file through Studio, a trusted operator must physically inspect the exact frozen PDF and compare its SHA-256, and only then explicitly use the **existing** `review_creator_sandbox_fixture` 24-hour service-role review RPC and owner publication action. This must be approved for an isolated QA window, not executed automatically by the new generator. The independent test buyer, provider events, actual host retry proof and safe new-Checkout gate shutdown remain outstanding. Do not touch the original £5 order or enable real-money sales.
+
+**Validation:** feature-branch CI must pass before merge; do not claim provider event acceptance based on a generated test PDF or local database-only regression.
+
+
 ## Latest checkpoint — read-only provider QA verifier merged (21 November 2026)
 
 **Baseline verified again:** `main` CI [#166](https://github.com/Truwty/snoozer-uk/actions/runs/44850931756) is green. Hosted Snoozer Supabase still has **1 original paid, unheld purchase; 1 processed Checkout receipt; 0 pending receipts; 0 new QA orders; 0 active reviewed offers; 1 expired-but-enabled offer**. The connected test Stripe platform/seller and its ten-signal snapshot destination remain enabled; read-only queries show **zero disputes and zero early fraud warnings**. Render's latest deployed source is still `07e5926` with auto deploy off. None of this is proof of the unfinished genuine risk-event milestone.
