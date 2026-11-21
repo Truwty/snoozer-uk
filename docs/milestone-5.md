@@ -1,5 +1,9 @@
 # Milestone 5 — premium and creator growth
 
+## Creator recurring memberships — integration candidate
+
+Separate disabled-by-default recurring membership policy and explicit 24h reviewed revision, durable immutable buyer/offer snapshots, test-mode direct-charge hosted Checkout and idempotent binding, private buyer management, provider-verified monthly invoice/charge/risk proof, signed dedicated connected-account webhook and durable linked receipts, sticky holds, refresh and cancel-at-period-end. New Checkout requires separate environment flag, separate signed webhook secret, existing creator gates, exact reviewed revision and database policy. No live payment or tax registration enabled. Source/CI/hosted/provider acceptance remain pending; no unrelated historic order mutations. See creator-memberships.md. Phase 5 remains open.
+
 ## Membership catalogue — verified CI and hosted schema
 
 Source `1f90dde` passed [full CI 44881636793](https://github.com/Truwty/snoozer-uk/actions/runs/44881636793). Hosted migration `20261121074938_creator_membership_offers` applied and recorded; filename aligned to avoid duplicate DDL. Read-only checks: zero proposals, authenticated owner RPC enabled, anonymous private RPC and direct-table read denied, public projection available, original one paid order and processed receipt unchanged. Render deployment `dep-dc0kq74s728c73aj46b0` triggered for the tested source; final Live status not yet verified at this checkpoint. No recurring charge, entitlement or live payment enabled. [PR #19](https://github.com/Truwty/snoozer-uk/pull/19) separately adds discount-compatible £2 QA preset and browser owner CRUD regression; not yet merged. Phase 5 remains OPEN for actual provider acceptance and deferred commerce functionality.

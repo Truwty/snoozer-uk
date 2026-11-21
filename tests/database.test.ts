@@ -224,6 +224,59 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await list())!.codes.find(c=>c.id!==id&&c.used>0)).toBeUndefined();
   });
 
+  it("requires a separate approved membership revision, preserves reservations and keeps risk receipts sticky", async () => {
+    const fixture=await sandboxOfferFixture();
+    await act("authenticated",alice);
+    const offer=(await result<string>("select public.save_my_creator_membership_offer($1,null,0,'Supporter','Monthly updates',500,true,false) as value",[fixture.profile]))!;
+    const eligibility=()=>result<string[]>("select public.get_creator_membership_checkout_offers('private-pdf') as value");
+    const reserve=(buyer=bob)=>result<{id:string;monthlyPence:number;state:string;holds:string[];pendingReceipt:boolean}>("select public.reserve_creator_membership($1,$2) as value",[buyer,offer]);
+    await expect(reserve()).rejects.toMatchObject({code:"42501"});
+    await expect(result("select public.review_creator_membership_offer($1,0) as value",[offer])).rejects.toMatchObject({code:"42501"});
+    await enableSandboxOffer(fixture.version);
+    await expect(reserve()).rejects.toMatchObject({code:"P1227"});
+    await result("select public.review_creator_membership_offer($1,0) as value",[offer]);
+    expect(await eligibility()).toEqual([]);
+    await db.exec("reset role; update snoozer.creator_membership_policy set enabled=true");
+    await act("service_role");
+    expect(await eligibility()).toEqual([offer]);
+    await expect(reserve(alice)).rejects.toMatchObject({code:"42501"});
+    await expect(reserve(unverified)).rejects.toMatchObject({code:"42501"});
+    const m=(await reserve())!;
+    expect(m).toMatchObject({monthlyPence:500,state:"pending",holds:[],pendingReceipt:false});
+    expect(await reserve()).toMatchObject({id:m.id,monthlyPence:500});
+    const bind=(session:string,sub:string|null,customer:string|null)=>result("select public.bind_creator_membership_checkout($1,'acct_Creator',$2,$3,$4) as value",[m.id,session,sub,customer]);
+    expect(await bind("cs_test_Member",null,null)).toBe(true);
+    expect(await bind("cs_test_Other","sub_Member","cus_Member")).toBe(false);
+    expect(await bind("cs_test_Member","sub_Member","cus_Member")).toBe(true);
+    expect(await bind("cs_test_Member","sub_Other","cus_Member")).toBe(false);
+    const proof=(event:string|null=null,holds:string[]=[])=>
+      result("select public.apply_creator_membership_proof($1,'acct_Creator','sub_Member',now(),'active',now()+interval '30 days',false,$2,$3) as value",[m.id,holds,event]);
+    expect(await proof()).toMatchObject({state:"active",holds:[],pendingReceipt:false});
+    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','ch_Member','2026-11-21T08:00:00Z','refund') as value",[m.id])).toBe(true);
+    expect(await result("select public.get_creator_membership_subscription($1) as value",[m.id])).toMatchObject({holds:["refund"],pendingReceipt:true});
+    expect(await result("select public.list_creator_membership_retries('acct_Platform',1,null) as value")).toMatchObject([{id:"evt_MemberRefund",objectId:"ch_Member"}]);
+    expect(await result("select public.claim_creator_membership_retry('acct_Platform','evt_MemberRefund') as value")).toBe(true);
+    expect(await result("select public.claim_creator_membership_retry('acct_Platform','evt_MemberRefund') as value")).toBe(false);
+    expect(await proof("evt_MemberRefund")).toMatchObject({state:"active",holds:["refund"],pendingReceipt:false});
+    expect(await proof()).toMatchObject({holds:["refund"]});
+    expect(await result("select public.stage_creator_membership_receipt($1,'acct_Creator','evt_MemberRefund','charge.refunded','ch_Member','2026-11-21T08:00:00Z','refund') as value",[m.id])).toBe(false);
+    await act("authenticated",alice);
+    expect(await result("select public.list_my_creator_memberships() as value")).toEqual([]);
+    expect(await result("select public.owns_my_creator_membership($1) as value",[m.id])).toBe(false);
+    await result("select public.save_my_creator_membership_offer($1,$2,0,'Supporter updated','Updated benefits',800,true,false) as value",[fixture.profile,offer]);
+    await act("anon");expect(await eligibility()).toEqual([]);
+    await expect(result("select public.list_my_creator_memberships() as value")).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_memberships() as value")).toMatchObject([{id:m.id,title:"Supporter",monthlyPence:500,held:true}]);
+    expect(await result("select public.claim_my_creator_membership_check($1) as value",[m.id])).toBe(true);
+    expect(await result("select public.claim_my_creator_membership_check($1) as value",[m.id])).toBe(false);
+    await expect(result("select public.get_creator_membership_subscription($1) as value",[m.id])).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select * from snoozer.creator_membership_subscriptions")).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role; update snoozer.creator_membership_policy set enabled=false");
+    await act("service_role");
+    expect(await proof()).toMatchObject({state:"active",holds:["refund"]});
+  });
+
   it("isolates creator membership proposals, checks revisions and gates public previews", async () => {
     const fixture=await sandboxOfferFixture();
     const saveOffer=(id:string|null,revision=0,visible=false,remove=false,price=500,benefits="Monthly updates")=>

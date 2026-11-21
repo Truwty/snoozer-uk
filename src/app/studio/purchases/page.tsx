@@ -10,7 +10,7 @@ export default async function Page() {
   const {client}=await requireAccount();
   const response=await client.rpc("list_my_creator_sandbox_orders");const purchases=creatorPurchases.safeParse(response.data);
   return <main className="shell stack"><header className="nav"><Brand/><Link className="button small" href="/studio">Back to Studio</Link></header>
-    <section className="panel stack"><p className="eyebrow">STUDIO / SANDBOX</p><h1>Your purchases</h1>
+    <section className="panel stack"><p className="eyebrow">STUDIO / SANDBOX</p><h1>Your purchases</h1><Link href="/studio/memberships">Your sandbox memberships</Link>
       <p>Test purchases only. This is not a tax invoice. A return from Checkout does not confirm payment. Downloads require current Stripe verification on every request.</p>
       <p>Confirmed payments allow downloads for 30 days from first verification. Refunds, disputes or fraud review pause delivery. Order references are retained for at least 90 days; pending attempts need reconciliation before removal.</p>
       {response.error||!purchases.success?<p role="alert">Your purchase history is unavailable. Reload to try again.</p>:purchases.data.length===0?<p>No sandbox purchases yet.</p>:purchases.data.map(order=><article className="panel stack" key={order.id} style={{overflowWrap:"anywhere"}}>
