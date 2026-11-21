@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {redirect} from "next/navigation";
 import {Brand} from "@/components/shell";
 import {CreatorKofiHookForm} from "@/components/creator-kofi-hook-form";
 import {creatorKofiReport,formatReportedAmount} from "@/lib/creator-kofi-reporting";
@@ -8,6 +9,7 @@ import {siteUrl} from "@/lib/env";
 export const metadata={title:"Creator Ko-fi notification reporting",robots:{index:false,follow:false}};
 export default async function Page({searchParams}:{searchParams:Promise<StudioProfileQuery>}) {
  const query=await searchParams;const draft=await readStudioDraft(query.profile);
+ if(!draft) redirect("/studio");
  const {client}=await requireAccount();
  const response=await client.rpc("get_my_creator_kofi_reporting",{p_profile:draft.profile_id});
  const parsed=creatorKofiReport.safeParse(response.data);
