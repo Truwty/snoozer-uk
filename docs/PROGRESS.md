@@ -1,5 +1,9 @@
 # Progress — 21 November 2026
 
+## Proposed buyer support triage — source branch awaiting CI
+
+Implemented state-based guidance for existing verified buyers under `/studio/purchases`, using the currently private order projection and the already-authorized purchase refresh action. Scenarios distinguish active risk holds, pending Checkout, expired Checkout, active paid delivery and paid without current access. Advises no repeat charge on pending payments and no sensitive credentials in support requests. No new persistence, payment mutations, provider access, download bypass or expiry extension. Added pure negative/boundary unit tests. CI and deployment are **not yet verified**, and monitored case processing remains an unfinished specification item. Phase 5 provider test gates remain OPEN.
+
 ## Completed QA fingerprint preflight (merged and deployed)
 
 The Studio products QA instructions now display the deterministic synthetic PDF reference byte length and SHA-256, reusing the protected fixture download generator. The actual frozen upload still requires independent inspection and hash comparison by a trusted operator. No payment, approval, account, gate, migration or provider event was altered. [PR #10](https://github.com/Truwty/snoozer-uk/pull/10) merged at `5bda87f` after [CI #181](https://github.com/Truwty/snoozer-uk/actions/runs/44857476955) passed audit, lint, typecheck, tests, disposable Supabase, build and Playwright. Render deployed the exact commit live as `dep-dc0gcu942hec73bb4t4g` at 02:49:49 UTC on 21 November 2026. This is **not** evidence that live refund, dispute, fraud or recovery exit checks passed. See [CONTINUE.md](CONTINUE.md).
