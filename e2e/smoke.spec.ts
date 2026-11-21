@@ -184,3 +184,25 @@ test("unbound custom hosts cannot expose account routes and marker contains only
   expect(await marker.text()).toBe("snoozer-domain-v1");
   expect(marker.headers()["content-type"]).toContain("text/plain");
 });
+
+test("the Snoozer topbar routes to real Help Center guides and approved Premium pricing", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 820 });
+  await page.goto("/");
+  const navigation = page.getByRole("navigation", { name: "Primary navigation" });
+  for (const name of ["Help Center", "Templates", "Leaderboard", "Pricing"]) {
+    await expect(navigation.getByRole("link", { name, exact: true })).toBeVisible();
+  }
+  await navigation.getByRole("link", { name: "Pricing" }).click();
+  await expect(page.getByRole("heading", { name: /Your page/ })).toBeVisible();
+  await expect(page.getByText("£3", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Yearly/ }).click();
+  await expect(page.getByText("£30", { exact: true })).toBeVisible();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" }).click();
+  await expect(page.getByRole("heading", { name: /How can we/ })).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search documentation" }).fill("account");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("link", { name: /Stay signed in and switch accounts/ })).toBeVisible();
+  await page.getByRole("link", { name: /Stay signed in and switch accounts/ }).click();
+  await expect(page.getByRole("heading", { name: "Stay signed in and switch accounts" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
