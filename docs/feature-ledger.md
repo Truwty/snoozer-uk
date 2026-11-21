@@ -225,7 +225,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 13.9 | Licence Keys If Appropriate | Deferred |
 | 13.10 | Tips And Donations | Deferred |
 | 13.11 | Membership Offers | Deferred |
-| 13.12 | Creator Storefront Analytics | Deferred |
+| 13.12 | Creator Storefront Analytics | Source branch: verified-account seller-only read-only RPC aggregates retained test orders (pending/expired/paid/held/downloadable), gross test amount and fourteen UTC order-creation days without any buyer/payment identity. Studio has a private noindex owner report, real empty state, and explicit non-revenue/refund disclaimers. Unit, SQL permission/state and authenticated browser tests added; CI, hosted migration and Render deployment still pending. No Stripe payout, tax, net refund or production analytics claims. |
 | 13.13 | Affiliate Disclosures | Deferred |
 | 13.14 | Tax-Ready Receipts Where Supported | Deferred |
 | 13.15 | Fraud Review | Current direct-charge/early-fraud reads and sticky dispute/fraud holds pass CI44460593527/44463174220. Bounded retry/backoff/dead-letter/read-only diagnostics pass CI and schema76 is hosted; real provider warning/case resolution and operational job execution unverified |
