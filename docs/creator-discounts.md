@@ -1,6 +1,6 @@
 # Creator sandbox discount codes — §13.5 candidate
 
-Status: implementation supplied for review; CI, hosted migration, deployment and real provider acceptance have not been performed.
+Status: full CI passed on 5538bfb (run 44879648821). Hosted schema applied and tracked as 20261121072318; original paid order preserved, zero codes, owner-only reads and service-only reservation verified. Render and real provider acceptance remain unverified.
 
 - Exact frozen version, case-normalised ASCII code (3–24 chars), 1–90% off, 1–50 reservations, 1–30 days, 50 retained codes per seller. Disable permanently; no reuse of the same code on the same retained version.
 - Integer arithmetic rounds the final charge down to whole pence, rejecting values below 50p. No client-provided amount, Stripe coupon or promotion code. The effective amount is snapshotted in the order and protected against updates; old orders fall back to their frozen version price.

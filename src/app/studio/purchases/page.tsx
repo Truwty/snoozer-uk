@@ -16,6 +16,7 @@ export default async function Page() {
       {response.error||!purchases.success?<p role="alert">Your purchase history is unavailable. Reload to try again.</p>:purchases.data.length===0?<p>No sandbox purchases yet.</p>:purchases.data.map(order=><article className="panel stack" key={order.id} style={{overflowWrap:"anywhere"}}>
         <h2>{order.title}</h2><p>£{(order.amount/100).toFixed(2)} GBP · {order.held?"Delivery paused for review":order.state==="paid"?"Payment confirmed":order.state==="expired"?"Checkout expired or failed":"Awaiting payment verification"}</p>
         <p>Purchase reference: <code>{order.id}</code></p>
+        {order.state==="paid"&&<a className="text-link" href={`/studio/purchases/receipt/${order.id}`} download>Download sandbox receipt (not a tax invoice)</a>}
         {order.accessUntil&&<p>Download expiry: <time dateTime={order.accessUntil}>{new Date(order.accessUntil).toUTCString()}</time></p>}
         {order.accessActive&&<a className="text-link" href={`/studio/purchases/file/${order.id}`} download>Verify payment and download PDF</a>}
         <section aria-label="Purchase assistance" className="stack">

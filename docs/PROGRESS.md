@@ -1,5 +1,13 @@
 # Progress — 21 November 2026
 
+## Discount codes (§13.5) — CI and hosted schema verified
+
+Exact source commit [5538bfb](https://github.com/Truwty/snoozer-uk/commit/5538bfb5b72d740f0256d5cbfc5adf37170b6e29) passed [CI #44879648821](https://github.com/Truwty/snoozer-uk/actions/runs/44879648821), including lint, types, unit/SQL, disposable Supabase, build and E2E. Hosted additive migration succeeded and is tracked as `20261121072318_creator_sandbox_discounts`; source filename aligned. Read-only verification showed zero discount codes, one original paid order, zero new price snapshots, authenticated owner RPC grant, anonymous and direct-table read denial, and service-only discounted reservation. Render deployment and genuine independent discounted Checkout/risk events remain unverified. No live payment gates altered.
+
+## Buyer receipt download (§13.6) — source candidate
+
+Added a verified-buyer-only plain-text sandbox purchase record for retained paid orders (including explicit risk-hold status). Reuses session-scoped SQL projection and reserved amount; no service credentials, provider read, new schema or entitlement. Not a tax invoice, live payment proof or current authorization. Regression tests added for foreign/anonymous/unverified/pending/expired/error cases and private headers. CI and hosted human verification pending. Phase 5 remains open.
+
 ## Discount codes (§13.5) — source candidate
 
 Implemented owner-only controls, frozen-version percentage codes, atomic stock and discount reservation and immutable effective prices. Regression tests added; CI, hosted migration/deployment and real provider acceptance are NOT verified. Existing sandbox purchase and risk gates remain unchanged. See [discount runbook](creator-discounts.md). Phase 5 remains open.
