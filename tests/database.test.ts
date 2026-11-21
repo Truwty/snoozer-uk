@@ -483,9 +483,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const failed=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
     expect(failed.status).toBe(503);
     expect(await failed.json()).toEqual({attempted:1,processed:0,failed:1});
+    // Test-only raw table assertions must run as migration owner, never service_role:
+    // service_role correctly has no snoozer schema/table SELECT privileges.
+    await db.exec("reset role");
     expect(await result("select retry_count as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(1);
     expect(await result("select processed_at is null as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(true);
     expect(await result("select state as value from snoozer.creator_sandbox_orders where id=$1",[order.id])).toBe("pending");
+    await act("service_role");
 
     const throttled=await recoverCreatorReceipts(request(),token,load,claimReceipt,process);
     expect(throttled.status).toBe(200);
@@ -499,8 +503,10 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(recovered.status).toBe(200);
     expect(await recovered.json()).toEqual({attempted:1,processed:1,failed:0});
     expect(attempts).toBe(2);
+    await db.exec("reset role");
     expect(await result("select retry_count as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(2);
     expect(await result("select processed_at is not null as value from snoozer.creator_sandbox_receipts where id='evt_Transient'")).toBe(true);
+    await act("service_role");
     expect(await result("select public.list_creator_sandbox_receipt_retries('acct_Platform',1,null) as value")).toEqual([]);
 
     const original=(await result<{paidAt:string;accessUntil:string;holds:string[]}>(
