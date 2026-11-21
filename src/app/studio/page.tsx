@@ -3,7 +3,6 @@ import { domainProviderConfig } from "@/lib/domain-verification";
 import { ProfileDomains } from "@/components/profile-domains";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Brand } from "@/components/shell";
 import { ClaimForm } from "@/components/claim-form";
 import { publicationScheduleStatus } from "@/lib/publication-schedule";
 import { aliasInventory } from "@/lib/aliases";
@@ -17,7 +16,6 @@ import { sessionClient } from "@/lib/supabase";
 import { accountPlan } from "@/lib/entitlements";
 import { freeProfileLinkLimit, maximumProfileLinkLimit } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
-import { signOut } from "../auth/actions";
 
 export const metadata = { title: "Studio", robots: { index: false, follow: false } };
 
@@ -35,7 +33,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const plan = accountPlan.safeParse(response?.data);
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
   return <main className="shell">
-    <header className="nav"><Brand /><form action={signOut}><button className="button small">Sign out</button></form></header>
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
     {deleted === "1" && <p role="status">Your profile was deleted. Its images are queued for removal.</p>}
     {!draft ? <section className="panel claim-panel stack">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brand } from "@/components/shell";
+import { SiteHeader } from "@/components/site-header";
 import { ProfileCard } from "@/components/profile-card";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileLayouts, themes } from "@/lib/profile";
@@ -17,7 +17,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
   const layoutLabels = { centred: "Centred card", editorial: "Editorial", portfolio: "Portfolio grid" };
 
   return <main className="shell stack">
-    <header className="nav"><Brand /><nav className="actions"><Link className="button small" href="/sign-in">Sign in</Link><Link className="button small" href="/sign-up">Create your page</Link></nav></header>
+    <SiteHeader />
     <header className="page-header stack">
       <p className="eyebrow">SNOOZER STUDIO</p>
       <h1>Find a starting point</h1>

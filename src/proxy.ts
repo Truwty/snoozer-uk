@@ -5,9 +5,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient } from "@/lib/supabase";
+import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge } from "@/lib/account-sessions";
 import { canonicalUsername, username } from "@/lib/profile";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "pricing", "help"]);
 // Creator marketplace removed. Keep Snoozer-owned Premium subscriptions under /studio/plan
 // and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
 // is intentionally disabled. Never reopen seller onboarding.
@@ -108,10 +109,24 @@ export async function proxy(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   if (siteUrl().protocol === "https:") response.headers.set("Strict-Transport-Security", "max-age=31536000");
 
-  if (!custom && !canonicalTarget && request.nextUrl.pathname.startsWith("/studio") && supabaseUrl && supabaseKey) {
+  // Refresh server-cookie sessions on site navigation, not just Studio pages.
+  // Otherwise an idle tab can appear signed out even while a valid refresh
+  // token is stored. Public profile/media/API requests don't need a refresh.
+  const sessionPage = !request.nextUrl.pathname.startsWith("/api/")
+    && !request.nextUrl.pathname.startsWith("/media/")
+    && !request.nextUrl.pathname.startsWith("/auth/callback")
+    && !request.nextUrl.pathname.startsWith("/auth/confirm");
+  if (!custom && !canonicalTarget && sessionPage && supabaseUrl && supabaseKey) {
+    const accounts = readSavedAccounts(request.cookies.get(accountListCookie)?.value);
+    const slot = selectedAccountSlot(request.cookies.get(activeAccountCookie)?.value, accounts);
+    const name = sessionStorageName(slot);
+    const hasSession = request.cookies.getAll().some(({ name: cookie }) =>
+      name ? cookie === name || cookie.startsWith(name + ".")
+        : /^sb-[A-Za-z0-9_-]+-auth-token(?:\\.\\d+)?$/.test(cookie));
+    if (hasSession) {
     const client = createServerClient(supabaseUrl, supabaseKey, {
       global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000) }) },
-      cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:" },
+      cookieOptions: { httpOnly: true, sameSite: "lax", secure: siteUrl().protocol === "https:", path: "/", maxAge: sessionMaxAge, ...(name ? { name } : {}) },
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (values) => {
@@ -128,7 +143,8 @@ export async function proxy(request: NextRequest) {
         },
       },
     });
-    if (request.cookies.getAll().some(({ name }) => name.startsWith("sb-"))) await client.auth.getUser();
+    await client.auth.getUser();
+    }
   }
   return response;
 }

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Brand } from "@/components/shell";
 import { publicationDate, publicationList } from "@/lib/publication";
 import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 
@@ -17,7 +16,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const versions = publicationList.parse(data);
 
   return <main className="shell narrow stack">
-    <Brand />
     <Link href={studioHref("/studio", selected)}>← Back to Studio</Link>
     <section className="stack">
       <h1>Publish history</h1>

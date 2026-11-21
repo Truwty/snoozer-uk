@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brand } from "@/components/shell";
+import { SiteHeader } from "@/components/site-header";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient } from "@/lib/supabase";
 import { leaderboardEntries, formatLeaderboardViews } from "@/lib/leaderboard";
@@ -25,14 +25,7 @@ export default async function Page({ searchParams }: {
   const rows = !unavailable && parsed.success ? parsed.data : [];
 
   return <main className="shell leaderboard-page">
-    <header className="nav">
-      <Brand />
-      <nav className="actions" aria-label="Leaderboard navigation">
-        <Link href="/" className="button small">Home</Link>
-        <Link href="/sign-up" className="button small">Create your page</Link>
-      </nav>
-    </header>
-
+    <SiteHeader />
     <section className="leaderboard-hero" aria-labelledby="leaderboard-title">
       <p className="eyebrow">SNOOZER COMMUNITY</p>
       <h1 id="leaderboard-title">Views Leaderboard</h1>

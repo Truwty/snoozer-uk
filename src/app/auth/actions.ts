@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
-import { sessionClient } from "@/lib/supabase";
+import { sessionClient, sessionClientForSlot } from "@/lib/supabase";
+import { cookies } from "next/headers";
+import { currentSlot, storedAccounts, saveAccount, markPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
 
 const email = z.email().max(254);
 const newPassword = z.string().min(12).max(72).refine((value) => Buffer.byteLength(value) <= 72);
@@ -39,22 +41,39 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   const password = z.string().min(1).max(256).safeParse(form.get("password"));
   if (!address.success || !password.success) return error("Enter your email and password.");
   if (!supabaseUrl || !supabaseKey) return unavailable();
-
-  const client = await sessionClient();
+  const jar = await cookies();
+  const adding = form.get("add_account") === "1";
+  if (adding && isAtAccountLimit(jar)) return error("You can keep up to four accounts signed in on this browser.");
+  const slot = adding ? crypto.randomUUID() : currentSlot(jar);
+  const client = await sessionClientForSlot(slot);
   const result = await client.auth.signInWithPassword({ email: address.data, password: password.data });
   if (result.error || !result.data.user?.email_confirmed_at) {
-    if (result.data.session) await client.auth.signOut();
+    if (result.data.session) await client.auth.signOut({ scope: "local" });
     if (result.error?.status === 429) return error("Too many attempts. Try again later.");
     return error("Couldn’t sign in. Check your details and make sure you’ve verified your email.");
+  }
+  // Never retain two refresh-token cookies for the same account.
+  const existing = adding && storedAccounts(jar).find((item) => item.userId === result.data.user!.id);
+  if (existing) {
+    await client.auth.signOut({ scope: "local" });
+    chooseAccount(jar, existing.slot);
+  } else {
+    saveAccount(jar, slot, result.data.user.id, result.data.user.email);
   }
   redirect("/studio");
 }
 
 // OAuth is initiated on the server so Supabase's PKCE verifier is stored in
 // its secure session cookie. Do not link users to Discord's raw URL Generator.
-export async function signInWithDiscord() {
+export async function signInWithDiscord(form: FormData) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in?discord=unavailable");
-  const client = await sessionClient();
+  const jar = await cookies();
+  const adding = form.get("add_account") === "1";
+  if (adding && isAtAccountLimit(jar)) redirect("/sign-in?add=1&limit=1");
+  const slot = adding ? crypto.randomUUID() : currentSlot(jar);
+  // The callback must use precisely the same cookie namespace for PKCE.
+  markPending(jar, slot);
+  const client = await sessionClientForSlot(slot);
   const { data, error: authError } = await client.auth.signInWithOAuth({
     provider: "discord",
     options: {
@@ -83,6 +102,8 @@ export async function confirmEmail(_: ActionState, form: FormData): Promise<Acti
   const client = await sessionClient();
   const result = await client.auth.verifyOtp({ type: "email", token_hash: token.data });
   if (result.error || !result.data.user?.email_confirmed_at) return error("This verification link has expired or already been used.");
+  const jar = await cookies();
+  saveAccount(jar, currentSlot(jar), result.data.user.id, result.data.user.email);
   if (result.data.user.user_metadata.snoozer_referral_consent === true) {
     const attribution = await client.rpc("accept_my_referral");
     if (attribution.error || !["accepted", "already_recorded"].includes(attribution.data)) redirect("/studio/growth?referral=unconfirmed");
@@ -103,12 +124,17 @@ export async function resetPassword(_: ActionState, form: FormData): Promise<Act
   const revoked = await client.auth.signOut({ scope: "global" });
   if (updated.error) return error("Couldn’t change your password. Request a new reset link and try again.");
   if (revoked.error) return error("Your password changed. Session revocation couldn’t be confirmed.");
+  const jar = await cookies();
+  removeAccountFromList(jar, currentSlot(jar));
   redirect("/sign-in?reset=1");
 }
 
 export async function signOut() {
-  const client = await sessionClient();
+  const jar = await cookies();
+  const slot = currentSlot(jar);
+  const client = await sessionClientForSlot(slot);
   const { error } = await client.auth.signOut({ scope: "local" });
   if (error) redirect("/studio?logout=failed");
+  removeAccountFromList(jar, slot);
   redirect("/");
 }

@@ -1060,7 +1060,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Take page offline" }).click();
     await expect(page.getByText("Offline · Draft only")).toBeVisible();
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.locator(".account-dropdown > summary").click();
+     await page.getByRole("button", { name: "Logout" }).click();
     await expect(page).toHaveURL("/");
 
     await page.goto("/forgot-password");
@@ -1451,4 +1452,72 @@ test("sandbox payment webhook fixtures verify signatures and store a single rece
   const after = await diagnostics();
   expect(after.stripeSandbox.unboundCompletionReceipts).toBe(before.stripeSandbox.unboundCompletionReceipts + 1);
   expect(after.kofi.unclaimedReceipts).toBe(before.kofi.unclaimedReceipts + 1);
+});
+
+test("sign-ins persist across navigation and independent accounts switch without cross-account access", async ({ page }) => {
+  test.setTimeout(90_000);
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const nameA = "saved-a-" + randomUUID().slice(0, 9);
+  const nameB = "saved-b-" + randomUUID().slice(0, 9);
+  const emailA = nameA + "@example.com";
+  const emailB = nameB + "@example.com";
+  const accountA = await admin.auth.admin.createUser({ email: emailA, password, email_confirm: true });
+  const accountB = await admin.auth.admin.createUser({ email: emailB, password, email_confirm: true });
+  expect(accountA.error).toBeNull();
+  expect(accountB.error).toBeNull();
+  try {
+    // Account A survives navigation and reload, not just the initial response.
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address").fill(emailA);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL(/\/studio/);
+    await page.goto("/pricing");
+    await page.reload();
+    await page.locator(".account-dropdown > summary").click();
+    await expect(page.locator(".account-popover").getByText(nameA, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Switch Accounts" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("link", { name: "Add an account" }).click();
+    await expect(page).toHaveURL(/\/sign-in\?add=1/);
+
+    // Adding B must not destroy account A's HttpOnly cookies or force re-login.
+    await page.getByLabel("Email address").fill(emailB);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Add account" }).click();
+    await expect(page).toHaveURL(/\/studio/);
+    await page.locator(".account-dropdown > summary").click();
+    await page.getByRole("button", { name: "Switch Accounts" }).click();
+    const modal = page.getByRole("dialog");
+    await expect(modal.locator(".account-entry")).toHaveCount(2);
+    await expect(modal.getByText(nameB, { exact: true })).toBeVisible();
+    const first = modal.locator(".account-entry").filter({ hasText: nameA });
+    await first.locator(".account-row-actions > summary").click();
+    await first.getByRole("button", { name: "Switch to account" }).click();
+    await expect(page).toHaveURL(/\/studio/);
+    await page.goto("/help");
+    await page.reload();
+    await page.locator(".account-dropdown > summary").click();
+    await expect(page.locator(".account-popover").getByText(nameA, { exact: true })).toBeVisible();
+
+    // Only A is revoked on Logout. B's saved session becomes active.
+    await page.getByRole("button", { name: "Logout" }).click();
+    await expect(page).toHaveURL("/");
+    await page.locator(".account-dropdown > summary").click();
+    await expect(page.locator(".account-popover").getByText(nameB, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Switch Accounts" }).click();
+    await expect(page.getByRole("dialog").locator(".account-entry")).toHaveCount(1);
+    await page.getByRole("button", { name: "Close account manager" }).click();
+    await page.goto("/studio");
+    await page.reload();
+    await page.locator(".account-dropdown > summary").click();
+    await expect(page.locator(".account-popover").getByText(nameB, { exact: true })).toBeVisible();
+
+    const visibleCookies = await page.evaluate(() => document.cookie);
+    expect(visibleCookies).not.toContain("snoozer_saved_accounts_v1");
+    expect(visibleCookies).not.toContain("snoozer-session-");
+  } finally {
+    if (accountA.data.user) await admin.auth.admin.deleteUser(accountA.data.user.id);
+    if (accountB.data.user) await admin.auth.admin.deleteUser(accountB.data.user.id);
+  }
 });
