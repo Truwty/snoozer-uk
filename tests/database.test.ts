@@ -251,7 +251,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       id:collection,revision:0,visible:true,productIds:[fixture.product],
     });
     // Visibility switch cannot publish an unapproved/unready offer.
-    expect(await publicGroups(fixture.name)).toEqual([]);
+    expect(await publicGroups("private-pdf")).toEqual([]);
     await expect(saveCollection(fixture.profile,collection,0,[fixture.product,fixture.product]))
       .rejects.toMatchObject({code:"22023"});
     await expect(saveCollection(fixture.profile,collection,0,[fixture.product], "Wrong\nTitle"))
@@ -281,7 +281,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
     await enableSandboxOffer(fixture.version);
     await act("anon");
-    const published=(await publicGroups(fixture.name))!;
+    const published=(await publicGroups("private-pdf"))!;
     expect(published).toHaveLength(1);
     expect(published[0]).toMatchObject({id:collection,versionIds:[fixture.version]});
     expect(JSON.stringify(published)).not.toContain(fixture.product);
@@ -291,7 +291,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated",alice);
     await saveCollection(fixture.profile,collection,0,[fixture.product],"Private now",false);
     await act("anon");
-    expect(await publicGroups(fixture.name)).toEqual([]);
+    expect(await publicGroups("private-pdf")).toEqual([]);
     await act("authenticated",alice);
     await expect(saveCollection(fixture.profile,collection,0,[fixture.product]))
       .rejects.toMatchObject({code:"40001"});
@@ -299,13 +299,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
     await db.exec("reset role; update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
     await act("anon");
-    expect(await publicGroups(fixture.name)).toEqual([]);
+    expect(await publicGroups("private-pdf")).toEqual([]);
 
     await act("authenticated",alice);
     await saveCollection(fixture.profile,collection,2,[],"Back on",true,true);
     expect(await list(fixture.profile)).toEqual([]);
     await act("anon");
-    expect(await publicGroups(fixture.name)).toEqual([]);
+    expect(await publicGroups("private-pdf")).toEqual([]);
   });
 
   it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
