@@ -32,7 +32,7 @@ This is harmless content for QA, **not** malware/content scanning or production 
 1. Sign in as an already-verified **creator/seller**, using the existing bound Stripe **test** account. The seller and buyer must be separate verified users.
 2. In <https://www.snoozer.uk/studio/products>, create a **new** private draft, clearly named `Snoozer isolated sandbox QA (not for sale)`. Set the price to **£0.50** (the platform's existing lower limit) and a description identifying the synthetic fixture.
 3. Upload this PDF through the existing *Product files* control. Check the upload reports **ready**; do not bypass pending/reservation cleanup.
-4. Freeze a new immutable product version. Copy its newly generated version UUID from the link target of **Download private revision** (`/studio/products/version/<UUID>`) or an authorised DB read. **Do not select any version associated with the original £5 purchase.**
+4. Freeze a new immutable product version. Read its newly generated version UUID from the **Isolated QA frozen-version preflight** section in Studio (or from the link target of **Download private revision**, `/studio/products/version/<UUID>`, or an authorised DB read). The new preflight compares the frozen title, £0.50 amount, stored byte count and SHA-256 with the deterministic fixture, and lists mismatches. **A matching display is not approval or proof of the actual stored PDF bytes.** The trusted operator must still download the exact frozen revision, inspect its content and calculate its SHA-256 independently. **Do not select any version associated with the original £5 purchase.**
 5. An operator must independently open/inspect the exact frozen file and compare SHA-256. Do not publish yet.
 
 No new routes, schema changes or webhook bypasses are needed. All the Studio upload/freeze controls already exist.
@@ -45,7 +45,7 @@ In the **correct** Supabase project's SQL Editor, open:
 
 Replace only the *all-zero version UUID* with the new version UUID; then run. The all-zero default returns **no rows** and is safe to run without a fixture.
 
-Verify `creator_owner_id`, `frozen_sha256`, `frozen_bytes`, `ready_file_matches_snapshot=true`, `draft_archived=false`, `version_already_has_orders=false`, the test price/currency, and account binding. Compare the frozen hash with your independently inspected exact PDF. Any mismatch is **STOP**.
+Compare the stored SHA and byte count from Studio against the independent downloaded frozen PDF, never against the reference fingerprint alone. Verify `creator_owner_id`, `frozen_sha256`, `frozen_bytes`, `ready_file_matches_snapshot=true`, `draft_archived=false`, `version_already_has_orders=false`, the test price/currency, and account binding. Compare the frozen hash with your independently inspected exact PDF. A review offer is now associated with the **exact frozen version**, so a valid or published offer for another revision of the same product is not reported for this candidate. `offer_enabled` reports the stored switch while `published_test_offer` is true only for the matching, currently unexpired offer. If a review has expired, withdraw it using the existing owner action; do not treat the stored enabled bit as live purchase eligibility. Any mismatch is **STOP**.
 
 The previously approved but expired offer is **not** a substitute. Creating an entirely new product/version avoids reusing old immutable receipts and files.
 

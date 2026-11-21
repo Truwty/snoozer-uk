@@ -23,7 +23,8 @@ select
   m.ready and m.checked_at>now()-interval '5 minutes' as recent_seller_readiness,
   coalesce(o.version_id=v.id and o.reviewed_sha256=v.sha256
     and o.review_expires_at>now(),false) as approval_still_current,
-  coalesce(o.enabled,false) as published_test_offer,
+  coalesce(o.enabled,false) as offer_enabled,
+  coalesce(o.enabled and o.review_expires_at>now(),false) as published_test_offer,
   coalesce(o.review_expires_at, '-infinity'::timestamptz) as review_expiry,
   policy.enabled as new_checkout_policy_enabled,
   exists (
@@ -36,4 +37,6 @@ join snoozer.product_drafts d on d.id=v.product_id and d.owner_id is not null
 join snoozer.product_files f on f.id=v.file_id and f.product_id=d.id
 join snoozer.creator_sandbox_accounts m on m.owner_id=d.owner_id
 join snoozer.creator_sandbox_policy policy on policy.singleton=true
-left join snoozer.creator_sandbox_offers o on o.product_id=d.id;
+-- Scope the offer to THIS frozen version, not just the parent product. An
+-- older reviewed version must never be reported as the new version's offer.
+left join snoozer.creator_sandbox_offers o on o.product_id=d.id and o.version_id=v.id;
