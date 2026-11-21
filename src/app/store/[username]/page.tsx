@@ -4,6 +4,7 @@ import { Brand } from "@/components/shell";
 import { CreatorBuyForm } from "@/components/creator-buy-form";
 import { creatorCheckoutConfig } from "@/lib/creator-checkout";
 import { creatorStore } from "@/lib/creator-store";
+import { publicStock } from "@/lib/creator-stock";
 import { publicCreatorCollections } from "@/lib/creator-collections";
 import { purchaseSupportHref } from "@/lib/creator-purchase-support";
 import { refreshCreatorStore } from "@/lib/creator-store-server";
@@ -20,6 +21,11 @@ export default async function Page({params}:{params:Promise<{username:string}>})
   if(!response.data) notFound();
   const store=creatorStore.parse(response.data);
   if(store.username!==name) notFound();
+  const stockResponse=await anonymousClient().rpc("get_creator_sandbox_stock",{p_name:name});
+  if(stockResponse.error) throw new Error("Limited inventory status is temporarily unavailable.");
+  const stock=publicStock.parse(stockResponse.data);
+  const remaining=new Map(stock.map(row=>[row.versionId,row.remaining]));
+
   const disclosureResponse=await anonymousClient().rpc("get_creator_sandbox_affiliate_disclosure",{p_name:name});
   if(disclosureResponse.error) throw new Error("Sandbox disclosure is temporarily unavailable.");
   const disclosure=disclosureResponse.data===null?null:
@@ -57,7 +63,9 @@ export default async function Page({params}:{params:Promise<{username:string}>})
       {store.items.length===0?<p>No test products are currently available.</p>:store.items.map(item=><article className="panel stack" key={item.versionId}>
         <h2>{item.title}</h2><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{item.description||"No description."}</p>
         <Link href={`/store/${store.username}/${item.versionId}`}>View full test product details</Link>
-        <p>£{(item.amount/100).toFixed(2)} GBP · PDF · {Math.ceil(item.bytes/1024)} KB</p><CreatorBuyForm versionId={item.versionId}/>
+        <p>£{(item.amount/100).toFixed(2)} GBP · PDF · {Math.ceil(item.bytes/1024)} KB</p>
+        {remaining.has(item.versionId)&&<p>{remaining.get(item.versionId)} limited test slots unreserved</p>}
+        <CreatorBuyForm versionId={item.versionId} soldOut={remaining.get(item.versionId)===0}/>
       </article>)}
     </section></main>;
 }
