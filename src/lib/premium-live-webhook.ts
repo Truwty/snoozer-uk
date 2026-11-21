@@ -20,7 +20,7 @@ const types = new Set([
 export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Event) {
   if (!types.has(event.type)) return;
   const id = eventId.parse(event.id);
-  const objectId = z.string().min(4).max(150).parse(event.data.object?.id);
+  const objectId = z.object({ id: z.string().min(4).max(150) }).parse(event.data.object).id;
   const occurred = new Date(event.created * 1000).toISOString();
   const admin = storageAdmin();
   const recorded = await admin.rpc("record_premium_live_receipt", {
@@ -83,7 +83,7 @@ export async function receivePremiumLiveWebhook(request: Request) {
   }
   try {
     const stripe = new Stripe(config.key, { timeout: 8000, maxNetworkRetries: 1 });
-    const account = await stripe.accounts.retrieve();
+    const account = await stripe.accounts.retrieve(config.accountId);
     if (account.id !== config.accountId) throw new Error("Incorrect Stripe platform.");
     await processPremiumLiveEvent(stripe, event);
     return new Response(null, { status: 204 });
