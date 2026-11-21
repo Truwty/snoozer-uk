@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { GiftCodeForm } from "@/components/gift-code-form";
 import { ClaimForm } from "@/components/claim-form";
-import { KofiReviewForm } from "@/components/kofi-review-form";
 import { Brand } from "@/components/shell";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { accountPlan } from "@/lib/entitlements";
@@ -23,10 +22,6 @@ import { startSandboxCheckout } from "./checkout";
 
 export const metadata = { title: "Plan and usage", robots: { index: false, follow: false } };
 
-const reviewList = z.array(z.object({
-  reference: z.string(), status: z.enum(["pending", "confirmed", "declined"]),
-}));
-const reviewLabels = { pending: "Pending review", confirmed: "Confirmed", declined: "Declined" };
 const profileList = z.array(z.object({ id: z.uuid(), username, published: z.boolean() }));
 
 const labels = { free: "Free", plus: "Plus", pro: "Pro", studio: "Studio" };
@@ -61,16 +56,14 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const showSandbox = !["snoozer.uk", "www.snoozer.uk"].includes(siteUrl().hostname);
   const linkLimit = Math.min(plan?.quotas.links ?? 0, maximumProfileLinkLimit);
 
-  const [offers, liveOffers, { checkout, portal, premium, profile: requested }, portalCustomer, liveBilling, reviewResponse, staffAccess, profileResponse] = await Promise.all([
+  const [offers, liveOffers, { checkout, portal, premium, profile: requested }, portalCustomer, liveBilling, staffAccess, profileResponse] = await Promise.all([
     sandboxOffers(), premiumLiveOffers(), searchParams,
     sandboxPortalConfiguration() ? client.rpc("get_my_stripe_sandbox_customer") : null,
     premiumLivePortalConfig() ? client.rpc("get_my_premium_live_billing") : null,
-    client.rpc("list_my_kofi_donation_reviews"),
     client.rpc("can_read_billing_diagnostics"),
     client.rpc("list_my_profiles"),
   ]);
 
-  const reviews = reviewList.safeParse(reviewResponse.data);
   const profiles = profileList.safeParse(profileResponse.data);
   const selected = profiles.success ? profiles.data.find(({ id }) => id === requested)?.id : undefined;
   const draft = await readDraft(selected);
@@ -149,17 +142,6 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
       <details>
         <summary>Redeem a plan gift</summary>
         <GiftCodeForm />
-      </details>
-      <details>
-        <summary>Review a platform Ko-fi donation</summary>
-        <div className="stack">
-          <p>Use the transaction reference from your donation to Snoozer. Reviews confirm donations and do not change your plan.</p>
-          <KofiReviewForm />
-          {reviews.success && reviews.data.length > 0 && <ul>
-            {reviews.data.map(({ reference, status }) => <li key={reference}>{reference} · {reviewLabels[status]}</li>)}
-          </ul>}
-          {!reviews.success && <p>Your previous review requests are temporarily unavailable.</p>}
-        </div>
       </details>
     </section>
   </main>;
