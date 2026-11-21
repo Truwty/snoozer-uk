@@ -2,6 +2,7 @@
 import { useActionState, useId, useState } from "react";
 import { saveProductDraft } from "@/app/studio/products/actions";
 import { initialState } from "@/lib/actions";
+import { creatorQaDraft } from "@/lib/creator-qa-studio";
 import { priceInput, type ProductDraft } from "@/lib/products";
 import { ActionMessage } from "./action-message";
 
@@ -23,6 +24,11 @@ export function ProductDraftForm({ profileId, product, canActivate = true }: { p
     <label>Price (GBP)<input name="price" type="text" inputMode="decimal" required pattern="(0|[1-9][0-9]{0,3})(\.[0-9]{1,2})?" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="5.00" disabled={pending} /></label>
     <p className="muted">£0.50–£1,000.00. This saves a private draft; no payment is taken.</p>
     <div className="actions">
+      {!product && <button className="button secondary" type="button" disabled={pending} onClick={() => {
+        setTitle(creatorQaDraft.title);
+        setDescription(creatorQaDraft.description);
+        setPrice(creatorQaDraft.price);
+      }}>Fill sandbox QA draft</button>}
       <button className="button" name="archived" value={String(product?.archived ?? false)} disabled={pending}>{product ? "Save product draft" : "Create product draft"}</button>
       {product && <button className="button secondary" name="archived" value={String(!product.archived)} disabled={pending || (product.archived && !canActivate)}>{product.archived ? "Restore product draft" : "Archive product draft"}</button>}
     </div>
