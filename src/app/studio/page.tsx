@@ -33,7 +33,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const plan = accountPlan.safeParse(response?.data);
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
   return <main className="shell">
-    <header className="nav studio-subnav"><form action={signOut}><button className="button small">Sign out</button></form></header>
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
     {deleted === "1" && <p role="status">Your profile was deleted. Its images are queued for removal.</p>}
     {!draft ? <section className="panel claim-panel stack">
