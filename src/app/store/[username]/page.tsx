@@ -26,6 +26,7 @@ export default async function Page({params}:{params:Promise<{username:string}>})
       <div className="actions"><Link href={`/${store.username}`}>Creator profile</Link><a href={purchaseSupportHref}>Purchase support</a></div>
       {store.items.length===0?<p>No test products are currently available.</p>:store.items.map(item=><article className="panel stack" key={item.versionId}>
         <h2>{item.title}</h2><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{item.description||"No description."}</p>
+        <Link href={`/store/${store.username}/${item.versionId}`}>View full test product details</Link>
         <p>£{(item.amount/100).toFixed(2)} GBP · PDF · {Math.ceil(item.bytes/1024)} KB</p><CreatorBuyForm versionId={item.versionId}/>
       </article>)}
     </section></main>;

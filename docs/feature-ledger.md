@@ -215,7 +215,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | ID | Capability | Status |
 | --- | --- | --- |
 | 13.1 | Digital Downloads | Hosted owner PDF/quota/removal proof; private snapshots pass CI44423125617 (hosted positive snapshot blocked by upload-network failure). Buyer ownership/current-provider/SHA-256 delivery passes unit/SQL/CI44463174220; schema76/gated source16aba31 hosted. Actual sandbox buyer payment/delivery and production scanning remain unverified |
-| 13.2 | Product Detail Cards | Hosted private GBP drafts/archive/revisions; reviewed frozen sandbox store and durable direct Checkout/resume pass CI44462265410/44463174220. Source16aba31 hosted with purchases disabled; actual creator Checkout unverified |
+| 13.2 | Product Detail Cards | Hosted private GBP drafts/archive/revisions and reviewed frozen sandbox store, with existing durable Checkout/resume. A dedicated sandbox `/store/{username}/{versionId}` details route now uses exactly the existing server-gated, anonymous **reviewed-offers-only** RPC and seller readiness refresh (no extra purchase bypass). Store cards link to detail pages; route is noindexed and rejects invalid/foreign/withdrawn/unlisted versions, disabled Checkout and failed provider reads. Targeted render/negative tests added; CI and deployment pending. Real independent Checkout remains unverified |
 | 13.3 | Creator Collections | Deferred |
 | 13.4 | Inventory For Limited Digital Items | Deferred |
 | 13.5 | Discount Codes | Deferred |
