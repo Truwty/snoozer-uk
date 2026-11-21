@@ -174,6 +174,39 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("service_role");
   }
 
+  it("reports isolated QA fixture snapshot fingerprint and reviewed-offer readiness without writes", async () => {
+    const fixture=await sandboxOfferFixture();
+    await db.exec("reset role");
+    const template=await readFile(new URL("../supabase/operations/inspect-creator-qa-fixture.sql",import.meta.url),"utf8");
+    expect((await db.query(template)).rows).toEqual([]);
+    const scoped=template.replace("00000000-0000-0000-0000-000000000000",fixture.version);
+    const inspect=async()=>((await db.query<{
+      version_id:string;frozen_sha256:string;frozen_bytes:number;price_in_pence:number;
+      ready_file_matches_snapshot:boolean;seller_platform_bound:boolean;
+      approval_still_current:boolean;published_test_offer:boolean;version_already_has_orders:boolean;
+    }>(scoped)).rows[0]);
+    expect(await inspect()).toMatchObject({
+      version_id:fixture.version,frozen_sha256:"a".repeat(64),frozen_bytes:100,price_in_pence:500,
+      ready_file_matches_snapshot:true,seller_platform_bound:false,
+      approval_still_current:true,published_test_offer:false,version_already_has_orders:false,
+    });
+    await enableSandboxOffer(fixture.version);
+    await db.exec("reset role");
+    expect(await inspect()).toMatchObject({
+      ready_file_matches_snapshot:true,seller_platform_bound:true,
+      approval_still_current:true,published_test_offer:true,version_already_has_orders:false,
+    });
+    await act("service_role");
+    await reserveOrder(fixture.version);
+    await db.exec("reset role");
+    expect(await inspect()).toMatchObject({version_already_has_orders:true});
+    // A stale review must not be represented as current, even if enabled.
+    await db.exec("update snoozer.creator_sandbox_offers set review_expires_at=now()-interval '1 second'");
+    expect(await inspect()).toMatchObject({approval_still_current:false,published_test_offer:true});
+    await act("service_role");
+    await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
+  });
+
   it("keeps order creation disabled until a reviewed fixture, explicit policy and fresh seller readiness exist", async () => {
     const fixture = await sandboxOfferFixture();
     await expect(reserveOrder(fixture.version)).rejects.toMatchObject({code:"P1220"});
