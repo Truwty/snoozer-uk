@@ -1,5 +1,19 @@
 # Continuation
 
+## Latest verified milestone — genuine Creator Commerce webhook recovery (21 November 2026, 01:02 UTC)
+
+**Previously blocked signed Checkout webhook delivery is now CONFIRMED successful.** In the correct Snoozer Stripe **test sandbox**, the owner manually resent the *original* connected-account `checkout.session.completed` snapshot event `evt_1UdbhYPhIINaXcvCnSkz0tih` to the enabled `Snoozer creator sandbox receipts` endpoint. Stripe Workbench **Event deliveries** shows **Delivered · Recovered**, **HTTP 204**, attempted **21 November 2026 01:02:10 UTC** (original event: 19 Nov 20:13 UTC). This is actual provider delivery, **not** a simulated or invented event.
+
+A fresh, independent **read-only** query against hosted Supabase `edgptbiwswcdmmxzwhxv` now verifies:
+- `snoozer.creator_sandbox_receipts`: **1 persisted receipt, 1 processed, 0 pending**;
+- the saved receipt ID matches the **exact original Stripe event**, `processed_at IS NOT NULL`, **retry_count = 0**;
+- original purchase: **1 order, 1 paid, 0 held**, Checkout and provider payment bound, valid buyer access until **19 December 2026 20:14:33 UTC**; original `paid_at` remains **19 November 2026 20:14:33 UTC**.
+
+**Close the webhook-resend/receipt-persistence milestone.** Do **not** mark a failed-receipt **automatic retry** as tested: this was a **manual Stripe Workbench resend**, processed on receipt without retry. The earlier notes below reporting 0 receipts or an unavailable original event reflect the point-in-time state **before** this successful resend and are superseded here.
+
+**Still necessary to complete Phase 5 sandbox exit:** (1) genuine isolated refund, dispute and early-fraud events and confirmed access holds without damaging this original paid order; (2) an actual failed-event retry/backoff/dead-letter or equivalent controlled recoverable test, without fabricating provider events; (3) safely withdraw the expired reviewed offer and disable **only new Checkout** via SQL `snoozer.creator_sandbox_policy.enabled` and Render `SNOOZER_CREATOR_CHECKOUT_ENABLED`, preserving existing buyer download and webhook reconciliation; (4) verify any remaining operational, moderation and safety gates before real-money launch. Live commerce is **not enabled or approved**. The original event's processing and the existing paid order must not be replayed or rewritten.
+
+
 ## Latest provider and hosted verification — 21 November 2026 (supersedes earlier access blockers)
 
 **Access is now verified, but Creator Commerce sandbox sign-off remains incomplete.** The user confirmed Render workspace **My Workspace** (`tea-d7omjhu7r5hc73dh1fd0`). Render's `snoozer-uk-staging` service (`srv-dbts6jon74is73en2rjg`) uses Snoozer GitHub `main`; `autoDeploy` is **off**. The **latest merge commit `07e5926bcf53cb4dcf3f6e463056f25ce3cc009a` is actually live**, deployed manually at 00:53:21 UTC on 21 Nov. [Render service](https://dashboard.render.com/web/srv-dbts6jon74is73en2rjg). [CI #153](https://github.com/Truwty/snoozer-uk/actions/runs/44846176231) passed. No deploy was triggered by this audit.
