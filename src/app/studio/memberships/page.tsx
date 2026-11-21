@@ -19,6 +19,7 @@ export default async function Page() {
   {m.held&&<p>Membership withheld for payment-risk review.</p>}
   {m.pendingReceipt&&<p>Provider reconciliation pending; access withheld.</p>}
   <a href={`/studio/memberships/access/${m.id}`}>Verify and open membership record</a>
+  {m.state==="active"&&!m.held&&!m.pendingReceipt&&<a href={`/studio/memberships/invoice/${m.id}`} rel="noreferrer">Open Stripe test invoice PDF (not tax-verified)</a>}
   <MembershipControls id={m.id} canCancel={m.canCancel}/>
   <Link href={`/studio/support?kind=membership&reference=${m.id}`}>Open a private support case</Link>
   <a href={purchaseSupportHref}>Contact support</a>
