@@ -320,7 +320,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated",alice);
     expect(await read(fixture.profile)).toEqual({revision:0,disclosure:"",enabled:false});
     await expect(saveDisclosure(fixture.profile,0,"",true)).rejects.toMatchObject({code:"22023"});
-    await expect(saveDisclosure(fixture.profile,0,"bad\u0000control",true)).rejects.toMatchObject({code:"22023"});
+    await expect(saveDisclosure(fixture.profile,0,"bad\u0001control",true)).rejects.toMatchObject({code:"22023"});
     expect(await saveDisclosure(fixture.profile,0,"Some links may earn commission.",true)).toBe(true);
     expect(await read(fixture.profile)).toMatchObject({revision:0,enabled:true});
     await act("anon");
