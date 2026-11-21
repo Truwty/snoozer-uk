@@ -16,7 +16,8 @@ export default function Home() {
   return <main className="shell home">
     <header className="nav">
       <Brand />
-      <nav aria-label="Account" className="actions">
+      <nav aria-label="Primary navigation" className="actions">
+        <Link href="/leaderboard" className="button small">Leaderboard</Link>
         <Link href="/sign-in" className="button small">Sign in</Link>
         <Link href="/sign-up" className="button small">Get started</Link>
       </nav>
@@ -36,6 +37,14 @@ export default function Home() {
       <article><div className="step-visual swatch-options" aria-hidden="true"><span className="demo-swatch" data-theme="midnight" /><span className="demo-swatch" data-theme="lagoon" /><span className="demo-swatch" data-theme="daybreak" /></div><p className="eyebrow">02 / CREATE</p><h2>Make it personal.</h2><p>Add a photo, a short bio and links. Try a theme in the live preview.</p></article>
       <article><div className="step-visual"><span>snoozer.uk</span><CopyLink path="/" /></div><p className="eyebrow">03 / SHARE</p><h2>Take it live.</h2><p>Publish when you’re ready and use the same link wherever you show up.</p></article>
     </section>
+    <section className="home-section leaderboard-teaser" aria-labelledby="community-leaderboard-title">
+      <div className="stack">
+        <p className="eyebrow">THE COMMUNITY</p>
+        <h2 id="community-leaderboard-title">Leaderboard</h2>
+        <p className="muted">Meet the most-viewed Snoozer profiles. Explore the all-time and monthly Top 50.</p>
+      </div>
+      <Link href="/leaderboard" className="button">Explore the leaderboard</Link>
+    </section>
     <section className="home-section stack" aria-labelledby="free-title"><p className="eyebrow">MAKE A START</p><h2 id="free-title">Start with a Free profile.</h2><p className="muted">Edit your page, choose a theme and publish your links. Your plan and available upgrades are shown in Studio.</p></section>
     <section className="home-section stack" aria-labelledby="faq-title"><h2 id="faq-title">A few things worth knowing</h2>
       <Disclosure title="Can I change my page before publishing?"><p>Studio keeps your draft separate from your published page. Preview your changes, then publish when you are ready.</p></Disclosure>
@@ -43,6 +52,6 @@ export default function Home() {
       <Disclosure title="Can I change my theme later?"><p>Yes. Change your appearance in Studio and check it in the live preview before publishing.</p></Disclosure>
     </section>
     <section className="home-section final-cta"><h2>A place for what you make.</h2><Link className="button" href="/sign-up">Create your page</Link></section>
-    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav>{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
+    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav>{support && <a href={support} rel="noreferrer">Support Snoozer on Ko-fi <span aria-hidden="true">↗</span></a>}</footer>
   </main>;
 }
