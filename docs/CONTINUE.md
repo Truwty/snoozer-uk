@@ -1,5 +1,10 @@
 # Continuation
 
+## Phase 5 PDF static active-content intake and download gate — implementation candidate
+
+Adds a bounded conservative parser-independent PDF name-token screen at private upload and freeze plus each fresh paid buyer delivery. Refuses JavaScript/actions, embedded files, launch/open actions, XFA/forms, opaque object streams and encryption, including hex-escaped PDF name variants. Current plain PDF framing, stored byte hash, owner/buyer ownership and current Stripe payment/risk verification remain in place. This is NOT full PDF parsing, malware/antivirus scanning, link reputation protection or moderator approval. Possible false positives and compressed stream limits are documented; no new live Checkout gate. Unit and buyer-route negative delivery tests added. CI, Render rollout and external AV/moderation are pending; do not declare Phase 5 completely secure.
+
+
 ## Current paid creator-membership Stripe test invoice PDFs — source candidate
 
 Buyer-only `/studio/memberships/invoice/[id]` route checks verified session, buyer ownership, fresh provider membership payment and sticky risk holds, exact connected-account subscription/paid invoice scope, then redirects exclusively to the provider-issued HTTPS `pay.stripe.com` TEST PDF URL. Never constructs a PDF from user input, stores invoice URLs, discloses payment IDs, or treats the invoice as independent VAT/tax registration proof. This is a convenience for currently eligible sandbox subscriber invoices, not a complete historical seller tax ledger; after cancellation users may need the provider-issued copy from Stripe email. Unit, URL-allowlist, foreign-user and stale payment regressions added; full CI, migration-free Render rollout and genuine provider acceptance pending. Phase 5 remains OPEN for registered tax jurisdictions, legal invoicing, real buyer/seller risk and hosted acceptance.
