@@ -17,7 +17,7 @@ export default async function Page({searchParams}:{searchParams:Promise<{version
   <header className="nav"><Brand/><Link className="button small" href="/studio">Studio</Link></header>
   <section className="panel stack">
    <p className="eyebrow">SANDBOX / PRODUCT SAFETY</p><h1>Report an unsafe PDF product</h1>
-   <p>Use this verified-account form for a publicly reviewed sandbox product. Reports are confidential. Filing a report does not immediately remove a listing, refund a charge or change someone else's entitlement. A separately authorised moderator can quarantine a version after review.</p>
+   <p>Use this verified-account form for a publicly reviewed sandbox product. Reports are confidential. Filing a report does not immediately remove a listing, refund a charge or change another buyer’s entitlement. A separately authorised moderator can quarantine a version after review.</p>
    {staff.data===true&&!staff.error&&<Link href="/studio/product-reports/staff">Restricted moderator queue</Link>}
    {reports.error||!parsed.success?<p role="alert">Product reports are temporarily unavailable.</p>:<>
     <ProductReportForm versionId={version.success?version.data:""}/>
