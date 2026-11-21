@@ -58,6 +58,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
+    await db.exec("reset role; truncate snoozer.creator_support_access_log, snoozer.creator_support_cases, snoozer.creator_support_staff;");
     await db.exec("reset role; truncate snoozer.creator_sandbox_accounts cascade;");
     await db.exec("update snoozer.creator_sandbox_policy set enabled=false,platform_id=null");
     await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
@@ -222,6 +223,71 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(redeem("OTHER20")).rejects.toMatchObject({code:"P1222"});
     await act("authenticated",alice);
     expect((await list())!.codes.find(c=>c.id!==id&&c.used>0)).toBeUndefined();
+  });
+
+  it("keeps commerce support cases buyer-owned and audits separately authorised staff replies", async () => {
+    const fixture=await sandboxOfferFixture();
+    await enableSandboxOffer(fixture.version);
+    const order=(await reserveOrder(fixture.version,bob))!;
+    const message="I paid in sandbox and cannot verify the private PDF.";
+    const create=(kind:string,reference:string,issue="delivery",content=message)=>result<string>(
+      "select public.open_my_creator_support_case($1,$2,$3,$4) as value",[kind,reference,issue,content]);
+    await act("anon");
+    await expect(create("purchase",order.id)).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",unverified);
+    await expect(create("purchase",order.id)).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",alice);
+    await expect(create("purchase",order.id)).rejects.toMatchObject({code:"42501"});
+    await expect(result("select public.read_staff_creator_support_cases(50) as value")).rejects.toMatchObject({code:"42501"});
+    await act("authenticated",bob);
+    const caseId=(await create("purchase",order.id))!;
+    expect(caseId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await create("purchase",order.id)).toBe(caseId);
+    expect(await result("select public.list_my_creator_support_cases() as value")).toMatchObject([
+      {id:caseId,referenceKind:"purchase",referenceId:order.id,issue:"delivery",message,state:"open",response:null}
+    ]);
+    await expect(create("purchase",fixture.version)).rejects.toMatchObject({code:"42501"});
+    await expect(create("purchase",order.id,"payment","Too short")).rejects.toMatchObject({code:"22023"});
+    expect(await result("select public.can_read_creator_support_cases() as value")).toBe(false);
+    await expect(result("select public.reply_staff_creator_support_case($1,$2) as value",[caseId,"We can review your test payment."])).rejects.toMatchObject({code:"42501"});
+    await db.exec("reset role");
+    await db.query("insert into snoozer.creator_support_staff(actor_id) values ($1)",[alice]);
+    await act("authenticated",alice);
+    expect(await result("select public.can_read_creator_support_cases() as value")).toBe(true);
+    const queue=await result<Array<{id:string;buyerId:string;message:string}>>("select public.read_staff_creator_support_cases(50) as value");
+    expect(queue).toMatchObject([{id:caseId,buyerId:bob,message}]);
+    expect(await result("select public.reply_staff_creator_support_case($1,$2) as value",[caseId,"We have received your sandbox payment query."])).toBe(true);
+    expect(await result("select public.reply_staff_creator_support_case($1,$2) as value",[caseId,"Duplicate staff reply must be refused."])).toBe(false);
+    await act("authenticated",bob);
+    expect(await result("select public.list_my_creator_support_cases() as value")).toMatchObject([
+      {id:caseId,state:"answered",response:"We have received your sandbox payment query."}
+    ]);
+    expect(await result("select public.close_my_creator_support_case($1) as value",[caseId])).toBe(true);
+    expect(await result("select public.close_my_creator_support_case($1) as value",[caseId])).toBe(false);
+    expect(await create("purchase",order.id)).not.toBe(caseId);
+    await db.exec("reset role");
+    const audit=await db.query<{action:string}>("select action from snoozer.creator_support_access_log order by id");
+    expect(audit.rows.map(row=>row.action)).toEqual(["list","reply"]);
+    await act("authenticated",bob);
+    await expect(db.query("select * from snoozer.creator_support_cases")).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select * from snoozer.creator_support_access_log")).rejects.toMatchObject({code:"42501"});
+  });
+
+  it("accepts only the verified buyer's own membership as a support case reference",async()=>{
+    const fixture=await sandboxOfferFixture();
+    await db.exec("reset role");
+    const created=await db.query<{id:string}>(
+      "insert into snoozer.creator_membership_subscriptions(buyer_id,seller_id,profile_id,offer_id,offer_revision,title,benefits,monthly_pence,platform_id,account_id) values($1,$2,$3,gen_random_uuid(),0,'QA Support','Test benefits',500,'acct_Platform','acct_Creator') returning id",
+      [bob,alice,fixture.profile]);
+    const membership=created.rows[0].id;
+    await act("authenticated",bob);
+    const id=await result<string>("select public.open_my_creator_support_case('membership',$1,'payment',$2) as value",
+      [membership,"An unexpected sandbox renewal needs clarification."]);
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    await act("authenticated",alice);
+    await expect(result("select public.open_my_creator_support_case('membership',$1,'payment',$2) as value",
+      [membership,"Trying to access another buyer's support record."])).rejects.toMatchObject({code:"42501"});
+    expect(await result("select public.list_my_creator_support_cases() as value")).toEqual([]);
   });
 
   it("requires a separate approved membership revision, preserves reservations and keeps risk receipts sticky", async () => {

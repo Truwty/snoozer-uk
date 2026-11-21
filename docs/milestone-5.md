@@ -1,5 +1,10 @@
 # Milestone 5 — premium and creator growth
 
+## Buyer commerce support cases — source candidate
+
+Phase 5 §13.17: buyer-owned private cases for PDF orders and memberships, in-app issue categories, bounded messages, idempotent unresolved cases, per-buyer throttling, verified ownership checks, no payment mutation, buyer closure, and a separate allowlisted support-staff queue with audited case-list access and private replies. Staff grant table is initially empty and can only be provisioned by an authorised database operator. **No staff alerting, outbound email or response-time SLA** is configured. SQL, UI and regression tests added. Do not mark this increment released before full CI, hosted migration, verified grants, Render rollout and monitored staff setup. Existing email fallback remains. Genuine provider acceptance and production legal/tax/moderation remain open.
+
+
 ## Recurring membership release and webhook — verified (21 Nov 2026)
 
 The complete membership implementation is on main `e144ccc`, migration-history alignment `9be97dd`. Final [CI #44924232572](https://github.com/Truwty/snoozer-uk/actions/runs/44924232572) passed all stages; hosted schema `20261121162149_creator_membership_subscriptions` installed with its policy **disabled**, **zero** subscriptions and preserved original paid PDF order and receipt. The exact source `9be97dd` reached **Live** on Render `dep-dc0sd2om7kps73efk2bg` (16:30:05 UTC). The test-mode Stripe Connect webhook `we_1UeHCPPhIIpNUquSb0Co2Ro2` is enabled for 21 selected subscription/risk events; signing secret was installed in Render and the follow-up deployment `dep-dc0serek1f9s73a51tag` reached **Live** (16:33:24 UTC). The first incomplete endpoint was disabled; the separate PDF webhook stays enabled. This confirms configuration and releases, **not** a genuine recurring transaction or signed delivery acceptance test.

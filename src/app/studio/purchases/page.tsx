@@ -26,6 +26,7 @@ export default async function Page() {
           <h3>{purchaseSupportGuidance(order).heading}</h3>
           <p>{purchaseSupportGuidance(order).guidance}</p>
           <PurchaseRefresh id={order.id}/>
+          <Link href={`/studio/support?kind=purchase&reference=${order.id}`}>Open a private support case</Link>
           <a href={purchaseSupportHref}>Email Snoozer support</a>
         </section>
       </article>)}
