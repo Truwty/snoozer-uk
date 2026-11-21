@@ -1,5 +1,8 @@
 # Creator sandbox recovery and release checks
 
+> **21 November 2026 status update:** The code and its disposable tests remain in place; the last recorded hosted commerce migration baseline is 77 (not merely 76), and the repository has since gained Discord authentication and the Leaderboard. Genuine sandbox buyer payment and byte-identical download were recorded on 20 November; **webhook HTTP204 resend/durable fulfilment, refund/dispute/fraud proof, actual recovery execution, natural retention, and sandbox gate withdrawal are still outstanding**. The connected Stripe tool here exposes only unrelated Lingua live mode and cannot serve as the Snoozer sandbox. See [the current handoff](CONTINUE.md) and run the [read-only operator SQL](../supabase/operations/inspect-creator-commerce-exit.sql) in the intended hosted Supabase project. Historical instructions below describe earlier implementation stages and remain for traceability; do not reapply migrations or invent provider evidence.
+
+
 Current implementation is sandbox-only. Do not enable selling from source-file existence or CI fixtures. Check PROGRESS.md for the actual deployed commit/migrations and provider evidence. Source16aba31/migrations72–76 are deployed as one coherent, tested slice; both new-purchase gates stay disabled during provider setup. Hosted migrations through76 are immutable.
 
 ## Durable intake and provider checks
