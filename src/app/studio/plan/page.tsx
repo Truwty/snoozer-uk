@@ -131,7 +131,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
         liveBilling?.data?.hasCustomer === true && <form action={openPremiumLiveBillingPortal}>
           <button className="button small" type="submit">Manage Premium subscription, invoices and cancellation</button>
         </form>}
-      {showSandbox && checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>
+      {showSandbox && checkout === "pending" && <p role="status">Returned from sandbox checkout. Payment confirmation is pending.</p>}
       {showSandbox && checkout === "unavailable" && <p role="alert">Could not open sandbox checkout. Try your original offer again or contact support.</p>}
       {showSandbox && portal === "unavailable" && <p role="alert">Could not open the Stripe sandbox portal. Try again later.</p>}
       {showSandbox && !portalCustomer?.error && typeof portalCustomer?.data === "string" && <form action={openSandboxPortal}>
