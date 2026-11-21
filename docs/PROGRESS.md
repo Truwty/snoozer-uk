@@ -1,5 +1,16 @@
 # Progress — 21 November 2026
 
+## 21 November 2026, 01:02 UTC — real Stripe checkout webhook recovered and persisted
+
+**PASSED: original signed Checkout webhook resend and durable processed receipt.** The owner supplied an actual Stripe Workbench screenshot from the **New business** test sandbox, event destination **Snoozer creator sandbox receipts**, showing a manually resent **`checkout.session.completed`** event **`evt_1UdbhYPhIINaXcvCnSkz0tih`**: **HTTP 204**, **Delivered · Recovered**, attempt **21 Nov 2026 01:02:10 UTC**. This was the same original event that failed on 19 Nov. We did not simulate or replace the signed event.
+
+Independently verified the hosted Supabase database (read-only): **1 stored creator receipt, processed_at present, retry_count 0, no pending receipts**, with receipt ID matching the original event. The original test order remains **paid**, 0 holds, Checkout/payment identifiers present, `paid_at = 2026-11-19 20:14:33 UTC`, buyer `access_until = 2026-12-19 20:14:33 UTC`. **No original order or receipt record was modified by this verification.**
+
+**Scope of proof:** real signed webhook delivery and persistent processing are now proven end-to-end. This does **not** prove (a) refund/dispute/fraud delivery holds, (b) a failed receipt recovered by the *scheduled retry* (the processed event was resent manually, retry count 0), (c) safe end-of-sandbox gate closure, or (d) live-sale approval. Earlier 21 November paragraphs below documenting zero receipts are preserved as historical pre-resend observations and are superseded by this entry.
+
+**Remaining closeout:** create an approved *separate* test order/event sequence for refund/dispute/fraud, verify account/owner access controls, demonstrate one real recovery retry, withdraw the expired offer and close the SQL and new-Checkout Render gates while leaving paid downloads and webhook intake working, then reassess file scanning and business/legal/support risk gates before enabling any live commerce. See [CONTINUE.md](CONTINUE.md).
+
+
 ## 21 November 2026 — direct hosted/provider verification (latest)
 
 This section supersedes the previous 21 Nov access-limitation paragraph: **Render, Supabase and the correct Snoozer test Stripe platform are now connected**. No financial mutations, production purchases, webhook replay, migration application, credential read/write or feature-flag changes were performed. Creator Commerce remains **sandbox-implemented, provider sign-off OPEN**.
