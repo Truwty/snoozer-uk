@@ -14,7 +14,7 @@ export async function premiumLiveOffers() {
 }
 
 async function verifiedStripeAccount(stripe: Stripe, accountId: string) {
-  const account = await stripe.accounts.retrieve();
+  const account = await stripe.accounts.retrieve(accountId);
   if (account.id !== accountId || !account.charges_enabled || !account.details_submitted)
     throw new Error("Live Stripe platform account has not been verified.");
 }
@@ -65,7 +65,6 @@ export async function openPremiumLiveCheckout(ownerId: string, chosenPlan: unkno
       line_items: [{ price: attempt.priceId, quantity: 1 }],
       billing_address_collection: "required",
       customer_update: { address: "auto" },
-      payment_method_types: ["card"],
       automatic_tax: { enabled: true },
       success_url: new URL("?premium=processing", dest).href,
       cancel_url: new URL("?premium=cancelled", dest).href,
@@ -95,7 +94,7 @@ export async function openPremiumLivePortal(ownerId: string) {
   const [customer, portal, account] = await Promise.all([
     stripe.customers.retrieve(customerId),
     stripe.billingPortal.configurations.retrieve(config.portalId),
-    stripe.accounts.retrieve(),
+    stripe.accounts.retrieve(config.accountId),
   ]);
   if (account.id !== config.accountId || customer.deleted || !customer.livemode
     || !portal.active || !portal.livemode || !portal.features.subscription_cancel.enabled
