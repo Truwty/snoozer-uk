@@ -24,8 +24,9 @@ function provider() {
   const retrieve=vi.fn().mockResolvedValue(session),list=vi.fn().mockResolvedValue({object:"list",has_more:false,data:[]}),self=vi.fn().mockResolvedValue({id:order.platformId});
   const charges=vi.fn().mockResolvedValue({...charge,payment_intent:payment});
   const dispute=vi.fn().mockResolvedValue({id:"du_Order",object:"dispute",livemode:false,charge:charge.id});
-  return {session,payment,charge,retrieve,list,self,charges,dispute,stripe:{accounts:{retrieve:self},checkout:{sessions:{retrieve}},charges:{retrieve:charges},
-    disputes:{retrieve:dispute},radar:{earlyFraudWarnings:{list,retrieve:vi.fn()}}} as unknown as Stripe};
+  const warning=vi.fn().mockResolvedValue({id:"issfr_Order",object:"radar.early_fraud_warning",livemode:false,charge:charge.id});
+  return {session,payment,charge,retrieve,list,self,charges,dispute,warning,stripe:{accounts:{retrieve:self},checkout:{sessions:{retrieve}},charges:{retrieve:charges},
+    disputes:{retrieve:dispute},radar:{earlyFraudWarnings:{list,retrieve:warning}}} as unknown as Stripe};
 }
 beforeEach(()=>{mocks.rpc.mockReset();mocks.rpc.mockImplementation(async(name:string,params:Record<string,unknown>)=>({error:null,data:
   name==="get_creator_sandbox_order"?order:name==="reconcile_creator_sandbox_order"?{...order,state:params.p_state,paymentId:params.p_payment,chargeId:params.p_charge,
@@ -115,4 +116,68 @@ it("recovers a canonical Checkout before payment persistence and never acknowled
   expect(mocks.rpc.mock.calls.map(c=>c[0])).toEqual(["recover_creator_sandbox_checkout","reconcile_creator_sandbox_order"]);
   mocks.rpc.mockReset().mockResolvedValue({error:null,data:false});
   await expect(reconcileCreatorOrder(p.stripe,unbound,receipt,receipt.objectId)).rejects.toThrow();expect(mocks.rpc).toHaveBeenCalledTimes(1);
+});
+
+it("durably reconciles the full refund, dispute and fraud event matrix using only the connected seller",async()=>{
+  const cases=[
+    {type:"charge.refunded",objectId:"ch_Order",hold:"refund",provider:"charge" as const},
+    {type:"charge.dispute.created",objectId:"du_Order",hold:"dispute",provider:"dispute" as const},
+    {type:"charge.dispute.updated",objectId:"du_Order",hold:"dispute",provider:"dispute" as const},
+    {type:"charge.dispute.closed",objectId:"du_Order",hold:"dispute",provider:"dispute" as const},
+    {type:"radar.early_fraud_warning.created",objectId:"issfr_Order",hold:"fraud",provider:"warning" as const},
+    {type:"radar.early_fraud_warning.updated",objectId:"issfr_Order",hold:"fraud",provider:"warning" as const},
+  ];
+  for(const signal of cases) {
+    mocks.rpc.mockClear();
+    const p=provider();
+    if(signal.hold==="refund") p.charge.amount_refunded=1; // Even a one-penny partial refund revokes access.
+    const event={...receipt,id:"evt_Signal",type:signal.type,objectId:signal.objectId};
+    await processCreatorReceipt(p.stripe,order.platformId,event);
+    expect(mocks.rpc.mock.calls.map(c=>c[0]),signal.type).toEqual([
+      "record_creator_sandbox_receipt","get_creator_sandbox_order","reconcile_creator_sandbox_order"
+    ]);
+    expect(mocks.rpc).toHaveBeenLastCalledWith("reconcile_creator_sandbox_order",
+      expect.objectContaining({
+        p_platform:order.platformId,p_account:order.accountId,p_charge:"ch_Order",
+        p_holds:[signal.hold],p_receipt:event.id,
+      }));
+    if(signal.provider==="dispute") expect(p.dispute).toHaveBeenCalledWith("du_Order",{}, {stripeAccount:order.accountId});
+    if(signal.provider==="warning") expect(p.warning).toHaveBeenCalledWith("issfr_Order",{}, {stripeAccount:order.accountId});
+    if(signal.provider==="charge") expect(p.charges).toHaveBeenCalledWith("ch_Order",{expand:["payment_intent"]},{stripeAccount:order.accountId});
+    expect(p.retrieve).toHaveBeenCalledWith(order.checkoutId,{expand:["payment_intent.latest_charge","line_items"]},{stripeAccount:order.accountId});
+  }
+});
+
+it("fails closed on foreign or mismatched fraud/dispute charge signals and keeps receipts retryable",async()=>{
+  for(const type of ["charge.dispute.created","radar.early_fraud_warning.created"] as const){
+    mocks.rpc.mockClear();
+    const p=provider();
+    if(type.startsWith("charge.dispute")) p.dispute.mockResolvedValue({id:"du_Order",object:"dispute",livemode:false,charge:"ch_Other"});
+    else p.warning.mockResolvedValue({id:"issfr_Order",object:"radar.early_fraud_warning",livemode:false,charge:"ch_Other"});
+    const event={...receipt,type,objectId:type.startsWith("charge.dispute")?"du_Order":"issfr_Order"};
+    await expect(processCreatorReceipt(p.stripe,order.platformId,event)).rejects.toThrow();
+    expect(mocks.rpc.mock.calls.map(c=>c[0])).toEqual(["record_creator_sandbox_receipt"]);
+  }
+  mocks.rpc.mockClear();
+  const different=provider();
+  different.charges.mockResolvedValue({...different.charge,id:"ch_Other"});
+  await expect(processCreatorReceipt(different.stripe,order.platformId,
+    {...receipt,type:"charge.refunded",objectId:"ch_Order"})).rejects.toThrow();
+  expect(mocks.rpc.mock.calls.map(c=>c[0])).toEqual(["record_creator_sandbox_receipt"]);
+});
+
+it("keeps full refunds and current fraud signals held without crediting a second paid window",async()=>{
+  const refunded=provider();
+  refunded.charge.refunded=true;
+  refunded.charge.amount_refunded=500;
+  expect(inspectCreatorCheckout(refunded.session,order)).toMatchObject({state:"paid",holds:["refund"]});
+
+  const fraud=provider();
+  fraud.charge.amount_refunded=0;
+  fraud.list.mockResolvedValue({object:"list",has_more:false,data:[{
+    id:"issfr_Order",object:"radar.early_fraud_warning",livemode:false,charge:"ch_Order"
+  }]});
+  expect((await readCreatorCheckout(fraud.stripe,order)).holds).toEqual(["fraud"]);
+  fraud.list.mockRejectedValueOnce(new Error("Stripe radar unavailable"));
+  await expect(readCreatorCheckout(fraud.stripe,order)).rejects.toThrow();
 });
