@@ -9,7 +9,7 @@ const webhookSecret = z.string().regex(/^whsec_[A-Za-z0-9_]{20,512}$/);
 const portalId = z.string().regex(/^bpc_[A-Za-z0-9]{1,128}$/);
 
 export function premiumLiveReadConfig() {
-  const key = liveKey.safeParse(process.env.STRIPE_PREMIUM_LIVE_API_KEY);
+  const key = liveKey.safeParse(process.env.STRIPE_PREMIUM_LIVE_API_KEY?.trim());
   const account = stripeAccount.safeParse(process.env.STRIPE_PREMIUM_LIVE_ACCOUNT_ID);
   if (!key.success || !account.success) return null;
   return { key: key.data, accountId: account.data };
