@@ -1,5 +1,14 @@
 # Continuation
 
+## Current development checkpoint — Creator Commerce risk-event regression coverage (21 November 2026)
+
+Resumed from the verified **HTTP 204 + one processed, exact-ID signed webhook** milestone without changing the original paid purchase. The refund/dispute/early-fraud code already existed; **no provider or database migration rewrite was needed**. This branch adds a comprehensive event-matrix regression in `tests/creator-reconciliation.test.ts`, an end-to-end disposable-PostgreSQL sticky-hold/buyer-denial regression in `tests/database.test.ts`, and an exact isolated-provider test protocol at [`docs/creator-commerce-sandbox-signal-tests.md`](creator-commerce-sandbox-signal-tests.md).
+
+The new tests check every subscribed **refund/dispute/fraud risk event variant**, partial/full refund holds, correct bound connected-account Stripe reads, fail-closed foreign charge signals, preserved paid/access timestamps, duplicate/late Checkout success not clearing holds, and authenticated buyer download denial. **Source tests are not live Stripe proof.** This code is currently on the isolated branch `test/creator-commerce-refund-dispute-fraud-guards-20261121`; merge only after full CI passes. No production or sandbox purchaser account/order/provider event was mutated.
+
+**Next unfinished live provider step:** create a **new** authorised, harmless isolated sandbox Checkout/offer (the previous QA offer is expired), then use **real Stripe sandbox** refund, test dispute and test early-fraud scenarios on *separate* new orders, recording signed deliveries and SQL buyer holds. Do not touch the original £5 buyer order. If Stripe doesn't support a particular test event, record it as blocked rather than inventing events or expanding payment permissions. After that, prove an actual failed-receipt scheduled retry and safely withdraw the QA offer and close only the two new-Checkout gates, preserving existing webhook reconciliation and buyer access. **Live selling remains off.**
+
+
 ## Latest verified milestone — genuine Creator Commerce webhook recovery (21 November 2026, 01:02 UTC)
 
 **Previously blocked signed Checkout webhook delivery is now CONFIRMED successful.** In the correct Snoozer Stripe **test sandbox**, the owner manually resent the *original* connected-account `checkout.session.completed` snapshot event `evt_1UdbhYPhIINaXcvCnSkz0tih` to the enabled `Snoozer creator sandbox receipts` endpoint. Stripe Workbench **Event deliveries** shows **Delivered · Recovered**, **HTTP 204**, attempted **21 November 2026 01:02:10 UTC** (original event: 19 Nov 20:13 UTC). This is actual provider delivery, **not** a simulated or invented event.
