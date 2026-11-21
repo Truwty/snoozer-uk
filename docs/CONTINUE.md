@@ -1,10 +1,10 @@
 # Continuation
 
-## Proposed next development — QA fixture fingerprint preflight (21 November 2026)
+## Completed development — QA fixture fingerprint preflight (21 November 2026)
 
-A narrow unmerged development branch `feat/creator-qa-fingerprint-preflight` presents the synthetic fixture's deterministic byte count and SHA-256 inside the authenticated Studio products QA instructions. This reuses the generator already used by the protected PDF download; it does not create, approve, publish or charge for a product. The reference is expressly **not** accepted as the frozen uploaded file's hash: independent inspection and fingerprint comparison by the trusted operator remain mandatory. The existing QA endpoint test also asserts SHA-256 parity with the generator.
+Merged [PR #10](https://github.com/Truwty/snoozer-uk/pull/10) at `5bda87f` presents the synthetic fixture's deterministic byte count and SHA-256 inside the authenticated Studio products QA instructions. This reuses the generator already used by the protected PDF download; it does not create, approve, publish or charge for a product. The reference is expressly **not** accepted as the frozen uploaded file's hash: independent inspection and fingerprint comparison by the trusted operator remain mandatory. The existing QA endpoint test also asserts SHA-256 parity with the generator.
 
-**Pending:** CI and PR review. Do not label this deployed or merged until the relevant checks actually complete. The next real provider checkpoint remains a *new separately owner-approved sandbox QA purchase* followed by actual signed refund/dispute/fraud events, a real failed-receipt scheduled retry, and gate/offer closeout; the existing original £5 purchase must remain untouched. The latest confirmed deployed Render commit is still older than the prior PR #9 source.
+**Verified:** [CI #181](https://github.com/Truwty/snoozer-uk/actions/runs/44857476955) completed successfully, including lint, typecheck, audit, Vitest, disposable Supabase, build and Playwright. Render `snoozer-uk-staging` manually deployed `5bda87f` as `dep-dc0gcu942hec73bb4t4g`, marked **live** at 21 November 2026 02:49:49 UTC. No sandbox database gate, offer, payment, Stripe transaction or credential was mutated by this PR/deployment. The next real provider checkpoint remains a *new separately owner-approved sandbox QA purchase* followed by actual signed refund/dispute/fraud events, a real failed-receipt scheduled retry, and gate/offer closeout; the existing original £5 purchase must remain untouched. The latest confirmed deployed Render commit is still older than the prior PR #9 source.
 
 ## Latest merged development — Studio-guided isolated QA setup (21 November 2026)
 
