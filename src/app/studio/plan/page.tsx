@@ -112,7 +112,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <ClaimForm additional />
         </details>}
       </div>
-      {premium === "processing" && <p role="status">Returned from Stripe. Your Premium plan activates only after Snoozer verifies Stripe's payment and subscription records. Reload your plan after confirmation.</p>}
+      {premium === "processing" && <p role="status">Returned from Stripe. Your Premium plan activates only after Snoozer verifies Stripe payment and subscription records. Reload your plan after confirmation.</p>}
       {premium === "unavailable" && <p role="alert">Premium Checkout is unavailable. No charge was initiated by this attempt. Please contact Snoozer support if an earlier payment may have completed.</p>}
       {premium === "portal-unavailable" && <p role="alert">Your Premium Billing Portal could not be opened. Contact support if you need to cancel or update your subscription.</p>}
       {premium === "cancelled" && <p role="status">You left Checkout without a confirmed purchase. You have not been upgraded.</p>}
