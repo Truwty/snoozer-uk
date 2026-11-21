@@ -1,5 +1,10 @@
 # Milestone 5 — premium and creator growth
 
+## Buyer support cases — tested source and hosted schema (21 Nov 2026)
+
+[PR #22](https://github.com/Truwty/snoozer-uk/pull/22) merged into main at 9769244 after [full CI #44927006391](https://github.com/Truwty/snoozer-uk/actions/runs/44927006391) passed lint, types, unit/PGlite SQL, disposable Supabase, production build and Playwright. Hosted additive support migration 20261121165902_creator_support_cases applied successfully. Verified: zero buyer cases, zero staff assignments, authenticated buyer-only intake RPC, anonymous intake denied, no direct table or audit-log read, original one paid PDF order and processed receipt retained, recurring Checkout gate false. No real staff member has been assigned or monitored response rota established; human buyer/staff acceptance and Render deployment pending. Support case messages and replies never change payment or entitlement states. Phase 5 remains OPEN.
+
+
 ## Buyer commerce support cases — source candidate
 
 Phase 5 §13.17: buyer-owned private cases for PDF orders and memberships, in-app issue categories, bounded messages, idempotent unresolved cases, per-buyer throttling, verified ownership checks, no payment mutation, buyer closure, and a separate allowlisted support-staff queue with audited case-list access and private replies. Staff grant table is initially empty and can only be provisioned by an authorised database operator. **No staff alerting, outbound email or response-time SLA** is configured. SQL, UI and regression tests added. Do not mark this increment released before full CI, hosted migration, verified grants, Render rollout and monitored staff setup. Existing email fallback remains. Genuine provider acceptance and production legal/tax/moderation remain open.
