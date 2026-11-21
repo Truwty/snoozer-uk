@@ -28,10 +28,10 @@ create table snoozer.creator_membership_subscriptions(
 );
 create index creator_membership_seller_idx on snoozer.creator_membership_subscriptions(seller_id);
 create table snoozer.creator_membership_receipts(
- id text not null check(id ~ '^evt_[A-Za-z0-9]{1,128}
+ id text not null check(id ~ '^evt_[A-Za-z0-9]{1,128}$'),
  membership_id uuid not null references snoozer.creator_membership_subscriptions(id) on delete restrict,
  event_type text not null check(char_length(event_type)<=100),
- object_id text not null check(object_id ~ '^[A-Za-z0-9_]{1,263}
+ object_id text not null check(object_id ~ '^[A-Za-z0-9_]{1,263}$'),
  created_at timestamptz not null default now(), processed_at timestamptz,
  primary key(id,membership_id)
 );
