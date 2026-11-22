@@ -1,5 +1,6 @@
 import "server-only";
-import {sendZohoNotice,zohoSmtpConfigured} from "./zoho-transport";
+import {sendZohoNotice} from "./zoho-transport";
+import {zohoMailReady} from "./mail-readiness";
 import {z} from "zod";
 import {storageAdmin} from "@/lib/supabase";
 const jobSchema=z.array(z.object({
@@ -7,7 +8,7 @@ const jobSchema=z.array(z.object({
 })).max(10);
 export type NoticeSendResult={sent:number;failed:number;status:"ok"|"unconfigured"|"unavailable"};
 export function noticeDeliveryConfigured() {
- return zohoSmtpConfigured() && Boolean(process.env.OWNER_EMAIL_DISPATCH_TOKEN && process.env.OWNER_EMAIL_DISPATCH_TOKEN.length>=32);
+ return zohoMailReady() && Boolean(process.env.OWNER_EMAIL_DISPATCH_TOKEN && process.env.OWNER_EMAIL_DISPATCH_TOKEN.length>=32);
 }
 export async function dispatchOwnerNoticeEmails():Promise<NoticeSendResult> {
  if(!noticeDeliveryConfigured())return {sent:0,failed:0,status:"unconfigured"};
