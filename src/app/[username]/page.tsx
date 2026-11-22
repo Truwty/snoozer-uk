@@ -8,6 +8,7 @@ import { ProfileCard } from "@/components/profile-card";
 import { profileBackgroundImage } from "@/lib/profile";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { readPublished } from "@/lib/profiles-server";
+import { anonymousClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 
 type Props = { params: Promise<{ username: string }> };
@@ -31,11 +32,12 @@ export default async function Page({ params }: Props) {
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   // A selected gallery photo backgrounds the whole published page, not only the card.
   const background = profileBackgroundImage(profile);
+  const { data: ownerBadge, error: ownerError } = await anonymousClient().rpc("is_owner_profile", { p_name: profile.username });
   const pageStyle = background
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
-    <ProfileCard profile={profile} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard profile={profile} ownerBadge={!ownerError && ownerBadge === true} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link>
   </main>;

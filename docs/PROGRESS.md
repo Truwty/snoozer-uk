@@ -1,3 +1,13 @@
+## Platform Owner role and badge — 22 November 2026
+
+**Database provisioned and verified:** the previously verified account that owns `@trusnooze` is assigned a private `snoozer.platform_owners` record and a separately scoped `billing_diagnostics` staff role. Assignment was performed directly against connected Supabase after confirming a verified existing user, and the UID is intentionally not committed to the public source tree. The `platform_owner` migration is tracked as `20261122043142_platform_owner.sql`.
+
+**Security checks:** self-owner RPC succeeds; non-owner RPC is denied; `anon` has no Owner dashboard execution grant; authenticated users cannot mutate Owner table; `is_owner_profile('trusnooze')` resolves true; owner inherits built-in Studio entitlements via `effective_plan` without a Stripe purchase or charge. This is **not an unrestricted service-role token**. Cross-account writes, user bans, billing mutations and arbitrary SQL remain separately permissioned.
+
+**Release:** Owner Control Centre at `/owner`, secure Owner navigation and published profile badge are tracked in [PR #40](https://github.com/Truwty/snoozer-uk/pull/40). Only mark UI live after CI and Render deployment confirmation.
+
+---
+
 ## Release verification — Advanced Profile Animations & Effects (22 November 2026)
 
 **Merged and deployed.** [PR #39](https://github.com/Truwty/snoozer-uk/pull/39) merged as commit `225d0568282464380f60105c75a04d0f0b7f6875`. [CI #418](https://github.com/Truwty/snoozer-uk/actions/runs/44983437078) passed on its final PR commit. Render service `snoozer-uk-staging` reports the merged commit live (deployment `dep-dc16nal9fdbs739v79dg`). The matching Supabase migration `20261122040354_advanced_profile_effects` was applied and directly checked. These are provider-confirmed release states, not a full independent production UI audit; a separate browser probe of the public domain was unavailable.

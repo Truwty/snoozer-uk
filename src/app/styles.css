@@ -821,3 +821,18 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .profile-effects-toggle .effects-enable-text { display: none; }
 .profile-effects-toggle:has(input:checked) .effects-disable-text { display: none; }
 .profile-effects-toggle:has(input:checked) .effects-enable-text { display: inline; }
+
+/* Snoozer verified platform owner badge */
+.profile-name-heading .profile-owner-badge { margin-inline-start: .55rem; vertical-align: middle; }
+
+.profile-owner-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .27rem .56rem; border: 1px solid rgba(107, 230, 193, .46); border-radius: 999px; background: rgba(20, 110, 91, .22); color: #adffe5; font-size: .75rem; font-weight: 750; letter-spacing: .025em; white-space: nowrap; line-height: 1.3; }
+.account-owner-mark { display: inline-block; border-radius: 999px; padding: .16rem .46rem; border: 1px solid #438970; color: #b9fce5; font-size: .65rem; font-weight: 750; letter-spacing: .08em; }
+.owner-console { display: grid; gap: 1.25rem; padding-bottom: 4rem; }
+.owner-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: .9rem; }
+.owner-metrics .panel { display: grid; gap: .45rem; }
+.owner-metrics strong { font-size: clamp(1.65rem, 3vw, 2.1rem); }
+.owner-profiles-list { width: 100%; overflow-x: auto; }
+.owner-profiles-list table { width: 100%; border-collapse: collapse; }
+.owner-profiles-list th, .owner-profiles-list td { padding: .8rem .6rem; border-bottom: 1px solid var(--line, rgba(150, 180, 170, .22)); text-align: left; }
+.owner-profiles-list th { color: var(--muted, #b3c3bf); }
+.owner-console h1 .profile-owner-badge { vertical-align: middle; }
