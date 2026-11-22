@@ -19,9 +19,9 @@ export function EffectsEditor({ value, tier, onChange }: {
     <p className="muted">Build a layered profile. Effects are optional and disabled for visitors requesting reduced motion.</p>
     <label className="check"><input type="checkbox" checked={effects.enabled}
       onChange={(event) => change({ ...effects, enabled: event.target.checked })}/> Enable effects</label>
-    <label>Background<select value={effects.background} onChange={(event) => change({ ...effects, background: event.target.value as ProfileEffects["background"], preset: "none" })}>
+    <label htmlFor="profile-effect-background">Effect background</label><select id="profile-effect-background" aria-label="Effect background" value={effects.background} onChange={(event) => change({ ...effects, background: event.target.value as ProfileEffects["background"], preset: "none" })}>
       {effectBackgrounds.map((v) => <option key={v} value={v}>{label(v)}</option>)}
-    </select></label>
+    </select>
     <label>Border<select value={effects.border} onChange={(event) => change({ ...effects, border: event.target.value as ProfileEffects["border"], preset: "none" })}>
       {effectBorders.map((v) => <option key={v} value={v}>{label(v)}</option>)}
     </select></label>
