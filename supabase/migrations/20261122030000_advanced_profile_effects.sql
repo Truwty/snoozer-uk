@@ -3,12 +3,14 @@ begin;
 create function snoozer.valid_profile_effects(e jsonb) returns boolean
 language sql immutable set search_path = '' as $$
  select case when jsonb_typeof(e)='object' then coalesce(
-   e - array['version','enabled','background','border','text','interaction','intensity','speed','preset']='{}'::jsonb
-   and e ?& array['version','enabled','background','border','text','interaction','intensity','speed','preset']
+   e - array['version','enabled','background','border','particles','links','text','interaction','intensity','speed','preset']='{}'::jsonb
+   and e ?& array['version','enabled','background','border','particles','links','text','interaction','intensity','speed','preset']
    and jsonb_typeof(e->'version')='number' and e->>'version'='1'
    and jsonb_typeof(e->'enabled')='boolean'
    and e->>'background' in ('none','gradient','aurora','stars','snow','rain','mesh')
    and e->>'border' in ('none','glow','neon','gradient')
+   and e->>'particles' in ('none','dust','fireflies','sparkles')
+   and e->>'links' in ('none','lift','shine','glow')
    and e->>'text' in ('none','typewriter','shimmer','glitch')
    and e->>'interaction' in ('none','tilt','spotlight','trail')
    and e->>'speed' in ('slow','normal','fast')
@@ -41,15 +43,18 @@ language sql immutable set search_path = '' as $$
  when e is null or e->>'enabled'='false' then true
  when e->>'preset'='studio-nebula' and p_tier<>'studio' then false
  when e->>'background'='gradient' and e->>'border'='none'
+      and e->>'particles'='none' and e->>'links'='none'
       and e->>'text'='none' and e->>'interaction'='none' then true
  when p_tier not in ('plus','pro','studio') then false
  when e->>'interaction'<>'none' and p_tier='plus' then false
  else (
    (case when e->>'background'<>'none' then 1 else 0 end)
   +(case when e->>'border'<>'none' then 1 else 0 end)
+  +(case when e->>'particles'<>'none' then 1 else 0 end)
+  +(case when e->>'links'<>'none' then 1 else 0 end)
   +(case when e->>'text'<>'none' then 1 else 0 end)
   +(case when e->>'interaction'<>'none' then 1 else 0 end)
- ) <= case p_tier when 'plus' then 2 else 4 end
+ ) <= case p_tier when 'plus' then 2 when 'pro' then 4 else 6 end
  end
 $$;
 
