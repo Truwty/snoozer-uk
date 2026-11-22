@@ -165,7 +165,7 @@ export default function LegalInformationPage() {
       <p>Snoozer is a trading name of a sole trader based in the United Kingdom. This section identifies the person responsible for operating the service and how to contact the business.</p>
       <dl className="legal-trader-details">
         <div><dt>Trading name</dt><dd>Snoozer</dd></div>
-        <div><dt>Legal proprietor</dt><dd>Shae Smith</dd></div>
+        <div><dt>Legal proprietor</dt><dd>Snoozer</dd></div>
         <div><dt>Business structure</dt><dd>UK sole trader</dd></div>
         <div><dt>Support and business enquiries</dt><dd><a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a></dd></div>
         <div><dt>Business correspondence and service address</dt><dd>Not yet published. The appropriate geographical address must be added before paid subscriptions are offered.</dd></div>
