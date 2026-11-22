@@ -9,7 +9,7 @@ import type { SavedAccount } from "@/lib/account-sessions";
 export type AccountMenuProps = {
   accounts: SavedAccount[];
   activeSlot: string;
-  current: { label: string; username?: string; avatar?: string } | null;
+  current: { label: string; username?: string; avatar?: string; isOwner?: boolean } | null;
 };
 
 function Avatar({ name, src }: { name: string; src?: string }) {
@@ -40,9 +40,10 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
       </summary>
       <div className="account-popover">
         {current ? <>
-          <p className="account-popover-owner"><Avatar name={active} src={current.avatar}/><strong>{active}</strong></p>
+          <p className="account-popover-owner"><Avatar name={active} src={current.avatar}/><strong>{active}</strong>{current.isOwner && <span className="account-owner-mark">OWNER</span>}</p>
           <div className="account-popover-rule"/>
           <Link href="/studio">Dashboard</Link>
+          {current.isOwner && <Link href="/owner">Owner Control Centre</Link> }
           {current.username ? <Link href={`/${current.username}`}>My Page</Link> : <Link href="/studio">My Page</Link>}
           <button type="button" onClick={showManager}>Switch Accounts</button>
           <form action={signOut}><button type="submit" className="account-danger">Logout</button></form>
