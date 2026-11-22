@@ -1,3 +1,9 @@
+## Zoho SMTP Owner delivery migration — 22 November 2026 (implementation awaiting CI and production sender verification)
+
+The Owner notification queue and independent /appeal/external verification email code now use an explicit TLS-validated Zoho SMTP transport (`smtppro.zoho.uk:465`) instead of the former Brevo API transport. Supabase Auth SMTP settings are **unchanged**; the user reports that Auth confirmation/reset and security mail are successfully delivered through Zoho. The Owner delivery pipeline still needs separate Render server-only secrets `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD`, `SNOOZER_NOTIFICATION_FROM`, and `OWNER_EMAIL_DISPATCH_TOKEN`. These are not readable from Supabase Auth's saved SMTP settings. The external appeal route and guarded provider-ban readiness checks use the same Zoho sender. This is a code-only transition: no email send, sender inbox receipt, scheduled dispatch, or Auth-level ban enablement is claimed. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until a disposable user's external verification flow is proven end-to-end and replay-tested. Follow `docs/owner-notification-email.md` for settings, test and scheduling requirements.
+
+---
+
 ## Feature #20 production acceptance checkpoint — 22 November 2026, 08:40 UTC
 
 **Merge/deploy:** PR #52 (signup hook), PR #53 (email outbox), and PR #56 (independent appeals and guarded Auth bans) are merged. PR #54 was closed unmerged as superseded by #56. GitHub Actions run [45003124370](https://github.com/Truwty/snoozer-uk/actions/runs/45003124370) succeeded for current main commit `349c0b3d42451a948a8067153d728d330c866023`. Render deployment `dep-dc1agbmtlv9c73bigun0` reports **live** on that commit. No ERROR-level logs were returned for the sampled post-release Render window (08:30 onwards); this is not proof of zero runtime defects.

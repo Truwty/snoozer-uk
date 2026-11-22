@@ -1,12 +1,13 @@
 import Link from "next/link";
 import {z} from "zod";
+import {zohoSmtpConfigured} from "@/lib/owner/zoho-transport";
 import {requestExternalAppeal,submitExternalAppeal} from "./actions";
 export const metadata={title:"Independent account appeal · Snoozer",robots:{index:false,follow:false}};
 export const dynamic="force-dynamic";
 export default async function ExternalAppeal({searchParams}:{searchParams:Promise<{token?:string;status?:string}>}){
  const params=await searchParams;
  const token=z.string().regex(/^[a-f0-9]{64}$/).safeParse(params.token);
- const configured=Boolean(process.env.BREVO_API_KEY&&process.env.SNOOZER_NOTIFICATION_FROM);
+ const configured=zohoSmtpConfigured();
  return <main className="shell stack" style={{maxWidth:"48rem",paddingBottom:"4rem"}}>
   <p className="eyebrow">SNOOZER / INDEPENDENT APPEALS</p>
   <h1>Appeal without signing in</h1>
