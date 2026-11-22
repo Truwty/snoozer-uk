@@ -24,3 +24,6 @@ Configure a trusted scheduler (e.g. an existing Render cron job or Supabase pg_c
 6. Leave credentials unset or scheduler disabled if real delivery verification cannot be completed. In-app notifications remain available.
 
 Do not send sensitive moderation reasons or audit notes by email; only generic notification titles/bodies are delivered.
+
+## CI baseline verification
+The shared legal-disclosure baseline was repaired on main in [PR #55](https://github.com/Truwty/snoozer-uk/pull/55). This branch must pass the full GitHub Actions suite against that corrected base before being merged.
