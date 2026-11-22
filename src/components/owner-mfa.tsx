@@ -1,6 +1,7 @@
 "use client";
 import {useActionState} from "react";
-import {enrollOwnerMfa,verifyOwnerMfa,mfaInitial} from "@/app/owner/security/actions";
+import {enrollOwnerMfa,verifyOwnerMfa} from "@/app/owner/security/actions";
+const mfaInitial={error:"",success:"",factorId:"",qr:""};
 export function OwnerMfa({verifiedFactorId}:{verifiedFactorId?:string}) {
  const [enrollment,begin,pending]=useActionState(enrollOwnerMfa,mfaInitial);
  const [verification,verify,verifying]=useActionState(verifyOwnerMfa,mfaInitial);
