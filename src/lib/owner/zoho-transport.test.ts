@@ -11,7 +11,7 @@ class FakeSmtp extends EventEmitter{
  failAt="";
  constructor(){
   super();
-  queueMicrotask(()=>this.emit("data",Buffer.from("220 Zoho ready\r\n")));
+  queueMicrotask(()=>{this.emit("secureConnect");this.emit("data",Buffer.from("220 Zoho ready\r\n"));});
  }
  setTimeout(){return this;}
  write(data:string){
