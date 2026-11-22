@@ -22,7 +22,7 @@ export default async function RestrictedAccount(){
  {r.ends_at&&<p><strong>Restriction ends:</strong> {new Date(r.ends_at).toLocaleString("en-GB")}</p>}
  <p>Existing billing rights and statutory rights are not removed by this account restriction. Contact support for assistance.</p>
  </section>
- <h2>Moderation appeals</h2>
+ <div className="actions"><Link href="/account/data">Data access and deletion requests</Link><Link href="/account/notifications">Account notices</Link></div><h2>Moderation appeals</h2>
  {r.appealable_cases.length===0?<p>No appealable case is linked to this restriction. Contact support for a case reference.</p>:
  r.appealable_cases.map(c=><div className="panel stack" key={c.id}><p>{c.category} · {c.status}</p><p>Case reference: <code>{c.id}</code></p>
  <Link href="/appeal">Submit an appeal</Link></div>)}

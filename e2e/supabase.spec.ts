@@ -1685,3 +1685,37 @@ test("MFA-verified Owner revokes refresh sessions and blocks old access tokens",
   for(const id of ids)await admin.auth.admin.deleteUser(id);
  }
 });
+
+test("privacy requests are owned, deduplicated and denied to anonymous or non-Owner sessions", async () => {
+ const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
+ const name="privacy-"+randomUUID().slice(0,10);
+ const a=await admin.auth.admin.createUser({email:name+"a@example.com",password,email_confirm:true});
+ const b=await admin.auth.admin.createUser({email:name+"b@example.com",password,email_confirm:true});
+ expect(a.error).toBeNull();expect(b.error).toBeNull();
+ const first=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ const second=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ const unauth=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ expect((await first.auth.signInWithPassword({email:name+"a@example.com",password})).error).toBeNull();
+ expect((await second.auth.signInWithPassword({email:name+"b@example.com",password})).error).toBeNull();
+ const result=await first.rpc("request_my_privacy_action",{p_kind:"export"});
+ expect(result.error).toBeNull();
+ expect(result.data).toMatch(/^[a-f0-9-]{36}$/);
+ const duplicate=await first.rpc("request_my_privacy_action",{p_kind:"export"});
+ expect(duplicate.error).toBeNull();expect(duplicate.data).toBe(result.data);
+ const mine=await first.rpc("my_privacy_requests");
+ expect(mine.error).toBeNull();
+ expect(mine.data).toEqual([expect.objectContaining({id:result.data,kind:"export",status:"open"})]);
+ const theirs=await second.rpc("my_privacy_requests");
+ expect(theirs.error).toBeNull();expect(theirs.data).toEqual([]);
+ expect((await first.rpc("owner_privacy_requests")).error).not.toBeNull();
+ expect((await first.rpc("owner_review_privacy_request",{
+  p_request:result.data,p_status:"completed",p_response:"Fake review attempt"
+ })).error).not.toBeNull();
+ expect((await first.rpc("request_my_privacy_action",{p_kind:"wrong"})).error).not.toBeNull();
+ expect((await unauth.rpc("request_my_privacy_action",{p_kind:"deletion"})).error).not.toBeNull();
+ const notifications=await first.rpc("my_account_notifications");
+ expect(notifications.error).toBeNull();expect(notifications.data).toEqual([]);
+ expect((await first.rpc("mark_account_notification_read",{p_id:randomUUID()})).data).toBe(false);
+ // Disposable local Supabase is destroyed after CI. Audit records intentionally
+ // retain their actor IDs; deleting fixture Auth users would violate those FKs.
+});
