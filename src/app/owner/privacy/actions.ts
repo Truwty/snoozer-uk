@@ -16,3 +16,24 @@ export async function reviewPrivacyRequest(form:FormData) {
  });
  redirect("/owner/privacy?admin="+(!error&&data===true?"updated":"denied"));
 }
+
+
+/**
+ * Records documentary proof, not an erasure operation. Only the database's
+ * Owner AAL2 checker can accept evidence or close the associated request.
+ */
+export async function recordPrivacyEvidence(form:FormData) {
+ const id=z.uuid().safeParse(form.get("id"));
+ const reference=z.string().trim().min(32).max(1000).safeParse(form.get("reference"));
+ if(!id.success||!reference.success)redirect("/owner/privacy?admin=invalid");
+ const yes=(field:string)=>form.get(field)==="yes";
+ const {client}=await requireOwner();
+ const {data,error}=await client.rpc("owner_record_privacy_evidence",{
+  p_request:id.data,p_identity:yes("identity"),p_app:yes("app"),
+  p_media:yes("media"),p_billing:yes("billing"),
+  p_processors:yes("processors"),p_retention:yes("retention"),
+  p_subscriptions:yes("subscriptions"),p_erasure:yes("erasure"),
+  p_notice:yes("notice"),p_reference:reference.data
+ });
+ redirect("/owner/privacy?preflight="+id.data+"&admin="+(!error&&data===true?"evidence-recorded":"denied"));
+}
