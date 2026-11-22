@@ -10,7 +10,7 @@ Next optional work: check real user profiles on the public domain, benchmark mob
 
 The approved implementation is in [PR #39](https://github.com/Truwty/snoozer-uk/pull/39). [CI #416](https://github.com/Truwty/snoozer-uk/actions/runs/44982821770) passed full checks (lint, audit, TypeScript, unit/database, disposable Supabase, Next.js build and Chromium Playwright). The connected staging Supabase instance has the matching `20261122040354_advanced_profile_effects` migration applied and SQL verified. The visitor effects switch uses an accessible native checkbox so it works without hydration.
 
-**Next operational verification:** Confirm PR merge, Render deploy and live Studio/profile behaviour before marking the feature live. Remaining enhancement work: fully animated multi-point cursor trail, mobile low-end FPS validation and additional visual polish; these are not required to claim the shipped six-layer baseline but are still roadmap tasks. Free: gradient/entrances; Plus: two layers; Pro: four with interactive effects; Studio: six with exclusive presets. No billing switch changes.
+**Release check:** PR #39 was merged to `main` (`225d056`) and Render deploy `dep-dc16nbnmocus73an48v0` reported `live` on 22 November 2026 at 04:15 UTC. The six-layer baseline is deployed. Direct HTTP/live-user-session verification was not possible from this environment and should be included in routine operator smoke testing. Remaining enhancement work: fully animated multi-point cursor trail, low-end mobile FPS validation and additional visual polish. Free: gradient/entrances; Plus: two layers; Pro: four with interactive effects; Studio: six with exclusive presets. No billing switch changes.
 
 ---
 
