@@ -17,7 +17,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <p className="muted">Private, Owner-only request queue. Replies and status changes require verified MFA and are recorded in the audit log.</p>
  <section className="panel stack">
  <h2>Manual fulfilment is mandatory</h2>
- <p>Requests do not automatically export private provider data, erase accounts, cancel Stripe subscriptions or override required legal retention. Confirm the requester's identity; gather relevant app, Supabase and Stripe records; provide the export securely or verify erasure and required retention before marking completed.</p>
+ <p>Requests do not automatically export private provider data, erase accounts, cancel Stripe subscriptions or override required legal retention. Confirm the requester identity; gather relevant app, Supabase and Stripe records; provide the export securely or verify erasure and required retention before marking completed.</p>
  <p><strong>Do not mark a request completed just because you have reviewed it.</strong> Record the actual fulfilment evidence in the response. Consult the <Link href="/privacy">privacy policy</Link> and account billing obligations.</p>
  </section>
  {message&&<p role="status">Result: {message}</p>}
