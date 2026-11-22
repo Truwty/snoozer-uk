@@ -1,6 +1,8 @@
-## NEXT: Advanced Profile Animations & Effects — 22 November 2026
+## Advanced Profile Animations & Effects — verified core / post-merge checks (22 November 2026)
 
-Owner approved the motion/effects implementation and Premium split. Work is on `feature/advanced-profile-effects`; **not merged or deployed**. Review its PR CI and disposable Supabase database checks before merge. Focus next on real pointer trails/spotlights, accessible visitor motion toggles, comprehensive E2E flows, and mobile frame budgets. Free receives basic gradient and the existing entrances; Plus receives up to two visual layers; Pro enables interactions with up to four; Studio receives exclusive presets. Existing billing and payment switches must remain unchanged. Read `docs/PROGRESS.md` and the Phase 9 entries in `docs/feature-ledger.md`.
+The approved implementation is in [PR #39](https://github.com/Truwty/snoozer-uk/pull/39). [CI #416](https://github.com/Truwty/snoozer-uk/actions/runs/44982821770) passed full checks (lint, audit, TypeScript, unit/database, disposable Supabase, Next.js build and Chromium Playwright). The connected staging Supabase instance has the matching `20261122040354_advanced_profile_effects` migration applied and SQL verified. The visitor effects switch uses an accessible native checkbox so it works without hydration.
+
+**Next operational verification:** Confirm PR merge, Render deploy and live Studio/profile behaviour before marking the feature live. Remaining enhancement work: fully animated multi-point cursor trail, mobile low-end FPS validation and additional visual polish; these are not required to claim the shipped six-layer baseline but are still roadmap tasks. Free: gradient/entrances; Plus: two layers; Pro: four with interactive effects; Studio: six with exclusive presets. No billing switch changes.
 
 ---
 
