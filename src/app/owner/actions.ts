@@ -71,3 +71,18 @@ export async function changeRegistration(form: FormData) {
   const ok=await invoke("owner_set_setting",{p_name:"registrations_enabled",p_value:get(form,"enabled")==="true",p_revision:revision.data,p_reason:why.data});
   url("/owner/settings",ok?"updated":"denied");
 }
+
+export async function revokeAccountSessions(form:FormData) {
+ const user=uuid.safeParse(get(form,"user")),why=reason.safeParse(get(form,"reason"));
+ if(!user.success)redirect("/owner/users");
+ if(!why.success)url("/owner/users/"+user.data,"invalid");
+ const {client}=await requireOwner();
+ const {error}=await client.rpc("owner_revoke_sessions",{p_user:user.data,p_reason:why.data});
+ url("/owner/users/"+user.data,error?"denied":"sessions-revoked");
+}
+export async function changeEffectsSetting(form:FormData) {
+ const revision=z.coerce.number().int().positive().safeParse(get(form,"revision")),why=reason.safeParse(get(form,"reason"));
+ if(!revision.success||!why.success)url("/owner/settings","invalid");
+ const ok=await invoke("owner_set_setting",{p_name:"effects_enabled",p_value:get(form,"enabled")==="true",p_revision:revision.data,p_reason:why.data});
+ url("/owner/settings",ok?"updated":"denied");
+}
