@@ -1,3 +1,13 @@
+## Snoozer Owner release — 22 November 2026
+
+**Verified live:** [PR #40](https://github.com/Truwty/snoozer-uk/pull/40) merged as `2b93398f4a6118d3392abb2bc8522dd28089d299`; [CI #44986077461](https://github.com/Truwty/snoozer-uk/actions/runs/44986077461) passed audit, secrets, lint, typecheck, unit tests, disposable Supabase, production build and Playwright. Render deployment `dep-dc177s9ksfps7382fbe0` reports **live**, exact merged commit, and startup logs show Next.js ready. Post-deploy ERROR logs had zero entries in the checked window. Direct public HTTP probe could not be performed from the execution environment.
+
+The confirmed verified `@trusnooze` account now has a database-only platform-owner role with non-expiring Studio entitlements and audited billing-diagnostics permission. The public badge is assigned server-side by published-profile ownership; ordinary users cannot set it. `/owner` provides authenticated aggregate metrics and bounded read-only profile inventory, linked from the owner's account menu. Privilege tests confirmed Owner access, normal-user denial, non-exposure of Owner-table mutations, and successful public badge lookup. The account identifier is deliberately excluded from migration source. Matching hosted migration: `20261122043142_platform_owner`.
+
+**Not yet implemented:** arbitrary user administration, cross-account editing, bans, plan grants, sitewide switches or uncontrolled access to provider secrets. These require separate auditable owner-only operations, explicit confirmation and tests. The Owner badge's live visual appearance was not independently inspected through HTTP, although Render reported the deployment live and CI verified browser rendering.
+
+---
+
 ## Owner role — 22 November 2026
 
 Platform-owner role assigned to the existing verified `@trusnooze` Supabase account via a private row, not profile metadata. Migration file `20261122043142_platform_owner.sql` contains no hardcoded user ID. Database checks confirm the verified badge, Studio tier override, privilege restrictions and Owner dashboard RPCs. [PR #40](https://github.com/Truwty/snoozer-uk/pull/40) introduces the public Owner badge, an owner-only `/owner` overview and navigation. Check CI, merge and Render deployment before marking the UI live.
