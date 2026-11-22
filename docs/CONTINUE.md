@@ -1,3 +1,11 @@
+## Post-release follow-up — Advanced Profile Animations & Effects (22 November 2026)
+
+The core approved feature is **merged and deployed** to Render staging, verified by [PR #39](https://github.com/Truwty/snoozer-uk/pull/39), [CI #418](https://github.com/Truwty/snoozer-uk/actions/runs/44983437078), and live Render deployment `dep-dc16nal9fdbs739v79dg` at commit `225d0568282464380f60105c75a04d0f0b7f6875`. Supabase migration `20261122040354_advanced_profile_effects` is applied. Do not rerun migration manually.
+
+Next optional work: check real user profiles on the public domain, benchmark mobile frame rates and battery behaviour, extend the cursor trail and design polish, and update roadmap entries only after the separate improvements pass tests. The native visitor disable control is verified in Playwright and works without hydration. Render auto-deploy is disabled; deploy future code changes manually.
+
+---
+
 ## Advanced Profile Animations & Effects — verified core / post-merge checks (22 November 2026)
 
 The approved implementation is in [PR #39](https://github.com/Truwty/snoozer-uk/pull/39). [CI #416](https://github.com/Truwty/snoozer-uk/actions/runs/44982821770) passed full checks (lint, audit, TypeScript, unit/database, disposable Supabase, Next.js build and Chromium Playwright). The connected staging Supabase instance has the matching `20261122040354_advanced_profile_effects` migration applied and SQL verified. The visitor effects switch uses an accessible native checkbox so it works without hydration.
