@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {z} from "zod";
 import {requireOwner} from "@/lib/owner/auth";
-import {reviewPrivacyRequest,recordPrivacyEvidence} from "./actions";
+import {reviewPrivacyRequest,recordPrivacyEvidence,executeSafePrivacyErasure} from "./actions";
 const preflightSchema=z.object({
  request_id:z.uuid(),user_id:z.uuid(),kind:z.enum(["export","deletion"]),status:z.string(),
  verified_email:z.boolean(),profile_count:z.number(),gallery_metadata_count:z.number(),
@@ -35,6 +35,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  const requests=schema.safeParse(data);
  const params=await searchParams;
  const message=params.admin;
+ const erasureEnabled=process.env.SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE==="true";
  const selected=z.uuid().safeParse(params.preflight);
  const {data:check,error:checkError}=selected.success?await client.rpc("owner_privacy_preflight",{p_request:selected.data}):{data:null,error:null};
  const preflight=preflightSchema.safeParse(check);
@@ -85,6 +86,20 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
    <p className="muted">{inventory.data.scope}</p>
    <p><strong>Read-only:</strong> this inventory does not delete records, cancel subscriptions, override legal holds or prove GDPR erasure is complete.</p>
   </>}
+ </section>}
+ {selected.success&&preflight.success&&preflight.data.kind==="deletion"&&
+ <section className="panel stack">
+ <h2>Execute restricted account erasure</h2>
+ <p className="muted">This is an irreversible, narrow deletion route for an identity-verified, billing-free account without private Storage, creator commerce, legal holds, unresolved third-party obligations or blocking foreign keys. The database refuses unsafe accounts. Paid records and Storage objects are never deleted by this executor; they require their own reviewed fulfilment.</p>
+ <p>Required before executing: Owner MFA AAL2, an open deletion request, documented identity, Stripe and processor review, retention approval, resolved subscriptions and a working notification sender.</p>
+ {!erasureEnabled?<p role="alert">Restricted erasure execution is disabled until the disposable-account acceptance tests and operator sign-off. You may still inspect and record fulfilment evidence.</p>:
+ <form action={executeSafePrivacyErasure} className="stack">
+  <input type="hidden" name="id" value={selected.data}/>
+  <label>To authorise irreversible deletion of the requested Auth account, type <code>ERASE {selected.data}</code>
+   <input name="confirmation" required autoComplete="off" spellCheck={false} placeholder={"ERASE "+selected.data}/>
+  </label>
+  <button className="button">Execute verified deletion (Owner AAL2 required)</button>
+ </form>}
  </section>}
  {selected.success&&<section className="panel stack">
  <h2>Document fulfilment evidence (Owner MFA required)</h2>
