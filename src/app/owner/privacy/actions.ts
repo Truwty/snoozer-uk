@@ -98,8 +98,12 @@ export async function executeSafePrivacyErasure(form:FormData){
  const {operation_id:job,user_id:subject}=operation.data;
  const admin=storageAdmin();
  const existing=await admin.auth.admin.getUserById(subject);
- if(existing.error||!existing.data.user?.email||!existing.data.user.email_confirmed_at)
+ if(existing.error||!existing.data.user?.email||!existing.data.user.email_confirmed_at){
+  await admin.rpc("service_finish_privacy_erasure",{
+   p_operation:job,p_success:false,p_code:"auth_user_lookup_failed"
+  });
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
+ }
  const recipient=existing.data.user.email;
  let erased=false;
  let code="auth_erasure_failed";
@@ -114,7 +118,7 @@ export async function executeSafePrivacyErasure(form:FormData){
  if(final.error||final.data!==true)
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
  if(!erased)
-  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-blocked");
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-auth-failed");
  let mail=false;
  try{
   mail=await sendOwnerMail(recipient,
