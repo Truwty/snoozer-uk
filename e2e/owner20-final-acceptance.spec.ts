@@ -27,7 +27,7 @@ test("app archive is verified, private, owner-scoped and never cached",async({pa
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password",{exact:true}).fill(password);
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
-  await expect(page).toHaveURL(/\\/studio(?:\\?|$)/);
+  await expect(page).toHaveURL("http://localhost:3000/studio");
   await page.goto("/account/data");
   await expect(page.getByRole("link",{name:"Download my app data archive"})).toBeVisible();
   const response=await page.request.get("/api/v1/account/data-archive");
