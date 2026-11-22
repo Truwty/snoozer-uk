@@ -24,8 +24,8 @@ end $$;
 
 revoke all on function public.snoozer_before_user_created(jsonb)
  from PUBLIC,anon,authenticated,service_role;
-do $ begin
+do $$ begin
   if exists (select 1 from pg_catalog.pg_roles where rolname='supabase_auth_admin') then
     grant execute on function public.snoozer_before_user_created(jsonb) to supabase_auth_admin;
   end if;
-end $;
+end $$;
