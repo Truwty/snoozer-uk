@@ -44,6 +44,6 @@ export default function Home() {
       <Disclosure title="Can I change my theme later?"><p>Yes. Change your appearance in Studio and check it in the live preview before publishing.</p></Disclosure>
     </section>
     <section className="home-section final-cta"><h2>A place for what you make.</h2><Link className="button" href="/sign-up">Create your page</Link></section>
-    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/help">Help Center</Link><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/pricing">Pricing</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="mailto:SnoozerSupport@Snoozer.uk">Contact</a></nav></footer>
+    <footer className="home-footer"><Brand /><nav className="actions" aria-label="Footer"><Link href="/help">Help Center</Link><Link href="/templates">Templates</Link><Link href="/leaderboard">Leaderboard</Link><Link href="/pricing">Pricing</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/legal">Legal information</Link><a href="mailto:snoozersupport@snoozer.uk">Contact</a></nav></footer>
   </main>;
 }

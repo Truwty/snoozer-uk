@@ -9,6 +9,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
       <nav className="actions" aria-label="Site">
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>
+        <Link href="/legal">Legal information</Link>
         <Link href="/">Home</Link>
       </nav>
     </header>

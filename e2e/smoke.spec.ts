@@ -213,3 +213,21 @@ test("new visitors do not see a phantom saved account in the dropdown", async ({
   await expect(page.locator(".account-popover").getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
   await expect(page.locator(".account-popover").getByRole("button", { name: "Switch Accounts" })).toHaveCount(0);
 });
+
+
+test("Legal information is reachable, readable, and identifies the sole trader", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Footer" }).getByRole("link", { name: "Legal information" }).click();
+  await expect(page).toHaveURL(/\\/legal\\/?$/);
+  await expect(page.getByRole("heading", { name: "Legal information", exact: true })).toBeVisible();
+  const contents = page.getByRole("navigation", { name: "Legal page contents" });
+  await expect(contents.getByRole("link", { name: /Business identity and contact/ })).toBeVisible();
+  await contents.getByRole("link", { name: /Business identity and contact/ }).click();
+  await expect(page).toHaveURL(/\\/legal#trader$/);
+  await expect(page.getByRole("heading", { name: /Business identity and contact/ })).toBeVisible();
+  await expect(page.locator("#trader").getByText("Shae Smith")).toBeVisible();
+  await expect(page.locator("#trader").getByText("Not yet published", { exact: false })).toBeVisible();
+  expect(await page.locator('meta[name="robots"]').getAttribute("content")).toContain("noindex");
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
