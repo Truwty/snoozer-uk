@@ -130,7 +130,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <label>Decision<select name="status" defaultValue="review"><option value="review">Under review</option>{r.kind==="export"||(
   selected.success&&selected.data===r.id&&evidence.success&&evidence.data.account_erasure_verified&&evidence.data.secure_notice_sent
  )?<option value="completed">Completed (verified fulfilment)</option>:null}<option value="rejected">Rejected (explain why)</option></select></label>
- {r.kind==="deletion"&&<p className="muted">To delete the account, use the separate Execute verified deletion form in this request's preflight. Do not enter ERASE text into the response or choose Completed beforehand.</p>}
+ {r.kind==="deletion"&&<p className="muted">To delete the account, use the separate Execute verified deletion form in the request preflight. Do not enter ERASE text into the response or choose Completed beforehand.</p>}
  <label>Owner response and evidence reference<textarea name="response" minLength={12} maxLength={1000} required/></label>
  <label><input type="checkbox" name="confirmed" value="yes"/> I have independently verified the recorded fulfilment evidence before marking the request completed.</label>
  <p className="muted">Completion now also requires a separate evidence record via the request preflight above; the database rejects missing evidence even if this box is checked.</p>
