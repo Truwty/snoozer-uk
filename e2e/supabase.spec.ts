@@ -1740,3 +1740,36 @@ test("signup Auth hook rejects email and Discord only when registration disabled
   expect(output).toMatch(/"email".*"error"/);
   expect(output).toContain("ROLLBACK");
 });
+
+test("independent appeals require a verified email, one-time token and service permissions",async()=>{
+ const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
+ const suffix=randomUUID().slice(0,8);
+ const email="external-"+suffix+"@example.com";
+ const user=await admin.auth.admin.createUser({email,password,email_confirm:true});
+ expect(user.error).toBeNull();
+ const target=user.data.user!.id;
+ const caseId=randomUUID();
+ const seed="insert into snoozer.moderation_cases(id,target_id,category,status,reason,opened_by) "+
+   "values('"+caseId+"','"+target+"','other','actioned','Local fixture case for external appeal','"+target+"');";
+ execFileSync("docker",["exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",seed]);
+ const token=randomUUID();
+ const hash=createHash("sha256").update(token).digest("hex");
+ const visitor=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ const denied=await visitor.rpc("service_start_external_appeal",{p_case:caseId,p_email:email,p_hash:hash});
+ expect(denied.error).not.toBeNull();
+ const wrong=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:"other@example.com",p_hash:hash});
+ expect(wrong.error).toBeNull();expect(wrong.data).toBe(false);
+ const start=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:email,p_hash:hash});
+ expect(start.error).toBeNull();expect(start.data).toBe(true);
+ const duplicate=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:email,p_hash:hash});
+ expect(duplicate.error).toBeNull();expect(duplicate.data).toBe(false);
+ expect((await visitor.rpc("service_submit_external_appeal",{p_hash:hash,p_reason:"A valid explanation that should never be accepted anonymously."})).error).not.toBeNull();
+ const created=await admin.rpc("service_submit_external_appeal",{p_hash:hash,p_reason:"Please review this moderation case; I request an appeal."});
+ expect(created.error).toBeNull();expect(created.data).toBe(true);
+ const replay=await admin.rpc("service_submit_external_appeal",{p_hash:hash,p_reason:"This should not be accepted on replay."});
+ expect(replay.error).toBeNull();expect(replay.data).toBe(false);
+ expect((await visitor.rpc("owner_prepare_auth_ban",{
+   p_user:target,p_case:caseId,p_operation:"ban",p_hours:24,p_reason:"Unapproved browser caller"
+ })).error).not.toBeNull();
+ // Existing account/provider Auth ban behavior is tested separately in staging.
+});
