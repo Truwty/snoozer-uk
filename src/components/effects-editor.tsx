@@ -6,7 +6,7 @@ import {
   effectPresetsMap, type ProfileEffects, type EffectTier, effectsAllowed,
 } from "@/lib/profile-effects";
 
-const label = (value: string) => value.replaceAll("-", " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+const label = (value: string) => value.split("-").map((word) => word.slice(0, 1).toUpperCase() + word.slice(1)).join(" ");
 
 export function EffectsEditor({ value, tier, onChange }: {
   value?: ProfileEffects; tier: EffectTier; onChange: (effects: ProfileEffects) => void;
