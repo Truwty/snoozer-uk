@@ -2321,4 +2321,38 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   });
 
 
+
+  it("validates profile effects inside SQL and prevents direct RPC Premium bypass", async () => {
+    const effect = {
+      version: 1, enabled: true, background: "aurora", border: "glow",
+      text: "none", interaction: "none", intensity: 45, speed: "normal", preset: "none",
+    };
+    const appearance = (effects: unknown) => JSON.stringify({ density: "balanced", corners: "soft", effects });
+    await db.exec("reset role");
+    expect(await result("select snoozer.valid_profile_effects($1::jsonb) as value", [JSON.stringify(effect)])).toBe(true);
+    expect(await result("select snoozer.valid_profile_effects($1::jsonb) as value", [JSON.stringify({ ...effect, script: "alert(1)" })])).toBe(false);
+    await act("authenticated", alice);
+    await claim("effect-sql-check");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const saveEffects = (revision: number, settings: unknown) => db.query(
+      "select public.save_profile($1::uuid,$2::integer,'Effects','Bio','lagoon',false,'[]'::jsonb,true,false,'[]'::jsonb,$3::jsonb,'{\"title\":\"\",\"description\":\"\"}'::jsonb)",
+      [id, revision, appearance(settings)],
+    );
+    await expect(saveEffects(0, effect)).rejects.toMatchObject({ code: "P1010" });
+    await saveEffects(0, { ...effect, background: "gradient", border: "none" });
+    expect(await result("select public.published_effect_tier($1) as value", ["effect-sql-check"])).toBe("free");
+
+    await db.exec("reset role");
+    await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','effects-plus',now()-interval '1 minute',now()+interval '1 day')", [alice]);
+    await act("authenticated", alice);
+    await saveEffects(1, effect);
+    expect(await result("select public.published_effect_tier($1) as value", ["effect-sql-check"])).toBe("plus");
+
+    await db.exec("reset role");
+    await db.exec("update snoozer.entitlement_grants set expires_at=now()-interval '1 second' where source_ref='effects-plus'");
+    await act("anon");
+    expect(await result("select public.published_effect_tier($1) as value", ["effect-sql-check"])).toBe("free");
+  });
+
+
 });
