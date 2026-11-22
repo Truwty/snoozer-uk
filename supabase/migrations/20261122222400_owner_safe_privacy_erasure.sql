@@ -114,7 +114,8 @@ end $$;
 create function public.service_finish_privacy_erasure(
  p_operation uuid,p_success boolean,p_code text default null)
 returns boolean language plpgsql security definer set search_path='' as $$
-declare job snoozer.privacy_erasure_jobs; state text; actor uuid;
+declare job snoozer.privacy_erasure_jobs; state text;
+ ref record; leftovers bigint;
 begin
  if auth.jwt()->>'role' is distinct from 'service_role' then
   raise exception 'Service role required' using errcode='42501'; end if;
@@ -124,6 +125,26 @@ begin
  if not found then return false; end if;
  if p_success and exists(select 1 from auth.users where id=job.subject_id)
  then raise exception 'Auth erasure cannot be confirmed' using errcode='23514'; end if;
+ if p_success then
+  -- Also reject any orphaned first-party owner records; a deleted Auth row
+  -- alone is not sufficient evidence of full local application erasure.
+  for ref in
+   select c.table_name from information_schema.columns c
+   where c.table_schema='snoozer' and c.column_name='owner_id'
+    and c.data_type='uuid'
+  loop
+   execute format('select count(*) from %I.%I where owner_id=$1',
+      'snoozer',ref.table_name) into leftovers using job.subject_id;
+   if leftovers>0 then
+    raise exception 'Local owned data remains after Auth deletion'
+      using errcode='23514';
+   end if;
+  end loop;
+  if exists(select 1 from storage.objects o
+    where o.owner=job.subject_id or o.owner_id=job.subject_id::text)
+  then raise exception 'Storage ownership remains after Auth deletion'
+    using errcode='23514'; end if;
+ end if;
  state:=case when p_success then 'completed' else 'failed' end;
  update snoozer.privacy_erasure_jobs set status=state,finished_at=now(),
   error_code=case when p_success then null else left(coalesce(p_code,'auth_erasure_error'),80) end
