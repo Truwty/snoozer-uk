@@ -1,0 +1,92 @@
+name: Snoozer production health
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: snoozer-production-health
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check production liveness, dependencies and recovery routes
+        id: check
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, sys, time
+          base = "https://www.snoozer.uk"
+          targets = [
+              ("/health/live", "live"),
+              ("/health/ready", "ready"),
+              ("/sign-in", None),
+              ("/appeal/external", None),
+          ]
+          bad = []
+          for path, expected in targets:
+              last = "unknown"
+              for attempt in range(3):
+                  try:
+                      proc = subprocess.run(
+                          ["curl", "--silent", "--show-error", "--location",
+                           "--max-redirs", "2", "--connect-timeout", "12",
+                           "--max-time", "35", "--write-out", "\\n%{http_code}",
+                           base + path], capture_output=True, text=True, timeout=45)
+                      body, sep, code = proc.stdout.rpartition("\n")
+                      if proc.returncode != 0 or not sep or code != "200":
+                          last = f"HTTP {code or '?'} or transport error"
+                      elif expected:
+                          try:
+                              status = json.loads(body).get("status")
+                              if status == expected:
+                                  last = "ok"
+                                  break
+                              last = f"unexpected health status: {str(status)[:60]}"
+                          except (ValueError, TypeError, AttributeError):
+                              last = "invalid health response"
+                      else:
+                          last = "ok"
+                          break
+                  except (subprocess.TimeoutExpired, OSError):
+                      last = "probe timed out"
+                  if attempt < 2:
+                      time.sleep(12)
+              print(f"{path}: {last}")
+              if last != "ok":
+                  bad.append(path + ": " + last)
+          if bad:
+              print("::error::Production health checks failed: " + "; ".join(bad))
+              sys.exit(1)
+          PY
+      - name: Raise actionable incident issue
+        if: failure() && steps.check.outcome == 'failure'
+        shell: bash
+        run: |
+          title="Snoozer production health alert"
+          issue="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == "Snoozer production health alert") | .number' | head -1)"
+          body="Production probes failed. Inspect this workflow run and its per-route diagnostics: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Check Render deployment and Supabase health before altering credentials, moderation, or paid subscriptions. This issue will close automatically after a passing scheduled probe."
+          if [ -z "$issue" ]; then
+            gh issue create --title "$title" --body "$body"
+          else
+            gh issue comment "$issue" --body "Still failing: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi
+      - name: Close resolved incident
+        if: success()
+        shell: bash
+        run: |
+          issue="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == "Snoozer production health alert") | .number' | head -1)"
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "Recovery confirmed by passing probes: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi
