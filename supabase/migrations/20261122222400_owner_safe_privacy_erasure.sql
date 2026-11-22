@@ -146,8 +146,8 @@ begin
   end loop;
   if exists(select 1 from storage.objects o
     where o.owner=job.subject_id or o.owner_id=job.subject_id::text
-     or exists(select 1 from unnest(job.profile_scopes) scope
-       where o.name like scope::text||'/%'))
+     or exists(select 1 from unnest(job.profile_scopes) as s(scope_id)
+       where o.name like s.scope_id::text||'/%'))
   then raise exception 'Storage ownership remains after Auth deletion'
     using errcode='23514'; end if;
  end if;
