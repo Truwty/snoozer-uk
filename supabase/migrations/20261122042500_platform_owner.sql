@@ -7,15 +7,8 @@ create table if not exists snoozer.platform_owners (
 alter table snoozer.platform_owners enable row level security;
 revoke all on snoozer.platform_owners from public, anon, authenticated;
 
--- Provision the verified existing account. This does not modify login credentials.
-insert into snoozer.platform_owners(owner_id)
-select id from auth.users where id = 'fddb0ff0-b7ea-4298-9fa2-2e8251df087e'
-on conflict (owner_id) do nothing;
-
--- Existing diagnostics staff permissions are separately scoped and audited.
-insert into snoozer.staff_roles (owner_id, role)
-select id, 'billing_diagnostics' from auth.users where id = 'fddb0ff0-b7ea-4298-9fa2-2e8251df087e'
-on conflict (owner_id, role) do nothing;
+-- Platform-owner assignments are provisioned through a separate privileged, audited
+-- database operation; individual account identifiers never belong in migrations.
 
 -- An authenticated session can inspect only its own Owner state.
 create or replace function public.is_platform_owner() returns boolean
