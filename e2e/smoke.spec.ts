@@ -239,3 +239,9 @@ test("Owner Control Centre is a reserved app route, not a public username", asyn
   await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
 });
+
+test("restricted-account status route redirects signed-out visitors to authentication", async ({page}) => {
+ await page.goto("/account-restricted");
+ await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
+ await expect(page.getByRole("heading",{name:"Welcome back"})).toBeVisible();
+});
