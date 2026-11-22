@@ -1,6 +1,6 @@
 import "server-only";
-import {sendZohoNotice} from "./zoho-transport";
-import {zohoMailReady} from "./mail-readiness";
+
+import {zohoMailReady,sendOwnerMail} from "./mail-readiness";
 import {z} from "zod";
 import {storageAdmin} from "@/lib/supabase";
 const jobSchema=z.array(z.object({
@@ -18,7 +18,7 @@ export async function dispatchOwnerNoticeEmails():Promise<NoticeSendResult> {
  if(result.error||!jobs.success)return {sent:0,failed:0,status:"unavailable"};
  let sent=0,failed=0;
  for(const job of jobs.data){
-  const ok=await sendZohoNotice(job.email,job.title,job.body);
+  const ok=await sendOwnerMail(job.email,job.title,job.body);
   // A failed acknowledgement leaves the lease to expire. The next worker
   // may resend: email delivery is at-least-once, not exactly once.
   const ack=await client.rpc("service_finish_account_notice",{
