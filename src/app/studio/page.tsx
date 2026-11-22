@@ -49,7 +49,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <Link href={studioHref("/studio/history", selected)}>Publish history</Link>
         <Link href={studioHref("/studio/analytics", selected)}>Analytics</Link>
         <Link href={studioHref("/studio/plan", selected)}>Plan and usage</Link>
-        <Link href="/studio/growth">Growth</Link>
+        <Link href="/studio/growth">Growth</Link><Link href="/account/notifications">Notices</Link><Link href="/account/data">Your data</Link>
       </nav>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
       <Editor key={draft.profile_id} draft={draft} effectTier={plan.success ? plan.data.plan : "free"} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
