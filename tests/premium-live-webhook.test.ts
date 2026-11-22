@@ -91,7 +91,7 @@ describe("Premium live webhook processing is idempotent and fail-closed", () => 
       .mockResolvedValueOnce({ data: false, error: null })
       .mockResolvedValueOnce({ data: true, error: null });
     await processPremiumLiveEvent(provider, event("checkout.session.completed", "cs_live_example"));
-    expect(calls.rpc).toHaveBeenCalledWith("bind_premium_live_subscription", expect.anything());
+    expect(calls.rpc).not.toHaveBeenCalledWith("bind_premium_live_subscription", expect.anything());
     expect(calls.reconcile).not.toHaveBeenCalled();
     expect(calls.rpc).toHaveBeenCalledWith("finish_premium_live_receipt", { p_id: "evt_example123" });
   });
