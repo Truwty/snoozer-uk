@@ -39,7 +39,7 @@ test("app archive is verified, private, owner-scoped and never cached",async({pa
   expect(archive.account.id).toBe(account.data.user!.id);
   expect(archive.profiles).toEqual(expect.arrayContaining([expect.objectContaining({username:name})]));
   expect(archive.profiles.every((profile:{username:string})=>profile.username===name)).toBe(true);
-  expect(archive.limitations.join(" ")).toContain("Stripe");
+  expect(archive.limitations.join(" ")).toContain("billing processor records");
   // A separate unauthenticated browser must not inherit the signed-in cookie.
   const other=await browser.newContext();
   try{
