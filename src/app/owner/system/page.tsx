@@ -31,10 +31,12 @@ export default async function OwnerSystem({searchParams}:{searchParams:Promise<{
  <section className="panel stack"><h2>Transactional Owner notices</h2>
  <p>Account actions create in-app notices and queue their delivery through Zoho Mail. SMTP requires a valid Zoho mailbox, verified sender and an outbound SMTP-enabled hosting environment. A dispatcher sends eligible queued notices; it does not create a new test email.</p>
  <p role="status">{!mail.credentialsConfigured?
- "Zoho SMTP credentials are missing or invalid in Render. In-app notifications remain available.":
- !mail.outboundEnabled?
- "Zoho credentials are configured, but outgoing SMTP is disabled. Render Free blocks outbound ports 25, 465 and 587. Upgrade the Render web service or use an HTTPS mail API, then explicitly enable SMTP after validating connectivity.":
- "Zoho SMTP credentials and outbound sending are configured. Check a recipient inbox to verify actual email delivery."}</p>
+ "Zoho email credentials are missing in Render. Configure Zoho HTTPS Mail API credentials or SMTP on a supported hosting plan. In-app notices still work.":
+ mail.transport==="api"?
+ "Zoho HTTPS Mail API is configured. A successful API response means accepted, not necessarily delivered to the inbox.":
+ mail.transport==="smtp"?
+ "Zoho SMTP is configured on an outbound-enabled hosting plan. Check recipient inbox delivery.":
+ "Zoho SMTP credentials are present, but Render Free blocks SMTP ports 25, 465 and 587. Configure Zoho HTTPS Mail API OAuth credentials to send without upgrading Render, or move to an SMTP-enabled plan."}</p>
  {!mail.dispatchTokenConfigured&&<p role="alert">Automatic dispatch secret not configured. Configure OWNER_EMAIL_DISPATCH_TOKEN in Render (at least 32 characters).</p>}
  {mailParams.mail&&<p role="status">{mailParams.mail==="ok"&&mailParams.sent==="0"&&mailParams.failed==="0"?
  "Dispatch completed but did not process any eligible notices. No email was sent. A message might be in its retry or claim-lease window.":
@@ -47,9 +49,9 @@ export default async function OwnerSystem({searchParams}:{searchParams:Promise<{
  mailParams.test==="failed"?"Zoho did not accept the test message. No successful delivery has been verified.":
  mailParams.test==="mfa-required"?"Verified Owner MFA (AAL2) is required to send the test.":
  mailParams.test==="verified-email-required"?"A confirmed Owner account email is required for the test.":
- "Test email unavailable: verify Zoho credentials and outbound SMTP configuration."}</p>}
+ "Test email unavailable: configure Zoho HTTPS Mail API or an SMTP-enabled hosting plan."}</p>}
  <div className="actions">
-  <form action={sendOwnerTestEmail}><button className="button" disabled={!mail.credentialsConfigured||!mail.outboundEnabled}>Send test email to my verified Owner address</button></form>
+  <form action={sendOwnerTestEmail}><button className="button" disabled={mail.transport==="none"}>Send test email to my verified Owner address</button></form>
   <form action={runOwnerNoticeDelivery}><button className="button" disabled={!noticeDeliveryConfigured()}>Send pending account notices (MFA required)</button></form>
  </div>
  <p className="muted">Both actions require verified Owner MFA. The test email goes only to your own confirmed account address and does not grant Premium or create a moderation case.</p>
