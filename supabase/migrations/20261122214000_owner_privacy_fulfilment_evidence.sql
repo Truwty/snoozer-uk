@@ -74,6 +74,23 @@ begin
  return true;
 end $$;
 
+
+-- Completed erasures can remove auth.users. Keep the privacy request visible
+-- in the Owner queue rather than dropping it through an inner join.
+create or replace function public.owner_privacy_requests(p_limit integer default 50)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare actor uuid := snoozer.admin_actor();
+begin
+ return coalesce((select jsonb_agg(to_jsonb(r)) from (
+  select p.id,p.user_id,u.email,p.kind,p.status,p.requested_at,p.reviewed_at,p.owner_response
+  from snoozer.privacy_requests p left join auth.users u on u.id=p.user_id
+  order by case when p.status in ('open','review') then 0 else 1 end,
+    p.requested_at asc,p.id asc
+  limit least(greatest(coalesce(p_limit,50),1),100)
+ ) r),'[]'::jsonb);
+end $$;
+-- Preserve the existing authenticated-only EXECUTE grant.
+
 -- Replace the previous "checkbox-only" completion path with enforced evidence.
 create or replace function public.owner_review_privacy_request(
  p_request uuid,p_status text,p_response text
