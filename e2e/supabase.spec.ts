@@ -1570,3 +1570,69 @@ test("Owner administration requires verified role and MFA for privileged mutatio
     await admin.auth.admin.deleteUser(ordinaryId);
   }
 });
+
+test("profile report intake, private queue and moderation enforcement are role-gated", async ({ page }) => {
+  test.setTimeout(90000);
+  const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
+  const n="flagged-"+randomUUID().slice(0,8);
+  const passwd=password;
+  const emails=[n+"-target@example.com",n+"-reporter@example.com",n+"-owner@example.com"];
+  const accounts=[] as string[];
+  const sql=(statement:string)=>execFileSync("docker",["exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",statement]).toString();
+  for (const address of emails) {
+    const result=await admin.auth.admin.createUser({email:address,password:passwd,email_confirm:true});
+    expect(result.error).toBeNull();
+    accounts.push(result.data.user!.id);
+  }
+  const [targetId,reporterId,ownerId]=accounts;
+  const target=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+  const reporter=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+  const owner=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+  sql("insert into snoozer.platform_owners(owner_id) values ('"+ownerId+"')");
+  try {
+    expect((await target.auth.signInWithPassword({email:emails[0],password:passwd})).error).toBeNull();
+    expect((await reporter.auth.signInWithPassword({email:emails[1],password:passwd})).error).toBeNull();
+    const ownerLogin=await owner.auth.signInWithPassword({email:emails[2],password:passwd});
+    expect(ownerLogin.error).toBeNull();
+    const ownerSessionId=JSON.parse(Buffer.from(ownerLogin.data.session!.access_token.split(".")[1],"base64url").toString()).session_id as string;
+    expect((await target.rpc("claim_profile",{p_name:n})).error).toBeNull();
+    expect((await target.rpc("save_profile",{p_expected:0,p_name:"Reported profile",p_bio:"",
+      p_theme:"midnight",p_indexable:false,p_links:[],p_publish:true,p_remove_avatar:false})).error).toBeNull();
+    expect((await page.goto("/"+n))?.status()).toBe(200);
+    const report=await reporter.rpc("submit_profile_report",{p_name:n,p_category:"phishing",p_reason:"Disposable test report for moderation"});
+    expect(report.error).toBeNull();
+    const reportId=report.data as string;
+    expect(reportId).toMatch(/^[0-9a-f-]{36}$/);
+    const duplicate=await reporter.rpc("submit_profile_report",{p_name:n,p_category:"spam",p_reason:"Second test report should fail"});
+    expect(duplicate.error).toBeTruthy();
+    expect((await reporter.rpc("owner_reports",{p_limit:10})).error?.code).toBe("42501");
+    const queue=await owner.rpc("owner_reports",{p_limit:10});
+    expect(queue.error).toBeNull();
+    expect(queue.data).toEqual(expect.arrayContaining([expect.objectContaining({id:reportId,username:n})]));
+    const noMfa=await owner.rpc("owner_triage_report",{p_report:reportId,p_reason:"Review disposable report"});
+    expect(noMfa.error?.code).toBe("42501");
+    // This privileged SQL test fixture simulates a verified AAL2 Owner session; real
+    // browser actions must obtain AAL2 through Supabase Auth MFA, never form fields.
+    const jwt=JSON.stringify({sub:ownerId,role:"authenticated",aal:"aal2",session_id:ownerSessionId});
+    const command="begin; set local role authenticated; select set_config('request.jwt.claims', '"+jwt+"', true); "+
+      "select set_config('request.jwt.claim.sub', '"+ownerId+"', true); "+
+      "select public.owner_triage_report('"+reportId+"', 'Review disposable report'); commit;";
+    sql(command);
+    const cases=await owner.rpc("owner_cases",{p_limit:10});
+    expect(cases.error).toBeNull();
+    const linked=cases.data.find((c:{target_id:string})=>c.target_id===targetId);
+    expect(linked?.id).toMatch(/^[0-9a-f-]{36}$/);
+    sql("begin; set local role authenticated; select set_config('request.jwt.claims', '"+jwt+"', true); "+
+      "select set_config('request.jwt.claim.sub', '"+ownerId+"', true); "+
+      "select public.owner_block_profile('"+linked.id+"', 'Reported profile under review'); commit;");
+    expect((await reporter.rpc("get_published_profile",{p_name:n})).data).toBeNull();
+    expect((await reporter.rpc("resolve_public_address",{p_name:n})).data).toBeNull();
+  } finally {
+    sql("delete from snoozer.admin_audit_events where actor_id='"+ownerId+"' or target_id='"+targetId+"';"+
+      " delete from snoozer.moderated_profiles where profile_id in (select id from snoozer.profiles where owner_id='"+targetId+"');"+
+      " delete from snoozer.moderation_reports where reporter_id='"+reporterId+"';"+
+      " delete from snoozer.moderation_cases where target_id='"+targetId+"';"+
+      " delete from snoozer.platform_owners where owner_id='"+ownerId+"';");
+    for(const id of accounts) await admin.auth.admin.deleteUser(id);
+  }
+});

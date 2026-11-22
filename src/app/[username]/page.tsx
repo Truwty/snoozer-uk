@@ -39,6 +39,6 @@ export default async function Page({ params }: Props) {
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
     <ProfileCard profile={profile} ownerBadge={!ownerError && ownerBadge === true} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
-    <Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link>
+    <div className="stack" style={{ alignItems: "center", marginTop: ".75rem" }}><Link href={new URL("/report/" + profile.username, siteUrl()).href} className="muted">Report profile</Link><Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link></div>
   </main>;
 }

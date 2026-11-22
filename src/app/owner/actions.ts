@@ -71,3 +71,38 @@ export async function changeRegistration(form: FormData) {
   const ok=await invoke("owner_set_setting",{p_name:"registrations_enabled",p_value:get(form,"enabled")==="true",p_revision:revision.data,p_reason:why.data});
   url("/owner/settings",ok?"updated":"denied");
 }
+
+export async function triageReport(form: FormData) {
+  const report=uuid.safeParse(get(form,"report")),why=reason.safeParse(get(form,"reason"));
+  if(!report.success||!why.success)url("/owner/moderation","invalid");
+  const ok=await invoke("owner_triage_report",{p_report:report.data,p_reason:why.data});
+  url("/owner/moderation",ok?"triaged":"denied");
+}
+export async function reviewModerationAppeal(form:FormData) {
+  const appeal=uuid.safeParse(get(form,"appeal"));
+  const status=z.enum(["review","accepted","rejected"]).safeParse(get(form,"status"));
+  const response=z.string().trim().min(8).max(1000).safeParse(get(form,"response"));
+  if(!appeal.success||!status.success||!response.success)url("/owner/moderation","invalid");
+  const ok=await invoke("owner_review_appeal",{p_appeal:appeal.data,p_status:status.data,p_response:response.data});
+  url("/owner/moderation",ok?"appeal-reviewed":"denied");
+}
+export async function blockModeratedProfile(form:FormData) {
+  const caseId=uuid.safeParse(get(form,"case")),why=reason.safeParse(get(form,"reason"));
+  if(!caseId.success||!why.success)url("/owner/moderation","invalid");
+  const ok=await invoke("owner_block_profile",{p_case:caseId.data,p_reason:why.data});
+  url("/owner/moderation",ok?"profile-blocked":"denied");
+}
+export async function unblockModeratedProfile(form:FormData) {
+  const caseId=uuid.safeParse(get(form,"case")),why=reason.safeParse(get(form,"reason"));
+  if(!caseId.success||!why.success)url("/owner/moderation","invalid");
+  const ok=await invoke("owner_unblock_profile",{p_case:caseId.data,p_reason:why.data});
+  url("/owner/moderation",ok?"profile-unblocked":"denied");
+}
+export async function takeDownModeratedGalleryImage(form:FormData) {
+  const caseId=uuid.safeParse(get(form,"case")),image=uuid.safeParse(get(form,"image")),why=reason.safeParse(get(form,"reason"));
+  if(!caseId.success||!image.success||!why.success)url("/owner/moderation","invalid");
+  const {client}=await requireOwner();
+  const {data,error}=await client.rpc("owner_takedown_gallery",{p_case:caseId.data,p_image:image.data,p_reason:why.data});
+  const ok=!error&&(data==="blocked"||data==="already_blocked");
+  url("/owner/moderation",ok?"media-blocked":"denied");
+}

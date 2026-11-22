@@ -1,3 +1,11 @@
+## Owner moderation, public reporting and appeals — 22 November 2026
+
+**Second-stage release candidate (pending CI and Render):** migration `20261122052736_owner_moderation_reporting.sql` adds private RLS report, appeal and profile-quarantine tables, rate-limited verified-user report submission, appeal submission available even to restricted accounts, Owner-only report and appeal queues, MFA AAL2-gated triage, profile block/unblock, case-linked gallery takedown and appeal decisions. Public profile data, aliases, sitemap entries, and public avatar/gallery endpoints now suppress active moderated/restricted publications. Actions append to `snoozer.admin_audit_events`. A disposable-provider Playwright test covers report intake, Owner/non-Owner separation, MFA denial and public profile quarantine.
+
+**Boundaries:** Appeals accepted in the dashboard do not automatically reinstate accounts or content; use the separate audited action after reviewing evidence. A case reference is required to appeal. Email notices and appeals received through a public support portal beyond this form are not yet integrated. Global Auth session revocation, provider-level bans and automated moderation are still open. Never assert this release is deployed until CI and Render are verified.
+
+---
+
 ## Full Owner Administration Panel — initial implementation (22 November 2026)
 
 **In development, not fully released:** A private migration `20261122051649_owner_administration_core.sql` adds append-only administrative action records, active account restrictions, support notes, internal moderation cases, Owner-issued Premium grant attribution, and a versioned email-registration flag. The `snoozer.verified_user()` permission boundary now rejects restricted accounts for verified-user database actions, preserving Owner recovery access. The existing `platform_owners`, `entitlement_grants`, and paid Stripe processing are retained. All new RPCs are restricted to verified Owner actors; mutations additionally require an MFA AAL2 session. Browser-only controls are not relied upon for authorisation.
