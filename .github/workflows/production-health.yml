@@ -88,7 +88,7 @@ jobs:
           bad=[]
           for path in paths:
             try:
-              command=["curl","--silent","--show-error","--location","--max-redirs","1",
+              command=["curl","--silent","--show-error","--location","--max-redirs","2",
                 "--connect-timeout","12","--max-time","35",
                 "--output","/dev/null","--write-out","%{http_code}",base+path]
               process=subprocess.run(command,capture_output=True,text=True,timeout=45)
