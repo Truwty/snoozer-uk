@@ -10,3 +10,6 @@ The email registration setting already blocks email/password signup in the app, 
 Do not rely on the app callback alone for signup enforcement. On self-hosted Supabase, set the corresponding GoTrue auth hook config explicitly. Ensure `supabase_auth_admin` can execute the hook but never grant execution to `anon` or `authenticated`.
 
 Source: https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook
+
+## CI baseline verification
+The shared legal-disclosure baseline was repaired on main in [PR #55](https://github.com/Truwty/snoozer-uk/pull/55). This branch must pass the full GitHub Actions suite against that corrected base before being merged.
