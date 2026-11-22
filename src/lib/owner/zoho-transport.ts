@@ -91,12 +91,12 @@ export async function sendZohoNotice(
  }
  try{
   // TLS is established before any credentials or message content are sent.
-  if(!socket.encrypted)await new Promise<void>((resolve,reject)=>{
+  await new Promise<void>((resolve,reject)=>{
    if(done){reject(new Error("SMTP connection closed"));return;}
    socket.once("secureConnect",()=>resolve());
    socket.once("error",()=>reject(new Error("TLS handshake failed")));
   });
-  if(!socket.authorized)throw new Error("Untrusted SMTP TLS certificate");
+  if(!socket.encrypted||!socket.authorized)throw new Error("Untrusted SMTP TLS certificate");
   await response([220]);
   await command("EHLO snoozer.uk",[250]);
   await command("AUTH PLAIN "+Buffer.from("\0"+account.data+"\0"+password).toString("base64"),[235]);
