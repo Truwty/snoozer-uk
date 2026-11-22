@@ -823,8 +823,8 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .profile-effects-toggle:has(input:checked) .effects-enable-text { display: inline; }
 
 /* Snoozer verified platform owner badge */
-.profile-name-row { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: .55rem; }
-.profile-card[data-layout="editorial"] .profile-name-row { justify-content: flex-start; }
+.profile-name-heading .profile-owner-badge { margin-inline-start: .55rem; vertical-align: middle; }
+
 .profile-owner-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .27rem .56rem; border: 1px solid rgba(107, 230, 193, .46); border-radius: 999px; background: rgba(20, 110, 91, .22); color: #adffe5; font-size: .75rem; font-weight: 750; letter-spacing: .025em; white-space: nowrap; line-height: 1.3; }
 .account-owner-mark { display: inline-block; border-radius: 999px; padding: .16rem .46rem; border: 1px solid #438970; color: #b9fce5; font-size: .65rem; font-weight: 750; letter-spacing: .08em; }
 .owner-console { display: grid; gap: 1.25rem; padding-bottom: 4rem; }
