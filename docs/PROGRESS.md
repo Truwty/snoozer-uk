@@ -1,5 +1,16 @@
 # Snoozer.uk — current development progress (21 November 2026)
 
+## Production release — 22 November 2026, 00:01 UTC
+
+**Released:** persistent sign-in, multi-account switching, top-bar redesign, Snoozer Premium Pricing and first-party searchable Help Center. [PR #33](https://github.com/Truwty/snoozer-uk/pull/33) squash-merged as [7cd4fd8](https://github.com/Truwty/snoozer-uk/commit/7cd4fd8b1916d11ffbcdc78b13a5680e527cae05); [CI #44964090069](https://github.com/Truwty/snoozer-uk/actions/runs/44964090069) fully green including disposable Supabase E2E and WCAG checks; Render deploy `dep-dc130j0u01pc738k0cfg` **Live** 2026-11-22 00:00:46 UTC with zero checked ERROR-level logs. Duplicate PR #34 was closed unmerged. Direct external HTTP smoke unavailable through the web tool.
+
+**Features:** 365-day secure HTTP-only SSR cookies, sitewide refresh, four remembered user sessions with isolated cookie namespaces and real Supabase verification, account-switcher dropdown/modal, add/switch/remove/local logout flows, shared responsive nav, new `/pricing`, searchable `/help` and article guides. Screens stay on Snoozer theme and Discord is not a navbar button (OAuth remains supported). Provider expiration/revocation and browser cookie clearing can still end sessions; indefinite provider access cannot be promised.
+
+**Live billing status update:** Unlike the 21 November warning below, current Render startup key audit is **authenticated** with six verified Stripe prices, the correct account and billing portal. Checkout is **still disabled** and legal/provider acceptance checks remain outstanding. No live customer charge was performed as part of this release.
+
+---
+
+
 ## LIVE key validation — 21 November 2026, 22:05 UTC
 
 After the owner reported adding `STRIPE_PREMIUM_LIVE_API_KEY` to Render, PR [#30](https://github.com/Truwty/snoozer-uk/pull/30) deployed a read-only startup probe. The first safe log was `key:not_configured`. PR [#31](https://github.com/Truwty/snoozer-uk/pull/31) then added harmless whitespace trimming and distinct missing/invalid reporting. Both PRs passed full CI and merged to `main`. Latest Render deploy `dep-dc11am1ksfps73fgvjn0`, commit `512e8f2125b640e45de42bf15796938daf096f49`, confirmed **Live** at 22:05:32 UTC; checked logs contain no error entries.
