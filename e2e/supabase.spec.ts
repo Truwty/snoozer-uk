@@ -1558,6 +1558,24 @@ test("Owner administration requires verified role and MFA for privileged mutatio
     expect(listing.data).toEqual(expect.arrayContaining([expect.objectContaining({id:ordinaryId,email:ordinaryEmail})]));
     const denied=await ordinary.rpc("owner_user_search",{p_query:ordinaryEmail,p_limit:5});
     expect(denied.error?.code).toBe("42501");
+    const firstPage=await owner.rpc("owner_user_search_page",{p_query:"",p_limit:1});
+    expect(firstPage.error).toBeNull();
+    expect(firstPage.data).toHaveLength(1);
+    const firstAccount=firstPage.data[0] as {id:string;created_at:string};
+    const nextPage=await owner.rpc("owner_user_search_page",{
+      p_query:"",p_before_created:firstAccount.created_at,p_before_id:firstAccount.id,p_limit:1
+    });
+    expect(nextPage.error).toBeNull();
+    expect(nextPage.data).toHaveLength(1);
+    expect(nextPage.data[0].id).not.toBe(firstAccount.id);
+    expect((await ordinary.rpc("owner_user_search_page",{p_query:ordinaryEmail,p_limit:1})).error?.code).toBe("42501");
+    expect((await owner.rpc("owner_user_search_page",{p_before_created:firstAccount.created_at})).error?.code).toBe("22023");
+    const profileName="pagetest-"+randomUUID().slice(0,8);
+    expect((await ordinary.rpc("claim_profile",{p_name:profileName})).error).toBeNull();
+    const inventory=await owner.rpc("owner_profile_inventory_page",{p_query:profileName,p_limit:1});
+    expect(inventory.error).toBeNull();
+    expect(inventory.data).toEqual([expect.objectContaining({username:profileName,owner_id:ordinaryId,published:false})]);
+    expect((await ordinary.rpc("owner_profile_inventory_page",{p_query:profileName})).error?.code).toBe("42501");
     const noMfa=await owner.rpc("owner_grant_premium",{p_user:ordinaryId,p_plan:"studio",p_days:30,p_reason:"Security test grant"});
     expect(noMfa.error?.code).toBe("42501");
     const grantCount=sql("select count(*) from snoozer.admin_grant_records").toString();
