@@ -1,3 +1,13 @@
+## Advanced profile animations & effects — development branch (22 November 2026)
+
+**IN PROGRESS — not released.** Branch `feature/advanced-profile-effects` implements a typed allowlist for versioned profile effects, Studio controls, shared preview/public rendering, CSS backgrounds/typography/borders, reduced-motion fallbacks, Supabase appearance validation, and effective-tier enforcement. Added tests for malicious settings and Free/Plus/Pro/Studio plan rules.
+
+**Unverified:** full CI, disposable Supabase migration/SQL tests, browser interaction quality, mobile performance, and deployment. Some premium interactions currently have lightweight visual treatments rather than a full pointer-driven trail; this milestone must not be marked complete until its acceptance tests and feature parity pass. Do not deploy or enable billing changes based on this branch.
+
+Relevant implementation: `src/lib/profile-effects.ts`, `src/components/effects-editor.tsx`, `src/components/profile-effects.tsx`, `supabase/migrations/20261122030000_advanced_profile_effects.sql`.
+
+---
+
 # Snoozer.uk — current development progress (21 November 2026)
 
 ## Legal information page / sole trader disclosure — 22 November 2026
