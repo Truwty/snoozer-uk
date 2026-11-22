@@ -262,3 +262,8 @@ test("private account snapshot denies anonymous downloads", async ({ request }) 
  expect(result.headers()["cache-control"]).toContain("no-store");
  expect(result.headers()["x-content-type-options"]).toBe("nosniff");
 });
+
+test("internal account notice dispatcher rejects public requests",async({request})=>{
+ const response=await request.post("/api/internal/owner-notices/dispatch",{data:""});
+ expect(response.status()).toBe(404);
+});
