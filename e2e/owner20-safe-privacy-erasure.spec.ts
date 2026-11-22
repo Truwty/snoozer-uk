@@ -106,6 +106,11 @@ test("only Owner AAL2 may erase dependency-free disposable Auth users, preservin
    p_operation:prepared.data.operation_id,p_success:true
   });
   expect(final.error).toBeNull();expect(final.data).toBe(true);
+  const missingNotice=await owner.rpc("owner_review_privacy_request",{
+   p_request:ticket.data,p_status:"completed",
+   p_response:"Do not close request before real notification"
+  });
+  expect(missingNotice.error?.code).toBe("23514");
   expect((await admin.rpc("service_mark_privacy_erasure_notice",{
    p_operation:prepared.data.operation_id
   })).data).toBe(true);
