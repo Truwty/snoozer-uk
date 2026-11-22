@@ -15,7 +15,7 @@ begin
    join snoozer.profiles p
      on p.owner_id=actor and split_part(o.name,'/',1)=p.media_scope::text
    where o.bucket_id in ('avatar-incoming','avatar-images','gallery-incoming','gallery-images')
-     and o.name ~ '^[a-f0-9-]{36}/[a-f0-9-]{36}\\.(webp|upload)$'
+     and o.name ~ '^[a-f0-9-]{36}/[a-f0-9-]{36}[.](webp|upload)$'
    order by o.created_at,o.bucket_id,o.name
    limit 500
  ) x;
@@ -28,7 +28,7 @@ declare actor uuid := snoozer.privacy_actor();
 begin
  if p_bucket not in ('avatar-incoming','avatar-images','gallery-incoming','gallery-images')
     or p_name is null or char_length(p_name)>100
-    or p_name !~ '^[a-f0-9-]{36}/[a-f0-9-]{36}\\.(webp|upload)$'
+    or p_name !~ '^[a-f0-9-]{36}/[a-f0-9-]{36}[.](webp|upload)$'
  then return false; end if;
  return exists(
   select 1 from storage.objects o
