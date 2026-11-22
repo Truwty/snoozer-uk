@@ -28,6 +28,26 @@ const schema=z.array(z.object({
  status:z.string(),requested_at:z.string(),reviewed_at:z.string().nullable(),
  owner_response:z.string().nullable()
 }));
+const erasureStatusMessages:Record<string,string>={
+ "erasure-disabled":"Account deletion is turned off in Render. Enable SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE to execute a reviewed, restricted erasure.",
+ "mfa-required":"Your current Owner session is not MFA AAL2. Verify Owner MFA and reload this page.",
+ "erasure-mail-unavailable":"The Zoho confirmation sender is not ready. Deletion is blocked until confirmation emails can be sent.",
+ "erasure-review-required":"Tick the verification and provider-review confirmation before attempting deletion.",
+ "erasure-request-ineligible":"This request is not an open, verified non-Owner deletion request.",
+ "erasure-evidence-failed":"The review attestation could not be saved. Verify Owner MFA and the request status.",
+ "erasure-paid-blocker":"This account has paid or creator-commerce records. Review subscriptions and legally retained records before using a separate fulfilment process.",
+ "erasure-storage-blocker":"Private Storage or media records still exist. Erase files using the Storage API, then retry.",
+ "erasure-linked-records":"Account deletion is blocked by linked moderation, commerce or other protected database records. Review the dependency list; do not remove retained records indiscriminately.",
+ "erasure-owner-protected":"Owner accounts cannot be deleted through this restricted workflow.",
+ "erasure-preflight-blocked":"Database preflight blocked deletion. Check the request evidence and dependency list below.",
+ "erasure-blocked":"Account deletion did not complete. Inspect the request and retry only after resolving the reported blocker.",
+ "erasure-reconciliation-required":"Deletion needs operator reconciliation. Review erasure jobs before another attempt.",
+ "erasure-auth-failed":"Supabase Auth refused the delete request. Review the erasure job failure and dependencies.",
+ "erased-notice-pending":"Account deleted, but Zoho notification failed. Do not mark the request completed; reconcile the notice.",
+ "erased-notice-reconciliation-required":"Account deleted, but notice reconciliation was not confirmed.",
+ "erased-review-pending":"Account erased and notice dispatched, but the review status could not be completed automatically. Review the audit.",
+ "erasure-complete":"Account erased successfully. Supabase Auth, first-party dependency checks and the completion notice have been recorded; request marked Completed.",
+};
 export const metadata={title:"Owner · Privacy requests",robots:{index:false,follow:false}};
 export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<{admin?:string;preflight?:string}>}) {
  const {client}=await requireOwner();
@@ -91,16 +111,21 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <section className="panel stack">
  <h2>Execute restricted account erasure</h2>
  <p className="muted">This is an irreversible, narrow deletion route for an identity-verified, billing-free account without private Storage, creator commerce, legal holds, unresolved third-party obligations or blocking foreign keys. The database refuses unsafe accounts. Paid records and Storage objects are never deleted by this executor; they require their own reviewed fulfilment.</p>
- <p>Required before executing: Owner MFA AAL2, an open deletion request, documented identity, Stripe and processor review, retention approval, resolved subscriptions and a working notification sender.</p>
+ <p>One reviewed action: verify the account, confirm the processor/retention checks below and type the deletion confirmation. This action records your Owner evidence and immediately attempts the restricted Auth deletion; you do not need to submit the separate evidence form first.</p>
+ {inventory.success&&inventory.data.dependencies.some(d=>d.rows>0&&(d.on_delete==="no_action"||d.on_delete==="restrict"))&&
+  <p role="alert">Blocking linked records: {inventory.data.dependencies.filter(d=>d.rows>0&&(d.on_delete==="no_action"||d.on_delete==="restrict")).map(d=>d.table+"."+d.column+" ("+d.rows+")").join(", ")}. These records require reviewed fulfilment before deletion.</p>}
+ {preflight.data.has_stripe_customer||preflight.data.live_checkout_records>0||preflight.data.has_subscription_references||preflight.data.has_avatar_media||preflight.data.gallery_metadata_count>0?
+  <p role="alert">This account has paid or private media references. The restricted executor will refuse it until those are separately resolved.</p>:null}
  {!["open","review"].includes(preflight.data.status)?
  <p role="alert">This deletion request is {preflight.data.status}. It cannot be executed in this state. A previous review decision is not evidence of Auth deletion.</p>:
  !erasureEnabled?<p role="alert">Restricted erasure execution is disabled. The Owner must enable it on Render only after its separate live disposable-account safety acceptance.</p>:
  <form action={executeSafePrivacyErasure} className="stack">
   <input type="hidden" name="id" value={selected.data}/>
-  <label>To authorise irreversible deletion of the requested Auth account, type <code>ERASE {selected.data}</code>
+  <label><input type="checkbox" name="reviewed" value="yes" required/> I verified the account identity and independently reviewed Stripe billing, subscriptions, other processors and lawful retention. I confirm this is an eligible account with no unresolved legal, payment or media obligations, and I authorise permanent deletion.</label>
+  <label>To permanently erase this account, type <code>ERASE {selected.data}</code>
    <input name="confirmation" required autoComplete="off" spellCheck={false} placeholder={"ERASE "+selected.data}/>
   </label>
-  <button className="button">Execute verified deletion (Owner AAL2 required)</button>
+  <button className="button" type="submit">Permanently delete account (Owner AAL2)</button>
  </form>}
  </section>}
  {selected.success&&<section className="panel stack">
@@ -117,7 +142,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
   <button className="button">Record fulfilment evidence</button>
  </form>
  </section>}
- {message&&<p role="status">Result: {message}</p>}
+ {message&&<p role="status">Result: {erasureStatusMessages[message]??message}</p>}
  {error||!requests.success?<p role="alert">Privacy request queue unavailable.</p>:requests.data.length===0?<p>No privacy requests yet.</p>:
  requests.data.map(r=><section className="panel stack" key={r.id}>
  <h2>{r.kind==="export"?"Personal data export":"Account deletion"} · {r.status}</h2>

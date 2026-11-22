@@ -60,15 +60,50 @@ export async function executeSafePrivacyErasure(form:FormData){
   redirect("/owner/privacy?preflight="+id.data+"&admin=mfa-required");
  if(!zohoMailReady())
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-mail-unavailable");
+ // The previous two-form workflow required Owner evidence to exist before
+ // pressing Execute, then responded with an unhelpful generic denial when
+ // the evidence was absent. Record the Owner's *explicit* live attestation
+ // and immediately run the protected database preflight in the same action.
+ if(form.get("reviewed")!=="yes")
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-review-required");
+ const preflight=await client.rpc("owner_privacy_preflight",{p_request:id.data});
+ const candidate=z.object({
+  request_id:z.uuid(),user_id:z.uuid(),kind:z.literal("deletion"),
+  status:z.enum(["open","review"]),verified_email:z.literal(true),
+ }).safeParse(preflight.data);
+ if(preflight.error||!candidate.success)
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-request-ineligible");
+ const attested=await client.rpc("owner_record_privacy_evidence",{
+  p_request:id.data,
+  p_identity:true,p_app:false,p_media:false,p_billing:true,
+  p_processors:true,p_retention:true,p_subscriptions:true,
+  p_erasure:false,p_notice:false,
+  p_reference:"Restricted account erasure: Owner independently confirmed the verified recipient, billing, processors, legal retention and subscription review for "+id.data,
+ });
+ if(attested.error||attested.data!==true)
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-evidence-failed");
  const ready=await client.rpc("owner_prepare_privacy_erasure",{p_request:id.data});
  const operation=z.object({operation_id:z.uuid(),user_id:z.uuid()}).safeParse(ready.data);
- if(ready.error||!operation.success)
-  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-blocked");
+ if(ready.error||!operation.success){
+  const msg=ready.error?.message??"";
+  const cause=msg.includes("Paid or creator data")?"erasure-paid-blocker":
+   msg.includes("Private media")?"erasure-storage-blocker":
+   msg.includes("Unresolved account dependencies")?"erasure-linked-records":
+   msg.includes("Owner erasure forbidden")?"erasure-owner-protected":
+   "erasure-preflight-blocked";
+  redirect("/owner/privacy?preflight="+id.data+"&admin="+cause);
+ }
+ if(operation.data.user_id!==candidate.data.user_id)
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
  const {operation_id:job,user_id:subject}=operation.data;
  const admin=storageAdmin();
  const existing=await admin.auth.admin.getUserById(subject);
- if(existing.error||!existing.data.user?.email||!existing.data.user.email_confirmed_at)
+ if(existing.error||!existing.data.user?.email||!existing.data.user.email_confirmed_at){
+  await admin.rpc("service_finish_privacy_erasure",{
+   p_operation:job,p_success:false,p_code:"auth_user_lookup_failed"
+  });
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
+ }
  const recipient=existing.data.user.email;
  let erased=false;
  let code="auth_erasure_failed";
@@ -83,7 +118,7 @@ export async function executeSafePrivacyErasure(form:FormData){
  if(final.error||final.data!==true)
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
  if(!erased)
-  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-blocked");
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-auth-failed");
  let mail=false;
  try{
   mail=await sendOwnerMail(recipient,
@@ -95,6 +130,14 @@ export async function executeSafePrivacyErasure(form:FormData){
  if(!mail)
   redirect("/owner/privacy?preflight="+id.data+"&admin=erased-notice-pending");
  const notice=await admin.rpc("service_mark_privacy_erasure_notice",{p_operation:job});
+ if(notice.error||notice.data!==true)
+  redirect("/owner/privacy?preflight="+id.data+"&admin=erased-notice-reconciliation-required");
+ // Completing the *review* is separate from deleting the account, but it can
+ // happen automatically once deletion and mail notice are verified.
+ const completed=await client.rpc("owner_review_privacy_request",{
+  p_request:id.data,p_status:"completed",
+  p_response:"Account deletion verified using erasure operation "+job+". Supabase Auth identity removed, first-party records checked, and completion notice dispatched."
+ });
  redirect("/owner/privacy?preflight="+id.data+"&admin="+
-  (!notice.error&&notice.data===true?"erased-notice-sent":"erased-notice-reconciliation-required"));
+  (!completed.error&&completed.data===true?"erasure-complete":"erased-review-pending"));
 }
