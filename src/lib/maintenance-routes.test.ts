@@ -4,7 +4,7 @@ import { isMaintenanceExempt } from "./maintenance-routes";
 describe("maintenance recovery exceptions", () => {
  it.each(["/owner","/owner/settings","/api/v1/billing/webhook","/api/v1/billing/checkout",
  "/auth/callback","/auth/confirm","/sign-in","/forgot-password",
- "/account-restricted","/appeal","/legal","/privacy","/terms","/health",
+ "/account-restricted","/account/data","/account/notifications","/appeal","/legal","/privacy","/terms","/health",
  "/.well-known/snoozer-domain","/_next/image","/media/photo"])(
   "keeps %s available during maintenance", pathname => {
    expect(isMaintenanceExempt(pathname,"GET")).toBe(true);
