@@ -31,6 +31,14 @@ begin
     select id,plan,plan_version,source,starts_at,expires_at,revoked_at,payment_held
     from snoozer.entitlement_grants where owner_id=actor order by starts_at,id
   ) e),'[]'::jsonb),
+  'premium_live_checkout_metadata',coalesce((select jsonb_agg(to_jsonb(c)) from (
+    select id,price_id,session_id,subscription_id,status,created_at,expires_at,
+      reconciliation_revision,last_invoice,last_status,last_checked_at
+    from snoozer.premium_live_checkouts where owner_id=actor order by created_at,id
+  ) c),'[]'::jsonb),
+  'premium_live_customer_reference',coalesce((select jsonb_agg(to_jsonb(c)) from (
+    select customer_id,created_at from snoozer.premium_live_customers where owner_id=actor
+  ) c),'[]'::jsonb),
   'account_restrictions',coalesce((select jsonb_agg(to_jsonb(r)) from (
     select id,kind,reason,created_at,ends_at,revoked_at
     from snoozer.account_restrictions where user_id=actor order by created_at,id
