@@ -11,6 +11,12 @@ The existing private account-notification inbox remains the source of truth. The
 
 Never use `NEXT_PUBLIC_` for these keys. The route `POST /api/internal/owner-notices/dispatch` returns 404 without the bearer token. Do not copy the token into GitHub issues, logs or client code. An Owner with AAL2 can also run a small batch from `/owner/system`.
 
+## Hosting limitation and readiness gate
+
+**Render Free blocks outbound SMTP ports 25, 465 and 587.** Therefore Snoozer's Next.js app cannot reach Zoho SMTP on this plan, even if Supabase Auth (which sends from Supabase infrastructure) can. The mailer now fails closed unless `ZOHO_SMTP_OUTBOUND_ENABLED=true` is set after upgrading to an SMTP-capable hosting plan and verifying the connection. Keep the flag absent/false on Render Free. This does not change Supabase Auth SMTP or in-app notifications. An HTTPS Zoho Mail API transport would require its own OAuth authorisation; it is not currently implemented.
+
+On `/owner/system`, use **Send test email to my verified Owner address** once outgoing SMTP is permitted. This requires Owner MFA AAL2 and a confirmed Owner email, and sends only to that address. It does not create an account grant or moderation action. SMTP acceptance is not proof of inbox delivery.
+
 ## Scheduled delivery
 
 Configure a trusted scheduler (e.g. a Render cron job or Supabase pg_cron/net with a Vault-stored secret) to make a POST request every 5 minutes to `https://www.snoozer.uk/api/internal/owner-notices/dispatch` with header `Authorization: Bearer <OWNER_EMAIL_DISPATCH_TOKEN>`. The dispatcher returns only the count of accepted and failed deliveries, never user emails. Do not enable a scheduler before confirming environment credentials and a recipient-controlled test email in staging. If using Supabase pg_cron, use Vault secrets and never embed tokens as literal SQL.
@@ -28,7 +34,7 @@ Do not send sensitive moderation reasons or audit notes by email; only generic n
 
 ## SMTP provider migration
 
-This transport replaces the previous Brevo API sender for Owner notices and independently verified external appeals; it does **not** change Supabase Auth SMTP. The SMTP connection uses TLS certificate validation on port 465 and fails closed on network or provider errors. Zoho mail credentials are never printed or stored in the repository. New account notices remain in the private inbox if the outbox dispatcher is unconfigured.
+This transport uses Zoho SMTP for Owner notices and independently verified external appeals; it does **not** change Supabase Auth SMTP. The SMTP connection uses TLS certificate validation on port 465 and fails closed on network or provider errors. Zoho mail credentials are never printed or stored in the repository. New account notices remain in the private inbox if the outbox dispatcher is unconfigured.
 
 ## CI baseline verification
 The shared legal-disclosure baseline was repaired on main in [PR #55](https://github.com/Truwty/snoozer-uk/pull/55). This branch must pass the full GitHub Actions suite against that corrected base before being merged.
