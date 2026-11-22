@@ -1,7 +1,7 @@
 -- Authenticated, session-verified export of first-party account data.
 -- Supplements the basic snapshot; does NOT include Stripe processor records,
 -- binary Storage objects or downstream processor data. No deletion is performed.
-create function public.my_extended_account_archive() returns jsonb
+create or replace function public.my_extended_account_archive() returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare actor uuid := snoozer.privacy_actor();
 begin
