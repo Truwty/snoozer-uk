@@ -2,8 +2,8 @@
 import {redirect} from "next/navigation";
 import {requireOwner} from "@/lib/owner/auth";
 import {dispatchOwnerNoticeEmails} from "@/lib/owner/notification-delivery";
-import {sendZohoNotice} from "@/lib/owner/zoho-transport";
-import {zohoMailReady} from "@/lib/owner/mail-readiness";
+
+import {zohoMailReady,sendOwnerMail} from "@/lib/owner/mail-readiness";
 
 export async function runOwnerNoticeDelivery() {
  const {client}=await requireOwner();
@@ -29,7 +29,7 @@ export async function sendOwnerTestEmail(){
   redirect("/owner/system?test=verified-email-required");
  }
  if(!zohoMailReady())redirect("/owner/system?test=unavailable");
- const success=await sendZohoNotice(
+ const success=await sendOwnerMail(
   auth.data.user.email,
   "Snoozer Owner email delivery test",
   "This is a test of the Snoozer Owner notification email transport. No account setting or permission has been changed.\n\nIf you did not request this message, please review access to your Owner account."
