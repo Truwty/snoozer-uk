@@ -803,3 +803,13 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
  .profile-effects-layer b, .profile-card[data-effect-links] .profile-links a { animation: none !important; transition: none !important; transform: none !important; }
 }
 .profile-card[data-effects-disabled="true"][data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
+
+
+/* The visitor override is driven by the button's React state (aria-pressed),
+   not a manually mutated parent attribute that can be lost during hydration. */
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-effects-layer { display: none; }
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-border] { box-shadow: 0 1.25rem 4rem var(--profile-shadow); outline: none; }
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-inner > :is(h1,h2),
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-bio { animation: none !important; -webkit-text-fill-color: currentColor; background: none; text-shadow: none; }
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-interaction="tilt"]:hover { transform: none; }
+.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
