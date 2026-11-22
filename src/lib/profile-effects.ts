@@ -39,6 +39,7 @@ const rank: Record<EffectTier, number> = { free: 0, plus: 1, pro: 2, studio: 3 }
 
 export function effectsAllowed(value: ProfileEffects, tier: EffectTier): boolean {
   if (!value.enabled) return true;
+  if (value.preset === "studio-nebula" && tier !== "studio") return false;
   if (value.background === "gradient" && value.border === "none" && value.text === "none" && value.interaction === "none") return true;
   if (rank[tier] === 0) return false;
   if (value.interaction !== "none" && rank[tier] < 2) return false;
