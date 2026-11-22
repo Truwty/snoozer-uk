@@ -33,13 +33,13 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$DISPATCH_TOKEN"
-          # No --location: do not forward an Authorization header to redirected hosts.
+          # Call the known Render service hostname directly: Snoozer's proxy permits /api/ here.\n          # No --location: never forward Authorization through a redirect.\n          # The public custom domain currently responds HTTP 307 for this POST.
           status="$(curl --silent --show-error --max-time 90 --retry 2 --retry-delay 5 \
             --output dispatch-response.json --write-out '%{http_code}' \
             --request POST \
             --header "Authorization: Bearer $DISPATCH_TOKEN" \
             --header "Content-Type: application/json" \
-            https://www.snoozer.uk/api/internal/owner-notices/dispatch)" || {
+            https://snoozer-uk-staging.onrender.com/api/internal/owner-notices/dispatch)" || {
             echo "::error::Mail dispatch transport failed"
             exit 1
           }
