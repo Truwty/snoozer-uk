@@ -3,7 +3,7 @@ import { requireOwner } from "@/lib/owner/auth";
 import { z } from "zod";
 
 export type MfaResult={error:string;success:string;factorId:string;qr:string};
-export const mfaInitial:MfaResult={error:"",success:"",factorId:"",qr:""};
+const mfaInitial:MfaResult={error:"",success:"",factorId:"",qr:""};
 export async function enrollOwnerMfa(_:MfaResult):Promise<MfaResult> {
  const {client}=await requireOwner();
  const {data,error}=await client.auth.mfa.enroll({factorType:"totp",friendlyName:"Snoozer Owner"});
