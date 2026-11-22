@@ -1,0 +1,12 @@
+import { z } from "zod";
+import Link from "next/link";
+import { requireOwner } from "@/lib/owner/auth";
+const schema=z.array(z.object({id:z.number(),actor_id:z.uuid(),target_id:z.uuid().nullable(),action:z.string(),reason:z.string().nullable(),details:z.record(z.string(),z.unknown()),occurred_at:z.string()}));
+export default async function OwnerAudit() {
+ const {client}=await requireOwner();const {data,error}=await client.rpc("owner_audit",{p_limit:100});const events=schema.safeParse(data);
+ return <main className="stack"><h1>Administrative audit log</h1><p className="muted">Append-only records of committed Owner operations. Newest 100 entries.</p>
+ {error||!events.success?<p role="alert">Audit log unavailable.</p>:<div className="panel owner-profiles-list"><table><thead><tr><th>Time</th><th>Action</th><th>Target</th><th>Reason</th></tr></thead><tbody>
+ {events.data.map(e=><tr key={e.id}><td>{new Date(e.occurred_at).toLocaleString("en-GB")}</td><td>{e.action}</td><td>{e.target_id?<Link href={"/owner/users/"+e.target_id}>{e.target_id}</Link>:"Platform"}</td><td>{e.reason??"—"}</td></tr>)}
+ </tbody></table></div>}
+ </main>;
+}

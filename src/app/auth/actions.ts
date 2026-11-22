@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
-import { sessionClient, sessionClientForSlot } from "@/lib/supabase";
+import { anonymousClient, sessionClient, sessionClientForSlot } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { currentSlot, storedAccounts, saveAccount, markPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
 
@@ -22,6 +22,8 @@ export async function register(_: ActionState, form: FormData): Promise<ActionSt
   if (!address.success || !password.success) return error("Enter a valid email and a password of 12–72 bytes.");
   if (!supabaseUrl || !supabaseKey) return unavailable();
 
+  const availability = await anonymousClient().rpc("registration_is_enabled");
+  if (availability.error || availability.data !== true) return error("Email registration is currently unavailable.");
   const client = await sessionClient();
   const result = await client.auth.signUp({
     email: address.data, password: password.data,

@@ -836,3 +836,16 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .owner-profiles-list th, .owner-profiles-list td { padding: .8rem .6rem; border-bottom: 1px solid var(--line, rgba(150, 180, 170, .22)); text-align: left; }
 .owner-profiles-list th { color: var(--muted, #b3c3bf); }
 .owner-console h1 .profile-owner-badge { vertical-align: middle; }
+
+/* Platform administration navigation. Keep all controls usable at mobile widths. */
+.owner-nav { display: flex; flex-wrap: wrap; gap: .45rem; padding-block: .25rem; }
+.owner-nav .button { white-space: nowrap; }
+.owner-nav + main { min-width: 0; padding-bottom: 4rem; }
+.owner-nav + main .panel { min-width: 0; }
+.owner-nav + main form input, .owner-nav + main form select,
+.owner-nav + main form textarea { max-width: 100%; }
+@media (max-width: 560px) {
+  .owner-nav { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .6rem; }
+  .owner-nav + main h1 { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .owner-nav + main .actions { flex-wrap: wrap; }
+}
