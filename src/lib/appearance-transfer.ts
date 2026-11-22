@@ -6,7 +6,7 @@ const transfer = z.strictObject({
   theme: z.enum(themes),
   appearance: profileAppearance.omit({ backgroundImage: true }),
 });
-export const appearanceTransferLimit = 512;
+export const appearanceTransferLimit = 2048;
 export type AppearanceSettings = Omit<z.output<typeof transfer>, "version">;
 
 export function exportAppearance(settings: Pick<PublishedProfile, "theme" | "appearance">) {
