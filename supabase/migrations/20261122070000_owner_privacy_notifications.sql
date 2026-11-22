@@ -2,7 +2,7 @@
 -- Deliberately does NOT delete Auth users or Stripe evidence automatically.
 create table snoozer.privacy_requests (
  id uuid primary key default gen_random_uuid(),
- user_id uuid not null references auth.users(id) on delete restrict,
+ user_id uuid not null,
  kind text not null check(kind in ('export','deletion')),
  status text not null default 'open' check(status in ('open','review','completed','rejected','cancelled')),
  requested_at timestamptz not null default now(),
@@ -110,7 +110,7 @@ begin
  when 'account.reinstate' then kind:='reinstatement';heading:='Account access restored';copy:='Your account restriction was lifted. You can sign in again.';
  when 'premium.grant' then kind:='premium_granted';heading:='Premium access granted';copy:='An Owner has granted Premium access to your account. Check your plan in Studio.';
  when 'premium.revoke' then kind:='premium_revoked';heading:='Premium grant revoked';copy:='An Owner-issued Premium grant has been revoked. Paid subscriptions are not affected by this notice.';
- when 'moderation.appeal_review' then kind:='appeal_review';heading:='Appeal reviewed';copy:='Your appeal received an Owner response. Review your case and appeal status.';
+ when 'moderation.appeal' then kind:='appeal_review';heading:='Appeal reviewed';copy:='Your appeal received an Owner response. Review your case and appeal status.';
  else return new;
  end case;
  insert into snoozer.account_notifications(user_id,kind,title,body)
