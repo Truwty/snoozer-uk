@@ -12,7 +12,7 @@
 
 **Database rollout:** migration `20261122040354_advanced_profile_effects.sql` applied to connected `snoozer-staging` Supabase project and directly verified (validator exists, valid payload accepted, Free paid effects rejected, Plus permitted). No Stripe/billing gate changes.
 
-**Release follow-up:** Verify the Render deployment after merging PR #39; mobile frame-rate/device testing remains a performance follow-up, and cursor trail is a lightweight CSS spotlight-following treatment rather than a full multi-point trail. Those advanced polish items remain partially complete in the feature ledger, not falsely marked as comprehensive. No claim of a live deployment until observed.
+**Release verified:** PR #39 merged to `main` at commit `225d0568282464380f60105c75a04d0f0b7f6875`. Render deployment `dep-dc16nbnmocus73an48v0` reported `live` on 22 November 2026 at 04:15 UTC. The baseline is deployed. Direct public HTTP probing from the execution environment was unavailable; the deployment assertion is based on Render's status. Low-end mobile frame-rate validation and a full multi-point cursor trail remain feature-polish follow-ups.
 
 Relevant sources: `src/lib/profile-effects.ts`, `src/components/effects-editor.tsx`, `src/components/profile-effects.tsx`, `supabase/migrations/20261122040354_advanced_profile_effects.sql`.
 
