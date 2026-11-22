@@ -4,7 +4,7 @@ The independent `/appeal/external` route is available to **signed-out users**, i
 
 ### Required before enabling provider-level bans
 
-1. Verify `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD` and `SNOOZER_NOTIFICATION_FROM` in Render, and enable `ZOHO_SMTP_OUTBOUND_ENABLED=true` only after moving to an SMTP-capable plan (same Zoho sender as account notices). A Supabase Auth SMTP sender does **not** supply these settings automatically.
+1. Configure Zoho Mail HTTPS API OAuth credentials in Render (recommended on Render Free): `ZOHO_MAIL_REGION`, `ZOHO_MAIL_ACCOUNT_ID`, `ZOHO_OAUTH_CLIENT_ID`, `ZOHO_OAUTH_CLIENT_SECRET`, `ZOHO_OAUTH_REFRESH_TOKEN`, and `SNOOZER_NOTIFICATION_FROM`. Alternatively use SMTP only on an SMTP-capable hosting plan with `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD`, and `ZOHO_SMTP_OUTBOUND_ENABLED=true`. A Supabase Auth SMTP sender does **not** supply these settings automatically.
 2. With a disposable non-Owner staging account and an eligible moderation case, exercise the external appeal flow end-to-end. Confirm the email is accepted and arrives; consume link once; verify replay is rejected, the moderation queue receives the appeal and no account session is required.
 3. Check the internal account ban and Owner AAL2 checks with the staging account. **Never test ban/unban using the actual protected Owner identity.**
 4. Only after the above, set server-only `SNOOZER_ENABLE_AUTH_BANS=true` on Render. Default absent/false deliberately disables provider bans and preserves existing in-app moderation. This flag is not part of any `NEXT_PUBLIC_` configuration.
