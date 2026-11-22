@@ -42,7 +42,9 @@ test("only Owner AAL2 may erase dependency-free disposable Auth users, preservin
   "exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres",
   "-v","ON_ERROR_STOP=1","-c",query
  ],{encoding:"utf8"});
- sql("insert into snoozer.platform_owners(owner_id) values('"+ownerId+"')");
+ sql("insert into snoozer.platform_owners(owner_id) values('"+ownerId+"');"+
+  "insert into snoozer.profiles(owner_id,username,display_name) values('"+
+    memberId+"','erasure-ci-"+randomUUID().slice(0,8)+"','Disposable CI Profile')");
  const owner=createClient(url,key,{auth:{persistSession:false}});
  const member=createClient(url,key,{auth:{persistSession:false}});
  const blocked=createClient(url,key,{auth:{persistSession:false}});
