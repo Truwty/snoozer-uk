@@ -1,3 +1,23 @@
+## Feature #20 production acceptance checkpoint — 22 November 2026, 08:40 UTC
+
+**Merge/deploy:** PR #52 (signup hook), PR #53 (email outbox), and PR #56 (independent appeals and guarded Auth bans) are merged. PR #54 was closed unmerged as superseded by #56. GitHub Actions run [45003124370](https://github.com/Truwty/snoozer-uk/actions/runs/45003124370) succeeded for current main commit `349c0b3d42451a948a8067153d728d330c866023`. Render deployment `dep-dc1agbmtlv9c73bigun0` reports **live** on that commit. No ERROR-level logs were returned for the sampled post-release Render window (08:30 onwards); this is not proof of zero runtime defects.
+
+**Hosted Supabase:** Project `edgptbiwswcdmmxzwhxv` reports ACTIVE_HEALTHY. Migration versions `20261122082136` (signup hook), `20261122082150` (outbox), `20261122082942` (external appeals), and `20261122082944` (provider ban) are installed. SQL verified `supabase_auth_admin` has EXECUTE on `public.snoozer_before_user_created`, while `anon` and `authenticated` do not. The two service-role outbox RPCs also deny both public roles. Zero queued notification email deliveries at inspection. **These observations do not establish that the hook is enabled in the Auth dashboard, that Brevo is configured on Render, or that a real recipient received an email.**
+
+**Outstanding hard acceptance gates — do not claim completed:**
+1. Enable **Before User Created** hook in the Supabase Auth dashboard and perform real first-time Discord and email signup tests both on and off, plus existing-account sign-in tests. Database privileges alone do not activate the hook.
+2. Configure verified Brevo sender, secret API key and long independent dispatcher token on Render; verify end-to-end recipient-controlled test email and retry behavior. After that, configure trusted scheduled dispatch. Do not expose secrets in GitHub.
+3. Exercise `/appeal/external` with a disposable non-Owner banned-user scenario, including one-use token replay protection, real delivery and moderation appeal creation. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until proved.
+4. Implement and separately test actual complete cross-provider personal-data export/erasure processing, identity verification, lawful retention and Stripe/Storage handling. The existing basic snapshot and review queue are **not** full GDPR fulfilment.
+5. Verify project-specific health/latency and alert routing, not just public provider status; retain the existing hourly availability monitor. Demonstrate an actionable alert and safe recovery procedure.
+6. Run real Owner AAL2/TOTP browser acceptance, ordinary-user denial, privacy/appeal access for restricted users, and production billing smoke without recording MFA codes or disrupting customer subscriptions.
+
+**Security reviewer note:** Supabase security advisor returned informational RLS/no-policy findings on private-schema tables. Do not automatically add permissive policies; verify grants, schema exposure and intended RPC access before changing any security policy. Run security advisors again after DDL changes.
+
+**Release disposition:** Code merged and deployed; Feature #20 still **NOT fully production-accepted**. Keep privileged provider enforcement fail-closed, do not automatically erase legal/billing evidence, and do not represent sender API acceptance as confirmed inbox delivery.
+
+---
+
 ## Owner account snapshot — LIVE, 22 November 2026, 07:22 UTC
 
 [PR #51](https://github.com/Truwty/snoozer-uk/pull/51) merged to `main` as `3ba12042c08441ed285ec4012ce417e0f614e39a`; [CI #44997231296](https://github.com/Truwty/snoozer-uk/actions/runs/44997231296) passed secret scanning, audit, lint, TypeScript, unit, disposable Supabase, Next build and Playwright. Render deployment `dep-dc19fdmtlv9c73bflli0` reported **live** on the exact merged code; no error-level logs in the inspected deploy window. Adds a no-store, verified-user JSON download at `/api/v1/account/data-snapshot` and linked `/account/data` interface. The archive contains a **basic own-account snapshot only** (identity fields, privacy request history, in-app notices). Anonymous access is tested to return 401. It does not include all stored user data, media, payment records or external processors and must not be called a full GDPR export.

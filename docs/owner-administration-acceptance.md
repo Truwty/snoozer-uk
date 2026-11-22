@@ -27,3 +27,8 @@ Every new admin read/write must enforce verified Owner identity in the database 
 - [PR #44](https://github.com/Truwty/snoozer-uk/pull/44), [PR #45](https://github.com/Truwty/snoozer-uk/pull/45), [PR #46](https://github.com/Truwty/snoozer-uk/pull/46).
 - [PR #47](https://github.com/Truwty/snoozer-uk/pull/47), [PR #48](https://github.com/Truwty/snoozer-uk/pull/48), [PR #49](https://github.com/Truwty/snoozer-uk/pull/49), [PR #50](https://github.com/Truwty/snoozer-uk/pull/50).
 - CI run IDs and Render deploy IDs are tracked in `docs/PROGRESS.md` and `docs/CONTINUE.md`.
+
+## Monitoring addition — pending CI and merge
+
+A scheduled GitHub Actions workflow `.github/workflows/production-health.yml` checks production `/health/live` (app process), `/health/ready` (Supabase RPC and private Storage readiness), `/sign-in`, and `/appeal/external`. It retries transient probe failures three times, opens or updates a GitHub issue titled **Snoozer production health alert** on failure, and closes it on recovery. No provider credentials or raw response bodies are written into incident issues. This is external black-box readiness monitoring, **not** direct Render/Stripe/Supabase private API telemetry, uptime SLA evidence, or a proven notification-delivery test. Scheduled runs require GitHub Actions enabled; verify the automatic main-branch push probe after merge (or run `workflow_dispatch`) and confirm issue notifications are subscribed.
+
