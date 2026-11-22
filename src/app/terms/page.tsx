@@ -32,8 +32,8 @@ export default function Terms() {
     <section className="legal-section stack">
       <h2>Snoozer Premium subscriptions</h2>
       <p>Premium Plus, Pro and Studio are optional recurring subscriptions sold by Snoozer, not by other users. The chosen plan, full GBP price and monthly or annual billing frequency are displayed before payment. The subscription renews at the selected interval until you cancel it. Stripe handles payment processing; Snoozer supplies access to the plan and remains responsible for its own customer obligations.</p>
-      <p>When subscriptions are available, you can use the Billing Portal in Studio to update your payment method, view invoices and cancel future renewals. Cancellation stops further scheduled renewals and normally leaves access available until the end of your paid period; access may end sooner where a charge is refunded, disputed or reversed. Contact SnoozerSupport@Snoozer.uk if the portal is unavailable or you need help with a refund, cancellation or billing error.</p>
-      <p>Refunds and statutory cancellation rights are assessed under the consumer law applicable to the transaction. Nothing in these terms removes your statutory rights, including any applicable cooling-off rights. A cancellation of future renewals is not, by itself, a request for a refund of a payment already taken.</p>
+      <p>When subscriptions are available, you can use the Billing Portal in Studio to update your payment method, view invoices and cancel future renewals. Cancellation stops further scheduled renewals and normally leaves access available until the end of your paid period; access may end sooner where a charge is refunded, disputed or reversed. Contact snoozersupport@snoozer.uk if the portal is unavailable or you need help with a refund, cancellation or billing error.</p>
+      <p>Snoozer generally does not offer voluntary refunds for subscription charges. This does not remove any refund, remedy or cancellation right you have under the consumer law that applies to your purchase, including any applicable cooling-off rights or rights for services that are faulty or not provided as described. Cancelling future renewals does not, by itself, request a refund for a payment already taken. Email snoozersupport@snoozer.uk if you believe a statutory refund or other remedy applies.</p>
     </section>
     <section className="legal-section stack">
       <h2>Liability and changes</h2>
@@ -42,7 +42,7 @@ export default function Terms() {
     </section>
     <section className="legal-section stack">
       <h2>Contact</h2>
-      <p>For questions about these terms, email <a href="mailto:SnoozerSupport@Snoozer.uk">SnoozerSupport@Snoozer.uk</a>.</p>
+      <p>Snoozer is a trading name used by a UK sole trader. For questions about these terms or your subscription, email <a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a>.</p>
     </section>
   </LegalPage>;
 }

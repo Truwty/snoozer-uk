@@ -38,7 +38,7 @@ export default function Privacy() {
     </section>
     <section className="legal-section stack">
       <h2>Security and contact</h2>
-      <p>We use technical and organisational safeguards appropriate to the service, but no online service can guarantee absolute security. For privacy questions or requests, email <a href="mailto:SnoozerSupport@Snoozer.uk">SnoozerSupport@Snoozer.uk</a>.</p>
+      <p>We use technical and organisational safeguards appropriate to the service, but no online service can guarantee absolute security. For privacy questions or requests, email <a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a>.</p>
       <p>Snoozer may update this policy as the service changes. The current version will be published on this page.</p>
     </section>
   </LegalPage>;

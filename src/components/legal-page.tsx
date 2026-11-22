@@ -19,7 +19,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
     </article>
     <footer className="legal-footer">
       <Link href="/">Back to Snoozer</Link>
-      <a href="mailto:SnoozerSupport@Snoozer.uk">Contact support</a>
+      <a href="mailto:snoozersupport@snoozer.uk">Contact support</a>
     </footer>
   </main>;
 }
