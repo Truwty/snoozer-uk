@@ -168,7 +168,6 @@ export default function LegalInformationPage() {
         <div><dt>Legal proprietor</dt><dd>Snoozer</dd></div>
         <div><dt>Business structure</dt><dd>UK sole trader</dd></div>
         <div><dt>Support and business enquiries</dt><dd><a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a></dd></div>
-        <div><dt>Business correspondence and service address</dt><dd>Not yet published. The appropriate geographical address must be added before paid subscriptions are offered.</dd></div>
       </dl>
       <p>For detailed plan terms, see <Link href="/terms">Terms and Conditions</Link>. For processing of personal data, see <Link href="/privacy">Privacy Policy</Link>. If you intend to make a purchase, first review <Link href="/pricing">Pricing</Link> and the available cancellation information.</p>
     </section>
