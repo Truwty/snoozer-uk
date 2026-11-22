@@ -1,4 +1,6 @@
 import Link from "next/link";
+import {changeProviderBan} from "../provider-ban-actions";
+import {providerBanConfigured} from "@/lib/owner/provider-ban-config";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwner } from "@/lib/owner/auth";
@@ -46,6 +48,30 @@ export default async function Account({params,searchParams}:{params:Promise<{id:
     <label>Reason<input name="reason" required minLength={8} maxLength={500}/></label>
     <button className="button" type="submit">Apply restriction (MFA required)</button>
    </form>}
+  </section>
+  <section className="panel stack">
+   <h2>Supabase Auth provider access</h2>
+   <p className="muted">Additional provider-level controls. Requires an active internal ban and an actioned moderation case. An email-verified appeal route at /appeal/external must be tested with your Brevo sender before enabling these controls. The Owner registry cannot be banned.</p>
+   <p>{providerBanConfigured()?"Provider ban controls enabled for verified Owner MFA.":"Provider ban controls disabled until independent email appeals have been tested and the server-only safety flag is enabled."}</p>
+   {!u.is_owner && providerBanConfigured() && <>
+    <form action={changeProviderBan} className="stack">
+     <input type="hidden" name="user" value={id}/>
+     <input type="hidden" name="operation" value="ban"/>
+     <h3>Apply provider ban</h3>
+     <label>Linked actioned case UUID<input name="case" required maxLength={36}/></label>
+     <label>Provider ban hours<input name="hours" type="number" min={1} max={876000} defaultValue={720} required/></label>
+     <label>Reason<input name="reason" minLength={8} maxLength={500} required/></label>
+     <button className="button">Ban in Supabase Auth (MFA required)</button>
+    </form>
+    <form action={changeProviderBan} className="stack">
+     <input type="hidden" name="user" value={id}/>
+     <input type="hidden" name="operation" value="unban"/>
+     <h3>Lift provider ban</h3>
+     <p>Lift the internal account restriction first. Existing paid Premium is unchanged.</p>
+     <label>Reason<input name="reason" minLength={8} maxLength={500} required/></label>
+     <button className="button">Unban in Supabase Auth (MFA required)</button>
+    </form>
+   </>}
   </section>
   <section className="panel stack"><h2>Premium entitlements</h2>
    {u.grants.map(g=><div key={g.id} className="stack">
