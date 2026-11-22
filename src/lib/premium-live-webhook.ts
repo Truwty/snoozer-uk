@@ -36,7 +36,8 @@ export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Even
     if (owner || attempt) {
       // The same Stripe account may receive unrelated Checkout events. Only an explicitly
       // marked Snoozer attempt may bind a subscription or affect a Snoozer entitlement.
-      if (!z.uuid().safeParse(owner).success || !z.uuid().safeParse(attempt).success
+      if (typeof owner !== "string" || !z.uuid().safeParse(owner).success
+        || typeof attempt !== "string" || !z.uuid().safeParse(attempt).success
         || session.client_reference_id !== owner)
         throw new Error("Invalid Snoozer Checkout ownership metadata.");
       if (!session.livemode || session.mode !== "subscription" || session.status !== "complete")
