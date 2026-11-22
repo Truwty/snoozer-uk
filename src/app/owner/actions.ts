@@ -121,3 +121,12 @@ export async function changeEffectsSetting(form:FormData) {
  const ok=await invoke("owner_set_setting",{p_name:"effects_enabled",p_value:get(form,"enabled")==="true",p_revision:revision.data,p_reason:why.data});
  url("/owner/settings",ok?"updated":"denied");
 }
+
+export async function changeMaintenanceSetting(form: FormData) {
+ const revision=z.coerce.number().int().positive().safeParse(get(form,"revision"));
+ const why=reason.safeParse(get(form,"reason"));
+ const enabled=z.enum(["true","false"]).safeParse(get(form,"enabled"));
+ if(!revision.success||!why.success||!enabled.success) url("/owner/settings","invalid");
+ const ok=await invoke("owner_set_setting",{p_name:"maintenance_enabled",p_value:enabled.data==="true",p_revision:revision.data,p_reason:why.data});
+ url("/owner/settings",ok?"updated":"denied");
+}

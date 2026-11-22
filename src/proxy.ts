@@ -1,3 +1,4 @@
+import { isMaintenanceExempt } from "@/lib/maintenance-routes";
 import { domainName, domainRoute } from "@/lib/domains";
 import { domainHostHeader, domainUserHeader } from "@/lib/domain-context";
 import { refreshDomain } from "@/lib/domains-server";
@@ -8,7 +9,7 @@ import { anonymousClient } from "@/lib/supabase";
 import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge } from "@/lib/account-sessions";
 import { canonicalUsername, username } from "@/lib/profile";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "pricing", "help", "legal", "owner", "appeal", "report", "account-restricted"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "pricing", "help", "legal", "owner", "appeal", "report", "account-restricted", "maintenance"]);
 // Creator marketplace removed. Keep Snoozer-owned Premium subscriptions under /studio/plan
 // and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
 // is intentionally disabled. Never reopen seller onboarding.
@@ -49,6 +50,23 @@ export async function proxy(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.set("Content-Security-Policy", csp);
   headers.delete(domainHostHeader); headers.delete(domainUserHeader);
+  if (!isMaintenanceExempt(request.nextUrl.pathname, request.method) && supabaseUrl && supabaseKey) {
+    // A provider outage must never make the Owner recovery route inaccessible.
+    // A transient RPC failure fails open, while a confirmed maintenance flag
+    // rewrites public pages to a real 503 (never caches successful content).
+    const status = await anonymousClient().rpc("platform_maintenance_enabled");
+    if (!status.error && status.data === true) {
+      const unavailable = NextResponse.rewrite(new URL("/maintenance", request.url), {
+        status: 503, request: { headers },
+      });
+      unavailable.headers.set("Content-Security-Policy", csp);
+      unavailable.headers.set("X-Content-Type-Options", "nosniff");
+      unavailable.headers.set("Referrer-Policy", "no-referrer");
+      unavailable.headers.set("Cache-Control", "private, no-store");
+      unavailable.headers.set("Retry-After", "300");
+      return unavailable;
+    }
+  }
   const host = (request.headers.get("host") ?? request.nextUrl.host).toLowerCase();
   const deploymentAlias = host !== siteUrl().host.toLowerCase() && host === process.env.RENDER_EXTERNAL_HOSTNAME?.toLowerCase();
   const custom = host !== siteUrl().host.toLowerCase() && !deploymentAlias;
