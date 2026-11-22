@@ -1,7 +1,7 @@
 import { z } from "zod";
 import Link from "next/link";
 import { requireOwner } from "@/lib/owner/auth";
-const schema=z.array(z.object({id:z.number(),actor_id:z.uuid(),target_id:z.uuid().nullable(),action:z.string(),reason:z.string().nullable(),details:z.record(z.string(),z.unknown()),occurred_at:z.string()}));
+const schema=z.array(z.object({id:z.number(),actor_id:z.uuid().nullable(),target_id:z.uuid().nullable(),action:z.string(),reason:z.string().nullable(),details:z.record(z.string(),z.unknown()),occurred_at:z.string()}));
 export default async function OwnerAudit({searchParams}:{searchParams:Promise<{before?:string}>}) {
  const beforeRaw=(await searchParams).before;
  const before=beforeRaw&&/^\d+$/.test(beforeRaw)?Number(beforeRaw):null;
