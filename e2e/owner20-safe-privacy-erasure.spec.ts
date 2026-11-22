@@ -97,6 +97,11 @@ test("only Owner AAL2 may erase dependency-free disposable Auth users, preservin
   const deleted=await admin.auth.admin.deleteUser(memberId);
   expect(deleted.error).toBeNull();
   memberErased=true;
+  const auditAfter=await owner.rpc("owner_audit_page",{p_before:null,p_limit:100});
+  expect(auditAfter.error).toBeNull();
+  expect(auditAfter.data).toEqual(expect.arrayContaining([
+   expect.objectContaining({actor_id:null,target_id:memberId,action:"privacy.request"})
+  ]));
   const final=await admin.rpc("service_finish_privacy_erasure",{
    p_operation:prepared.data.operation_id,p_success:true
   });
