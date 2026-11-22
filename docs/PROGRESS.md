@@ -1,5 +1,12 @@
 # Snoozer.uk — current development progress (21 November 2026)
 
+## Priority 1 billing-readiness work — 22 November 2026
+
+Snoozer LIVE Stripe webhook `we_1UeKYyBYH85ysT1BSqAlpvsk` enabled with 14 configured events. [PR #35](https://github.com/Truwty/snoozer-uk/pull/35) hardens Checkout-to-user webhook-binding race retries, payment event and entitlement tests, exact preflight verification, subscriber disclosures and dynamic pricing copy. Real signed event delivery and payment acceptance **not yet proven**. Server and hosted DB Checkout gates remain OFF, zero live subscribers, no real charge or refund performed. See [acceptance evidence](premium-live-acceptance.md).
+
+---
+
+
 ## Production release — 22 November 2026, 00:01 UTC
 
 **Released:** persistent sign-in, multi-account switching, top-bar redesign, Snoozer Premium Pricing and first-party searchable Help Center. [PR #33](https://github.com/Truwty/snoozer-uk/pull/33) squash-merged as [7cd4fd8](https://github.com/Truwty/snoozer-uk/commit/7cd4fd8b1916d11ffbcdc78b13a5680e527cae05); [CI #44964090069](https://github.com/Truwty/snoozer-uk/actions/runs/44964090069) fully green including disposable Supabase E2E and WCAG checks; Render deploy `dep-dc130j0u01pc738k0cfg` **Live** 2026-11-22 00:00:46 UTC with zero checked ERROR-level logs. Duplicate PR #34 was closed unmerged. Direct external HTTP smoke unavailable through the web tool.

@@ -30,6 +30,12 @@ export default function Terms() {
       <p>If paid features or purchases are offered, the checkout page and any product-specific terms will explain the price and relevant conditions. Nothing in these terms removes consumer rights that cannot legally be excluded.</p>
     </section>
     <section className="legal-section stack">
+      <h2>Snoozer Premium subscriptions</h2>
+      <p>Premium Plus, Pro and Studio are optional recurring subscriptions sold by Snoozer, not by other users. The chosen plan, full GBP price and monthly or annual billing frequency are displayed before payment. The subscription renews at the selected interval until you cancel it. Stripe handles payment processing; Snoozer supplies access to the plan and remains responsible for its own customer obligations.</p>
+      <p>When subscriptions are available, you can use the Billing Portal in Studio to update your payment method, view invoices and cancel future renewals. Cancellation stops further scheduled renewals and normally leaves access available until the end of your paid period; access may end sooner where a charge is refunded, disputed or reversed. Contact SnoozerSupport@Snoozer.uk if the portal is unavailable or you need help with a refund, cancellation or billing error.</p>
+      <p>Refunds and statutory cancellation rights are assessed under the consumer law applicable to the transaction. Nothing in these terms removes your statutory rights, including any applicable cooling-off rights. A cancellation of future renewals is not, by itself, a request for a refund of a payment already taken.</p>
+    </section>
+    <section className="legal-section stack">
       <h2>Liability and changes</h2>
       <p>Snoozer is provided subject to the protections and limits allowed by applicable law. Nothing here excludes liability where exclusion is unlawful, including liability for fraud or for death or personal injury caused by negligence. You remain responsible for your content, links and use of the service.</p>
       <p>We may update these terms as Snoozer changes. The current version will be published on this page. Continued use after an update takes effect means you accept the updated terms to the extent permitted by law.</p>

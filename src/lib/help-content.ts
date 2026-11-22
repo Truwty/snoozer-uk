@@ -115,7 +115,7 @@ export const helpArticles: HelpArticle[] = [
       ] },
       { heading: "When Checkout becomes available", paragraphs: [
         "Subscriptions are handled by Stripe. When available, you will review the price and billing frequency before paying. The Billing Portal supports payment-method updates, invoices and cancellation at the end of a paid period.",
-        "Until Checkout is live, nobody can purchase a Premium subscription through the site. Contact support for questions about billing, refunds or accessibility.",
+        "The Pricing page reflects whether live Checkout is currently available. All plans renew monthly or yearly until cancelled; you can use the Billing Portal to cancel future renewals. Contact SnoozerSupport@Snoozer.uk for billing issues, refunds, cancellation or accessibility. Statutory consumer rights are not waived.",
       ] },
     ],
   },

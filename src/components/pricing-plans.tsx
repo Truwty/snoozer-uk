@@ -9,7 +9,7 @@ const plans = [
   { name: "Studio", monthly: 12, annual: 100, profiles: 50, links: 2000, media: "50 GB", domains: 10, description: "Your whole digital world in one place.", features: ["50 profiles", "2,000 links per profile", "50 GB media storage", "10 custom domains"] },
 ] as const;
 
-export function PricingPlans() {
+export function PricingPlans({ checkoutAvailable }: { checkoutAvailable: boolean }) {
   const [annual, setAnnual] = useState(false);
   const money = (amount: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(amount);
   return <section className="pricing-section" aria-labelledby="premium-tiers">
@@ -27,10 +27,10 @@ export function PricingPlans() {
         <p className="muted">{plan.description}</p>
         <p className="pricing-value"><strong>{money(annual ? plan.annual : plan.monthly)}</strong><span>/{annual ? "year" : "month"}</span></p>
         <p className="pricing-saving">{annual ? `Save ${money(plan.monthly * 12 - plan.annual)} per year` : "Billed monthly, cancel via your billing portal."}</p>
-        <Link className="button primary pricing-cta" href="/studio/plan">Choose {plan.name}</Link>
+        <Link className="button primary pricing-cta" href="/studio/plan">{checkoutAvailable ? `Choose ${plan.name}` : `View ${plan.name} details`}</Link>
         <ul className="pricing-features">{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
       </article>)}
     </div>
-    <p className="pricing-clarification">These are Snoozer’s approved recurring prices in GBP. Live Checkout is being verified before launch. No payment is taken by browsing this page. Once subscriptions are enabled, select a plan in Studio and review the recurring terms before paying.</p>
+    <p className="pricing-clarification">{checkoutAvailable ? "Snoozer Premium subscriptions are available through Studio and Stripe Checkout. Plans renew monthly or yearly until cancelled. You can manage cancellation and payment details through the Billing Portal. The final price and frequency are shown before you pay." : "These are Snoozer’s approved recurring prices in GBP. Live Checkout is being verified before launch and cannot take payments yet. You can compare plans now and return when billing is enabled."} No payment is taken by browsing this page.</p>
   </section>;
 }

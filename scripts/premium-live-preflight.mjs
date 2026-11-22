@@ -91,11 +91,25 @@ if (key && account) {
   }
   try {
     const hooks = await stripe.webhookEndpoints.list({ limit: 100 });
-    const webhook = hooks.data.find(x => x.url ===
-      "https://snoozer-uk-staging.onrender.com/api/v1/billing/stripe/live-webhook"
-      && !x.connect);
-    if (!webhook || webhook.status !== "enabled") blockers.push("LIVE Premium webhook is not enabled.");
-    else ok.push("Configured live-only Premium webhook endpoint found.");
+    const expectedEvents = [
+      "checkout.session.completed", "checkout.session.async_payment_succeeded",
+      "checkout.session.expired", "customer.subscription.created",
+      "customer.subscription.updated", "customer.subscription.deleted",
+      "invoice.paid", "invoice.payment_failed", "invoice.payment_action_required",
+      "invoice.finalization_failed", "charge.refunded", "charge.dispute.created",
+      "charge.dispute.closed", "radar.early_fraud_warning.created",
+    ];
+    const webhook = hooks.data.find(x => x.id === "we_1UeKYyBYH85ysT1BSqAlpvsk");
+    const expectedUrl = "https://snoozer-uk-staging.onrender.com/api/v1/billing/stripe/live-webhook";
+    if (!webhook || webhook.url !== expectedUrl || !webhook.livemode || webhook.connect) {
+      blockers.push("The exact LIVE Premium webhook endpoint or its account is missing/mismatched.");
+    } else if (webhook.status !== "enabled") {
+      blockers.push("LIVE Premium webhook is configured but disabled.");
+    } else {
+      const missingEvents = expectedEvents.filter(type => !webhook.enabled_events.includes(type));
+      if (missingEvents.length) blockers.push("LIVE Premium webhook is missing required events: " + missingEvents.join(", "));
+      else ok.push("Correct LIVE Premium webhook destination, status and all 14 event types confirmed.");
+    }
   } catch { blockers.push("Unable to audit the live webhook with this API key; verify it in Stripe Workbench."); }
 }
 if (secret) ok.push("Separate webhook signing secret is present (signature delivery not yet proven).");

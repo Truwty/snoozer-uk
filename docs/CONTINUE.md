@@ -1,5 +1,14 @@
 # Development continuation — Snoozer.uk
 
+## Priority 1 billing readiness — 22 November 2026
+
+**Implementation in [PR #35](https://github.com/Truwty/snoozer-uk/pull/35):** public Pricing responds to the real application/database Checkout gates; Terms and Help explain recurring subscriptions, renewal, cancellation and support; startup preflight checks the exact Stripe webhook destination and 14 event types; new unit tests cover signed-webhook dispatch, retries, idempotence and provider-backed entitlement reconciliation.
+
+**Provider action completed:** LIVE webhook `we_1UeKYyBYH85ysT1BSqAlpvsk` was enabled on the correct Snoozer LIVE Stripe account with all 14 event types. API key read-only authentication and six live GBP Prices were previously verified. **Checkout remains deliberately disabled** in Render and database; hosted preflight confirms zero live customers and subscriptions. No real charge has been processed. Actual signed webhook delivery, provider acceptance payments, renewal/refund/failure flows and seller/consumer disclosures require separate real-world verification. See [Premium acceptance matrix](premium-live-acceptance.md). Do not override the launch gates based solely on mock tests or configured webhook status.
+
+---
+
+
 ## Latest continuation — 22 November 2026, 00:01 UTC (supersedes older key warning)
 
 **COMPLETE AND LIVE: persistent sign-in, multi-account switching, shared navigation, Pricing and Help Center.** PR [#33](https://github.com/Truwty/snoozer-uk/pull/33) merged to main as [7cd4fd8](https://github.com/Truwty/snoozer-uk/commit/7cd4fd8b1916d11ffbcdc78b13a5680e527cae05). [CI #44964090069](https://github.com/Truwty/snoozer-uk/actions/runs/44964090069) passed audit/lint/typecheck/unit/Supabase/build/Playwright accessibility and integration checks. Duplicate PR #34 closed unmerged. Render deploy `dep-dc130j0u01pc738k0cfg` confirmed **live** 22 Nov 00:00:46 UTC, exact commit; subsequent ERROR-level logs contained no entries. External independent page fetch through the web tool was unavailable; do not claim an external HTTP smoke check.
