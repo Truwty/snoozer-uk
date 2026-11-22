@@ -452,6 +452,19 @@ input:not([type=checkbox]), select, textarea, .button, .swatch-option, input[typ
 .legal-section ul { display: grid; gap: var(--s3); padding-inline-start: 1.4rem; margin: 0; }
 .legal-section a { min-height: auto; }
 .legal-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s3); color: var(--text-muted); }
+.legal-notice-toc { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s4); }
+.legal-notice-toc-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: .15rem .65rem; margin-top: var(--s3); }
+.legal-notice-toc-links a { display: block; width: 100%; min-height: 42px; padding: .5rem .55rem; border-radius: var(--r-input); color: var(--text-muted); font-size: .875rem; line-height: 1.45; text-decoration: none; }
+.legal-notice-toc-links a:hover, .legal-notice-toc-links a:focus-visible { color: var(--accent); background: var(--ground); }
+.legal-section[id] { scroll-margin-top: var(--s5); }
+.legal-trader-details { border: 1px solid var(--border); border-radius: var(--r-input); overflow: hidden; margin: .6rem 0; }
+.legal-trader-details div { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: .8rem; padding: .85rem 1rem; }
+.legal-trader-details div + div { border-top: 1px solid var(--border); }
+.legal-trader-details dt { font-size: .85rem; font-weight: 680; color: var(--text-muted); }
+.legal-trader-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.legal-trader-details a, .legal-section a { color: var(--accent); }
+@media (max-width: 32rem) { .legal-trader-details div { grid-template-columns: 1fr; gap: .2rem; } }
+
 .consent-banner { position: fixed; z-index: 20; inset-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); width: min(100% - 2rem, 70rem); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s5); padding: var(--s5); border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); color: var(--text); box-shadow: 0 1rem 3rem rgb(0 0 0 / 22%); }
 .consent-banner .actions { justify-content: end; flex: none; }
 .consent-copy { display: grid; gap: var(--s2); max-width: 50rem; }

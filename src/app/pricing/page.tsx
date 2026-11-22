@@ -29,6 +29,6 @@ export default async function PricingPage() {
         <article><h3>Where do I pay?</h3><p>Subscriptions are managed in your Studio plan page. {" "}{checkoutAvailable ? "Choose a plan there to continue to Stripe Checkout." : "Live Checkout remains unavailable until production payment checks pass."}</p><Link href="/studio/plan">Open plan and usage</Link></article>
       </div>
     </section>
-    <p className="pricing-legal">Please read the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>. Snoozer is responsible for its own plans; members do not sell products through Snoozer.</p>
+    <p className="pricing-legal">Please read the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>, plus our <Link href="/legal">Legal information</Link>. Snoozer is responsible for its own plans; members do not sell products through Snoozer.</p>
   </main>;
 }

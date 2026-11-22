@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default function Terms() {
     </section>
     <section className="legal-section stack">
       <h2>Contact</h2>
-      <p>Snoozer is a trading name used by a UK sole trader. For questions about these terms or your subscription, email <a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a>.</p>
+      <p>Snoozer is a trading name used by a UK sole trader. For questions about these terms or your subscription, email <a href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a>. For the trader’s identifying information, see the <Link href="/legal#trader">Business identity and contact</Link> section of the legal information page.</p>
     </section>
   </LegalPage>;
 }
