@@ -1,3 +1,11 @@
+## Owner email UI and delivery incident — 22 November 2026
+
+**Verified state:** The Owner System UI used obsolete provider wording. Hosted outbox read-only inspection showed 3 Premium action notifications, 3 delivery jobs, **0 delivered**, all with one claimed attempt and leases. Manual dispatch status "ok, sent 0, failed 0" is not evidence of delivery. Render Free blocks outbound SMTP on port 465, while separately hosted Supabase Auth Zoho emails work.
+
+**Remediation:** Remove obsolete provider copy; add a verified Owner MFA (AAL2) test-email action addressed only to the Owner's confirmed email; improve zero-processed messaging; block outbound sends and independent email appeals until `ZOHO_SMTP_OUTBOUND_ENABLED=true`. This flag must stay disabled on Render Free. Upgrade to an SMTP-capable Render instance or implement an HTTPS Zoho Mail API sender before enabling this flag; then prove inbox delivery, one-time external appeal and dispatcher scheduling. Do not enable provider bans without independent appeal verification.
+
+---
+
 ## Zoho SMTP Owner delivery migration — 22 November 2026 (implementation awaiting CI and production sender verification)
 
 The Owner notification queue and independent /appeal/external verification email code now use an explicit TLS-validated Zoho SMTP transport (`smtppro.zoho.uk:465`) instead of the former Brevo API transport. Supabase Auth SMTP settings are **unchanged**; the user reports that Auth confirmation/reset and security mail are successfully delivered through Zoho. The Owner delivery pipeline still needs separate Render server-only secrets `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD`, `SNOOZER_NOTIFICATION_FROM`, and `OWNER_EMAIL_DISPATCH_TOKEN`. These are not readable from Supabase Auth's saved SMTP settings. The external appeal route and guarded provider-ban readiness checks use the same Zoho sender. This is a code-only transition: no email send, sender inbox receipt, scheduled dispatch, or Auth-level ban enablement is claimed. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until a disposable user's external verification flow is proven end-to-end and replay-tested. Follow `docs/owner-notification-email.md` for settings, test and scheduling requirements.
