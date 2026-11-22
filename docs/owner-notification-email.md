@@ -30,7 +30,9 @@ On `/owner/system`, use **Send test email to my verified Owner address** once th
 
 ## Scheduled delivery
 
-Configure a trusted scheduler (e.g. a Render cron job or Supabase pg_cron/net with a Vault-stored secret) to make a POST request every 5 minutes to `https://www.snoozer.uk/api/internal/owner-notices/dispatch` with header `Authorization: Bearer <OWNER_EMAIL_DISPATCH_TOKEN>`. The dispatcher returns only the count of accepted and failed deliveries, never user emails. Do not enable a scheduler before confirming environment credentials and a recipient-controlled test email in staging. If using Supabase pg_cron, use Vault secrets and never embed tokens as literal SQL.
+A five-minute, non-overlapping GitHub Actions dispatcher is provided at `.github/workflows/owner-notice-dispatch.yml`. It is **disabled until explicitly enabled**. To activate, set GitHub Actions repository secret `OWNER_EMAIL_DISPATCH_TOKEN` to the **exact same value** as the server-only Render environment variable, then set GitHub Actions repository variable `OWNER_EMAIL_SCHEDULE_ENABLED=true`. Do not substitute an OAuth/Zoho token or create a different dispatch token: the app endpoint will reject it. Configure at GitHub repo Settings → Secrets and variables → Actions, and only enable after a real test message reaches a controlled inbox. The job checks the API's status and delivery failure count, and creates/closes a GitHub issue for actionable failures; it does not log recipient addresses or credentials. GitHub Actions scheduled tasks may be delayed and are not a hard real-time delivery SLA. Use workflow_dispatch to smoke-test after enabling. Avoid additional concurrent cron workers because the queue already uses leases, but send operations are at-least-once, not exactly-once.
+
+Alternative: run an independently authenticated Render cron or Supabase pg_cron/net job with the same endpoint and token stored securely (e.g. Supabase Vault); never put the token in plain SQL or source control.
 
 ## Verification
 

@@ -1,0 +1,86 @@
+name: Snoozer Owner notice dispatch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: snoozer-owner-notice-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    # Fail closed until an operator explicitly enables scheduling after a recipient-controlled test.
+    if: vars.OWNER_EMAIL_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISPATCH_TOKEN: ${{ secrets.OWNER_EMAIL_DISPATCH_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Deliver a bounded batch of queued account notices
+        id: deliver
+        shell: bash
+        run: |
+          if [ "${#DISPATCH_TOKEN}" -lt 32 ]; then
+            echo "::error::OWNER_EMAIL_DISPATCH_TOKEN secret missing or too short"
+            exit 1
+          fi
+          echo "::add-mask::$DISPATCH_TOKEN"
+          # No --location: do not forward an Authorization header to redirected hosts.
+          status="$(curl --silent --show-error --max-time 90 --retry 2 --retry-delay 5 \
+            --output dispatch-response.json --write-out '%{http_code}' \
+            --request POST \
+            --header "Authorization: Bearer $DISPATCH_TOKEN" \
+            --header "Content-Type: application/json" \
+            https://www.snoozer.uk/api/internal/owner-notices/dispatch)" || {
+            echo "::error::Mail dispatch transport failed"
+            exit 1
+          }
+          if [ "$status" != "200" ]; then
+            echo "::error::Mail dispatch returned HTTP $status"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, sys
+          with open("dispatch-response.json", encoding="utf-8") as f:
+              result = json.load(f)
+          if not isinstance(result, dict) or result.get("status") != "ok":
+              print("::error::Mail dispatch did not report an OK status")
+              sys.exit(1)
+          sent = result.get("sent")
+          failed = result.get("failed")
+          if type(sent) is not int or type(failed) is not int or sent < 0 or failed < 0:
+              print("::error::Mail dispatch response had invalid counters")
+              sys.exit(1)
+          print(f"Owner notice dispatch: sent={sent}, failed={failed}")
+          if failed:
+              print("::error::At least one queued email failed")
+              sys.exit(1)
+          PY
+      - name: Create or update actionable dispatch incident
+        if: failure() && steps.deliver.outcome == 'failure'
+        shell: bash
+        run: |
+          title="Snoozer Owner notification delivery alert"
+          issue="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == "Snoozer Owner notification delivery alert") | .number' | head -1)"
+          body="Scheduled Owner email dispatch failed. Inspect the run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Check Render mail readiness, Zoho API credentials, the mail outbox and retry leases. Never paste credentials, recipient addresses or message bodies into this issue."
+          if [ -z "$issue" ]; then
+            gh issue create --title "$title" --body "$body"
+          else
+            gh issue comment "$issue" --body "Dispatch still failing: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi
+      - name: Close resolved dispatch incident
+        if: success()
+        shell: bash
+        run: |
+          issue="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == "Snoozer Owner notification delivery alert") | .number' | head -1)"
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "Scheduled delivery recovered: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi

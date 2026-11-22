@@ -1,3 +1,13 @@
+## Feature #20 follow-up — 22 November 2026, 19:30 UTC (pending PR #60 CI)
+
+**Zoho API sending verified by operator:** Owner reports the real production test email succeeded after deploying region-matched Zoho OAuth API credentials. A read-only production Supabase count confirms 5 queued delivery jobs, 5 marked delivered and 0 undelivered at inspection. This confirms the current outbox state, not an unattended delivery schedule or guaranteed inbox receipt for every recipient.
+
+**Scheduled dispatch implementation:** PR #60 adds a five-minute GitHub Actions dispatcher with bounded request, no cross-host redirect forwarding, counter checks and automatic incident issues. It requires an independent GitHub repository Actions secret `OWNER_EMAIL_DISPATCH_TOKEN` matching Render's existing token, plus Actions variable `OWNER_EMAIL_SCHEDULE_ENABLED=true`. It is **disabled until configured and acceptance-tested**; do not claim autonomous delivery is running yet.
+
+**Still open for full Feature #20 sign-off:** disposable-user external appeal / single-use email verification and safe enablement of Supabase provider bans; full cross-provider privacy export/deletion fulfilment with billing and lawful retention; project-specific alert delivery/recovery validation; real Owner AAL2 and ordinary-account production browser acceptance; first-time email/Discord registration toggle and billing regressions. Previous entries below are historical checkpoints and should not be interpreted as the latest state.
+
+---
+
 ## Zoho mail delivery remediation — 22 November 2026 (pending CI and deploy)
 
 The existing outbox had three undelivered Premium event notices in hosted Supabase; sending a manual batch returned zero processed because its jobs were already leased. The prior UI misleadingly named a discontinued provider and did not offer a safe test. The Render Free web service blocks outgoing SMTP ports 25, 465, and 587. **This does not affect Zoho authentication mail sent from Supabase.**
