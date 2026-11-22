@@ -18,9 +18,9 @@ begin
     exists(select 1 from snoozer.platform_owners o where o.owner_id=u.id) as is_owner
   from auth.users u
   where (coalesce(p_query,'')='' or u.id::text=p_query
-    or u.email ilike '%'||replace(replace(replace(p_query,'\\','\\\\'),'%','\\%'),'_','\\_')||'%' escape '\\'
+    or u.email ilike '%'||replace(replace(replace(p_query,chr(92),chr(92)||chr(92)),'%',chr(92)||'%'),'_',chr(92)||'_')||'%' escape chr(92)
     or exists(select 1 from snoozer.profiles p where p.owner_id=u.id
-      and p.username ilike '%'||replace(replace(replace(p_query,'\\','\\\\'),'%','\\%'),'_','\\_')||'%' escape '\\'))
+      and p.username ilike '%'||replace(replace(replace(p_query,chr(92),chr(92)||chr(92)),'%',chr(92)||'%'),'_',chr(92)||'_')||'%' escape chr(92)))
    and (p_before_created is null or (u.created_at,u.id)<(p_before_created,p_before_id))
   order by u.created_at desc,u.id desc
   limit least(greatest(coalesce(p_limit,50),1),100)
@@ -46,7 +46,7 @@ begin
       where m.profile_id=p.id and m.unblocked_at is null) as moderated
   from snoozer.profiles p
   where (coalesce(p_query,'')='' or p.username ilike
-    '%'||replace(replace(replace(p_query,'\\','\\\\'),'%','\\%'),'_','\\_')||'%' escape '\\'
+    '%'||replace(replace(replace(p_query,chr(92),chr(92)||chr(92)),'%',chr(92)||'%'),'_',chr(92)||'_')||'%' escape chr(92)
     or p.owner_id::text=p_query)
    and (p_before_created is null or (p.created_at,p.id)<(p_before_created,p_before_id))
   order by p.created_at desc,p.id desc
