@@ -2324,7 +2324,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
   it("validates profile effects inside SQL and prevents direct RPC Premium bypass", async () => {
     const effect = {
-      version: 1, enabled: true, background: "aurora", border: "glow",
+      version: 1, enabled: true, background: "aurora", border: "glow", particles: "none", links: "none",
       text: "none", interaction: "none", intensity: 45, speed: "normal", preset: "none",
     };
     const appearance = (effects: unknown) => JSON.stringify({ density: "balanced", corners: "soft", effects });
