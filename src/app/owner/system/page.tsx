@@ -17,7 +17,7 @@ export default async function OwnerSystem() {
  <strong>{typeof value==="number"?value.toLocaleString("en-GB"):value?new Date(value).toLocaleString("en-GB"):"—"}</strong></div>)}
  </div>}
  <section className="panel stack"><h2>Public provider incident status</h2>
- <p className="muted">Read-only information from the providers' public status pages. This does not establish the health of Snoozer's particular Render service, Supabase database or Stripe account.</p>
+ <p className="muted">Read-only information from the providers public status pages. This does not establish the health of Snoozer-specific Render service, Supabase database or Stripe account.</p>
  <div className="owner-metrics">
  {providers.map(p=><div className="panel stack" key={p.provider}><h3><a href={p.url} target="_blank" rel="noopener noreferrer">{p.provider} status</a></h3>
  <p><strong>{p.indicator==="none"?"Operational (public status)":p.indicator==="unknown"?"Unavailable":p.indicator}</strong></p>
