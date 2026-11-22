@@ -1,3 +1,13 @@
+## Owner session security and operations — 22 November 2026
+
+**Third-stage candidate (CI/deploy pending):** migrations `20261122053548_owner_effects_setting.sql` and `20261122053616_owner_sessions_and_operations.sql` provide an audited global profile-effects switch, verified Auth session lookup on privileged operations, Owner-only revocation of ordinary account refresh sessions, active restriction status for suspended users, Owner account session inventory, daily aggregate consented analytics, system health counts and paginated audit reads. `/account-restricted` provides explanations and known case references without blocking appeal access. Server-side `requireAccount()` checks restrictions before Studio operations; valid sessions must correspond to `auth.sessions`. Owner session revocation is blocked against the protected Owner registry.
+
+**Important limits:** Supabase Auth may keep a previously minted access JWT valid until expiry even after a refresh-session revocation. Snoozer's verified-user database checks now enforce session existence on JWTs containing a session ID, including formerly valid revoked sessions. Some external-provider operations remain separately permissioned. The OAuth sign-up path remains separate from the email-registration flag. Global effects are controllable, but maintenance mode and other unimplemented feature flags are not claimed as finished.
+
+**Verification gate:** deploy only after full CI and provider/browser checks; preserve current Stripe subscription reconciliation and do not expose service-role credentials in user-facing code.
+
+---
+
 ## Owner moderation, public reporting and appeals — 22 November 2026
 
 **Second-stage release candidate (pending CI and Render):** migration `20261122052736_owner_moderation_reporting.sql` adds private RLS report, appeal and profile-quarantine tables, rate-limited verified-user report submission, appeal submission available even to restricted accounts, Owner-only report and appeal queues, MFA AAL2-gated triage, profile block/unblock, case-linked gallery takedown and appeal decisions. Public profile data, aliases, sitemap entries, and public avatar/gallery endpoints now suppress active moderated/restricted publications. Actions append to `snoozer.admin_audit_events`. A disposable-provider Playwright test covers report intake, Owner/non-Owner separation, MFA denial and public profile quarantine.

@@ -248,3 +248,9 @@ test("public reporting and appeals pages are application routes, not profile use
  expect(report?.status()).toBe(200);
  await expect(page.getByRole("heading",{name:"Report @example"})).toBeVisible();
 });
+
+test("restricted-account status route redirects signed-out visitors to authentication", async ({page}) => {
+ await page.goto("/account-restricted");
+ await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
+ await expect(page.getByRole("heading",{name:"Welcome back"})).toBeVisible();
+});
