@@ -1,3 +1,13 @@
+## Owner privacy intake and in-app notifications — implementation pending verification, 22 November 2026
+
+**Branch:** `feat/owner-privacy-notifications`. Implements restricted-account-compatible authenticated requests for data access and deletion; a private Owner queue with AAL2-protected review and audit; and private in-app notifications triggered by audited account restriction/reinstatement, staff Premium changes and moderation appeal review. Supports self-service inbox and data-request status screens. Access is bound to an existing Supabase Auth session. Non-Owner RPC isolation and request deduplication are included in disposable-provider browser tests.
+
+**Scope:** Request intake and status tracking, *not automatic export delivery or deletion*. Completion requires an Owner to verify and document manual fulfilment (including Stripe/legal retention), and no Supabase Auth user, payment record or subscription is automatically removed. In-app notices do not yet send SMTP emails. Before claiming the full #20 programme is complete, implement/test provider Auth bans, transactional notifications, actual privacy fulfilment tooling, external provider health and live real Owner MFA acceptance. Existing billing must remain intact.
+
+**Release gate:** CI, hosted migration, branch merge and Render deploy not yet verified. Do not advertise these features as live.
+
+---
+
 ## Owner full-inventory search and pagination — LIVE, 22 November 2026, 06:32 UTC
 
 **Merged and verified:** [PR #46](https://github.com/Truwty/snoozer-uk/pull/46) on `main` at commit `7415f6fc5301f41b42c718debbf3b3105393263f`. [GitHub CI #44993502789](https://github.com/Truwty/snoozer-uk/actions/runs/44993502789) passed source-secret scanning, dependency audit, lint, TypeScript, unit tests, disposable Supabase, Next.js build and Chromium Playwright. Connected hosted Supabase applied migration `20261122062301_owner_inventory_pagination` (matching source file), and SQL confirmed authenticated EXECUTE plus denied anonymous EXECUTE on both new RPCs. The functions check verified Owner identity internally. Render deployment `dep-dc18o156e07s73clsr9g` reports **live** on the exact merged commit at 06:32:39 UTC; runtime logs show Next.js ready, and ERROR-level logs from the checked post-startup window contained zero records. Direct real Owner browser MFA acceptance on the public domain remains unverified.
