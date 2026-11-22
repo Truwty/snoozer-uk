@@ -1,9 +1,10 @@
+import Link from "next/link";
 import {submitAppeal} from "./actions";
 export const metadata={title:"Appeal a moderation decision · Snoozer",robots:{index:false,follow:false}};
 export default async function Appeal({searchParams}:{searchParams:Promise<{status?:string}>}) {
  const {status}=await searchParams;
  return <main className="shell stack" style={{paddingBottom:"4rem"}}>
-  <h1>Appeal a moderation decision</h1><p className="muted">If your account has been restricted, you can still submit an appeal using your verified account. Include the case reference from your notice.</p>
+  <h1>Appeal a moderation decision</h1><p>If you cannot sign in, <Link href="/appeal/external">use an independent email-verified appeal</Link>.</p><p className="muted">If your account has been restricted, you can still submit an appeal using your verified account. Include the case reference from your notice.</p>
   {status==="received"&&<p role="status">Appeal submitted. It will be reviewed.</p>}
   {status==="denied"&&<p role="alert">The appeal was rejected. Check the case reference, ownership and reporting limits.</p>}
   {status==="invalid"&&<p role="alert">Enter a valid case reference and details.</p>}
