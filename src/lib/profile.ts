@@ -3,6 +3,7 @@ import { z } from "zod";
 import { galleryItem, galleryLimit } from "./gallery";
 import { linkAccents } from "./link-accent";
 import { countdownTarget } from "./countdown";
+import { profileEffects } from "./profile-effects";
 
 export const profileRevisionNumber = z.number().int().nonnegative().max(2147483646);
 export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
@@ -20,6 +21,7 @@ export const profileAppearance = z.strictObject({
   accent: z.enum(linkAccents).default(defaultAppearance.accent),
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
   backgroundImage: z.uuid().optional(),
+  effects: profileEffects.optional(),
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 

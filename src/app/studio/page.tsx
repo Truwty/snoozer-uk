@@ -52,7 +52,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
         <Link href="/studio/growth">Growth</Link>
       </nav>
       {restored === "1" && <p role="status">Version restored to your draft.</p>}
-      <Editor key={draft.profile_id} draft={draft} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
+      <Editor key={draft.profile_id} draft={draft} effectTier={plan.success ? plan.data.plan : "free"} linkLimit={linkLimit} galleryHref={studioHref("/studio/gallery", selected)}
         schedule={schedule.success && !scheduleResponse?.error ? { current: schedule.data.schedule, automatic: schedule.data.automatic, enabled: plan.success && plan.data.capabilities.scheduledPublishing } : undefined}
         initialTemplateId={studioTemplates.find(({ id }) => id === template)?.id}
         avatar={<AvatarUpload profileId={draft.profile_id} revision={draft.revision} />}

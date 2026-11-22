@@ -805,6 +805,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
+    await page.getByLabel("Enable effects").check();
+    await page.locator("#profile-effect-background").selectOption("gradient");
+    await expect(page.getByRole("region", { name: "Page preview" }).locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByLabel("Background entrance").selectOption("fade");
     await editorTab(page, "Design");
     await page.getByLabel("Link accent").selectOption("ink");
@@ -961,6 +964,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
+    const effectSwitch = publicPage.getByRole("checkbox", { name: "Disable profile effects" });
+    await effectSwitch.check();
+    await expect(effectSwitch).toBeChecked();
+    await expect(publicPage.locator(".profile-effects-layer")).toHaveCSS("display", "none");
+    await effectSwitch.uncheck();
+    await expect(publicPage.locator(".profile-effects-layer")).not.toHaveCSS("display", "none");
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
     await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
     await publicPage.emulateMedia({ reducedMotion: "reduce" });

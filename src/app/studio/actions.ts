@@ -6,6 +6,8 @@ import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
 import { canonicalUsername, profileContent, profileRevisionNumber, textSections, username, type ProfileContent } from "@/lib/profile";
 import { readDraft, requireAccount, studioHref } from "@/lib/profiles-server";
+import { effectsAllowed } from "@/lib/profile-effects";
+import { accountPlan } from "@/lib/entitlements";
 
 export async function claim(_: ActionState, form: FormData): Promise<ActionState> {
   const name = username.safeParse(canonicalUsername(String(form.get("username") ?? "")));
@@ -47,16 +49,21 @@ export async function save(input: unknown): Promise<SaveResult> {
   const request = saveRequest.safeParse(input);
   if (!request.success) return { status: "error", message: request.error.issues[0].message };
   const { profileId, content, intent, revision, removeAvatar } = request.data;
-  const { layout, accent, entrance, backgroundImage, ...cardTokens } = content.appearance;
+  const { layout, accent, entrance, backgroundImage, effects, ...cardTokens } = content.appearance;
   const appearance = {
     ...cardTokens,
     ...(layout !== "centred" && { layout }),
     ...(accent !== "theme" && { accent }),
     ...(entrance !== "none" && { entrance }),
     ...(backgroundImage && { backgroundImage }),
+    ...(effects && { effects }),
   };
   const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
   const { client } = await requireAccount();
+  const planResult = await client.rpc("get_my_plan");
+  const plan = accountPlan.safeParse(planResult.data);
+  if (planResult.error || !plan.success) return { status: "error", message: "Couldn’t verify your current plan." };
+  if (effects && !effectsAllowed(effects, plan.data.plan)) return { status: "error", message: "This effect combination is not available on your current plan." };
   const { data, error } = await client.rpc("save_profile", {
     p_profile: profileId,
     p_expected: revision,
@@ -71,6 +78,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_publish: intent === "publish",
     p_remove_avatar: removeAvatar,
   });
+  if (error?.code === "P1010") return { status: "error", message: "These effects require a higher plan or exceed your plan’s limits." };
   if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };
   if (error?.code === "P1006") return { status: "error", message: "Publishing custom SEO metadata requires Plus or higher. Clear the overrides to use your display name and bio." };
   if (error?.code === "P1005") return { status: "error", message: "You’ve reached your plan’s published profile limit." };

@@ -9,6 +9,8 @@ import { YouTubeWidget } from "./youtube-widget";
 import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 import { PublicMetadataWidget } from "./public-metadata-widget";
 import { TwitchWidget } from "./twitch-widget";
+import { ProfileEffectsLayer } from "./profile-effects";
+import { defaultEffects } from "@/lib/profile-effects";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
   profile: PublishedProfile;
@@ -17,6 +19,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   preview?: boolean;
   previewLabel?: string;
 }) {
+  const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
   const linkColours = linkAccentColours(profile.appearance.accent);
   const linkStyle = linkColours ? {
@@ -33,7 +36,18 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
-    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}>
+    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
+    data-effect-border={effects.enabled ? effects.border : "none"}
+    data-effect-links={effects.enabled ? effects.links : "none"}
+    data-effect-text={effects.enabled ? effects.text : "none"}
+    data-effect-interaction={effects.enabled ? effects.interaction : "none"}
+    data-effect-speed={effects.speed}>
+    <ProfileEffectsLayer effects={effects} />
+    {effects.enabled && <label className="profile-effects-toggle">
+      <input type="checkbox" aria-label="Disable profile effects" />
+      <span className="effects-disable-text">Disable effects</span>
+      <span className="effects-enable-text">Enable effects</span>
+    </label>}
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       {avatarSrc

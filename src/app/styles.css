@@ -724,3 +724,100 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (prefers-reduced-motion: reduce) {
   .account-chevron { transition: none; }
 }
+
+
+/* Advanced profile effects: isolated, composited and non-interactive visual surfaces. */
+.profile-card { isolation: isolate; }
+.profile-effects-layer { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.profile-effects-layer[data-background="gradient"] { background: linear-gradient(125deg, transparent 10%, var(--wash) 45%, transparent 85%); }
+.profile-effects-layer[data-background="aurora"] { background: radial-gradient(ellipse at 20% 30%, var(--wash), transparent 65%), radial-gradient(ellipse at 80% 70%, var(--detail), transparent 70%); background-size: 180% 180%; animation: snoozer-aurora 14s ease-in-out infinite alternate; }
+.profile-effects-layer[data-background="mesh"] { background: radial-gradient(ellipse at 10% 20%, var(--wash), transparent 60%), radial-gradient(ellipse at 90% 75%, var(--detail), transparent 65%); background-size: 140% 140%; animation: snoozer-aurora 19s ease-in-out infinite alternate; }
+.profile-effects-layer[data-background="stars"], .profile-effects-layer[data-background="snow"], .profile-effects-layer[data-background="rain"] { background: linear-gradient(160deg, var(--wash), transparent 75%); }
+.profile-effects-layer i { position: absolute; display: block; width: 3px; height: 3px; border-radius: 100%; background: var(--detail); opacity: .65; animation: snoozer-fall 12s linear infinite; }
+.profile-effects-layer[data-background="stars"] i { width: 2px; height: 2px; animation: snoozer-twinkle 3.4s ease-in-out infinite alternate; }
+.profile-effects-layer[data-background="rain"] i { width: 1px; height: 22px; border-radius: 0; opacity: .35; animation-duration: 1.6s; }
+.profile-effects-layer[data-background="snow"] i { width: 5px; height: 5px; animation-duration: 9s; }
+.profile-effects-layer[data-speed="slow"], .profile-effects-layer[data-speed="slow"] i { animation-duration: 22s; }
+.profile-effects-layer[data-speed="fast"], .profile-effects-layer[data-speed="fast"] i { animation-duration: 5s; }
+.profile-effects-layer[data-paused="true"], .profile-effects-layer[data-paused="true"] i { animation-play-state: paused; }
+.profile-card[data-effect-border="glow"] { box-shadow: 0 0 32px -11px var(--detail); }
+.profile-card[data-effect-border="neon"] { outline: 2px solid var(--detail); box-shadow: 0 0 18px -5px var(--detail); }
+.profile-card[data-effect-border="gradient"] { outline: 2px solid var(--detail); box-shadow: 0 0 25px -9px var(--detail); }
+.profile-card[data-effect-text="shimmer"] .profile-inner > :is(h1,h2) { background: linear-gradient(110deg,var(--text) 30%,var(--detail) 50%,var(--text) 70%); background-size: 250% auto; background-clip: text; -webkit-text-fill-color: transparent; animation: snoozer-shimmer 5s linear infinite; }
+.profile-card[data-effect-text="typewriter"] .profile-bio { animation: snoozer-reveal 1.4s ease-out both; }
+.profile-card[data-effect-text="glitch"] .profile-inner > :is(h1,h2) { animation: snoozer-glitch 7s steps(2,end) infinite; }
+@media (hover:hover) and (pointer:fine) {
+ .profile-card[data-effect-interaction="tilt"] { transition: transform .3s ease; }
+ .profile-card[data-effect-interaction="tilt"]:hover { transform: perspective(1000px) rotateX(1.1deg) rotateY(-1.1deg); }
+ .profile-card[data-effect-interaction="spotlight"] .profile-inner > :is(h1,h2) { text-shadow: 0 0 12px var(--detail); }
+ .profile-card[data-effect-interaction="trail"] .profile-links a:hover { box-shadow: 0 0 15px -7px var(--detail); }
+}
+@keyframes snoozer-aurora { from { background-position: 0% 15%; } to { background-position: 100% 90%; } }
+@keyframes snoozer-fall { from { transform: translate3d(0,-110px,0); } to { transform: translate3d(15px,380px,0); } }
+@keyframes snoozer-twinkle { from { opacity: .15; transform: scale(.6); } to { opacity: 1; transform: scale(1.3); } }
+@keyframes snoozer-shimmer { from { background-position: 200% center; } to { background-position: -100% center; } }
+@keyframes snoozer-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes snoozer-glitch { 0%,96%,100% { transform: translateX(0); } 97% { transform: translateX(-1px); } 98% { transform: translateX(1px); } }
+@media (max-width: 46rem), (pointer:coarse) { .profile-effects-layer i:nth-of-type(n+13) { display: none; } }
+@media (prefers-reduced-motion: reduce), print {
+ .profile-effects-layer, .profile-effects-layer i, .profile-card[data-effect-text] .profile-inner > :is(h1,h2),
+ .profile-card[data-effect-text] .profile-bio { animation: none !important; transition: none !important; }
+ .profile-card[data-effect-interaction="tilt"]:hover { transform: none; }
+ .profile-effects-layer[data-background="rain"] i, .profile-effects-layer[data-background="snow"] i { display: none; }
+}
+
+
+/* Visitor control and pointer-driven spotlight, with safe no-motion fallback. */
+.profile-effects-toggle { position: absolute; z-index: 3; top: .4rem; right: .4rem; min-height: 30px; padding: .25rem .5rem; border: 1px solid var(--chip); border-radius: .5rem; background: var(--page); color: var(--text); font-size: .67rem; opacity: .65; }
+.profile-effects-toggle:focus-visible, .profile-effects-toggle:hover { opacity: 1; }
+.profile-effects-layer[data-interaction="spotlight"]::after,
+.profile-effects-layer[data-interaction="trail"]::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--effect-x, 50%) var(--effect-y, 50%), var(--detail), transparent 32%); opacity: .35; }
+.profile-effects-layer[data-interaction="trail"]::after { opacity: .2; transition: opacity .35s ease; }
+.profile-card[data-effects-disabled="true"] .profile-effects-layer { display: none; }
+.profile-card[data-effects-disabled="true"][data-effect-border] { box-shadow: 0 1.25rem 4rem var(--profile-shadow); outline: none; }
+.profile-card[data-effects-disabled="true"] .profile-inner > :is(h1,h2),
+.profile-card[data-effects-disabled="true"] .profile-bio { animation: none !important; -webkit-text-fill-color: currentColor; background: none; text-shadow: none; }
+.profile-card[data-effects-disabled="true"][data-effect-interaction="tilt"]:hover { transform: none; }
+@media (pointer:coarse), (prefers-reduced-motion: reduce), print {
+ .profile-effects-layer[data-interaction]::after { display: none; }
+}
+
+
+/* Independent particle layer: compositor-friendly drift with bounded element count. */
+.profile-effects-layer b { position: absolute; display: block; width: 3px; height: 3px; border-radius: 50%; background: var(--detail); opacity: .7; box-shadow: 0 0 7px var(--detail); animation: snoozer-drift 8s ease-in-out infinite alternate; }
+.profile-effects-layer[data-particles="none"] b { display: none; }
+.profile-effects-layer[data-particles="fireflies"] b { width: 5px; height: 5px; background: var(--detail); animation: snoozer-fireflies 6s ease-in-out infinite alternate; }
+.profile-effects-layer[data-particles="sparkles"] b { width: 4px; height: 4px; border-radius: 1px; transform: rotate(45deg); animation: snoozer-twinkle 2.5s ease-in-out infinite alternate; }
+.profile-effects-layer[data-speed="slow"] b { animation-duration: 16s; }
+.profile-effects-layer[data-speed="fast"] b { animation-duration: 4s; }
+.profile-effects-layer[data-paused="true"] b { animation-play-state: paused; }
+@keyframes snoozer-drift { from { transform: translate3d(-9px,9px,0); opacity: .2; } to { transform: translate3d(13px,-20px,0); opacity: .85; } }
+@keyframes snoozer-fireflies { from { transform: translate3d(-12px,15px,0); opacity: .1; } to { transform: translate3d(16px,-17px,0); opacity: .9; } }
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion: no-preference) {
+ .profile-card[data-effect-links="lift"] .profile-links a:hover { transform: translateY(-2px); }
+ .profile-card[data-effect-links="glow"] .profile-links a:hover { box-shadow: 0 0 18px -6px var(--detail); }
+ .profile-card[data-effect-links="shine"] .profile-links a:hover { filter: brightness(1.18); }
+}
+@media (max-width: 46rem), (pointer:coarse) { .profile-effects-layer b:nth-of-type(n+10) { display: none; } }
+@media (prefers-reduced-motion: reduce), print {
+ .profile-effects-layer b, .profile-card[data-effect-links] .profile-links a { animation: none !important; transition: none !important; transform: none !important; }
+}
+.profile-card[data-effects-disabled="true"][data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
+
+
+/* The visitor override is driven by the button's React state (aria-pressed),
+   not a manually mutated parent attribute that can be lost during hydration. */
+.profile-card:has(.profile-effects-toggle input:checked) .profile-effects-layer { display: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-border] { box-shadow: 0 1.25rem 4rem var(--profile-shadow); outline: none; }
+.profile-card:has(.profile-effects-toggle input:checked) .profile-inner > :is(h1,h2),
+.profile-card:has(.profile-effects-toggle input:checked) .profile-bio { animation: none !important; -webkit-text-fill-color: currentColor; background: none; text-shadow: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-interaction="tilt"]:hover { transform: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
+
+/* Native, keyboard-accessible no-JavaScript visitor control. */
+.profile-effects-toggle { display: inline-flex; align-items: center; cursor: pointer; }
+.profile-effects-toggle input { position: static; width: 1rem; height: 1rem; opacity: 1; margin: 0 .35rem 0 0; accent-color: var(--detail); cursor: pointer; }
+.profile-effects-toggle:has(input:focus-visible) { outline: 2px solid var(--detail); outline-offset: 2px; opacity: 1; }
+.profile-effects-toggle .effects-enable-text { display: none; }
+.profile-effects-toggle:has(input:checked) .effects-disable-text { display: none; }
+.profile-effects-toggle:has(input:checked) .effects-enable-text { display: inline; }

@@ -15,11 +15,13 @@ import { Unpublish } from "./unpublish";
 import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { EffectsEditor } from "./effects-editor";
+import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
-export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
+export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
@@ -199,6 +201,7 @@ export function Editor({ draft, linkLimit, galleryHref, initialTemplateId = "", 
             : "Links use your theme colours."}
         </p>
       </fieldset>
+      <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
       <fieldset className="stack">
         <legend className="section-title">Studio templates</legend>
         <label>Preview a template

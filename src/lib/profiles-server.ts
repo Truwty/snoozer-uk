@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { anonymousClient, sessionClient } from "./supabase";
 import { canonicalUsername, draftProfile, publishedProfile, username } from "./profile";
+import { resolveEffects, type EffectTier } from "./profile-effects";
 
 export async function requireAccount() {
   const client = await sessionClient();
@@ -36,6 +37,13 @@ export function studioHref(path: string, profileId?: string) {
   return profileId ? `${path}${path.includes("?") ? "&" : "?"}profile=${encodeURIComponent(profileId)}` : path;
 }
 
+async function enforcePublicEffectTier(profile: z.infer<typeof publishedProfile>) {
+  if (!profile.appearance.effects?.enabled) return profile;
+  const { data, error } = await anonymousClient().rpc("published_effect_tier", { p_name: profile.username });
+  const tier: EffectTier = !error && (data === "plus" || data === "pro" || data === "studio") ? data : "free";
+  return { ...profile, appearance: { ...profile.appearance, effects: resolveEffects(profile.appearance.effects, tier) } };
+}
+
 export const readPublished = cache(async (name: string) => {
   const canonical = canonicalUsername(name);
   if (!username.safeParse(canonical).success) return null;
@@ -46,7 +54,7 @@ export const readPublished = cache(async (name: string) => {
   if (profile.domain_renewal && await refreshDomain(profile.domain_renewal) === "verified") {
     const renewed = await anonymousClient().rpc("get_published_profile", { p_name: canonical });
     if (renewed.error) throw new Error("Couldn’t load this profile.");
-    return renewed.data === null ? null : publishedProfile.parse(renewed.data);
+    return renewed.data === null ? null : enforcePublicEffectTier(publishedProfile.parse(renewed.data));
   }
-  return profile;
+  return enforcePublicEffectTier(profile);
 });

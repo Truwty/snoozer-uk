@@ -1,3 +1,5 @@
+> **22 November 2026 — Advanced effects baseline validated (CI #416).** Added six bounded effect layers, Studio controls, Free/Plus/Pro/Studio gates enforced in SQL, an accessible native visitor disable switch, CSS reduced-motion safeguards and public downgrade fallback. SQL migration applied and verified in connected staging Supabase. The baseline has passed browser and database tests; comprehensive pointer trail and device-specific frame budget validation remain partial/deferred. Confirm Render deploy before advertising the feature as live. See `docs/PROGRESS.md`.
+
 # Feature ledger
 
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
