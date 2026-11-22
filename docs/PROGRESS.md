@@ -1,3 +1,15 @@
+## Full Owner Administration Panel — initial implementation (22 November 2026)
+
+**In development, not fully released:** A private migration `20261122051649_owner_administration_core.sql` adds append-only administrative action records, active account restrictions, support notes, internal moderation cases, Owner-issued Premium grant attribution, and a versioned email-registration flag. The `snoozer.verified_user()` permission boundary now rejects restricted accounts for verified-user database actions, preserving Owner recovery access. The existing `platform_owners`, `entitlement_grants`, and paid Stripe processing are retained. All new RPCs are restricted to verified Owner actors; mutations additionally require an MFA AAL2 session. Browser-only controls are not relied upon for authorisation.
+
+**Initial UI under `/owner`:** secure navigation, search by username/email/UID, detailed user profile and grant inventory, suspension/reinstatement, Owner grants and revocation, support notes, moderation-case creation and status updates, read-only recent profile inventory, aggregate analytics, audit log, email-registration setting, system links and TOTP enrollment/verification. Sensitive actions are fail-closed if MFA has not been verified. The registration switch currently applies to **email/password signup only**, not first-time Discord OAuth sign-in; it must not be advertised as a global registration shutdown.
+
+**Not yet complete / do not claim full six-phase sign-off:** user-originated reports and appeals, case-linked gallery takedowns through the dashboard, session revocation, Auth-level bans, public profile suspension, full inventory pagination, email notice workflows, global feature switches, maintenance mode, external provider health/controls, operational monitoring, export/delete and independent production Owner session smoke verification. These require additional secure work and tests before being marked completed.
+
+**Verification gate:** run GitHub CI with source scanning, lint, typecheck, unit tests, disposable Supabase migrations, Next.js build and Playwright, then merge only if passing. Document deploy ID and smoke results after release.
+
+---
+
 ## Owner Control Centre routing hotfix — 22 November 2026
 
 **Fixed and deployed.** [PR #41](https://github.com/Truwty/snoozer-uk/pull/41) merged as commit `643ffe5fc44a1c60a3be21a8d671c058df11ad3c`. Owner route `/owner` had been accidentally omitted from `src/proxy.ts` application-route reservations, so it was looked up as a public profile username and rewritten to the profile-not-found page *before* the Owner permission check. The fix reserves the `owner` slug and adds a Playwright regression that signed-out visitors reach the expected sign-in page, not the profile-not-found page. Owner authorization is unchanged and server enforced.
