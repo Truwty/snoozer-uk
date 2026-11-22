@@ -3,13 +3,9 @@ import {redirect} from "next/navigation";
 import {z} from "zod";
 import {requireOwner} from "@/lib/owner/auth";
 import {storageAdmin} from "@/lib/supabase";
+import {providerBanConfigured} from "@/lib/owner/provider-ban-config";
 
 const uuid=z.uuid();
-export function providerBanConfigured(){
- return process.env.SNOOZER_ENABLE_AUTH_BANS==="true" &&
-  Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY &&
-   process.env.BREVO_API_KEY && process.env.SNOOZER_NOTIFICATION_FROM);
-}
 export async function changeProviderBan(form:FormData){
  const user=uuid.safeParse(form.get("user"));
  const operation=z.enum(["ban","unban"]).safeParse(form.get("operation"));
