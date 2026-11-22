@@ -57,6 +57,11 @@ test("real disposable Owner TOTP upgrades AAL1 to AAL2 before privileged writes"
   const before=await owner.auth.mfa.getAuthenticatorAssuranceLevel();
   expect(before.error).toBeNull();
   expect(before.data?.currentLevel).toBe("aal1");
+  const refused=await owner.rpc("owner_prepare_auth_ban",{
+    p_user:memberId,p_case:randomUUID(),p_operation:"ban",p_hours:24,
+    p_reason:"AAL1 session must never prepare an Auth ban"
+  });
+  expect(refused.error?.code).toBe("42501");
   const denied=await owner.rpc("owner_add_note",{p_user:memberId,p_note:"Disposable MFA denial check"});
   expect(denied.error?.code).toBe("42501");
   const enrolled=await owner.auth.mfa.enroll({factorType:"totp",friendlyName:"Snoozer CI fixture"});
@@ -77,8 +82,46 @@ test("real disposable Owner TOTP upgrades AAL1 to AAL2 before privileged writes"
   const accepted=await owner.rpc("owner_add_note",{p_user:memberId,p_note:"Disposable verified AAL2 write"});
   expect(accepted.error).toBeNull();
   expect(accepted.data).toMatch(/^[0-9a-f-]{36}$/);
+  const testCase=randomUUID(),restrictionId=randomUUID();
+  sql("insert into snoozer.moderation_cases(id,target_id,category,status,reason,opened_by) "+
+    "values('"+testCase+"','"+memberId+"','other','actioned','Synthetic provider-ban test case','"+ownerId+"');"+
+    "insert into snoozer.account_restrictions(id,user_id,kind,reason,created_by) "+
+    "values('"+restrictionId+"','"+memberId+"','ban','Synthetic internal account ban','"+ownerId+"')");
+  const intent=await owner.rpc("owner_prepare_auth_ban",{
+    p_user:memberId,p_case:testCase,p_operation:"ban",p_hours:24,
+    p_reason:"Synthetic Auth ban following AAL2 acceptance"
+  });
+  expect(intent.error).toBeNull();
+  expect(intent.data).toMatch(/^[0-9a-f-]{36}$/);
+  expect((await admin.auth.admin.updateUserById(memberId,{ban_duration:"24h"})).error).toBeNull();
+  const recorded=await admin.rpc("service_finish_auth_ban",{p_operation:intent.data,p_success:true});
+  expect(recorded.error).toBeNull();expect(recorded.data).toBe(true);
+  const blocked=await owner.rpc("owner_prepare_auth_ban",{
+    p_user:memberId,p_case:null,p_operation:"unban",p_hours:null,
+    p_reason:"Cannot remove Auth ban while internal ban exists"
+  });
+  expect(blocked.error).not.toBeNull();
+  const lifted=await owner.rpc("owner_lift_restriction",{
+    p_id:restrictionId,p_reason:"Synthetic reinstatement after AAL2 check"
+  });
+  expect(lifted.error).toBeNull();
+  const reverse=await owner.rpc("owner_prepare_auth_ban",{
+    p_user:memberId,p_case:null,p_operation:"unban",p_hours:null,
+    p_reason:"Synthetic verified provider reinstatement"
+  });
+  expect(reverse.error).toBeNull();
+  expect((await admin.auth.admin.updateUserById(memberId,{ban_duration:"none"})).error).toBeNull();
+  const restored=await admin.rpc("service_finish_auth_ban",{p_operation:reverse.data,p_success:true});
+  expect(restored.error).toBeNull();expect(restored.data).toBe(true);
+  const member=createClient(project,key,{auth:{persistSession:false}});
+  expect((await member.auth.signInWithPassword({email:emails[1],password})).error).toBeNull();
+
  }finally{
+  await admin.auth.admin.updateUserById(memberId,{ban_duration:"none"});
   sql("delete from snoozer.admin_audit_events where actor_id='"+ownerId+"';"+
+   " delete from snoozer.provider_ban_operations where actor_id='"+ownerId+"';"+
+   " delete from snoozer.account_restrictions where user_id='"+memberId+"';"+
+   " delete from snoozer.moderation_cases where target_id='"+memberId+"';"+
    " delete from snoozer.admin_notes where actor_id='"+ownerId+"';"+
    " delete from snoozer.platform_owners where owner_id='"+ownerId+"';");
   await admin.auth.admin.deleteUser(memberId);
