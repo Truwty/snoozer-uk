@@ -805,6 +805,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
+    await page.getByLabel("Enable effects").check();
+    await page.getByLabel("Background", { exact: true }).selectOption("gradient");
+    await expect(page.getByRole("region", { name: "Page preview" }).locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByLabel("Background entrance").selectOption("fade");
     await editorTab(page, "Design");
     await page.getByLabel("Link accent").selectOption("ink");
@@ -961,6 +964,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
+    await publicPage.getByRole("button", { name: "Disable effects" }).click();
+    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-effects-disabled", "true");
+    await publicPage.getByRole("button", { name: "Enable effects" }).click();
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
     await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
     await publicPage.emulateMedia({ reducedMotion: "reduce" });
