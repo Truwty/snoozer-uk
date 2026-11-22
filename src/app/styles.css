@@ -807,9 +807,17 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 
 /* The visitor override is driven by the button's React state (aria-pressed),
    not a manually mutated parent attribute that can be lost during hydration. */
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-effects-layer { display: none; }
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-border] { box-shadow: 0 1.25rem 4rem var(--profile-shadow); outline: none; }
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-inner > :is(h1,h2),
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"]) .profile-bio { animation: none !important; -webkit-text-fill-color: currentColor; background: none; text-shadow: none; }
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-interaction="tilt"]:hover { transform: none; }
-.profile-card:has(.profile-effects-toggle[aria-pressed="true"])[data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
+.profile-card:has(.profile-effects-toggle input:checked) .profile-effects-layer { display: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-border] { box-shadow: 0 1.25rem 4rem var(--profile-shadow); outline: none; }
+.profile-card:has(.profile-effects-toggle input:checked) .profile-inner > :is(h1,h2),
+.profile-card:has(.profile-effects-toggle input:checked) .profile-bio { animation: none !important; -webkit-text-fill-color: currentColor; background: none; text-shadow: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-interaction="tilt"]:hover { transform: none; }
+.profile-card:has(.profile-effects-toggle input:checked)[data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
+
+/* Native, keyboard-accessible no-JavaScript visitor control. */
+.profile-effects-toggle { display: inline-flex; align-items: center; cursor: pointer; }
+.profile-effects-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.profile-effects-toggle:has(input:focus-visible) { outline: 2px solid var(--detail); outline-offset: 2px; opacity: 1; }
+.profile-effects-toggle .effects-enable-text { display: none; }
+.profile-effects-toggle:has(input:checked) .effects-disable-text { display: none; }
+.profile-effects-toggle:has(input:checked) .effects-enable-text { display: inline; }
