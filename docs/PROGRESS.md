@@ -1,3 +1,17 @@
+## Owner administration expansion — LIVE through PR #50, 22 November 2026, 07:16 UTC
+
+**Released with verification:**
+- [PR #47](https://github.com/Truwty/snoozer-uk/pull/47), merged commit `f36379652fa7a0318c51c3e3728809c6b16fb3e5`. [CI #44995471696](https://github.com/Truwty/snoozer-uk/actions/runs/44995471696) passed. Supabase migration `20261122064925_owner_maintenance_mode` applied and checked with `maintenance_enabled=false`. Render `dep-dc194o2fngtc73f0dp4g` confirmed live; post-startup ERROR logs zero in the checked window. Adds missing Owner global-effects UI and safe visitor-facing 503 maintenance switch, with AAL2-gated audited changes and Owner/Auth/API/Stripe recovery paths.
+- [PR #48](https://github.com/Truwty/snoozer-uk/pull/48), merged commit `655d5e2284afcbddec00d359c9990167175afc29`. [CI #44995814847](https://github.com/Truwty/snoozer-uk/actions/runs/44995814847) passed. Supabase migration `20261122065402_owner_privacy_notifications` applied with anonymous EXECUTE denied on privacy/admin RPCs. Render `dep-dc196gl6e07s73cn527g` confirmed live with no checked post-startup ERROR logs. Adds restricted-compatible privacy-request intake, AAL2 Owner review and in-app account notices for moderation/Owner Premium actions. **This is not automated full export/deletion or SMTP notification delivery.**
+- [PR #49](https://github.com/Truwty/snoozer-uk/pull/49), merged commit `7aa9ebbcbdfaeac8367df5bd2593eec25f2c1470`. [CI #44996348177](https://github.com/Truwty/snoozer-uk/actions/runs/44996348177) passed; preserves privacy-request and account-notification access while maintenance is enabled.
+- [PR #50](https://github.com/Truwty/snoozer-uk/pull/50), merged commit `879ace83926f41b7fea8224cc2c23e384d6430a8`. [CI #44996753842](https://github.com/Truwty/snoozer-uk/actions/runs/44996753842) passed. Render `dep-dc19crt9fdbs73a6lrf0` confirmed **live**, checked post-startup error logs zero. Adds bounded, read-only public incident status for Render, Supabase and Stripe; this is not project-specific provider monitoring.
+
+**Pending release:** [PR #51](https://github.com/Truwty/snoozer-uk/pull/51) adds authenticated basic account snapshot downloads, with clear incomplete-export disclosure. Full CI/deploy not yet confirmed.
+
+**Overall #20 NOT YET COMPLETE:** provider Auth-level ban integration needs an out-of-band verified appeal path; transactional email delivery/retry needed in addition to in-app notices; complete personal-data export/erasure and lawful retention require actual fulfilment tooling; private provider-specific health/incident alerts and real Owner AAL2 browser acceptance remain unverified. First-time Discord OAuth bypasses the existing email-registration switch. Do not claim all six phases complete or bypass these controls.
+
+---
+
 ## Owner administration — verified releases and remaining acceptance, 22 November 2026
 
 **Released on main with full CI and hosted database migrations:**
