@@ -24,7 +24,7 @@ export default async function OwnerProfiles({ searchParams }: {
  });
  const profiles = schema.safeParse(data);
  const last = profiles.success ? profiles.data.at(-1) : undefined;
- const next = last && profiles.data.length === pageSize
+ const next = last && profiles.success && profiles.data.length === pageSize
   ? "/owner/profiles?" + new URLSearchParams({ q, before: last.created_at, id: last.id })
   : null;
  return <main className="stack">
