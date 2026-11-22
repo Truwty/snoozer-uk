@@ -1,3 +1,13 @@
+## Snoozer Owner release — 22 November 2026
+
+**Verified live:** [PR #40](https://github.com/Truwty/snoozer-uk/pull/40) merged as `2b93398f4a6118d3392abb2bc8522dd28089d299`; [CI #44986077461](https://github.com/Truwty/snoozer-uk/actions/runs/44986077461) passed audit, secrets, lint, typecheck, unit tests, disposable Supabase, production build and Playwright. Render deployment `dep-dc177s9ksfps7382fbe0` reports **live**, exact merged commit, and startup logs show Next.js ready. Post-deploy ERROR logs had zero entries in the checked window. Direct public HTTP probe could not be performed from the execution environment.
+
+The confirmed verified `@trusnooze` account now has a database-only platform-owner role with non-expiring Studio entitlements and audited billing-diagnostics permission. The public badge is assigned server-side by published-profile ownership; ordinary users cannot set it. `/owner` provides authenticated aggregate metrics and bounded read-only profile inventory, linked from the owner's account menu. Privilege tests confirmed Owner access, normal-user denial, non-exposure of Owner-table mutations, and successful public badge lookup. The account identifier is deliberately excluded from migration source. Matching hosted migration: `20261122043142_platform_owner`.
+
+**Not yet implemented:** arbitrary user administration, cross-account editing, bans, plan grants, sitewide switches or uncontrolled access to provider secrets. These require separate auditable owner-only operations, explicit confirmation and tests. The Owner badge's live visual appearance was not independently inspected through HTTP, although Render reported the deployment live and CI verified browser rendering.
+
+---
+
 ## Platform Owner role and badge — 22 November 2026
 
 **Database provisioned and verified:** the previously verified account that owns `@trusnooze` is assigned a private `snoozer.platform_owners` record and a separately scoped `billing_diagnostics` staff role. Assignment was performed directly against connected Supabase after confirming a verified existing user, and the UID is intentionally not committed to the public source tree. The `platform_owner` migration is tracked as `20261122043142_platform_owner.sql`.
