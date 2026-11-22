@@ -1592,7 +1592,9 @@ test("profile report intake, private queue and moderation enforcement are role-g
   try {
     expect((await target.auth.signInWithPassword({email:emails[0],password:passwd})).error).toBeNull();
     expect((await reporter.auth.signInWithPassword({email:emails[1],password:passwd})).error).toBeNull();
-    expect((await owner.auth.signInWithPassword({email:emails[2],password:passwd})).error).toBeNull();
+    const ownerLogin=await owner.auth.signInWithPassword({email:emails[2],password:passwd});
+    expect(ownerLogin.error).toBeNull();
+    const ownerSessionId=JSON.parse(Buffer.from(ownerLogin.data.session!.access_token.split(".")[1],"base64url").toString()).session_id as string;
     expect((await target.rpc("claim_profile",{p_name:n})).error).toBeNull();
     expect((await target.rpc("save_profile",{p_expected:0,p_name:"Reported profile",p_bio:"",
       p_theme:"midnight",p_indexable:false,p_links:[],p_publish:true,p_remove_avatar:false})).error).toBeNull();
@@ -1611,7 +1613,7 @@ test("profile report intake, private queue and moderation enforcement are role-g
     expect(noMfa.error?.code).toBe("42501");
     // This privileged SQL test fixture simulates a verified AAL2 Owner session; real
     // browser actions must obtain AAL2 through Supabase Auth MFA, never form fields.
-    const jwt=JSON.stringify({sub:ownerId,role:"authenticated",aal:"aal2"});
+    const jwt=JSON.stringify({sub:ownerId,role:"authenticated",aal:"aal2",session_id:ownerSessionId});
     const command="begin; set local role authenticated; select set_config('request.jwt.claims', '"+jwt+"', true); "+
       "select set_config('request.jwt.claim.sub', '"+ownerId+"', true); "+
       "select public.owner_triage_report('"+reportId+"', 'Review disposable report'); commit;";
