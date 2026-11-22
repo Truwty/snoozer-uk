@@ -4,13 +4,13 @@ import {redirect} from "next/navigation";
 import {z} from "zod";
 import {siteUrl} from "@/lib/env";
 import {storageAdmin} from "@/lib/supabase";
-import {sendBrevoNotice} from "@/lib/owner/brevo-transport";
+import {sendZohoNotice,zohoSmtpConfigured} from "@/lib/owner/zoho-transport";
 
 const uuid=z.uuid();
 const email=z.email().max(254);
 const tokenSchema=z.string().regex(/^[a-f0-9]{64}$/);
 const hash=(token:string)=>createHash("sha256").update(token).digest("hex");
-const emailReady=()=>Boolean(process.env.BREVO_API_KEY&&process.env.SNOOZER_NOTIFICATION_FROM);
+const emailReady=zohoSmtpConfigured;
 
 export async function requestExternalAppeal(form:FormData){
  const caseId=uuid.safeParse(form.get("case"));
@@ -25,12 +25,11 @@ export async function requestExternalAppeal(form:FormData){
  if(!started.error&&started.data===true){
   const link=new URL("/appeal/external",siteUrl());
   link.searchParams.set("token",token);
-  const ok=await sendBrevoNotice(address.data,
+  const ok=await sendZohoNotice(address.data,
    "Snoozer moderation appeal verification",
    "A verification link was requested to appeal a Snoozer moderation decision. "+
    "If you requested it, open this link within 15 minutes: "+link.href+
-   "\n\nIf you did not request this link, ignore it.",
-   process.env.BREVO_API_KEY!,process.env.SNOOZER_NOTIFICATION_FROM!);
+   "\n\nIf you did not request this link, ignore it.");
   if(!ok)await client.rpc("service_cancel_external_appeal",{p_hash:hash(token)});
  }
  // Identical response for nonexistent user, unknown case, rate limits and errors.
