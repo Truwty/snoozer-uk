@@ -1,22 +1,28 @@
 import "server-only";
-import {zohoSmtpConfigured} from "./zoho-transport";
+import {zohoSmtpConfigured,sendZohoNotice} from "./zoho-transport";
+import {zohoMailApiConfigured,sendZohoApiNotice} from "./zoho-mail-api";
 
-/** Render Free blocks outbound SMTP on ports 25, 465 and 587.
- * Enable this only after the hosting tier permits outbound SMTP and a
- * controlled Zoho delivery test has been planned. Fail closed by default. */
+// Render Free blocks ports 25/465/587; never attempt outbound SMTP unless
+// the operator explicitly confirms a hosting plan that allows these ports.
 export function zohoOutboundEnabled(){
  return process.env.ZOHO_SMTP_OUTBOUND_ENABLED==="true";
 }
-
 export function zohoMailReady(){
- return zohoSmtpConfigured() && zohoOutboundEnabled();
+ return zohoMailApiConfigured() || (zohoSmtpConfigured() && zohoOutboundEnabled());
 }
-
 export function mailReadiness(){
+ const apiConfigured=zohoMailApiConfigured();
+ const credentialsConfigured=zohoSmtpConfigured();
+ const outboundEnabled=zohoOutboundEnabled();
  return {
-  credentialsConfigured:zohoSmtpConfigured(),
-  outboundEnabled:zohoOutboundEnabled(),
+  apiConfigured,credentialsConfigured,outboundEnabled,
+  transport:apiConfigured?"api":credentialsConfigured&&outboundEnabled?"smtp":"none",
   dispatchTokenConfigured:typeof process.env.OWNER_EMAIL_DISPATCH_TOKEN==="string" &&
     process.env.OWNER_EMAIL_DISPATCH_TOKEN.length>=32,
  };
+}
+export async function sendOwnerMail(to:string,subject:string,body:string){
+ if(zohoMailApiConfigured())return sendZohoApiNotice(to,subject,body);
+ if(zohoSmtpConfigured()&&zohoOutboundEnabled())return sendZohoNotice(to,subject,body);
+ return false;
 }
