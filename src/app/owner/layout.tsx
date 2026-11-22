@@ -5,7 +5,7 @@ const sections = [
   ["Overview", "/owner"], ["Users", "/owner/users"], ["Profiles", "/owner/profiles"],
   ["Moderation", "/owner/moderation"], ["Premium", "/owner/premium"],
   ["Analytics", "/owner/analytics"], ["Settings", "/owner/settings"],
-  ["Audit log", "/owner/audit"], ["System", "/owner/system"],
+  ["Privacy requests", "/owner/privacy"], ["Audit log", "/owner/audit"], ["System", "/owner/system"],
   ["Owner MFA", "/owner/security"],
 ] as const;
 export const dynamic = "force-dynamic";
