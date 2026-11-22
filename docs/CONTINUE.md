@@ -1,3 +1,13 @@
+## Feature #20 restricted, real account erasure — implementation candidate, awaiting CI
+
+Implemented a narrow, Owner AAL2, server-side Supabase Auth deletion path for verified **non-Owner, non-billing, media-free, dependency-free** subjects with a real deletion request, documented processor/retention/subscription attestations, and a typed irreversible confirmation. The app route uses `auth.admin.deleteUser`, not a direct SQL delete, preserves minimised audit actor history via `ON DELETE SET NULL`, and records a private job with service-only verification of the erased Auth row plus owned app/Storage leftovers. A Zoho completion notice is attempted; failures require operator reconciliation. Disposable local Supabase E2E covers allowed and blocked paths. Instructions: `docs/owner20-safe-erasure.md`.
+
+**This remains disabled by default via `SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE` and does not automatically erase Storage binaries, live Stripe customers, subscriptions, creator commerce, old third-party data or legal holds. It is not the end of GDPR obligations or a claim of complete general-purpose deletion. No customer data was erased.** The full release needs passing PR CI, merge, hosted migration, Render deploy and an isolated live acceptance run before enabling.
+
+The user reports provider ban/unban worked but the hosted `provider_ban_operations` and restrictions have no operations for the disposable account; Auth-level ban acceptance therefore still requires an audited succeeded ban/unban pair. Other acceptance tasks remain Owner AAL2 browser verification, email/Discord registration off/on, alert recovery, Stripe billing, leaked-password protection and broader security sign-off.
+
+---
+
 ## Feature #20 final acceptance and safe erasure inventory — 22 November 2026 (candidate awaiting CI)
 
 **Production verified:** The user completed a real external-appeal Zoho inbox test on a verified, disposable non-Owner account. Hosted Supabase confirms exactly one issued challenge, one consumed challenge, one moderation appeal and one audit event. Render deployment `dep-dc1m7c2jnfac73959ekg` went live with `SNOOZER_ENABLE_AUTH_BANS=true`. The test account was subsequently able to sign in and is not currently provider banned.
