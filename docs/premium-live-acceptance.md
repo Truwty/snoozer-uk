@@ -2,6 +2,19 @@
 
 **Checked 22 November 2026 UTC.** This is a release-gate record. The production Checkout switches remain **OFF**. A signed LIVE webhook has now been proven through the actual production endpoint; that is not a substitute for a real paid subscription or live customer entitlement acceptance.
 
+## 0. Seller preferences confirmed by operator (22 November 2026)
+
+- **Trading name:** Snoozer. **Declared structure:** UK sole trader. This is a trading name, **not a verified legal personal name**.
+- **Public billing/support email:** `snoozersupport@snoozer.uk`.
+- **UK VAT:** Operator states not VAT registered, reporting under £90,000 VAT-taxable turnover in any rolling 12-month period. **Self-declaration only**; this does not establish overseas VAT exemptions or tax compliance.
+- **Intended buyer territory:** Worldwide. UK VAT registration threshold does not remove potentially applicable EU consumer digital-services VAT or other local sales taxes. Cross-border country obligations, registration and price/tax model **NOT REVIEWED OR APPROVED**. Stripe Tax remains disabled.
+- **Refund preference:** No voluntary refunds, but **all legally required refunds, remedies and cancellation rights preserved** in Terms, Studio and Help. A blanket claim of "non-refundable under every circumstance" would be inaccurate.
+- **Owner cannot perform a LIVE card purchase/refund**. Do not mark production paid entitlement, cancellation, failed-renewal or dispute scenarios as validated based on sandbox-only provider tests.
+- **Still missing before approving seller disclosures:** The sole trader's legally identifying name and suitable business/geographical contact address (to be provided securely and displayed where required, not sent in chat). Do not invent or publish private address details.
+- **2027 UK subscription updates:** UK subscription rules are scheduled to change on 1 January 2027; verify applicable commencement and prepare the renewal/cancellation/cooling-off processes before then.
+
+Supporting official guidance: [GOV.UK online/distance selling](https://www.gov.uk/online-and-distance-selling-for-businesses/online-selling), [GOV.UK digital-services VAT](https://www.gov.uk/guidance/the-vat-rules-if-you-supply-digital-services-to-private-consumers), [EU non-Union One Stop Shop](https://vat-one-stop-shop.ec.europa.eu/one-stop-shop/register-oss_en), and [draft UK subscription rules commencement](https://www.legislation.gov.uk/ukdsi/2026/9780348287912/body).
+
 ## 1. Signed LIVE Stripe webhook — PASS
 
 - Intended LIVE Stripe merchant: `acct_1UdI9LBYH85ysT1B`; enabled destination `we_1UeKYyBYH85ysT1BSqAlpvsk` listens for 14 required event types at `https://snoozer-uk-staging.onrender.com/api/v1/billing/stripe/live-webhook`.
