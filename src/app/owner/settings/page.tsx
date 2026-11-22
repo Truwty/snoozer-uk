@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { requireOwner } from "@/lib/owner/auth";
-import { changeRegistration } from "../actions";
-const schema=z.object({registrations_enabled:z.object({value:z.boolean(),revision:z.number().int().positive(),updated_at:z.string()})});
+import { changeRegistration,changeEffectsSetting } from "../actions";
+const entry=z.object({value:z.boolean(),revision:z.number().int().positive(),updated_at:z.string()});
+const schema=z.object({registrations_enabled:entry,effects_enabled:entry});
 export default async function OwnerSettings({searchParams}:{searchParams:Promise<{admin?:string}>}) {
  const {client}=await requireOwner();const {data,error}=await client.rpc("owner_get_settings");const state=schema.safeParse(data);
  const message=(await searchParams).admin;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOwner } from "@/lib/owner/auth";
-import { restrictAccount,liftRestriction,addOwnerNote,grantPremium,revokePremium,openModerationCase } from "../../actions";
+import { restrictAccount,liftRestriction,addOwnerNote,grantPremium,revokePremium,openModerationCase,revokeAccountSessions } from "../../actions";
 const uuid=z.uuid();
 const detailSchema=z.object({
  id:uuid,email:z.string().nullable(),verified:z.boolean(),created_at:z.string(),is_owner:z.boolean(),
@@ -20,12 +20,21 @@ export default async function Account({params,searchParams}:{params:Promise<{id:
  const parsed=detailSchema.safeParse(data);
  if(!parsed.success)notFound();
  const u=parsed.data;
+ const {data:sessionData}=await client.rpc("owner_session_summary",{p_user:id});
+ const sessions=z.object({active_sessions:z.number().int().nonnegative(),latest_login:z.string().nullable()}).safeParse(sessionData);
  return <main className="stack">
   <div className="actions"><Link href="/owner/users">← All accounts</Link><Link href="/owner/security">Owner MFA</Link></div>
   <h1>Account details</h1><p>{u.email??"No email"} · <code>{u.id}</code> {u.is_owner&&<strong>Owner protected</strong>}</p>
   <p className="muted">{u.verified?"Verified":"Not verified"} · Created {new Date(u.created_at).toLocaleDateString("en-GB")}</p>
   {admin&&<p role="status">Result: {admin==="denied"?"Operation denied. Check MFA, permissions and inputs.":admin}</p>}
   <section className="panel stack"><h2>Profiles</h2>{u.profiles.length===0?<p>None</p>:u.profiles.map(p=><p key={p.id}>@{p.username} — {p.published?"Published":"Draft"} {p.published&&<Link href={"/"+p.username}>View</Link>}</p>)}</section>
+  <section className="panel stack"><h2>Session security</h2>
+   <p>{sessions.success?`${sessions.data.active_sessions} active session(s)`:"Session metrics unavailable"}</p>
+   {sessions.success&&sessions.data.latest_login&&<p className="muted">Most recent sign-in: {new Date(sessions.data.latest_login).toLocaleString("en-GB")}</p>}
+   {!u.is_owner&&<form action={revokeAccountSessions} className="stack"><input type="hidden" name="user" value={id}/>
+    <label>Revocation reason<input name="reason" minLength={8} maxLength={500} required/></label>
+    <button className="button">Revoke all account sessions (MFA required)</button></form>}
+  </section>
   <section className="panel stack"><h2>Restrictions</h2>
    {u.restrictions.length===0?<p>None</p>:u.restrictions.map(r=><div key={r.id} className="stack">
     <p>{r.kind} · {r.revoked_at?"Lifted":r.ends_at?"Until "+new Date(r.ends_at).toLocaleDateString("en-GB"):"Indefinite"} · {r.reason}</p>

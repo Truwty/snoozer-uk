@@ -1636,3 +1636,34 @@ test("profile report intake, private queue and moderation enforcement are role-g
     for(const id of accounts) await admin.auth.admin.deleteUser(id);
   }
 });
+
+test("MFA-verified Owner revokes refresh sessions and blocks old access tokens", async () => {
+ test.setTimeout(60000);
+ const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
+ const n="revoke-"+randomUUID().slice(0,9),emails=[n+"-owner@example.com",n+"-member@example.com"];
+ const ids=[] as string[];
+ const sql=(statement:string)=>execFileSync("docker",["exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",statement]).toString();
+ for(const email of emails){const x=await admin.auth.admin.createUser({email,password,email_confirm:true});expect(x.error).toBeNull();ids.push(x.data.user!.id);}
+ const [ownerId,memberId]=ids;
+ const owner=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ const member=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+ sql("insert into snoozer.platform_owners(owner_id) values ('"+ownerId+"')");
+ try{
+  const login=await owner.auth.signInWithPassword({email:emails[0],password});
+  expect(login.error).toBeNull();
+  const sessionId=JSON.parse(Buffer.from(login.data.session!.access_token.split(".")[1],"base64url").toString()).session_id as string;
+  expect((await member.auth.signInWithPassword({email:emails[1],password})).error).toBeNull();
+  expect((await member.rpc("get_my_plan")).error).toBeNull();
+  expect((await owner.rpc("owner_revoke_sessions",{p_user:memberId,p_reason:"Disposable security check"})).error?.code).toBe("42501");
+  const jwt=JSON.stringify({sub:ownerId,role:"authenticated",aal:"aal2",session_id:sessionId});
+  const output=sql("begin; set local role authenticated; select set_config('request.jwt.claims', '"+jwt+"', true); "+
+    "select set_config('request.jwt.claim.sub', '"+ownerId+"', true); "+
+    "select public.owner_revoke_sessions('"+memberId+"','Disposable security check'); commit;");
+  expect(output).toContain("owner_revoke_sessions");
+  expect((await member.rpc("get_my_plan")).error?.code).toBe("42501");
+ } finally {
+  sql("delete from snoozer.admin_audit_events where actor_id='"+ownerId+"' or target_id='"+memberId+"';"+
+    " delete from snoozer.platform_owners where owner_id='"+ownerId+"';");
+  for(const id of ids)await admin.auth.admin.deleteUser(id);
+ }
+});
