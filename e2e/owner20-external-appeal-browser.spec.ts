@@ -62,7 +62,7 @@ test("banned user can submit and cannot replay a signed-out external appeal",asy
     "Attempting a second use of the same synthetic verification link."
    );
    await guest.getByRole("button",{name:"Submit appeal"}).click();
-   await expect(guest.getByRole("alert")).toContainText("used already");
+   await expect(guest.getByText(/This link has expired, was used already/)).toBeVisible();
    expect(sql("select count(*) from snoozer.moderation_appeals where case_id='"+caseId+"'").trim()).toBe("1");
    expect(sql("select count(*) from snoozer.external_appeal_challenges where case_id='"+caseId+"' and consumed_at is not null").trim()).toBe("1");
   }finally{await noSession.close();}
