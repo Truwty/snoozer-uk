@@ -64,8 +64,44 @@ jobs:
               print("::error::At least one queued email failed")
               sys.exit(1)
           PY
+      - name: Check retry-exhausted and overdue email queue
+        id: queue_health
+        if: vars.OWNER_EMAIL_QUEUE_HEALTH_ENABLED == 'true'
+        shell: bash
+        run: |
+          if [ "${#DISPATCH_TOKEN}" -lt 32 ]; then
+            echo "::error::Dispatch secret unavailable for queue-health check"
+            exit 1
+          fi
+          echo "::add-mask::$DISPATCH_TOKEN"
+          status="$(curl --silent --show-error --max-time 45 --output queue-health.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer $DISPATCH_TOKEN" \
+            https://snoozer-uk-staging.onrender.com/api/internal/owner-notices/health)" || {
+            echo "::error::Queue-health API transport failed"
+            exit 1
+          }
+          if [ "$status" != "200" ]; then
+            echo "::error::Queue-health API returned HTTP $status"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json,sys
+          with open("queue-health.json",encoding="utf-8") as f:
+              result=json.load(f)
+          if result.get("status")!="ok":
+              print("::error::Queue-health API did not report ready")
+              sys.exit(1)
+          for key in ("total","undelivered","exhausted","overdue","leased"):
+              if type(result.get(key)) is not int or result[key]<0:
+                  print("::error::Invalid queue-health counters")
+                  sys.exit(1)
+          print("Queue health: undelivered={undelivered}, exhausted={exhausted}, overdue={overdue}, leased={leased}".format(**result))
+          if result["exhausted"] or result["overdue"]:
+              print("::error::Delivery backlog requires operator action")
+              sys.exit(1)
+          PY
       - name: Create or update actionable dispatch incident
-        if: failure() && steps.deliver.outcome == 'failure'
+        if: failure() && (steps.deliver.outcome == 'failure' || steps.queue_health.outcome == 'failure')
         shell: bash
         run: |
           title="Snoozer Owner notification delivery alert"
