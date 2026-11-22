@@ -965,10 +965,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
-    await publicPage.getByRole("button", { name: "Disable effects" }).click();
-    await expect(publicPage.getByRole("button", { name: "Enable effects" })).toHaveAttribute("aria-pressed", "true");
+    const effectSwitch = publicPage.getByRole("checkbox", { name: "Disable profile effects" });
+    await effectSwitch.check();
+    await expect(effectSwitch).toBeChecked();
     await expect(publicPage.locator(".profile-effects-layer")).toHaveCSS("display", "none");
-    await publicPage.getByRole("button", { name: "Enable effects" }).click();
+    await effectSwitch.uncheck();
     await expect(publicPage.locator(".profile-effects-layer")).not.toHaveCSS("display", "none");
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
     await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
