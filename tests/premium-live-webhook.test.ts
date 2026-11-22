@@ -96,6 +96,24 @@ describe("Premium live webhook processing is idempotent and fail-closed", () => 
     expect(calls.rpc).toHaveBeenCalledWith("finish_premium_live_receipt", { p_id: "evt_example123" });
   });
 
+  it("retries a real Snoozer Checkout when Stripe races ahead of local session binding", async () => {
+    const snoozerOwner = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    (provider.checkout.sessions.retrieve as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "cs_live_example", object: "checkout.session", livemode: true,
+      mode: "subscription", status: "complete", payment_status: "paid",
+      customer: "cus_123", client_reference_id: snoozerOwner,
+      subscription: "sub_123", url: null,
+      metadata: { snoozer_owner: snoozerOwner, snoozer_attempt: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+    });
+    calls.rpc.mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: false, error: null });
+    await expect(processPremiumLiveEvent(provider, event("checkout.session.completed", "cs_live_example")))
+      .rejects.toThrow("retry");
+    expect(calls.rpc).toHaveBeenCalledTimes(2);
+    expect(calls.reconcile).not.toHaveBeenCalled();
+    expect(calls.rpc).not.toHaveBeenCalledWith("finish_premium_live_receipt", expect.anything());
+  });
+
   it("routes refund/dispute and fraud warnings to conservative risk handling", async () => {
     await processPremiumLiveEvent(provider, event("charge.refunded", "ch_123"));
     expect(calls.hold).toHaveBeenCalledWith(provider, {
