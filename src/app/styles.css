@@ -781,3 +781,25 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (pointer:coarse), (prefers-reduced-motion: reduce), print {
  .profile-effects-layer[data-interaction]::after { display: none; }
 }
+
+
+/* Independent particle layer: compositor-friendly drift with bounded element count. */
+.profile-effects-layer b { position: absolute; display: block; width: 3px; height: 3px; border-radius: 50%; background: var(--detail); opacity: .7; box-shadow: 0 0 7px var(--detail); animation: snoozer-drift 8s ease-in-out infinite alternate; }
+.profile-effects-layer[data-particles="none"] b { display: none; }
+.profile-effects-layer[data-particles="fireflies"] b { width: 5px; height: 5px; background: var(--detail); animation: snoozer-fireflies 6s ease-in-out infinite alternate; }
+.profile-effects-layer[data-particles="sparkles"] b { width: 4px; height: 4px; border-radius: 1px; transform: rotate(45deg); animation: snoozer-twinkle 2.5s ease-in-out infinite alternate; }
+.profile-effects-layer[data-speed="slow"] b { animation-duration: 16s; }
+.profile-effects-layer[data-speed="fast"] b { animation-duration: 4s; }
+.profile-effects-layer[data-paused="true"] b { animation-play-state: paused; }
+@keyframes snoozer-drift { from { transform: translate3d(-9px,9px,0); opacity: .2; } to { transform: translate3d(13px,-20px,0); opacity: .85; } }
+@keyframes snoozer-fireflies { from { transform: translate3d(-12px,15px,0); opacity: .1; } to { transform: translate3d(16px,-17px,0); opacity: .9; } }
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion: no-preference) {
+ .profile-card[data-effect-links="lift"] .profile-links a:hover { transform: translateY(-2px); }
+ .profile-card[data-effect-links="glow"] .profile-links a:hover { box-shadow: 0 0 18px -6px var(--detail); }
+ .profile-card[data-effect-links="shine"] .profile-links a:hover { filter: brightness(1.18); }
+}
+@media (max-width: 46rem), (pointer:coarse) { .profile-effects-layer b:nth-of-type(n+10) { display: none; } }
+@media (prefers-reduced-motion: reduce), print {
+ .profile-effects-layer b, .profile-card[data-effect-links] .profile-links a { animation: none !important; transition: none !important; transform: none !important; }
+}
+.profile-card[data-effects-disabled="true"][data-effect-links] .profile-links a { transform: none !important; filter: none; box-shadow: none; }
