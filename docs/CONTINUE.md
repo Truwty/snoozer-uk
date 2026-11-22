@@ -1,5 +1,14 @@
 # Development continuation — Snoozer.uk
 
+## Verified LIVE webhook and sandbox payment probes — 22 November 2026
+
+**Signed LIVE webhook: PASS.** Created and immediately cancelled a no-payment-method LIVE trial on Snoozer's actual Stripe account. Both LIVE Stripe events were recorded and processed in Supabase; Stripe has no pending webhooks for either event, and the customer's zero-value invoice was £0 paid/£0 due with zero charges. Live Checkout remains OFF.
+
+**Sandbox provider acceptance:** £3 initial paid invoice, cancel-at-period-end, immediate cancellation and £3 test refund **PASS**; test Checkout session created but not paid; rejected card token `card_declined` occurred at attachment, not renewal. Actual recurring invoice renewal, dispute and integrated end-user paid entitlement **NOT PROVEN**. Test fixtures cancelled and product/price archived. [Complete evidence](premium-live-acceptance.md). Real billing gates remain disabled.
+
+---
+
+
 ## Priority 1 billing readiness — 22 November 2026
 
 **Implementation in [PR #35](https://github.com/Truwty/snoozer-uk/pull/35):** public Pricing responds to the real application/database Checkout gates; Terms and Help explain recurring subscriptions, renewal, cancellation and support; startup preflight checks the exact Stripe webhook destination and 14 event types; new unit tests cover signed-webhook dispatch, retries, idempotence and provider-backed entitlement reconciliation.
