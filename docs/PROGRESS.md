@@ -1,3 +1,11 @@
+## Release verification — Advanced Profile Animations & Effects (22 November 2026)
+
+**Merged and deployed.** [PR #39](https://github.com/Truwty/snoozer-uk/pull/39) merged as commit `225d0568282464380f60105c75a04d0f0b7f6875`. [CI #418](https://github.com/Truwty/snoozer-uk/actions/runs/44983437078) passed on its final PR commit. Render service `snoozer-uk-staging` reports the merged commit live (deployment `dep-dc16nal9fdbs739v79dg`). The matching Supabase migration `20261122040354_advanced_profile_effects` was applied and directly checked. These are provider-confirmed release states, not a full independent production UI audit; a separate browser probe of the public domain was unavailable.
+
+**Outstanding polish:** low-end mobile performance benchmarks and a richer multi-point cursor trail. The implemented trail remains a lightweight pointer-following visual treatment. Billing settings unchanged.
+
+---
+
 ## Advanced profile animations & effects — verified implementation (22 November 2026)
 
 **Core implementation tested.** The `feature/advanced-profile-effects` changes add a strictly validated versioned effect catalogue, six independently configurable layers (background, border, particles, links, typography and pointer interaction), Studio preview, native no-JavaScript visitor effects toggle, reduced-motion CSS, pause-offscreen effects, and Free/Plus/Pro/Studio entitlement enforcement. Public profiles fail closed to the free tier on expiry. Unit, SQL direct-RPC bypass, disposable Supabase, lint, typecheck, production build and Playwright tests passed in [CI #416](https://github.com/Truwty/snoozer-uk/actions/runs/44982821770) after resolving selector and hydration regressions.
