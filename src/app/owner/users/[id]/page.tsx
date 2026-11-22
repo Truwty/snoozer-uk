@@ -6,6 +6,24 @@ import { z } from "zod";
 import { requireOwner } from "@/lib/owner/auth";
 import { restrictAccount,liftRestriction,addOwnerNote,grantPremium,revokePremium,openModerationCase,revokeAccountSessions } from "../../actions";
 const uuid=z.uuid();
+const banPreflightSchema=z.object({
+ user_exists:z.boolean(),is_owner:z.boolean(),internal_ban:z.boolean(),
+ active_restriction:z.boolean(),auth_banned:z.boolean(),
+ eligible_cases:z.array(z.object({id:uuid,status:z.string()})),
+});
+const providerMessages:Record<string,string>={
+ "invalid":"Review the ban form values, case and duration.",
+ "provider-disabled":"Provider-level bans are unavailable or the independent email appeal sender is not configured.",
+ "mfa-required":"Your current session is not AAL2. Complete Owner MFA before using provider controls.",
+ "internal-ban-required":"Apply an internal indefinite ban first; provider bans cannot bypass this safeguard.",
+ "case-required":"Create or action a moderation case for this account before the provider ban.",
+ "internal-restriction-active":"Lift all active internal restrictions before unbanning in Supabase Auth.",
+ "pending-operation":"A provider operation is still pending. Review the audit before retrying.",
+ "provider-updated":"Supabase Auth provider access was updated and the operation audited.",
+ "provider-failed":"The provider rejected the update. Check the audit and account status.",
+ "reconciliation-required":"Provider response could not be reconciled with the audit. Stop and investigate.",
+ "denied":"The provider operation was denied. Check the readiness checklist and Owner MFA.",
+};
 const detailSchema=z.object({
  id:uuid,email:z.string().nullable(),verified:z.boolean(),created_at:z.string(),is_owner:z.boolean(),
  profiles:z.array(z.object({id:uuid,username:z.string(),published:z.boolean()})),
@@ -22,13 +40,26 @@ export default async function Account({params,searchParams}:{params:Promise<{id:
  const parsed=detailSchema.safeParse(data);
  if(!parsed.success)notFound();
  const u=parsed.data;
- const {data:sessionData}=await client.rpc("owner_session_summary",{p_user:id});
+ const [sessionResult,banResult,mfaResult]=await Promise.all([
+  client.rpc("owner_session_summary",{p_user:id}),
+  client.rpc("owner_provider_ban_preflight",{p_user:id}),
+  client.auth.mfa.getAuthenticatorAssuranceLevel(),
+ ]);
+ const sessionData=sessionResult.data;
+ const readiness=banPreflightSchema.safeParse(banResult.data);
+ const banState=readiness.success?readiness.data:null;
+ const isAal2=mfaResult.data?.currentLevel==="aal2"&&!mfaResult.error;
+ const banCases=banState?.eligible_cases??[];
+ const banReady=providerBanConfigured()&&isAal2&&!u.is_owner&&
+   Boolean(banState?.internal_ban)&&banCases.length>0&&!banState?.auth_banned;
+ const unbanReady=providerBanConfigured()&&isAal2&&!u.is_owner&&
+   Boolean(banState?.auth_banned)&&!banState?.active_restriction;
  const sessions=z.object({active_sessions:z.number().int().nonnegative(),latest_login:z.string().nullable()}).safeParse(sessionData);
  return <main className="stack">
   <div className="actions"><Link href="/owner/users">← All accounts</Link><Link href="/owner/security">Owner MFA</Link></div>
   <h1>Account details</h1><p>{u.email??"No email"} · <code>{u.id}</code> {u.is_owner&&<strong>Owner protected</strong>}</p>
   <p className="muted">{u.verified?"Verified":"Not verified"} · Created {new Date(u.created_at).toLocaleDateString("en-GB")}</p>
-  {admin&&<p role="status">Result: {admin==="denied"?"Operation denied. Check MFA, permissions and inputs.":admin}</p>}
+  {admin&&<p role="status">Result: {providerMessages[admin]??(admin==="denied"?"Operation denied. Check MFA, permissions and inputs.":admin)}</p>}
   <section className="panel stack"><h2>Profiles</h2>{u.profiles.length===0?<p>None</p>:u.profiles.map(p=><p key={p.id}>@{p.username} — {p.published?"Published":"Draft"} {p.published&&<Link href={"/"+p.username}>View</Link>}</p>)}</section>
   <section className="panel stack"><h2>Session security</h2>
    <p>{sessions.success?`${sessions.data.active_sessions} active session(s)`:"Session metrics unavailable"}</p>
@@ -52,24 +83,41 @@ export default async function Account({params,searchParams}:{params:Promise<{id:
   <section className="panel stack">
    <h2>Supabase Auth provider access</h2>
    <p className="muted">Additional provider-level controls. Requires an active internal ban and an actioned moderation case. An email-verified appeal route at /appeal/external must be tested with your Zoho sender before enabling these controls. The Owner registry cannot be banned.</p>
-   <p>{providerBanConfigured()?"Provider ban controls enabled for verified Owner MFA.":"Provider ban controls disabled until independent email appeals have been tested and the server-only safety flag is enabled."}</p>
+   <p>{providerBanConfigured()?"Provider controls enabled. Every write still requires an Owner AAL2 session and database preconditions.":"Provider controls disabled or the verified email appeal sender is unavailable."}</p>
    {!u.is_owner && providerBanConfigured() && <>
+    <section className="stack" aria-label="Provider ban prerequisites">
+     <h3>Provider ban readiness</h3>
+     {!banState?<p role="alert">Readiness check unavailable: provider actions are blocked until refreshed.</p>:<>
+      <p>Owner MFA: <strong>{isAal2?"AAL2 verified":"AAL2 required"}</strong> · Internal indefinite ban: <strong>{banState.internal_ban?"Active":"Not active"}</strong> · Eligible moderation cases: <strong>{banCases.length}</strong> · Provider currently banned: <strong>{banState.auth_banned?"Yes":"No"}</strong></p>
+      {!isAal2&&<p role="alert">Complete <Link href="/owner/security">Owner MFA</Link>, then reload this page.</p>}
+      {!banState.internal_ban&&!banState.auth_banned&&<p role="alert">Apply an internal <strong>Indefinite ban</strong> in Restrictions above. Suspensions do not qualify for provider bans.</p>}
+      {banCases.length===0&&<p role="alert">Create a moderation case below and mark it <strong>actioned</strong> in <Link href="/owner/moderation">Moderation</Link>.</p>}
+      {banState.auth_banned&&banState.active_restriction&&<p role="alert">For reinstatement, lift the internal restriction before unbanning the provider account.</p>}
+     </>}
+    </section>
     <form action={changeProviderBan} className="stack">
      <input type="hidden" name="user" value={id}/>
      <input type="hidden" name="operation" value="ban"/>
      <h3>Apply provider ban</h3>
-     <label>Linked actioned case UUID<input name="case" required maxLength={36}/></label>
-     <label>Provider ban hours<input name="hours" type="number" min={1} max={876000} defaultValue={720} required/></label>
-     <label>Reason<input name="reason" minLength={8} maxLength={500} required/></label>
-     <button className="button">Ban in Supabase Auth (MFA required)</button>
+     <label>Linked eligible case
+      <select name="case" required disabled={!banReady} defaultValue="">
+       <option value="" disabled>Select a verified case</option>
+       {banCases.map(c=><option key={c.id} value={c.id}>{c.id} ({c.status})</option>)}
+      </select>
+     </label>
+     <label>Provider ban hours<input name="hours" type="number" min={1} max={876000} defaultValue={1} required disabled={!banReady}/></label>
+     <label>Reason<input name="reason" minLength={8} maxLength={500} required disabled={!banReady}/></label>
+     <button className="button" disabled={!banReady}>Ban in Supabase Auth (MFA required)</button>
+     {!banReady&&<p className="muted">Unavailable until every readiness check above passes.</p>}
     </form>
     <form action={changeProviderBan} className="stack">
      <input type="hidden" name="user" value={id}/>
      <input type="hidden" name="operation" value="unban"/>
      <h3>Lift provider ban</h3>
-     <p>Lift the internal account restriction first. Existing paid Premium is unchanged.</p>
-     <label>Reason<input name="reason" minLength={8} maxLength={500} required/></label>
-     <button className="button">Unban in Supabase Auth (MFA required)</button>
+     <p>Lift every active internal restriction first. Existing paid Premium is unchanged.</p>
+     <label>Reason<input name="reason" minLength={8} maxLength={500} required disabled={!unbanReady}/></label>
+     <button className="button" disabled={!unbanReady}>Unban in Supabase Auth (MFA required)</button>
+     {!unbanReady&&<p className="muted">Only available for an Auth-banned account with no active internal restriction and verified AAL2.</p>}
     </form>
    </>}
   </section>

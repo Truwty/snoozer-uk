@@ -41,3 +41,11 @@ Never write passwords, raw personal-data archives, bank details or MFA codes int
 ## Acceptance
 
 Disposable Supabase E2E tests verify AAL2 denials, missing/incomplete evidence, successful evidence recording and test-only completion. Real recipient-controlled appeal testing, production Owner AAL2, processor retention/legal review and genuine deletion remain independent acceptance gates.
+
+## Final-release provider-ban readiness and erasure inventory
+
+On the Owner account detail page, the provider-ban readiness panel checks an Owner AAL2 browser session, an **active indefinite internal ban** (a temporary suspension does not qualify), at least one linked eligible actioned/closed/appealed moderation case and current Supabase Auth ban state. The ban button is disabled until all criteria pass and displays eligible case IDs from a database-verified read-only RPC. Before unbanning, lift all active internal restrictions; the provider unban button will only appear usable for an actually provider-banned user. Denial codes are allowlisted in the UI and do not reveal tokens or database internals.
+
+The privacy request detail page adds a database-generated **direct foreign-key inventory** showing the number of Snoozer rows referring to the requested Auth user, table/column, and Postgres on-delete behaviour. This is not a substitute for inspecting indirect ownership, media files, Stripe/legal billing obligations, processor contracts and old support data. In particular, a reported zero direct FK count **does not** authorise Auth deletion or completion of a GDPR request.
+
+**Acceptance:** Run disposable local tests and the full CI suite, then inspect hosted data after a controlled ban+unban: two `provider_ban_operations` rows (`ban` and `unban`) with succeeded status and associated `auth.ban.prepare` / `auth.ban.result` audit events; the test account has `banned_until` null and can sign in. If no operation rows appear, the request did not pass the Owner database preflight; do not mark it accepted.

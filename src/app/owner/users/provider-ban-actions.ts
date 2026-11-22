@@ -6,6 +6,15 @@ import {storageAdmin} from "@/lib/supabase";
 import {providerBanConfigured} from "@/lib/owner/provider-ban-config";
 
 const uuid=z.uuid();
+function providerPreflightError(error:{code?:string;message?:string}|null){
+ if(!error)return "denied";
+ if(error.code==="42501")return "mfa-required";
+ if(error.message?.includes("Internal ban must be active"))return "internal-ban-required";
+ if(error.message?.includes("Case reference required"))return "case-required";
+ if(error.message?.includes("Lift internal restriction first"))return "internal-restriction-active";
+ if(error.message?.includes("Existing provider action pending"))return "pending-operation";
+ return "denied";
+}
 export async function changeProviderBan(form:FormData){
  const user=uuid.safeParse(form.get("user"));
  const operation=z.enum(["ban","unban"]).safeParse(form.get("operation"));
@@ -27,7 +36,7 @@ export async function changeProviderBan(form:FormData){
   p_hours:operation.data==="ban"?hours.data:null,p_reason:reason.data,
  });
  if(prepared.error||!uuid.safeParse(prepared.data).success)
-  redirect(destination+"denied");
+  redirect(destination+providerPreflightError(prepared.error));
  const admin=storageAdmin();
  let ok=false,code="provider_unavailable";
  try {
@@ -44,7 +53,8 @@ export async function changeProviderBan(form:FormData){
   redirect(destination+"reconciliation-required");
  if(ok&&operation.data==="ban"){
   // Existing DB checks independently enforce the Snoozer ban.
-  await client.rpc("owner_revoke_sessions",{p_user:user.data,p_reason:reason.data});
+  const sessions=await client.rpc("owner_revoke_sessions",{p_user:user.data,p_reason:reason.data});
+  if(sessions.error)redirect(destination+"reconciliation-required");
  }
  redirect(destination+(ok?"provider-updated":"provider-failed"));
 }
