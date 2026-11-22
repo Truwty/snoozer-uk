@@ -8,14 +8,14 @@ const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
 test.skip(process.env.SNOOZER_TEST_LOCAL_SUPABASE!=="1","Disposable local Supabase only");
 
-function totp(secret32:string){
+function totp(secret32:string,offset=0){
  const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
  let buffer=0,bits=0;const bytes:number[]=[];
  for(const ch of secret32.toUpperCase().replace(/=+$/,"")){
   buffer=(buffer<<5)|alphabet.indexOf(ch);bits+=5;
   if(bits>=8){bits-=8;bytes.push((buffer>>>bits)&255);}
  }
- const step=Buffer.alloc(8);step.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+ const step=Buffer.alloc(8);step.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)+offset));
  const mac=createHmac("sha1",Buffer.from(bytes)).update(step).digest();
  return String((mac.readUInt32BE(mac[19]&15)&0x7fffffff)%1000000).padStart(6,"0");
 }
@@ -58,9 +58,14 @@ test("privacy requests cannot close without AAL2 evidence, including erasure pro
   const enrolled=await owner.auth.mfa.enroll({factorType:"totp",friendlyName:"Snoozer privacy CI"});
   expect(enrolled.error).toBeNull();
   const factorId=enrolled.data!.id,totpSecret=enrolled.data!.totp!.secret;
-  const challenge=await owner.auth.mfa.challenge({factorId});
-  expect(challenge.error).toBeNull();
-  expect((await owner.auth.mfa.verify({factorId,challengeId:challenge.data!.id,code:totp(totpSecret)})).error).toBeNull();
+  let verified=false;
+  for(const shift of [0,-1,1]){
+   const challenge=await owner.auth.mfa.challenge({factorId});
+   expect(challenge.error).toBeNull();
+   const result=await owner.auth.mfa.verify({factorId,challengeId:challenge.data!.id,code:totp(totpSecret,shift)});
+   if(!result.error){verified=true;break;}
+  }
+  expect(verified).toBe(true);
   expect((await owner.auth.mfa.getAuthenticatorAssuranceLevel()).data?.currentLevel).toBe("aal2");
   const missing=await owner.rpc("owner_review_privacy_request",{
    p_request:exportTicket.data,p_status:"completed",p_response:"Should not pass without fulfilment proof"
