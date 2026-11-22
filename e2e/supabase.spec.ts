@@ -1574,7 +1574,7 @@ test("Owner administration requires verified role and MFA for privileged mutatio
 test("profile report intake, private queue and moderation enforcement are role-gated", async ({ page }) => {
   test.setTimeout(90000);
   const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
-  const n="report-"+randomUUID().slice(0,9);
+  const n="flagged-"+randomUUID().slice(0,9);
   const passwd=password;
   const emails=[n+"-target@example.com",n+"-reporter@example.com",n+"-owner@example.com"];
   const accounts=[] as string[];
