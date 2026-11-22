@@ -1,3 +1,11 @@
+## Owner account snapshot — LIVE, 22 November 2026, 07:22 UTC
+
+[PR #51](https://github.com/Truwty/snoozer-uk/pull/51) merged to `main` as `3ba12042c08441ed285ec4012ce417e0f614e39a`; [CI #44997231296](https://github.com/Truwty/snoozer-uk/actions/runs/44997231296) passed secret scanning, audit, lint, TypeScript, unit, disposable Supabase, Next build and Playwright. Render deployment `dep-dc19fdmtlv9c73bflli0` reported **live** on the exact merged code; no error-level logs in the inspected deploy window. Adds a no-store, verified-user JSON download at `/api/v1/account/data-snapshot` and linked `/account/data` interface. The archive contains a **basic own-account snapshot only** (identity fields, privacy request history, in-app notices). Anonymous access is tested to return 401. It does not include all stored user data, media, payment records or external processors and must not be called a full GDPR export.
+
+**Feature #20 remains INCOMPLETE:** external Auth-provider ban/independent identity-verified appeal, delivery/retries for notification emails, complete export/deletion fulfilment and retention, private provider health alerts, Discord signup gating and real Owner AAL2 production browser acceptance remain open. Do not remove session-based appeals, paid Stripe subscriptions or protected audit evidence to shortcut completion.
+
+---
+
 ## Owner administration expansion — LIVE through PR #50, 22 November 2026, 07:16 UTC
 
 **Released with verification:**
