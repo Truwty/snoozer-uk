@@ -1,4 +1,3 @@
-import "server-only";
 import { z } from "zod";
 
 const schema = z.object({status:z.object({indicator:z.enum(["none","minor","major","critical","maintenance"]),description:z.string().max(200)})});
