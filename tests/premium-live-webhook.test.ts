@@ -27,7 +27,7 @@ const provider = {
 } as unknown as Stripe;
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   calls.rpc.mockResolvedValue({ data: true, error: null });
   calls.reconcile.mockResolvedValue(true);
   calls.hold.mockResolvedValue(undefined);
@@ -87,9 +87,6 @@ describe("Premium live webhook processing is idempotent and fail-closed", () => 
       customer: "cus_123", client_reference_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       subscription: "sub_123", url: null,
     });
-    calls.rpc.mockResolvedValueOnce({ data: true, error: null })
-      .mockResolvedValueOnce({ data: false, error: null })
-      .mockResolvedValueOnce({ data: true, error: null });
     await processPremiumLiveEvent(provider, event("checkout.session.completed", "cs_live_example"));
     expect(calls.rpc).not.toHaveBeenCalledWith("bind_premium_live_subscription", expect.anything());
     expect(calls.reconcile).not.toHaveBeenCalled();
