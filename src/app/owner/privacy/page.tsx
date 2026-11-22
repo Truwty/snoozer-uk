@@ -9,6 +9,13 @@ const preflightSchema=z.object({
  live_checkout_records:z.number(),has_subscription_references:z.boolean(),
  has_retained_billing_evidence:z.boolean(),active_grants:z.number(),appeal_count:z.number()
 });
+const inventorySchema=z.object({
+ request_id:z.uuid(),user_id:z.uuid(),direct_fk_matches:z.number(),
+ dependencies:z.array(z.object({
+  table:z.string(),column:z.string(),rows:z.number(),
+  on_delete:z.enum(["cascade","set_null","restrict","no_action"])
+ })),scope:z.string()
+});
 const evidenceSchema=z.object({
  checked_at:z.string(),identity_verified:z.boolean(),app_data_processed:z.boolean(),
  private_media_processed:z.boolean(),billing_processed:z.boolean(),
@@ -31,6 +38,9 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  const selected=z.uuid().safeParse(params.preflight);
  const {data:check,error:checkError}=selected.success?await client.rpc("owner_privacy_preflight",{p_request:selected.data}):{data:null,error:null};
  const preflight=preflightSchema.safeParse(check);
+ const {data:dependencyData,error:dependencyError}=selected.success?
+  await client.rpc("owner_privacy_dependency_inventory",{p_request:selected.data}):{data:null,error:null};
+ const inventory=inventorySchema.safeParse(dependencyData);
  const {data:record}=selected.success?await client.rpc("owner_privacy_evidence",{p_request:selected.data}):{data:null};
  const evidence=evidenceSchema.safeParse(record);
  const checks=[
@@ -61,6 +71,20 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <p>Appeal records: {preflight.data.appeal_count}</p>
  <p className="muted">A missing local record is not proof that a third-party processor holds no data. Before fulfilment, verify identity, historical Storage objects, active Stripe subscriptions and invoices, Zoho/support records, lawful retention, and a secure delivery or erasure confirmation. This is a read-only preflight: it has changed nothing.</p>
  </>}
+ </section>}
+ {selected.success&&<section className="panel stack">
+ <h2>Account deletion dependency inventory</h2>
+ {dependencyError||!inventory.success?
+  <p role="alert">Dependency inventory unavailable. Do not attempt Auth deletion until all database and processor dependencies have been reviewed.</p>:
+  <>
+   <p>Direct Auth foreign-key references: <strong>{inventory.data.direct_fk_matches}</strong> · Referencing columns with matches: {inventory.data.dependencies.length}</p>
+   {inventory.data.dependencies.length===0?<p>No direct Auth foreign-key references remain in Snoozer tables.</p>:
+    <ul>{inventory.data.dependencies.map((item,i)=><li key={item.table+"."+item.column+"."+i}>
+     <code>{item.table}.{item.column}</code> — {item.rows} row(s) · on delete: {item.on_delete}
+    </li>)}</ul>}
+   <p className="muted">{inventory.data.scope}</p>
+   <p><strong>Read-only:</strong> this inventory does not delete records, cancel subscriptions, override legal holds or prove GDPR erasure is complete.</p>
+  </>}
  </section>}
  {selected.success&&<section className="panel stack">
  <h2>Document fulfilment evidence (Owner MFA required)</h2>
