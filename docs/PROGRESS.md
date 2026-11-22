@@ -1,3 +1,11 @@
+## Owner Control Centre routing hotfix — 22 November 2026
+
+**Fixed and deployed.** [PR #41](https://github.com/Truwty/snoozer-uk/pull/41) merged as commit `643ffe5fc44a1c60a3be21a8d671c058df11ad3c`. Owner route `/owner` had been accidentally omitted from `src/proxy.ts` application-route reservations, so it was looked up as a public profile username and rewritten to the profile-not-found page *before* the Owner permission check. The fix reserves the `owner` slug and adds a Playwright regression that signed-out visitors reach the expected sign-in page, not the profile-not-found page. Owner authorization is unchanged and server enforced.
+
+**Evidence:** [CI #44987255218](https://github.com/Truwty/snoozer-uk/actions/runs/44987255218) passed full tests including browser test; Render deployment `dep-dc17f456e07s73ci0emg` confirmed **live** at 05:04:49 UTC with the exact merged commit; post-deployment ERROR logs in the checked window were empty. No independent logged-in owner-browser smoke available from this environment.
+
+---
+
 ## Snoozer Owner release — 22 November 2026
 
 **Verified live:** [PR #40](https://github.com/Truwty/snoozer-uk/pull/40) merged as `2b93398f4a6118d3392abb2bc8522dd28089d299`; [CI #44986077461](https://github.com/Truwty/snoozer-uk/actions/runs/44986077461) passed audit, secrets, lint, typecheck, unit tests, disposable Supabase, production build and Playwright. Render deployment `dep-dc177s9ksfps7382fbe0` reports **live**, exact merged commit, and startup logs show Next.js ready. Post-deploy ERROR logs had zero entries in the checked window. Direct public HTTP probe could not be performed from the execution environment.
