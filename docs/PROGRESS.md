@@ -1,3 +1,13 @@
+## Feature #20 — Single-step reviewed erasure UX fix (22 Nov 2026)
+
+**Reproduced on real disposable UID `ff1646ea-961e-47aa-ac71-805eea03bd9f`:** It is confirmed, not an Owner, has one normal auto-created profile, zero Stripe customers/checkouts/products, zero media objects, zero bans/cases, and one `open` deletion request `8feabd7d-8bc2-4587-8cf7-71b547899af5`. **No privacy evidence row or erasure job was created.** The old Execute handler required a separate evidence form and returned only `erasure-blocked`, so the user had no actionable explanation. The clean profile itself is a normal `ON DELETE CASCADE` dependency and must not be considered a blocker.
+
+**Candidate fix:** The Owner AAL2 deletion form now includes an explicit independent review attestation for verified identity, payment, subscription, processor and legal retention obligations. One click records that Owner review into the existing auditable evidence RPC and runs the restricted DB preflight and privileged Supabase Auth deletion. It uses allowlisted, human-readable failure messages and reports real linked records. After a successful Auth erasure, reconciliation and Zoho notice, it automatically marks the request `completed` through the existing Owner AAL2 audit RPC. The code retains every actual protection for Owner accounts, payment activity, private Storage, moderation dependencies and legal holds. No account data is deleted by deployment.
+
+**Release acceptance:** PR CI lint/types/unit/real disposable Supabase/Playwright pass; squash merge; Render deploy to tested commit; verify the deletion flag `SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE=true` is enabled only for Owner AAL2 acceptance. Only a signed-in Owner with an active AAL2 session can submit a real delete, including typed request confirmation and attestation. Then inspect the supplied disposable UID and corresponding `privacy_erasure_jobs` in production. Do not assert success before Auth account is absent and the job and notice are recorded.
+
+---
+
 ## Feature #20 deletion integrity follow-up — 22 November 2026
 
 **Confirmed production defect:** The Owner used the status-review form with repeated `ERASE <UUID>` text, but this form only changes the decision. The database showed the deletion request marked `completed`, while the original Auth user, profile, moderation appeal/restriction and other linked records still exist; `privacy_erasure_jobs` is empty. Prior fulfilment evidence marked `account_erasure_verified=true` and `secure_notice_sent=true` without a backend erasure job. This must NOT count as deletion success.
