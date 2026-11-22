@@ -1,3 +1,11 @@
+## Owner role — 22 November 2026
+
+Platform-owner role assigned to the existing verified `@trusnooze` Supabase account via a private row, not profile metadata. Migration file `20261122043142_platform_owner.sql` contains no hardcoded user ID. Database checks confirm the verified badge, Studio tier override, privilege restrictions and Owner dashboard RPCs. [PR #40](https://github.com/Truwty/snoozer-uk/pull/40) introduces the public Owner badge, an owner-only `/owner` overview and navigation. Check CI, merge and Render deployment before marking the UI live.
+
+**Limitations:** the Owner role grants the highest existing product entitlements and access to explicitly authorised admin tools, not blanket browser access to other users, secret API keys, Stripe actions or arbitrary SQL. Build audited user management, moderation and site-setting actions as separately secured follow-ups.
+
+---
+
 ## Post-release follow-up — Advanced Profile Animations & Effects (22 November 2026)
 
 The core approved feature is **merged and deployed** to Render staging, verified by [PR #39](https://github.com/Truwty/snoozer-uk/pull/39), [CI #418](https://github.com/Truwty/snoozer-uk/actions/runs/44983437078), and live Render deployment `dep-dc16nal9fdbs739v79dg` at commit `225d0568282464380f60105c75a04d0f0b7f6875`. Supabase migration `20261122040354_advanced_profile_effects` is applied. Do not rerun migration manually.
