@@ -70,6 +70,26 @@ test("only Owner AAL2 may erase dependency-free disposable Auth users, preservin
    if(!verifiedChallenge.error){verified=true;break;}
   }
   expect(verified).toBe(true);
+  const candidate=await owner.rpc("owner_privacy_preflight",{p_request:ticket.data});
+  expect(candidate.error).toBeNull();
+  expect(candidate.data).toMatchObject({
+   request_id:ticket.data,user_id:memberId,kind:"deletion",
+   status:"open",verified_email:true,
+   has_stripe_customer:false,live_checkout_records:0,
+   has_subscription_references:false,has_avatar_media:false,
+   gallery_metadata_count:0
+  });
+  // Every signup has an automatically-created profile: that alone must
+  // never block an otherwise clean, verified disposable Auth user.
+  expect(candidate.data.profile_count).toBeGreaterThanOrEqual(1);
+  const dependencies=await owner.rpc("owner_privacy_dependency_inventory",{
+   p_request:ticket.data
+  });
+  expect(dependencies.error).toBeNull();
+  expect(dependencies.data.dependencies.filter(
+   (d:{on_delete:string;rows:number})=>d.rows>0&&
+    (d.on_delete==="no_action"||d.on_delete==="restrict")
+  )).toEqual([]);
   const incomplete=await owner.rpc("owner_prepare_privacy_erasure",{p_request:ticket.data});
   expect(incomplete.error?.code).toBe("23514");
   const evidence=(request:string)=>({
