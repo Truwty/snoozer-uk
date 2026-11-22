@@ -1,5 +1,17 @@
 # Development continuation — Snoozer.uk
 
+## Latest continuation — 22 November 2026, 00:01 UTC (supersedes older key warning)
+
+**COMPLETE AND LIVE: persistent sign-in, multi-account switching, shared navigation, Pricing and Help Center.** PR [#33](https://github.com/Truwty/snoozer-uk/pull/33) merged to main as [7cd4fd8](https://github.com/Truwty/snoozer-uk/commit/7cd4fd8b1916d11ffbcdc78b13a5680e527cae05). [CI #44964090069](https://github.com/Truwty/snoozer-uk/actions/runs/44964090069) passed audit/lint/typecheck/unit/Supabase/build/Playwright accessibility and integration checks. Duplicate PR #34 closed unmerged. Render deploy `dep-dc130j0u01pc738k0cfg` confirmed **live** 22 Nov 00:00:46 UTC, exact commit; subsequent ERROR-level logs contained no entries. External independent page fetch through the web tool was unavailable; do not claim an external HTTP smoke check.
+
+- Supabase SSR sessions use secure HTTP-only 365-day browser cookies, sitewide refresh and isolated account slots (up to four saved accounts); Auth still controls revocation, session expiry and password resets. Email/password and Discord OAuth both retain independent sessions, with server-validated switching and per-account local sign-out. The account manager is a themed dropdown/dialog.
+- Shared themed top navigation covers homepage, templates, leaderboard and Studio; Help Center at `/help` provides searchable first-party articles, and `/pricing` shows approved Snoozer-only Plus/Pro/Studio monthly/yearly prices and real plan allowances.
+- Render startup preflight on this release **supersedes the old invalid-format diagnosis below**: `key:authenticated_for_snoozer_prices`, `prices:verified_six`, `account:verified`, `billingPortal:verified`. **`checkoutEnabled:false`** remains deliberate; no live payment processed or authorized. Do not enable live billing/webhooks until legal, lifecycle and provider acceptance checks are complete.
+- Next verification: owner/browser manual sign-in after reopening the browser (including Discord), sign in with second account, switch and local logout; review customer-facing account UI on actual mobile devices. CI covers browser restart and account isolation on disposable Supabase. Keep live payment configuration gated.
+
+---
+
+
 ## LIVE key validation — 21 November 2026, 22:05 UTC
 
 After the owner reported adding `STRIPE_PREMIUM_LIVE_API_KEY` to Render, PR [#30](https://github.com/Truwty/snoozer-uk/pull/30) deployed a read-only startup probe. The first safe log was `key:not_configured`. PR [#31](https://github.com/Truwty/snoozer-uk/pull/31) then added harmless whitespace trimming and distinct missing/invalid reporting. Both PRs passed full CI and merged to `main`. Latest Render deploy `dep-dc11am1ksfps73fgvjn0`, commit `512e8f2125b640e45de42bf15796938daf096f49`, confirmed **Live** at 22:05:32 UTC; checked logs contain no error entries.
