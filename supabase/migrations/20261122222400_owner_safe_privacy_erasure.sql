@@ -35,8 +35,8 @@ declare actor uuid := snoozer.admin_actor(true);
  evidence snoozer.privacy_fulfilment_evidence;
  ref record; cnt bigint; job uuid;
 begin
- select user_id,kind,status into subject,kind,state
-  from snoozer.privacy_requests where id=p_request for update;
+ select pr.user_id,pr.kind,pr.status into subject,kind,state
+  from snoozer.privacy_requests pr where pr.id=p_request for update;
  if not found or kind<>'deletion' or state not in ('open','review')
  then raise exception 'Eligible deletion request required' using errcode='23514'; end if;
  if actor=subject or exists(select 1 from snoozer.platform_owners where owner_id=subject)
