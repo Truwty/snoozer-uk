@@ -34,6 +34,12 @@ The 22 November manual scheduler smoke exposed an HTTP 307 on the public custom 
 
 Alternative: run an independently authenticated Render cron or Supabase pg_cron/net job with the same endpoint and token stored securely (e.g. Supabase Vault); never put the token in plain SQL or source control.
 
+## Queue-health monitoring (optional after migration + deploy)
+
+The service-only RPC `service_owner_notice_queue_health()` returns aggregate **total, undelivered, leased, overdue and exhausted** counts without addresses or message content. An authenticated internal GET at `/api/internal/owner-notices/health` uses the same long `OWNER_EMAIL_DISPATCH_TOKEN` as the dispatcher; unknown or unauthorised requests return HTTP 404. The GitHub Actions dispatch workflow can alert and open an incident issue if any jobs are `exhausted` (all five attempts used) or `overdue` (eligible for >30 minutes without a current claim). A zero-sent batch alone cannot prove backlog health.
+
+**Activation sequence:** first apply migration `20261122202000_owner_notice_queue_health.sql` and deploy the route to Render; verify the protected endpoint and existing dispatch run. Only then set GitHub Actions repository variable `OWNER_EMAIL_QUEUE_HEALTH_ENABLED=true`. Leave this variable absent/false during rollout to avoid false outage incidents. Reuse the existing dispatch secret; do not create another token. Queue status counts can reveal operational conditions, so never serve them publicly.
+
 ## Verification
 
 1. Enable a staging sender and token. Use a staging-only account and a known Owner action to create a notice.
