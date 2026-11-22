@@ -9,7 +9,7 @@ import { YouTubeWidget } from "./youtube-widget";
 import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 import { PublicMetadataWidget } from "./public-metadata-widget";
 import { TwitchWidget } from "./twitch-widget";
-import { ProfileEffectsLayer, ProfileEffectsToggle } from "./profile-effects";
+import { ProfileEffectsLayer } from "./profile-effects";
 import { defaultEffects } from "@/lib/profile-effects";
 
 export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
@@ -43,7 +43,11 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
     <ProfileEffectsLayer effects={effects} />
-    {effects.enabled && <ProfileEffectsToggle />}
+    {effects.enabled && <label className="profile-effects-toggle">
+      <input type="checkbox" aria-label="Disable profile effects" />
+      <span className="effects-disable-text">Disable effects</span>
+      <span className="effects-enable-text">Enable effects</span>
+    </label>}
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       {avatarSrc
