@@ -84,11 +84,14 @@ export async function executeSafePrivacyErasure(form:FormData){
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-reconciliation-required");
  if(!erased)
   redirect("/owner/privacy?preflight="+id.data+"&admin=erasure-blocked");
- const mail=await sendOwnerMail(recipient,
-  "Snoozer account deletion completed",
-  "The Snoozer account deletion requested by this verified address has been processed. "+
-  "Where legally required, minimal billing or abuse-prevention records may be retained under the published privacy policy. "+
-  "Please contact snoozersupport@snoozer.uk if you need an independent review.");
+ let mail=false;
+ try{
+  mail=await sendOwnerMail(recipient,
+   "Snoozer account deletion completed",
+   "The Snoozer account deletion requested by this verified address has been processed. "+
+   "Where legally required, minimal billing or abuse-prevention records may be retained under the published privacy policy. "+
+   "Please contact snoozersupport@snoozer.uk if you need an independent review.");
+ }catch{mail=false;}
  if(!mail)
   redirect("/owner/privacy?preflight="+id.data+"&admin=erased-notice-pending");
  const notice=await admin.rpc("service_mark_privacy_erasure_notice",{p_operation:job});
