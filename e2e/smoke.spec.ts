@@ -231,3 +231,11 @@ test("Legal information is reachable, readable, and identifies the sole trader",
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
+
+test("Owner Control Centre is a reserved app route, not a public username", async ({ page }) => {
+  // A signed-out visitor must go through account authentication, rather than
+  // being rewritten to the public-profile not-found page by src/proxy.ts.
+  await page.goto("/owner");
+  await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+});
