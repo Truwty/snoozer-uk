@@ -61,18 +61,15 @@ export function ProfileEffectsLayer({ effects }: { effects: ProfileEffects }) {
 
 export function ProfileEffectsToggle() {
   const [disabled, setDisabled] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  // Apply the host-card attribute after React commits the updated toggle state.
-  // Updating the DOM in the click handler can be undone during hydration/reconciliation.
+  const [ready, setReady] = useState(false);
+  // Server-rendered buttons remain disabled until hydration has attached the handler.
   useEffect(() => {
-    const card = buttonRef.current?.closest(".profile-card");
-    card?.setAttribute("data-effects-disabled", String(disabled));
-    return () => { card?.removeAttribute("data-effects-disabled"); };
-  }, [disabled]);
+    const frame = window.requestAnimationFrame(() => setReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
-  return <button ref={buttonRef} type="button" className="profile-effects-toggle"
-    aria-pressed={disabled}
+  return <button type="button" className="profile-effects-toggle"
+    disabled={!ready} aria-pressed={disabled}
     onClick={() => setDisabled((current) => !current)}
   >{disabled ? "Enable effects" : "Disable effects"}</button>;
 }
