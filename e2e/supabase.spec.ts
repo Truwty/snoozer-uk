@@ -1738,9 +1738,9 @@ test("independent appeals require a verified email, one-time token and service p
  expect(denied.error).not.toBeNull();
  const wrong=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:"other@example.com",p_hash:hash});
  expect(wrong.error).toBeNull();expect(wrong.data).toBe(false);
- const start=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email,p_hash:hash});
+ const start=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:email,p_hash:hash});
  expect(start.error).toBeNull();expect(start.data).toBe(true);
- const duplicate=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email,p_hash:hash});
+ const duplicate=await admin.rpc("service_start_external_appeal",{p_case:caseId,p_email:email,p_hash:hash});
  expect(duplicate.error).toBeNull();expect(duplicate.data).toBe(false);
  expect((await visitor.rpc("service_submit_external_appeal",{p_hash:hash,p_reason:"A valid explanation that should never be accepted anonymously."})).error).not.toBeNull();
  const created=await admin.rpc("service_submit_external_appeal",{p_hash:hash,p_reason:"Please review this moderation case; I request an appeal."});
