@@ -1,3 +1,9 @@
+## NEXT: Advanced Profile Animations & Effects — 22 November 2026
+
+Owner approved the motion/effects implementation and Premium split. Work is on `feature/advanced-profile-effects`; **not merged or deployed**. Review its PR CI and disposable Supabase database checks before merge. Focus next on real pointer trails/spotlights, accessible visitor motion toggles, comprehensive E2E flows, and mobile frame budgets. Free receives basic gradient and the existing entrances; Plus receives up to two visual layers; Pro enables interactions with up to four; Studio receives exclusive presets. Existing billing and payment switches must remain unchanged. Read `docs/PROGRESS.md` and the Phase 9 entries in `docs/feature-ledger.md`.
+
+---
+
 # Development continuation — Snoozer.uk
 
 ## Legal information page / sole trader disclosure — 22 November 2026
