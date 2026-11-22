@@ -1,5 +1,6 @@
 import "server-only";
-import {sendZohoNotice,zohoSmtpConfigured} from "./zoho-transport";
+
+import {zohoMailReady,sendOwnerMail} from "./mail-readiness";
 import {z} from "zod";
 import {storageAdmin} from "@/lib/supabase";
 const jobSchema=z.array(z.object({
@@ -7,7 +8,7 @@ const jobSchema=z.array(z.object({
 })).max(10);
 export type NoticeSendResult={sent:number;failed:number;status:"ok"|"unconfigured"|"unavailable"};
 export function noticeDeliveryConfigured() {
- return zohoSmtpConfigured() && Boolean(process.env.OWNER_EMAIL_DISPATCH_TOKEN && process.env.OWNER_EMAIL_DISPATCH_TOKEN.length>=32);
+ return zohoMailReady() && Boolean(process.env.OWNER_EMAIL_DISPATCH_TOKEN && process.env.OWNER_EMAIL_DISPATCH_TOKEN.length>=32);
 }
 export async function dispatchOwnerNoticeEmails():Promise<NoticeSendResult> {
  if(!noticeDeliveryConfigured())return {sent:0,failed:0,status:"unconfigured"};
@@ -17,7 +18,7 @@ export async function dispatchOwnerNoticeEmails():Promise<NoticeSendResult> {
  if(result.error||!jobs.success)return {sent:0,failed:0,status:"unavailable"};
  let sent=0,failed=0;
  for(const job of jobs.data){
-  const ok=await sendZohoNotice(job.email,job.title,job.body);
+  const ok=await sendOwnerMail(job.email,job.title,job.body);
   // A failed acknowledgement leaves the lease to expire. The next worker
   // may resend: email delivery is at-least-once, not exactly once.
   const ack=await client.rpc("service_finish_account_notice",{

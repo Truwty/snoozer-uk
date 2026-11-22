@@ -51,7 +51,7 @@ export default async function Account({params,searchParams}:{params:Promise<{id:
   </section>
   <section className="panel stack">
    <h2>Supabase Auth provider access</h2>
-   <p className="muted">Additional provider-level controls. Requires an active internal ban and an actioned moderation case. An email-verified appeal route at /appeal/external must be tested with your Brevo sender before enabling these controls. The Owner registry cannot be banned.</p>
+   <p className="muted">Additional provider-level controls. Requires an active internal ban and an actioned moderation case. An email-verified appeal route at /appeal/external must be tested with your Zoho sender before enabling these controls. The Owner registry cannot be banned.</p>
    <p>{providerBanConfigured()?"Provider ban controls enabled for verified Owner MFA.":"Provider ban controls disabled until independent email appeals have been tested and the server-only safety flag is enabled."}</p>
    {!u.is_owner && providerBanConfigured() && <>
     <form action={changeProviderBan} className="stack">

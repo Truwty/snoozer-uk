@@ -1,6 +1,27 @@
+## Zoho mail delivery remediation — 22 November 2026 (pending CI and deploy)
+
+The existing outbox had three undelivered Premium event notices in hosted Supabase; sending a manual batch returned zero processed because its jobs were already leased. The prior UI misleadingly named a discontinued provider and did not offer a safe test. The Render Free web service blocks outgoing SMTP ports 25, 465, and 587. **This does not affect Zoho authentication mail sent from Supabase.**
+
+Implementation on the current branch:
+- Strip retired provider terminology from Owner System and provider-ban UI; distinguish zero processed from zero failures.
+- Add Owner-only AAL2 test email to the Owner's own confirmed email, without a Premium or moderation mutation.
+- Prefer Zoho Mail REST API over HTTPS (OAuth refresh token, fixed regional mail hosts), which can work on Render Free; keep TLS SMTP as an explicitly gated option only on hosting with permitted outbound ports.
+- Fail closed on the outgoing email and independent-appeal routes if neither transport is configured. Existing in-app notices continue working.
+- Require separate Zoho Mail API OAuth credentials and account ID (plus dispatcher token); **do not claim a real test email was delivered**. Never enable Auth bans before confirming the independent appeal link end-to-end and one-use token replay denial.
+
+---
+
+## Owner email UI and delivery incident — 22 November 2026
+
+**Verified state:** The Owner System UI used obsolete provider wording. Hosted outbox read-only inspection showed 3 Premium action notifications, 3 delivery jobs, **0 delivered**, all with one claimed attempt and leases. Manual dispatch status "ok, sent 0, failed 0" is not evidence of delivery. Render Free blocks outbound SMTP on port 465, while separately hosted Supabase Auth Zoho emails work.
+
+**Remediation:** Remove obsolete provider copy; add a verified Owner MFA (AAL2) test-email action addressed only to the Owner's confirmed email; improve zero-processed messaging; block outbound sends and independent email appeals until `ZOHO_SMTP_OUTBOUND_ENABLED=true`. This flag must stay disabled on Render Free. Upgrade to an SMTP-capable Render instance or implement an HTTPS Zoho Mail API sender before enabling this flag; then prove inbox delivery, one-time external appeal and dispatcher scheduling. Do not enable provider bans without independent appeal verification.
+
+---
+
 ## Zoho SMTP Owner delivery migration — 22 November 2026 (implementation awaiting CI and production sender verification)
 
-The Owner notification queue and independent /appeal/external verification email code now use an explicit TLS-validated Zoho SMTP transport (`smtppro.zoho.uk:465`) instead of the former Brevo API transport. Supabase Auth SMTP settings are **unchanged**; the user reports that Auth confirmation/reset and security mail are successfully delivered through Zoho. The Owner delivery pipeline still needs separate Render server-only secrets `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD`, `SNOOZER_NOTIFICATION_FROM`, and `OWNER_EMAIL_DISPATCH_TOKEN`. These are not readable from Supabase Auth's saved SMTP settings. The external appeal route and guarded provider-ban readiness checks use the same Zoho sender. This is a code-only transition: no email send, sender inbox receipt, scheduled dispatch, or Auth-level ban enablement is claimed. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until a disposable user's external verification flow is proven end-to-end and replay-tested. Follow `docs/owner-notification-email.md` for settings, test and scheduling requirements.
+The Owner notification queue and independent /appeal/external verification email code now use an explicit TLS-validated Zoho SMTP transport (`smtppro.zoho.uk:465`) instead of the former former transactional email API transport. Supabase Auth SMTP settings are **unchanged**; the user reports that Auth confirmation/reset and security mail are successfully delivered through Zoho. The Owner delivery pipeline still needs separate Render server-only secrets `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASSWORD`, `SNOOZER_NOTIFICATION_FROM`, and `OWNER_EMAIL_DISPATCH_TOKEN`. These are not readable from Supabase Auth's saved SMTP settings. The external appeal route and guarded provider-ban readiness checks use the same Zoho sender. This is a code-only transition: no email send, sender inbox receipt, scheduled dispatch, or Auth-level ban enablement is claimed. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until a disposable user's external verification flow is proven end-to-end and replay-tested. Follow `docs/owner-notification-email.md` for settings, test and scheduling requirements.
 
 ---
 
@@ -8,11 +29,11 @@ The Owner notification queue and independent /appeal/external verification email
 
 **Merge/deploy:** PR #52 (signup hook), PR #53 (email outbox), and PR #56 (independent appeals and guarded Auth bans) are merged. PR #54 was closed unmerged as superseded by #56. GitHub Actions run [45003124370](https://github.com/Truwty/snoozer-uk/actions/runs/45003124370) succeeded for current main commit `349c0b3d42451a948a8067153d728d330c866023`. Render deployment `dep-dc1agbmtlv9c73bigun0` reports **live** on that commit. No ERROR-level logs were returned for the sampled post-release Render window (08:30 onwards); this is not proof of zero runtime defects.
 
-**Hosted Supabase:** Project `edgptbiwswcdmmxzwhxv` reports ACTIVE_HEALTHY. Migration versions `20261122082136` (signup hook), `20261122082150` (outbox), `20261122082942` (external appeals), and `20261122082944` (provider ban) are installed. SQL verified `supabase_auth_admin` has EXECUTE on `public.snoozer_before_user_created`, while `anon` and `authenticated` do not. The two service-role outbox RPCs also deny both public roles. Zero queued notification email deliveries at inspection. **These observations do not establish that the hook is enabled in the Auth dashboard, that Brevo is configured on Render, or that a real recipient received an email.**
+**Hosted Supabase:** Project `edgptbiwswcdmmxzwhxv` reports ACTIVE_HEALTHY. Migration versions `20261122082136` (signup hook), `20261122082150` (outbox), `20261122082942` (external appeals), and `20261122082944` (provider ban) are installed. SQL verified `supabase_auth_admin` has EXECUTE on `public.snoozer_before_user_created`, while `anon` and `authenticated` do not. The two service-role outbox RPCs also deny both public roles. Zero queued notification email deliveries at inspection. **These observations do not establish that the hook is enabled in the Auth dashboard, that legacy provider is configured on Render, or that a real recipient received an email.**
 
 **Outstanding hard acceptance gates — do not claim completed:**
 1. Enable **Before User Created** hook in the Supabase Auth dashboard and perform real first-time Discord and email signup tests both on and off, plus existing-account sign-in tests. Database privileges alone do not activate the hook.
-2. Configure verified Brevo sender, secret API key and long independent dispatcher token on Render; verify end-to-end recipient-controlled test email and retry behavior. After that, configure trusted scheduled dispatch. Do not expose secrets in GitHub.
+2. Configure verified previous sender, secret API key and long independent dispatcher token on Render; verify end-to-end recipient-controlled test email and retry behavior. After that, configure trusted scheduled dispatch. Do not expose secrets in GitHub.
 3. Exercise `/appeal/external` with a disposable non-Owner banned-user scenario, including one-use token replay protection, real delivery and moderation appeal creation. Keep `SNOOZER_ENABLE_AUTH_BANS` disabled until proved.
 4. Implement and separately test actual complete cross-provider personal-data export/erasure processing, identity verification, lawful retention and Stripe/Storage handling. The existing basic snapshot and review queue are **not** full GDPR fulfilment.
 5. Verify project-specific health/latency and alert routing, not just public provider status; retain the existing hourly availability monitor. Demonstrate an actionable alert and safe recovery procedure.
