@@ -41,8 +41,15 @@ export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Even
       p_session: checked.id, p_subscription: checked.subscription,
     });
     if (bound.error) throw new Error("Subscription could not be bound to Snoozer.");
-    if (bound.data === true) await reconcilePremiumLiveSubscription(stripe, checked.subscription!);
-    // Unrelated account Checkout events aren't Snoozer offers.
+    if (bound.data === true) {
+      await reconcilePremiumLiveSubscription(stripe, checked.subscription!);
+    } else if (session.metadata?.snoozer_owner === checked.client_reference_id
+      && z.uuid().safeParse(session.metadata?.snoozer_attempt).success) {
+      // A real Snoozer Checkout can reach Stripe before the local session-binding RPC commits.
+      // Never acknowledge this race: Stripe must retry after the binding is persisted.
+      throw new Error("Snoozer Checkout binding is not yet committed; retry.");
+    }
+    // Checkout without Snoozer's authenticated attempt metadata belongs to another flow.
   } else if (event.type === "checkout.session.expired") {
     const session = await stripe.checkout.sessions.retrieve(objectId);
     if (!session.livemode || session.status !== "expired") throw new Error("Checkout expiry not confirmed.");
