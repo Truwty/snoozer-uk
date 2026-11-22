@@ -16,7 +16,7 @@ export async function providerStatuses():Promise<ProviderStatus[]> {
  return Promise.all(providers.map(async p=>{
   try {
    const res=await fetch(p.endpoint,{cache:"no-store",redirect:"error",headers:{Accept:"application/json"},signal:AbortSignal.timeout(4000)});
-   if(!res.ok()||Number(res.headers.get("content-length")??0)>32768)throw Error("Provider unavailable");
+   if(!res.ok||Number(res.headers.get("content-length")??0)>32768)throw Error("Provider unavailable");
    const parsed=parseProviderStatus(await res.json());
    if(!parsed)throw Error("Invalid provider status");
    return {provider:p.provider,url:p.url,indicator:parsed.indicator,description:parsed.description,checked_at:new Date().toISOString()};
