@@ -19,6 +19,7 @@ create table snoozer.privacy_erasure_jobs (
  request_id uuid not null unique references snoozer.privacy_requests(id),
  actor_id uuid not null references auth.users(id),
  subject_id uuid not null,
+ profile_scopes uuid[] not null default '{}'::uuid[],
  status text not null default 'prepared'
   check(status in ('prepared','completed','failed')),
  error_code text,
@@ -33,7 +34,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare actor uuid := snoozer.admin_actor(true);
  subject uuid; kind text; state text;
  evidence snoozer.privacy_fulfilment_evidence;
- ref record; cnt bigint; job uuid;
+ ref record; cnt bigint; job uuid; scopes uuid[];
 begin
  select pr.user_id,pr.kind,pr.status into subject,kind,state
   from snoozer.privacy_requests pr where pr.id=p_request for update;
@@ -96,10 +97,13 @@ begin
  end loop;
  -- Any cross-user/profile constraints that were not enumerated above still
  -- fail atomically inside Supabase Auth.admin.deleteUser().
- insert into snoozer.privacy_erasure_jobs(request_id,actor_id,subject_id)
- values(p_request,actor,subject)
+ select coalesce(array_agg(p.media_scope),'{}'::uuid[]) into scopes
+ from snoozer.profiles p where p.owner_id=subject;
+ insert into snoozer.privacy_erasure_jobs(request_id,actor_id,subject_id,profile_scopes)
+ values(p_request,actor,subject,scopes)
  on conflict(request_id) do update set
-  actor_id=excluded.actor_id, status='prepared', error_code=null,
+  actor_id=excluded.actor_id, profile_scopes=excluded.profile_scopes,
+  status='prepared', error_code=null,
   finished_at=null
  returning id into job;
  insert into snoozer.admin_audit_events(actor_id,target_id,action,details)
@@ -141,7 +145,9 @@ begin
    end if;
   end loop;
   if exists(select 1 from storage.objects o
-    where o.owner=job.subject_id or o.owner_id=job.subject_id::text)
+    where o.owner=job.subject_id or o.owner_id=job.subject_id::text
+     or exists(select 1 from unnest(job.profile_scopes) scope
+       where o.name like scope::text||'/%'))
   then raise exception 'Storage ownership remains after Auth deletion'
     using errcode='23514'; end if;
  end if;
