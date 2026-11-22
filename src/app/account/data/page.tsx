@@ -22,6 +22,10 @@ export default async function AccountData({searchParams}:{searchParams:Promise<{
  <p>Ask Snoozer to provide an export of the personal data associated with your account or review an account deletion request. Requests are reviewed securely. An account deletion does not automatically remove legally retained payment or fraud-prevention records.</p>
  <p className="muted">Submitting a deletion request does not immediately close your account or cancel any subscription. You will be contacted before permanent removal. Never share your password or authentication codes with support.</p>
  {status&&<p role="status">{status==="received"?"Your request has been recorded.":"The request could not be recorded. Please retry or contact support."}</p>}
+ <section className="panel stack"><h2>Download a basic account snapshot</h2>
+ <p>You can immediately download your account details, data request history and account notices. This is not your complete personal-data archive; use the full export request below to obtain additional profile, media, analytics or payment information.</p>
+ <a href="/api/v1/account/data-snapshot" download="snoozer-account-snapshot.json" className="button">Download JSON snapshot</a>
+ </section>
  <section className="panel stack"><h2>Make a request</h2>
  <form action={requestDataAction} className="stack">
   <label>Request type<select name="kind"><option value="export">Export my personal data</option><option value="deletion">Request account deletion</option></select></label>
