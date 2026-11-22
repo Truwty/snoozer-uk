@@ -12,6 +12,8 @@ const archive=z.object({
  gallery_metadata:z.array(z.record(z.string(),z.unknown())),
  media_folders:z.array(z.record(z.string(),z.unknown())),
  entitlement_grants:z.array(z.record(z.string(),z.unknown())),
+ premium_live_checkout_metadata:z.array(z.record(z.string(),z.unknown())),
+ premium_live_customer_reference:z.array(z.record(z.string(),z.unknown())),
  account_restrictions:z.array(z.record(z.string(),z.unknown())),
  moderation_appeals:z.array(z.record(z.string(),z.unknown())),
  privacy_requests:z.array(z.record(z.string(),z.unknown())),
