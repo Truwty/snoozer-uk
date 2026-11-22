@@ -11,7 +11,7 @@ class FakeSmtp extends EventEmitter{
  failAt="";
  constructor(){
   super();
-  queueMicrotask(()=>this.emit("data",Buffer.from("220 Zoho ready\\r\\n".replaceAll("\\r","\r").replaceAll("\\n","\n"))));
+  queueMicrotask(()=>this.emit("data",Buffer.from("220 Zoho ready\r\n")));
  }
  setTimeout(){return this;}
  write(data:string){
@@ -48,7 +48,7 @@ describe("Zoho Owner SMTP transport",()=>{
  });
  it("rejects invalid addresses and header injection before connecting",async()=>{
   const connector=vi.fn(()=>new FakeSmtp());
-  expect(await sendZohoNotice("bad",...args.slice(1),connector as never)).toBe(false);
+  expect(await sendZohoNotice("bad",args[1],args[2],args[3],args[4],args[5],connector as never)).toBe(false);
   expect(await sendZohoNotice(args[0],"Bad\r\nBcc: victim@example.com",args[2],
    args[3],args[4],args[5],connector as never)).toBe(false);
   expect(connector).not.toHaveBeenCalled();
