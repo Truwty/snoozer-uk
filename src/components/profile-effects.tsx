@@ -58,18 +58,3 @@ export function ProfileEffectsLayer({ effects }: { effects: ProfileEffects }) {
         animationDelay: `-${(i * 11) % 17}s` }} />)}
   </div>;
 }
-
-export function ProfileEffectsToggle() {
-  const [disabled, setDisabled] = useState(false);
-  const [ready, setReady] = useState(false);
-  // Server-rendered buttons remain disabled until hydration has attached the handler.
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setReady(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  return <button type="button" className="profile-effects-toggle"
-    disabled={!ready} aria-pressed={disabled}
-    onClick={() => setDisabled((current) => !current)}
-  >{disabled ? "Enable effects" : "Disable effects"}</button>;
-}
