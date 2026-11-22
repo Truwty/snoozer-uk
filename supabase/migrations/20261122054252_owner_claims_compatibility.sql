@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION snoozer.verified_user()
  LANGUAGE plpgsql
  STABLE
  SET search_path TO ''
-AS $function$
+AS $
 declare actor uuid:=auth.uid(); sid text:=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'session_id');
 begin
  if actor is null or not exists(select 1 from auth.users where id=actor and email_confirmed_at is not null) then
@@ -19,14 +19,14 @@ begin
   raise exception 'Account temporarily restricted' using errcode='42501';
  end if;
  return actor;
-end $function$;
+end $;
 
 CREATE OR REPLACE FUNCTION snoozer.admin_actor(p_write boolean DEFAULT false)
  RETURNS uuid
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $
 declare actor uuid:=snoozer.verified_user(); sid text:=(nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'session_id');
 begin
  if not exists(select 1 from snoozer.platform_owners where owner_id=actor) then
@@ -37,4 +37,4 @@ begin
   raise exception 'Active Owner MFA session required' using errcode='42501';
  end if;
  return actor;
-end $function$;
+end $;
