@@ -12,12 +12,13 @@ import { TwitchWidget } from "./twitch-widget";
 import { ProfileEffectsLayer } from "./profile-effects";
 import { defaultEffects } from "@/lib/profile-effects";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview" }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
   preview?: boolean;
   previewLabel?: string;
+  ownerBadge?: boolean;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
@@ -56,7 +57,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
         : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
       <p className="profile-handle">@{profile.username}</p>
-      {preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}
+      <div className="profile-name-row">{preview ? <h2>{profile.display_name}</h2> : <h1>{profile.display_name}</h1>}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</div>
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
       {visibleSections.length > 0 && <div className="profile-sections">
         {visibleSections.map((section, index) => {
