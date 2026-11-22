@@ -1,13 +1,20 @@
 import Link from "next/link";
 import {z} from "zod";
 import {requireOwner} from "@/lib/owner/auth";
-import {reviewPrivacyRequest} from "./actions";
+import {reviewPrivacyRequest,recordPrivacyEvidence} from "./actions";
 const preflightSchema=z.object({
  request_id:z.uuid(),user_id:z.uuid(),kind:z.enum(["export","deletion"]),status:z.string(),
  verified_email:z.boolean(),profile_count:z.number(),gallery_metadata_count:z.number(),
  media_folder_count:z.number(),has_avatar_media:z.boolean(),has_stripe_customer:z.boolean(),
  live_checkout_records:z.number(),has_subscription_references:z.boolean(),
  has_retained_billing_evidence:z.boolean(),active_grants:z.number(),appeal_count:z.number()
+});
+const evidenceSchema=z.object({
+ checked_at:z.string(),identity_verified:z.boolean(),app_data_processed:z.boolean(),
+ private_media_processed:z.boolean(),billing_processed:z.boolean(),
+ processors_processed:z.boolean(),retention_reviewed:z.boolean(),
+ subscriptions_resolved:z.boolean(),account_erasure_verified:z.boolean(),
+ secure_notice_sent:z.boolean(),evidence_reference:z.string()
 });
 const schema=z.array(z.object({
  id:z.uuid(),user_id:z.uuid(),email:z.string().nullable(),kind:z.enum(["export","deletion"]),
@@ -24,6 +31,19 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  const selected=z.uuid().safeParse(params.preflight);
  const {data:check,error:checkError}=selected.success?await client.rpc("owner_privacy_preflight",{p_request:selected.data}):{data:null,error:null};
  const preflight=preflightSchema.safeParse(check);
+ const {data:record}=selected.success?await client.rpc("owner_privacy_evidence",{p_request:selected.data}):{data:null};
+ const evidence=evidenceSchema.safeParse(record);
+ const checks=[
+  ["identity","Identity confirmed against the verified account email",evidence.success&&evidence.data.identity_verified],
+  ["app","First-party app data exported or erased and verified",evidence.success&&evidence.data.app_data_processed],
+  ["media","All current and historical private Storage objects processed",evidence.success&&evidence.data.private_media_processed],
+  ["billing","Stripe invoices, customers and billing evidence reviewed",evidence.success&&evidence.data.billing_processed],
+  ["processors","All relevant third-party processors reviewed and actioned",evidence.success&&evidence.data.processors_processed],
+  ["retention","Legal holds, lawful retention and data minimisation reviewed",evidence.success&&evidence.data.retention_reviewed],
+  ["subscriptions","Any subscriptions safely cancelled or otherwise resolved (deletion only)",evidence.success&&evidence.data.subscriptions_resolved],
+  ["erasure","Account deletion independently verified across Auth, app and Storage (deletion only)",evidence.success&&evidence.data.account_erasure_verified],
+  ["notice","Secure fulfilment confirmation actually delivered",evidence.success&&evidence.data.secure_notice_sent],
+ ] as const;
  return <main className="stack"><h1>Data access and deletion requests</h1>
  <p className="muted">Private, Owner-only request queue. Replies and status changes require verified MFA and are recorded in the audit log.</p>
  <section className="panel stack">
@@ -42,6 +62,19 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <p className="muted">A missing local record is not proof that a third-party processor holds no data. Before fulfilment, verify identity, historical Storage objects, active Stripe subscriptions and invoices, Zoho/support records, lawful retention, and a secure delivery or erasure confirmation. This is a read-only preflight: it has changed nothing.</p>
  </>}
  </section>}
+ {selected.success&&<section className="panel stack">
+ <h2>Document fulfilment evidence (Owner MFA required)</h2>
+ <p className="muted">This form does not delete data or cancel subscriptions. Only check work you have independently performed. Completion is blocked at database level until every required check is true, with separate deletion proof. Do not paste account secrets, MFA codes or customer data into the reference.</p>
+ {evidence.success&&<p>Last evidence recorded {new Date(evidence.data.checked_at).toLocaleString("en-GB")} · Reference: {evidence.data.evidence_reference}</p>}
+ <form action={recordPrivacyEvidence} className="stack">
+  <input type="hidden" name="id" value={selected.data}/>
+  {checks.map(([name,description,checked])=><label key={name}><input type="checkbox" name={name} value="yes" defaultChecked={checked}/>{" "}{description}</label>)}
+  <label>Secure evidence or ticket reference (at least 32 characters)
+   <textarea name="reference" minLength={32} maxLength={1000} required defaultValue={evidence.success?evidence.data.evidence_reference:""} rows={3}/>
+  </label>
+  <button className="button">Record fulfilment evidence</button>
+ </form>
+ </section>}
  {message&&<p role="status">Result: {message}</p>}
  {error||!requests.success?<p role="alert">Privacy request queue unavailable.</p>:requests.data.length===0?<p>No privacy requests yet.</p>:
  requests.data.map(r=><section className="panel stack" key={r.id}>
@@ -54,7 +87,8 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <input type="hidden" name="id" value={r.id}/>
  <label>Decision<select name="status" defaultValue="review"><option value="review">Under review</option><option value="completed">Completed (manual fulfilment verified)</option><option value="rejected">Rejected (explain why)</option></select></label>
  <label>Owner response and evidence reference<textarea name="response" minLength={12} maxLength={1000} required/></label>
- <label><input type="checkbox" name="confirmed" value="yes"/> I have personally verified fulfilment before marking a request completed.</label>
+ <label><input type="checkbox" name="confirmed" value="yes"/> I have independently verified the recorded fulfilment evidence before marking the request completed.</label>
+ <p className="muted">Completion now also requires a separate evidence record via the request's preflight above; the database rejects missing evidence even if this box is checked.</p>
  <button className="button">Record decision (MFA required)</button>
  </form>}
  </section>)}
