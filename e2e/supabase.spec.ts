@@ -806,7 +806,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
     await page.getByLabel("Enable effects").check();
-    await page.getByLabel("Background", { exact: true }).selectOption("gradient");
+    await page.locator("#profile-effect-background").selectOption("gradient");
     await expect(page.getByRole("region", { name: "Page preview" }).locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByLabel("Background entrance").selectOption("fade");
     await editorTab(page, "Design");
