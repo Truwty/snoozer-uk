@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  defaultEffects, effectBackgrounds, effectBorders, effectTexts, effectInteractions,
+  defaultEffects, effectBackgrounds, effectBorders, effectParticles, effectLinks, effectTexts, effectInteractions,
   effectPresetsMap, type ProfileEffects, type EffectTier, effectsAllowed,
 } from "@/lib/profile-effects";
 
@@ -24,6 +24,12 @@ export function EffectsEditor({ value, tier, onChange }: {
     </select></label>
     <label>Border<select value={effects.border} onChange={(event) => change({ ...effects, border: event.target.value as ProfileEffects["border"], preset: "none" })}>
       {effectBorders.map((v) => <option key={v} value={v}>{label(v)}</option>)}
+    </select></label>
+    <label>Particles<select value={effects.particles} onChange={(event) => change({ ...effects, particles: event.target.value as ProfileEffects["particles"], preset: "none" })}>
+      {effectParticles.map((v) => <option key={v} value={v}>{label(v)}</option>)}
+    </select></label>
+    <label>Link animations<select value={effects.links} onChange={(event) => change({ ...effects, links: event.target.value as ProfileEffects["links"], preset: "none" })}>
+      {effectLinks.map((v) => <option key={v} value={v}>{label(v)}</option>)}
     </select></label>
     <label>Typography<select value={effects.text} onChange={(event) => change({ ...effects, text: event.target.value as ProfileEffects["text"], preset: "none" })}>
       {effectTexts.map((v) => <option key={v} value={v}>{label(v)}</option>)}
