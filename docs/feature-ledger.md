@@ -1,3 +1,5 @@
+> **22 November 2026 update — Advanced profile effects under implementation, not complete.** The feature branch adds a bounded effect registry, selectable aurora/gradient/mesh/stars/snow/rain backgrounds, borders, typography, interactive-style treatments, Studio controls, SQL tier guards, and reduced-motion CSS. Some named interactions are approximations rather than full pointer behaviour; full E2E, SQL and performance acceptance is still pending. Do not mark Roadmap §9 complete or advertise effects as live until CI and staged verification pass. See `docs/PROGRESS.md`.
+
 # Feature ledger
 
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
