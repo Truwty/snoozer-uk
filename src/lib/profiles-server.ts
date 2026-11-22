@@ -12,6 +12,9 @@ export async function requireAccount() {
   const { data, error } = await client.auth.getUser();
   if (error && (error.status === 0 || (error.status ?? 0) >= 500)) throw new Error("Account service unavailable.");
   if (!data.user?.email_confirmed_at) redirect("/sign-in");
+  const { data: restricted, error: accessError } = await client.rpc("my_account_restriction");
+  if (accessError) throw new Error("Account access checks are unavailable.");
+  if (restricted) redirect("/account-restricted");
   return { client, user: data.user };
 }
 
@@ -39,6 +42,9 @@ export function studioHref(path: string, profileId?: string) {
 
 async function enforcePublicEffectTier(profile: z.infer<typeof publishedProfile>) {
   if (!profile.appearance.effects?.enabled) return profile;
+  const effectsAllowedResult = await anonymousClient().rpc("profile_effects_allowed");
+  if (effectsAllowedResult.error || effectsAllowedResult.data !== true)
+    return { ...profile, appearance: { ...profile.appearance, effects: { ...profile.appearance.effects, enabled: false } } };
   const { data, error } = await anonymousClient().rpc("published_effect_tier", { p_name: profile.username });
   const tier: EffectTier = !error && (data === "plus" || data === "pro" || data === "studio") ? data : "free";
   return { ...profile, appearance: { ...profile.appearance, effects: resolveEffects(profile.appearance.effects, tier) } };
