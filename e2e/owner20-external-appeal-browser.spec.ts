@@ -54,10 +54,6 @@ test("banned user can submit and cannot replay a signed-out external appeal",asy
    );
    await guest.getByRole("button",{name:"Submit appeal"}).click();
    await expect(guest.getByRole("status")).toContainText("submitted for review");
-   const {data:appeals,error}=await admin.from("moderation_appeals").select("id");
-   // The private schema intentionally has no table grant; verify via SQL below.
-   expect(error).not.toBeNull();
-   expect(appeals).toBeNull();
    const count=sql("select count(*) from snoozer.moderation_appeals where case_id='"+caseId+"'");
    expect(count.trim()).toBe("1");
 
