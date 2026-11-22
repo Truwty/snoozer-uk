@@ -101,6 +101,8 @@ export async function unblockModeratedProfile(form:FormData) {
 export async function takeDownModeratedGalleryImage(form:FormData) {
   const caseId=uuid.safeParse(get(form,"case")),image=uuid.safeParse(get(form,"image")),why=reason.safeParse(get(form,"reason"));
   if(!caseId.success||!image.success||!why.success)url("/owner/moderation","invalid");
-  const ok=await invoke("owner_takedown_gallery",{p_case:caseId.data,p_image:image.data,p_reason:why.data});
+  const {client}=await requireOwner();
+  const {data,error}=await client.rpc("owner_takedown_gallery",{p_case:caseId.data,p_image:image.data,p_reason:why.data});
+  const ok=!error&&(data==="blocked"||data==="already_blocked");
   url("/owner/moderation",ok?"media-blocked":"denied");
 }
