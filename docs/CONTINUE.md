@@ -1,3 +1,11 @@
+## Owner settings: effects and safe visitor maintenance — implementation pending verification, 22 November 2026
+
+**Branch:** `feat/owner-maintenance-settings`. The previously deployed `effects_enabled` Owner setting was not displayed despite its database and action support; the Owner settings UI now exposes it with audited MFA changes. Added a default-off `maintenance_enabled` configuration flag, Owner-only AAL2-gated revision-based updates using existing `owner_set_setting`, public read-only boolean, and a visitor-facing 503 maintenance page. Main Owner/admin recovery, authentication callbacks, login, appeals, legal pages, health checks and all API endpoints (particularly Stripe webhooks) are exempt to preserve recovery and financial continuity. This is a *visitor-facing maintenance mode*, not a complete upstream shutdown. Existing customers and subscriptions are not changed. Full CI, hosted migration, merge and Render verification are required before this can be called live.
+
+**Still outstanding for full #20:** Provider-level ban/notification, privacy export/deletion workflows, external provider checks, operational/support acceptance and a real live Owner AAL2 browser test. Keep these open until implemented and verified.
+
+---
+
 ## Owner full-inventory search and pagination — LIVE, 22 November 2026, 06:32 UTC
 
 **Merged and verified:** [PR #46](https://github.com/Truwty/snoozer-uk/pull/46) on `main` at commit `7415f6fc5301f41b42c718debbf3b3105393263f`. [GitHub CI #44993502789](https://github.com/Truwty/snoozer-uk/actions/runs/44993502789) passed source-secret scanning, dependency audit, lint, TypeScript, unit tests, disposable Supabase, Next.js build and Chromium Playwright. Connected hosted Supabase applied migration `20261122062301_owner_inventory_pagination` (matching source file), and SQL confirmed authenticated EXECUTE plus denied anonymous EXECUTE on both new RPCs. The functions check verified Owner identity internally. Render deployment `dep-dc18o156e07s73clsr9g` reports **live** on the exact merged commit at 06:32:39 UTC; runtime logs show Next.js ready, and ERROR-level logs from the checked post-startup window contained zero records. Direct real Owner browser MFA acceptance on the public domain remains unverified.
