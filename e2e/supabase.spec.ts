@@ -1531,3 +1531,42 @@ test("sign-ins persist across navigation and independent accounts switch without
     if (accountB.data.user) await admin.auth.admin.deleteUser(accountB.data.user.id);
   }
 });
+
+test("Owner administration requires verified role and MFA for privileged mutations", async ({ request }) => {
+  test.setTimeout(60000);
+  const admin=createClient(project!,adminKey!,{auth:{persistSession:false}});
+  const email="owner-admin-"+randomUUID().slice(0,12)+"@example.com";
+  const ordinaryEmail="owner-ordinary-"+randomUUID().slice(0,12)+"@example.com";
+  const ownerResult=await admin.auth.admin.createUser({email,password,email_confirm:true});
+  const ordinaryResult=await admin.auth.admin.createUser({email:ordinaryEmail,password,email_confirm:true});
+  expect(ownerResult.error).toBeNull();
+  expect(ordinaryResult.error).toBeNull();
+  const ownerId=ownerResult.data.user!.id,ordinaryId=ordinaryResult.data.user!.id;
+  const sql=(statement:string)=>execFileSync("docker",[
+    "exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-c",statement
+  ]);
+  sql("insert into snoozer.platform_owners(owner_id) values ('"+ownerId+"')");
+  try {
+    const owner=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+    const ordinary=createClient(project!,publishableKey!,{auth:{persistSession:false}});
+    expect((await owner.auth.signInWithPassword({email,password})).error).toBeNull();
+    expect((await ordinary.auth.signInWithPassword({email:ordinaryEmail,password})).error).toBeNull();
+    expect((await owner.rpc("is_platform_owner")).data).toBe(true);
+    expect((await ordinary.rpc("is_platform_owner")).data).toBe(false);
+    const listing=await owner.rpc("owner_user_search",{p_query:ordinaryEmail,p_limit:5});
+    expect(listing.error).toBeNull();
+    expect(listing.data).toEqual(expect.arrayContaining([expect.objectContaining({id:ordinaryId,email:ordinaryEmail})]));
+    const denied=await ordinary.rpc("owner_user_search",{p_query:ordinaryEmail,p_limit:5});
+    expect(denied.error?.code).toBe("42501");
+    const noMfa=await owner.rpc("owner_grant_premium",{p_user:ordinaryId,p_plan:"studio",p_days:30,p_reason:"Security test grant"});
+    expect(noMfa.error?.code).toBe("42501");
+    const grantCount=sql("select count(*) from snoozer.admin_grant_records").toString();
+    expect(grantCount).toContain("0");
+    const http=await request.get("/owner/users");
+    expect(http.url()).toContain("/sign-in");
+  } finally {
+    sql("delete from snoozer.platform_owners where owner_id='"+ownerId+"'");
+    await admin.auth.admin.deleteUser(ownerId);
+    await admin.auth.admin.deleteUser(ordinaryId);
+  }
+});
