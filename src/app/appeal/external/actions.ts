@@ -4,13 +4,14 @@ import {redirect} from "next/navigation";
 import {z} from "zod";
 import {siteUrl} from "@/lib/env";
 import {storageAdmin} from "@/lib/supabase";
-import {sendZohoNotice,zohoSmtpConfigured} from "@/lib/owner/zoho-transport";
+import {sendZohoNotice} from "@/lib/owner/zoho-transport";
+import {zohoMailReady} from "@/lib/owner/mail-readiness";
 
 const uuid=z.uuid();
 const email=z.email().max(254);
 const tokenSchema=z.string().regex(/^[a-f0-9]{64}$/);
 const hash=(token:string)=>createHash("sha256").update(token).digest("hex");
-const emailReady=zohoSmtpConfigured;
+const emailReady=zohoMailReady;
 
 export async function requestExternalAppeal(form:FormData){
  const caseId=uuid.safeParse(form.get("case"));
