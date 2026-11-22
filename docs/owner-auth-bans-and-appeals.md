@@ -14,3 +14,6 @@ The independent `/appeal/external` route is available to **signed-out users**, i
 **Important:** Provider bans do not revoke already-issued JWTs by themselves. The app's verified-session database checks and internal restrictions are still mandatory. External appeal email depends on verified sender health; if email is down, the user can contact snoozersupport@snoozer.uk for manual review. Never send case reasons in the verification email; don't log raw one-use tokens, email API keys or appeal text. Project-specific deletion and Stripe retention are not changed.
 
 Supabase Auth reference: https://github.com/supabase/auth-js/blob/master/src/lib/types.ts (ban_duration including `none`).
+
+## CI baseline verification
+The shared legal-disclosure baseline was repaired on main in [PR #55](https://github.com/Truwty/snoozer-uk/pull/55). This branch must pass the full GitHub Actions suite against that corrected base before being merged.
