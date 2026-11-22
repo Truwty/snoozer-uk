@@ -73,8 +73,38 @@ jobs:
               print("::error::Production health checks failed: " + "; ".join(bad))
               sys.exit(1)
           PY
+      - name: Confirm anonymous data export access is denied
+        id: privacy
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import subprocess,sys
+          base="https://www.snoozer.uk"
+          paths=[
+            "/api/v1/account/data-archive",
+            "/api/v1/account/media-export",
+            "/api/v1/account/billing-export",
+          ]
+          bad=[]
+          for path in paths:
+            try:
+              command=["curl","--silent","--show-error","--location","--max-redirs","2",
+                "--connect-timeout","12","--max-time","35",
+                "--output","/dev/null","--write-out","%{http_code}",base+path]
+              process=subprocess.run(command,capture_output=True,text=True,timeout=45)
+              code=process.stdout.strip()
+              ok=process.returncode==0 and code=="401"
+              print(path+": "+("anonymous denied (401)" if ok else "unexpected HTTP "+(code or "?")))
+              if not ok:bad.append(path)
+            except (subprocess.TimeoutExpired,OSError):
+              print(path+": probe timed out")
+              bad.append(path)
+          if bad:
+            print("::error::Anonymous private-route policy failed: "+", ".join(bad))
+            sys.exit(1)
+          PY
       - name: Raise actionable incident issue
-        if: failure() && steps.check.outcome == 'failure'
+        if: failure() && (steps.check.outcome == 'failure' || steps.privacy.outcome == 'failure')
         shell: bash
         run: |
           title="Snoozer production health alert"
