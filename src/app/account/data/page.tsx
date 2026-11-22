@@ -26,6 +26,8 @@ export default async function AccountData({searchParams}:{searchParams:Promise<{
  <p>You can immediately download your account details, data request history and account notices. This is not your complete personal-data archive; use the full export request below to obtain additional profile, media, analytics or payment information.</p>
  <a href="/api/v1/account/data-snapshot" download="snoozer-account-snapshot.json" className="button">Download JSON snapshot</a>
  <a href="/api/v1/account/data-archive" download="snoozer-app-data-archive.json" className="button">Download my app data archive</a>
+ <a href="/api/v1/account/media-export" download="snoozer-private-media-manifest.json" className="button">Download private media file list</a>
+ <p className="muted">The media list contains individual, authenticated file download links for your current private Storage objects. Each download requires your own active account session; the list does not disclose public URLs. Historical orphaned media may still require a reviewed request.</p>
  <p className="muted">The app archive includes profile settings, link and gallery metadata, folders, entitlements, restrictions, appeals and notices. It does not contain media file bytes, all analytics or Stripe payment records, so a reviewed full-data request is still available below.</p>
  </section>
  <section className="panel stack"><h2>Make a request</h2>
