@@ -30,13 +30,13 @@ export default async function OwnerSystem({searchParams}:{searchParams:Promise<{
  </div>)}</div></section>
  <section className="panel stack"><h2>Transactional Owner notices</h2>
  <p>Account actions create in-app notices and queue their delivery through Zoho Mail. SMTP requires a valid Zoho mailbox, verified sender and an outbound SMTP-enabled hosting environment. A dispatcher sends eligible queued notices; it does not create a new test email.</p>
- <p role="status">{!mail.credentialsConfigured?
- "Zoho email credentials are missing in Render. Configure Zoho HTTPS Mail API credentials or SMTP on a supported hosting plan. In-app notices still work.":
- mail.transport==="api"?
+ <p role="status">{mail.transport==="api"?
  "Zoho HTTPS Mail API is configured. A successful API response means accepted, not necessarily delivered to the inbox.":
  mail.transport==="smtp"?
  "Zoho SMTP is configured on an outbound-enabled hosting plan. Check recipient inbox delivery.":
- "Zoho SMTP credentials are present, but Render Free blocks SMTP ports 25, 465 and 587. Configure Zoho HTTPS Mail API OAuth credentials to send without upgrading Render, or move to an SMTP-enabled plan."}</p>
+ mail.credentialsConfigured?
+ "Zoho SMTP credentials are present, but Render Free blocks SMTP ports 25, 465 and 587. Configure Zoho HTTPS Mail API OAuth credentials to send without upgrading Render, or move to an SMTP-enabled plan.":
+ "Zoho email credentials are missing in Render. Configure Zoho HTTPS Mail API credentials or SMTP on a supported hosting plan. In-app notices still work."}</p>
  {!mail.dispatchTokenConfigured&&<p role="alert">Automatic dispatch secret not configured. Configure OWNER_EMAIL_DISPATCH_TOKEN in Render (at least 32 characters).</p>}
  {mailParams.mail&&<p role="status">{mailParams.mail==="ok"&&mailParams.sent==="0"&&mailParams.failed==="0"?
  "Dispatch completed but did not process any eligible notices. No email was sent. A message might be in its retry or claim-lease window.":
