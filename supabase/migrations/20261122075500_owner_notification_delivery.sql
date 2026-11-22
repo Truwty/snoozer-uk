@@ -72,7 +72,7 @@ begin
  set delivered_at=case when p_success then now() else null end,
      last_error=case when p_success then null else left(coalesce(p_error,'provider rejected'),120) end,
      next_attempt_at=case when p_success then q.next_attempt_at
-       else now()+make_interval(mins=>least(1440,2 ^ least(q.attempts,10))) end,
+       else now()+make_interval(mins=>least(1440,power(2::numeric,least(q.attempts,10))::integer)) end,
      lease_until=null
  where q.id=p_id and q.delivered_at is null
    and q.lease_until >= now()
