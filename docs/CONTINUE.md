@@ -1,3 +1,9 @@
+## Feature #20 privacy fulfilment hardening — 22 November 2026 (branch, pending CI)
+
+A follow-up branch adds private, MFA-only fulfilment evidence and a database-enforced requirement that privacy requests cannot be marked completed without verified identity, app/media, billing/processor, retention and secure-notice checks. Deletion also requires evidence of subscription resolution and actual account erasure. Owner UI can record reference-only evidence and inspect existing status. Disposable Supabase E2E exercises AAL1 denial, incomplete evidence and test-only closure. **This does not execute erasure, terminate customer subscriptions or prove full GDPR compliance.** Real mailbox-backed external appeal/replay verification and a protected staging Auth ban/unban drill remain necessary before provider bans are enabled. Run the acceptance checklist in docs/owner20-privacy-fulfilment.md; keep SNOOZER_ENABLE_AUTH_BANS disabled. No production change should be claimed before CI, merge, migration and Render checks.
+
+---
+
 ## Feature #20 acceptance and privacy exports — 22 November 2026 (current checkpoint)
 
 **Merged, CI-proven changes:** PR #66 exercises a disposable non-Owner Supabase Auth ban, sign-in refusal, **signed-out external appeal**, single-use replay rejection, unban/recovery, and real Owner TOTP AAL2 gating of `owner_prepare_auth_ban` plus internal restriction/case requirements. It does not send a live Zoho email. PR #67 adds first-party authenticated exports of **current private avatar/gallery Storage objects** with server-side per-object ownership verification and cross-account/anonymous denial tests. PR #68 adds read-only, bounded live Stripe Premium customer/invoice/subscription summaries for the session-verified owner and safe no-customer tests. All three PR CI suites completed successfully before merge.
