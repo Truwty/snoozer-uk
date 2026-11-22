@@ -1626,7 +1626,8 @@ test("profile report intake, private queue and moderation enforcement are role-g
     expect((await reporter.rpc("get_published_profile",{p_name:n})).data).toBeNull();
     expect((await reporter.rpc("resolve_public_address",{p_name:n})).data).toBeNull();
   } finally {
-    sql("delete from snoozer.moderated_profiles where profile_id in (select id from snoozer.profiles where owner_id='"+targetId+"');"+
+    sql("delete from snoozer.admin_audit_events where actor_id='"+ownerId+"' or target_id='"+targetId+"';"+
+      " delete from snoozer.moderated_profiles where profile_id in (select id from snoozer.profiles where owner_id='"+targetId+"');"+
       " delete from snoozer.moderation_reports where reporter_id='"+reporterId+"';"+
       " delete from snoozer.moderation_cases where target_id='"+targetId+"';"+
       " delete from snoozer.platform_owners where owner_id='"+ownerId+"';");
