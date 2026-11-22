@@ -38,6 +38,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
     data-effect-border={effects.enabled ? effects.border : "none"}
+    data-effect-links={effects.enabled ? effects.links : "none"}
     data-effect-text={effects.enabled ? effects.text : "none"}
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
