@@ -25,7 +25,7 @@ export default async function Users({ searchParams }: {
  });
  const users = z.array(person).safeParse(data);
  const last = users.success ? users.data.at(-1) : undefined;
- const next = last && users.data.length === pageSize
+ const next = last && users.success && users.data.length === pageSize
   ? "/owner/users?" + new URLSearchParams({ q, before: last.created_at, id: last.id })
   : null;
  return <main className="stack">
