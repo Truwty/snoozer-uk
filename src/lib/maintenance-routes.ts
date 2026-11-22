@@ -5,7 +5,7 @@ export function isMaintenanceExempt(pathname: string, method: string) {
  return ["/api", "/auth", "/owner", "/health", "/media", "/_next"].some(
   prefix => pathname === prefix || pathname.startsWith(prefix + "/")
  ) || ["/maintenance", "/sign-in", "/forgot-password", "/reset-password",
-        "/account-restricted", "/appeal", "/report", "/legal", "/privacy", "/terms",
+        "/account-restricted", "/account/data", "/account/notifications", "/appeal", "/report", "/legal", "/privacy", "/terms",
         "/.well-known/snoozer-domain"].includes(pathname);
 }
 
