@@ -82,14 +82,27 @@ test("privacy requests cannot close without AAL2 evidence, including erasure pro
   expect((await owner.rpc("owner_review_privacy_request",{
    p_request:exportTicket.data,p_status:"completed",p_response:"Test export proof accepted"
   })).data).toBe(true);
-  expect((await owner.rpc("owner_record_privacy_evidence",evidence(deletionTicket.data,{full:true,erased:false}))).error).toBeNull();
+  const pendingDeletion={
+   ...evidence(deletionTicket.data,{full:true,erased:false}),p_notice:false
+  };
+  expect((await owner.rpc("owner_record_privacy_evidence",pendingDeletion)).error).toBeNull();
   expect((await owner.rpc("owner_review_privacy_request",{
    p_request:deletionTicket.data,p_status:"completed",p_response:"Deletion cannot be asserted"
   })).error?.code).toBe("23514");
-  expect((await owner.rpc("owner_record_privacy_evidence",evidence(deletionTicket.data,{full:true,erased:true}))).error).toBeNull();
+  expect((await owner.rpc("owner_record_privacy_evidence",{
+   ...pendingDeletion,p_erasure:true
+  })).error?.code).toBe("23514");
+  expect((await owner.rpc("owner_record_privacy_evidence",{
+   ...pendingDeletion,p_notice:true
+  })).error?.code).toBe("23514");
+  // Even an attempt to bypass the evidence form via a direct SQL update must
+  // not allow the Owner review RPC to close an account that still exists.
+  sql("update snoozer.privacy_fulfilment_evidence "+
+   "set account_erasure_verified=true,secure_notice_sent=true "+
+   "where request_id='"+deletionTicket.data+"'");
   expect((await owner.rpc("owner_review_privacy_request",{
-   p_request:deletionTicket.data,p_status:"completed",p_response:"Test-only completed erasure proof"
-  })).data).toBe(true);
+   p_request:deletionTicket.data,p_status:"completed",p_response:"Attempt to mislabel existing Auth user"
+  })).error?.code).toBe("23514");
  }finally{
   sql("delete from snoozer.admin_audit_events where actor_id in ('"+ownerId+"','"+memberId+"');"+
       "delete from snoozer.privacy_fulfilment_evidence where checked_by='"+ownerId+"';"+
