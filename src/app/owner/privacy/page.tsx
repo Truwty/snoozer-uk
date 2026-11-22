@@ -58,9 +58,9 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  return <main className="stack"><h1>Data access and deletion requests</h1>
  <p className="muted">Private, Owner-only request queue. Replies and status changes require verified MFA and are recorded in the audit log.</p>
  <section className="panel stack">
- <h2>Manual fulfilment is mandatory</h2>
+ <h2>Review is not deletion</h2>
  <p>Requests do not automatically export private provider data, erase accounts, cancel Stripe subscriptions or override required legal retention. Confirm the requester identity; gather relevant app, Supabase and Stripe records; provide the export securely or verify erasure and required retention before marking completed.</p>
- <p><strong>Do not mark a request completed just because you have reviewed it.</strong> Record the actual fulfilment evidence in the response. Consult the <Link href="/privacy">privacy policy</Link> and account billing obligations.</p>
+ <p><strong>Changing the decision to Completed, ticking evidence boxes or entering ERASE text in the Owner response does not delete a user.</strong> The restricted account erasure runs only from the separate Execute verified deletion form below, after AAL2, provider and dependency checks. Its job must succeed and the Auth user must be gone before this request can be marked Completed.</p>
  </section>
  {selected.success&&<section className="panel stack">
  <h2>Fulfilment preflight</h2>
@@ -92,7 +92,9 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <h2>Execute restricted account erasure</h2>
  <p className="muted">This is an irreversible, narrow deletion route for an identity-verified, billing-free account without private Storage, creator commerce, legal holds, unresolved third-party obligations or blocking foreign keys. The database refuses unsafe accounts. Paid records and Storage objects are never deleted by this executor; they require their own reviewed fulfilment.</p>
  <p>Required before executing: Owner MFA AAL2, an open deletion request, documented identity, Stripe and processor review, retention approval, resolved subscriptions and a working notification sender.</p>
- {!erasureEnabled?<p role="alert">Restricted erasure execution is disabled until the disposable-account acceptance tests and operator sign-off. You may still inspect and record fulfilment evidence.</p>:
+ {!["open","review"].includes(preflight.data.status)?
+ <p role="alert">This deletion request is {preflight.data.status}. It cannot be executed in this state. A previous review decision is not evidence of Auth deletion.</p>:
+ !erasureEnabled?<p role="alert">Restricted erasure execution is disabled. The Owner must enable it on Render only after its separate live disposable-account safety acceptance.</p>:
  <form action={executeSafePrivacyErasure} className="stack">
   <input type="hidden" name="id" value={selected.data}/>
   <label>To authorise irreversible deletion of the requested Auth account, type <code>ERASE {selected.data}</code>
@@ -103,6 +105,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  </section>}
  {selected.success&&<section className="panel stack">
  <h2>Document fulfilment evidence (Owner MFA required)</h2>
+ <p className="muted">For deletion requests, checking account erased or notice delivered cannot substitute for successful server-side deletion and mail confirmation. These claims are verified by the database.</p>
  <p className="muted">This form does not delete data or cancel subscriptions. Only check work you have independently performed. Completion is blocked at database level until every required check is true, with separate deletion proof. Do not paste account secrets, MFA codes or customer data into the reference.</p>
  {evidence.success&&<p>Last evidence recorded {new Date(evidence.data.checked_at).toLocaleString("en-GB")} · Reference: {evidence.data.evidence_reference}</p>}
  <form action={recordPrivacyEvidence} className="stack">
@@ -124,7 +127,10 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  {r.owner_response&&<p>Previous response: {r.owner_response}</p>}
  {["open","review"].includes(r.status)&&<form action={reviewPrivacyRequest} className="stack">
  <input type="hidden" name="id" value={r.id}/>
- <label>Decision<select name="status" defaultValue="review"><option value="review">Under review</option><option value="completed">Completed (manual fulfilment verified)</option><option value="rejected">Rejected (explain why)</option></select></label>
+ <label>Decision<select name="status" defaultValue="review"><option value="review">Under review</option>{r.kind==="export"||(
+  selected.success&&selected.data===r.id&&evidence.success&&evidence.data.account_erasure_verified&&evidence.data.secure_notice_sent
+ )?<option value="completed">Completed (verified fulfilment)</option>:null}<option value="rejected">Rejected (explain why)</option></select></label>
+ {r.kind==="deletion"&&<p className="muted">To delete the account, use the separate Execute verified deletion form in the request preflight. Do not enter ERASE text into the response or choose Completed beforehand.</p>}
  <label>Owner response and evidence reference<textarea name="response" minLength={12} maxLength={1000} required/></label>
  <label><input type="checkbox" name="confirmed" value="yes"/> I have independently verified the recorded fulfilment evidence before marking the request completed.</label>
  <p className="muted">Completion now also requires a separate evidence record via the request preflight above; the database rejects missing evidence even if this box is checked.</p>

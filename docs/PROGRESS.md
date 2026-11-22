@@ -1,3 +1,13 @@
+## Feature #20 deletion integrity follow-up — 22 November 2026
+
+**Confirmed production defect:** The Owner used the status-review form with repeated `ERASE <UUID>` text, but this form only changes the decision. The database showed the deletion request marked `completed`, while the original Auth user, profile, moderation appeal/restriction and other linked records still exist; `privacy_erasure_jobs` is empty. Prior fulfilment evidence marked `account_erasure_verified=true` and `secure_notice_sent=true` without a backend erasure job. This must NOT count as deletion success.
+
+**Fix:** A new migration makes deletion evidence for `erasure` and `notice` conditional on verified server-side job and notice events. Deletion completion requires `auth.users` absence, a matching `privacy_erasure_jobs.status=completed` and service-recorded completion notice. The Owner UI distinguishes a status review from the separate irreversible execution form, and does not offer `Completed` early. Disposable E2E checks attempted forged evidence is denied even if directly updated in the test database.
+
+**Production repair (after green CI/merge):** Surgically reopen the *one confirmed test request* with Auth still present, correct unsupported evidence, and write a repair audit entry. Do not erase, ban, or alter any real customer. The test account is *not* dependency-free (it has a moderation case, appeal and restriction), so restricted erasure correctly blocks it. Use a fresh verified, billing-free, media-free, moderation-free disposable account for a controlled deletion acceptance; do not remove safety requirements just to force the old test account through.
+
+---
+
 ## Feature #20 restricted, real account erasure — implementation candidate, awaiting CI
 
 Implemented a narrow, Owner AAL2, server-side Supabase Auth deletion path for verified **non-Owner, non-billing, media-free, dependency-free** subjects with a real deletion request, documented processor/retention/subscription attestations, and a typed irreversible confirmation. The app route uses `auth.admin.deleteUser`, not a direct SQL delete, preserves minimised audit actor history via `ON DELETE SET NULL`, and records a private job with service-only verification of the erased Auth row plus owned app/Storage leftovers. A Zoho completion notice is attempted; failures require operator reconciliation. Disposable local Supabase E2E covers allowed and blocked paths. Instructions: `docs/owner20-safe-erasure.md`.
