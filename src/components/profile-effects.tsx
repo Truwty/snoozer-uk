@@ -47,12 +47,15 @@ export function ProfileEffectsLayer({ effects }: { effects: ProfileEffects }) {
 
   if (!effects.enabled) return null;
   return <div ref={ref} aria-hidden="true" className="profile-effects-layer"
-    data-background={effects.background} data-interaction={effects.interaction}
+    data-background={effects.background} data-particles={effects.particles} data-interaction={effects.interaction}
     data-paused={paused ? "true" : undefined} data-speed={effects.speed}
     style={{ opacity: effects.intensity / 100 }}>
     {["stars", "snow", "rain"].includes(effects.background) && Array.from({ length: 24 }, (_, i) =>
       <i key={i} style={{ left: `${(i * 47 + 13) % 100}%`, top: `${(i * 31 + 7) % 100}%`,
         animationDelay: `-${(i * 7) % 19}s` }} />)}
+    {effects.particles !== "none" && Array.from({ length: 18 }, (_, i) =>
+      <b key={i} style={{ left: `${(i * 59 + 11) % 100}%`, top: `${(i * 37 + 5) % 100}%`,
+        animationDelay: `-${(i * 11) % 17}s` }} />)}
   </div>;
 }
 
