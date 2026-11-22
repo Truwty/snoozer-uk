@@ -239,3 +239,12 @@ test("Owner Control Centre is a reserved app route, not a public username", asyn
   await expect(page).toHaveURL(/\/sign-in(?:\?|$)/);
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
 });
+
+test("public reporting and appeals pages are application routes, not profile usernames", async ({page}) => {
+ const appeal=await page.goto("/appeal");
+ expect(appeal?.status()).toBe(200);
+ await expect(page.getByRole("heading",{name:"Appeal a moderation decision"})).toBeVisible();
+ const report=await page.goto("/report/example");
+ expect(report?.status()).toBe(200);
+ await expect(page.getByRole("heading",{name:"Report @example"})).toBeVisible();
+});
