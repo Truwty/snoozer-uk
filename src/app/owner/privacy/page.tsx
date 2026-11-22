@@ -88,7 +88,7 @@ export default async function OwnerPrivacy({searchParams}:{searchParams:Promise<
  <label>Decision<select name="status" defaultValue="review"><option value="review">Under review</option><option value="completed">Completed (manual fulfilment verified)</option><option value="rejected">Rejected (explain why)</option></select></label>
  <label>Owner response and evidence reference<textarea name="response" minLength={12} maxLength={1000} required/></label>
  <label><input type="checkbox" name="confirmed" value="yes"/> I have independently verified the recorded fulfilment evidence before marking the request completed.</label>
- <p className="muted">Completion now also requires a separate evidence record via the request's preflight above; the database rejects missing evidence even if this box is checked.</p>
+ <p className="muted">Completion now also requires a separate evidence record via the request preflight above; the database rejects missing evidence even if this box is checked.</p>
  <button className="button">Record decision (MFA required)</button>
  </form>}
  </section>)}
