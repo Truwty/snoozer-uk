@@ -4,8 +4,8 @@ import {redirect} from "next/navigation";
 import {z} from "zod";
 import {siteUrl} from "@/lib/env";
 import {storageAdmin} from "@/lib/supabase";
-import {sendZohoNotice} from "@/lib/owner/zoho-transport";
-import {zohoMailReady} from "@/lib/owner/mail-readiness";
+
+import {zohoMailReady,sendOwnerMail} from "@/lib/owner/mail-readiness";
 
 const uuid=z.uuid();
 const email=z.email().max(254);
@@ -26,7 +26,7 @@ export async function requestExternalAppeal(form:FormData){
  if(!started.error&&started.data===true){
   const link=new URL("/appeal/external",siteUrl());
   link.searchParams.set("token",token);
-  const ok=await sendZohoNotice(address.data,
+  const ok=await sendOwnerMail(address.data,
    "Snoozer moderation appeal verification",
    "A verification link was requested to appeal a Snoozer moderation decision. "+
    "If you requested it, open this link within 15 minutes: "+link.href+
