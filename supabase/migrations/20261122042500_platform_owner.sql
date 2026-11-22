@@ -12,6 +12,11 @@ insert into snoozer.platform_owners(owner_id)
 select id from auth.users where id = 'fddb0ff0-b7ea-4298-9fa2-2e8251df087e'
 on conflict (owner_id) do nothing;
 
+-- Existing diagnostics staff permissions are separately scoped and audited.
+insert into snoozer.staff_roles (owner_id, role)
+select id, 'billing_diagnostics' from auth.users where id = 'fddb0ff0-b7ea-4298-9fa2-2e8251df087e'
+on conflict (owner_id, role) do nothing;
+
 -- An authenticated session can inspect only its own Owner state.
 create or replace function public.is_platform_owner() returns boolean
 language sql stable security definer set search_path = '' as $$
