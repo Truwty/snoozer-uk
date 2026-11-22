@@ -1719,3 +1719,24 @@ test("privacy requests are owned, deduplicated and denied to anonymous or non-Ow
  // Disposable local Supabase is destroyed after CI. Audit records intentionally
  // retain their actor IDs; deleting fixture Auth users would violate those FKs.
 });
+
+test("signup Auth hook rejects email and Discord only when registration disabled", async () => {
+  // Exercise the actual database function inside a rolled-back transaction.
+  // The Supabase Dashboard still must enable the Before User Created hook
+  // before Auth itself invokes the function during user creation.
+  const sql = `
+  begin;
+  select jsonb_build_object('enabled',
+    public.snoozer_before_user_created('{"metadata":{"name":"before-user-created"},"user":{"id":"00000000-0000-4000-8000-000000000001","app_metadata":{"provider":"discord"}}}'::jsonb));
+  update snoozer.platform_settings set value=false where name='registrations_enabled';
+  select jsonb_build_object('discord',
+    public.snoozer_before_user_created('{"metadata":{"name":"before-user-created"},"user":{"id":"00000000-0000-4000-8000-000000000001","app_metadata":{"provider":"discord"}}}'::jsonb),
+    'email',
+    public.snoozer_before_user_created('{"metadata":{"name":"before-user-created"},"user":{"id":"00000000-0000-4000-8000-000000000002","app_metadata":{"provider":"email"}}}'::jsonb));
+  rollback;`;
+  const output=execFileSync("docker",["exec","supabase_db_snoozer-uk","psql","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-At","-c",sql],{encoding:"utf8"});
+  expect(output).toContain('"enabled": {}');
+  expect(output).toMatch(/"discord".*"error"/);
+  expect(output).toMatch(/"email".*"error"/);
+  expect(output).toContain("ROLLBACK");
+});

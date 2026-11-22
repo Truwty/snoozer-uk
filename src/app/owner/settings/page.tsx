@@ -40,11 +40,11 @@ export default async function OwnerSettings({ searchParams }: { searchParams: Pr
     </form>
    </section>
    <section className="panel stack">
-    <h2>New email registrations</h2>
-    <p>Currently <strong>{state.data.registrations_enabled.value ? "enabled" : "disabled"}</strong>. Existing accounts can still sign in. First-time Discord OAuth registrations are not controlled by this switch.</p>
+    <h2>New account registrations</h2>
+    <p>Currently <strong>{state.data.registrations_enabled.value ? "enabled" : "disabled"}</strong>. Existing accounts can still sign in. This setting blocks email signup in the app; once the Supabase Before User Created hook is activated it also blocks all new provider accounts, including Discord. If the Auth hook is not enabled, Discord registration is NOT blocked.</p>
     <form action={changeRegistration} className="stack">
      <input type="hidden" name="revision" value={state.data.registrations_enabled.revision}/>
-     <label>Allow email registration<select name="enabled" defaultValue={String(state.data.registrations_enabled.value)}><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+     <label>Allow new account registration<select name="enabled" defaultValue={String(state.data.registrations_enabled.value)}><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
      <label>Reason<input name="reason" required minLength={8} maxLength={500}/></label>
      <button className="button">Save registration setting (MFA required)</button>
     </form>
