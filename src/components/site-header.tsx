@@ -11,7 +11,7 @@ export async function SiteHeader() {
   const jar = await cookies();
   const accounts = storedAccounts(jar);
   const activeSlot = currentSlot(jar);
-  let current: { label: string; username?: string; avatar?: string } | null = null;
+  let current: { label: string; username?: string; avatar?: string; isOwner?: boolean } | null = null;
   try {
     const client = await sessionClient();
     const { data } = await client.auth.getUser();
@@ -22,7 +22,9 @@ export async function SiteHeader() {
       const name = validName.success ? validName.data : undefined;
       const avatarId = typeof draft?.avatar === "string" && /^[0-9a-f-]{36}$/i.test(draft.avatar)
         ? draft.avatar : undefined;
+      const ownerResult = await client.rpc("is_platform_owner");
       current = {
+        isOwner: !ownerResult.error && ownerResult.data === true,
         label: name ?? entry?.label ?? data.user.email?.split("@")[0] ?? "My account",
         username: name,
         avatar: name && avatarId ? `/media/avatar/${name}/${avatarId}` : undefined,
