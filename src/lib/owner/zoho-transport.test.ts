@@ -43,7 +43,7 @@ describe("Zoho Owner SMTP transport",()=>{
   expect(socket.writes.join("")).not.toContain("test-app-password");
   const msg=socket.writes.find(x=>x.includes("Content-Transfer-Encoding: base64"))??"";
   expect(msg).toContain("MIME-Version: 1.0");
-  expect(msg).toContain("RCPT").toBe(false);
+  expect(msg.includes("RCPT")).toBe(false);
   expect(socket.destroyed).toBe(true);
  });
  it("rejects invalid addresses and header injection before connecting",async()=>{
