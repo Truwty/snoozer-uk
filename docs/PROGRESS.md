@@ -1,3 +1,11 @@
+## Owner inventory pagination — implementation candidate, 22 November 2026
+
+**Pending CI/release:** new migration `20261122061500_owner_inventory_pagination.sql` adds authenticated Owner-only, cursor-paginated account and profile inventories. Search now spans all accounts/profiles instead of the previous fixed recent window, with 50-result pages, username/account UID filtering and links to affected accounts. Owner-only RPCs validate query length and cursor pairs; non-Owners receive permission errors. Browser UI retains existing owner permissions and routes. Disposable Supabase integration tests cover search, cursor navigation and role isolation. Do not mark deployed before full CI, hosted migration and Render checks.
+
+**Remaining for full administration sign-off:** production Owner MFA smoke, provider-level bans and notifications, data export/deletion, maintenance mode, health of external providers, support operational workflows and broader acceptance testing.
+
+---
+
 ## Owner administration releases verified — 22 November 2026, 06:12 UTC
 
 **Second stage — MERGED and LIVE.** [PR #44](https://github.com/Truwty/snoozer-uk/pull/44) merged to `main` at `513cd89cf30fe5fe1ddc5a92620237118241c02a`. [CI #44991261460](https://github.com/Truwty/snoozer-uk/actions/runs/44991261460) passed secret scan, audit, lint, typecheck, unit tests, disposable Supabase, build, and Playwright. Render deployment `dep-dc189qpksfps7385l860` confirmed **live** on that commit. Includes verified profile reports, appeals, case-linked moderation, public-profile quarantine, blocked gallery media, and audit actions.
