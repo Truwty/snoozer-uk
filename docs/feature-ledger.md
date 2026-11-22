@@ -1,4 +1,4 @@
-> **22 November 2026 update — Advanced profile effects under implementation, not complete.** The feature branch adds a bounded effect registry, selectable aurora/gradient/mesh/stars/snow/rain backgrounds, borders, typography, interactive-style treatments, Studio controls, SQL tier guards, and reduced-motion CSS. Some named interactions are approximations rather than full pointer behaviour; full E2E, SQL and performance acceptance is still pending. Do not mark Roadmap §9 complete or advertise effects as live until CI and staged verification pass. See `docs/PROGRESS.md`.
+> **22 November 2026 — Advanced effects baseline validated (CI #416).** Added six bounded effect layers, Studio controls, Free/Plus/Pro/Studio gates enforced in SQL, an accessible native visitor disable switch, CSS reduced-motion safeguards and public downgrade fallback. SQL migration applied and verified in connected staging Supabase. The baseline has passed browser and database tests; comprehensive pointer trail and device-specific frame budget validation remain partial/deferred. Confirm Render deploy before advertising the feature as live. See `docs/PROGRESS.md`.
 
 # Feature ledger
 
