@@ -747,12 +747,15 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByLabel("Project URL", { exact: true }).fill("https://portfolio.example.org/work");
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("Studio portfolio project");
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
+    await page.getByRole("button", { name: "Duplicate block 1" }).click();
+    await expect(page.locator(".studio-block-editor")).toHaveCount(2);
+    await expect(page.locator(".preview-card .profile-block-project")).toHaveCount(2);
 
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
     await page.reload();
     const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
-    await expect(reloadedBlocks).toHaveCount(4);
+    await expect(reloadedBlocks).toHaveCount(5);
     await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("Studio portfolio project");
@@ -761,11 +764,12 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.goto("/" + name);
     const publicBlocks = page.locator(".public-page .profile-layout-block");
-    await expect(publicBlocks).toHaveCount(4);
+    await expect(publicBlocks).toHaveCount(5);
     await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".public-page .profile-block-project")).toContainText("Studio portfolio project");
-    await expect(page.locator(".public-page .profile-block-project a")).toHaveAttribute("href", "https://portfolio.example.org/work");
+    await expect(page.locator(".public-page .profile-block-project")).toHaveCount(2);
+    await expect(page.locator(".public-page .profile-block-project").first()).toContainText("Studio portfolio project");
+    await expect(page.locator(".public-page .profile-block-project a").first()).toHaveAttribute("href", "https://portfolio.example.org/work");
 
     await page.goto("/studio");
     await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
