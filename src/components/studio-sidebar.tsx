@@ -53,7 +53,7 @@ export function StudioSidebar() {
         {group.items.map((item) => {
           const active = item.href === "/studio" ? pathname === "/studio"
             : pathname === item.href || pathname.startsWith(item.href + "/");
-          const href = selectedProfile && item.href.startsWith("/studio")
+          const href = selectedProfile && (item.href.startsWith("/studio") || item.href === "/templates")
             ? item.href + (item.href.includes("?") ? "&" : "?") + "profile=" + encodeURIComponent(selectedProfile)
             : item.href;
           return <Link key={item.href} href={href} className={"studio-sidebar-link" + (active ? " is-active" : "")}
