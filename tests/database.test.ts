@@ -2386,7 +2386,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     // Event IDs are idempotent: a replay cannot overwrite a newer status.
     expect(await result("select public.discord_presence_ingest($1,$2,'offline',null,null,$3::timestamptz) as value",
       [eventId, discordId, new Date().toISOString()])).toBe(true);
-    expect(await result("select custom_status as value from snoozer.discord_presence_cache where discord_user_id=$1", [discordId])).toBeNull();
+    await act("authenticated", alice);
+    expect(await result("select public.discord_presence_export() as value")).toMatchObject({ current_presence: { custom_status: null } });
+    await act("service_role");
     await expect(db.query("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Not consented',$4::timestamptz)",
       ["00000000-0000-4000-8000-000000000203", discordId, activity, new Date().toISOString()])).rejects.toMatchObject({ code: "22023" });
 
