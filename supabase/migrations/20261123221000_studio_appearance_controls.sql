@@ -5,39 +5,45 @@ begin;
 create or replace function snoozer.valid_profile_appearance(p_value jsonb) returns boolean
 language sql immutable set search_path = '' as $$
  select case when jsonb_typeof(p_value)='object' then coalesce(
-   p_value - array[
-     'layout','accent','entrance','backgroundImage','effects','colors','font',
-     'gradientEnabled','opacity','blur','monochromeIcons','animatedTitle',
-     'usernameGlow','socialGlow','badgeGlow'
-   ] = jsonb_build_object('density',p_value->'density','corners',p_value->'corners')
+   not exists (
+     select 1 from jsonb_object_keys(p_value) as appearance_key
+     where appearance_key not in (
+       'density','corners','layout','accent','entrance','backgroundImage','effects','colors','font',
+       'gradientEnabled','opacity','blur','monochromeIcons','animatedTitle','usernameGlow','socialGlow','badgeGlow'
+     )
+   )
+   and p_value->'density' is not null and p_value->'corners' is not null
    and p_value->>'density' in ('compact','balanced','airy')
    and p_value->>'corners' in ('square','soft','round')
-   and (not p_value ? 'layout' or p_value->>'layout' in ('centred','editorial','portfolio'))
-   and (not p_value ? 'accent' or p_value->>'accent' in ('theme','mint','rose','ink'))
-   and (not p_value ? 'entrance' or p_value->>'entrance' in ('none','fade','rise'))
-   and (not p_value ? 'backgroundImage' or
+   and (p_value->'layout' is null or p_value->>'layout' in ('centred','editorial','portfolio'))
+   and (p_value->'accent' is null or p_value->>'accent' in ('theme','mint','rose','ink'))
+   and (p_value->'entrance' is null or p_value->>'entrance' in ('none','fade','rise'))
+   and (p_value->'backgroundImage' is null or
      (jsonb_typeof(p_value->'backgroundImage')='string' and lower(p_value->>'backgroundImage')
       ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'))
-   and (not p_value ? 'effects' or snoozer.valid_profile_effects(p_value->'effects'))
-   and (not p_value ? 'font' or p_value->>'font' in ('system','sans','serif','mono'))
-   and (not p_value ? 'gradientEnabled' or jsonb_typeof(p_value->'gradientEnabled')='boolean')
-   and (not p_value ? 'opacity' or (jsonb_typeof(p_value->'opacity')='number' and p_value->>'opacity' ~ '^(100|[4-9][0-9])$'))
-   and (not p_value ? 'blur' or (jsonb_typeof(p_value->'blur')='number' and p_value->>'blur' ~ '^(0|[1-9]|1[0-9]|2[0-4])$'))
-   and (not p_value ? 'monochromeIcons' or jsonb_typeof(p_value->'monochromeIcons')='boolean')
-   and (not p_value ? 'animatedTitle' or jsonb_typeof(p_value->'animatedTitle')='boolean')
-   and (not p_value ? 'usernameGlow' or jsonb_typeof(p_value->'usernameGlow')='boolean')
-   and (not p_value ? 'socialGlow' or jsonb_typeof(p_value->'socialGlow')='boolean')
-   and (not p_value ? 'badgeGlow' or jsonb_typeof(p_value->'badgeGlow')='boolean')
-   and (not p_value ? 'colors' or (
+   and (p_value->'effects' is null or snoozer.valid_profile_effects(p_value->'effects'))
+   and (p_value->'font' is null or p_value->>'font' in ('system','sans','serif','mono'))
+   and (p_value->'gradientEnabled' is null or jsonb_typeof(p_value->'gradientEnabled')='boolean')
+   and (p_value->'opacity' is null or (jsonb_typeof(p_value->'opacity')='number' and p_value->>'opacity' ~ '^(100|[4-9][0-9])$'))
+   and (p_value->'blur' is null or (jsonb_typeof(p_value->'blur')='number' and p_value->>'blur' ~ '^(0|[1-9]|1[0-9]|2[0-4])$'))
+   and (p_value->'monochromeIcons' is null or jsonb_typeof(p_value->'monochromeIcons')='boolean')
+   and (p_value->'animatedTitle' is null or jsonb_typeof(p_value->'animatedTitle')='boolean')
+   and (p_value->'usernameGlow' is null or jsonb_typeof(p_value->'usernameGlow')='boolean')
+   and (p_value->'socialGlow' is null or jsonb_typeof(p_value->'socialGlow')='boolean')
+   and (p_value->'badgeGlow' is null or jsonb_typeof(p_value->'badgeGlow')='boolean')
+   and (p_value->'colors' is null or (
      jsonb_typeof(p_value->'colors')='object'
-     and p_value->'colors' - array['background','text','accent','icon','effect','gradientStart','gradientEnd']='{}'::jsonb
-     and (not (p_value->'colors') ? 'background' or (jsonb_typeof(p_value->'colors'->'background')='string' and p_value->'colors'->>'background' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'text' or (jsonb_typeof(p_value->'colors'->'text')='string' and p_value->'colors'->>'text' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'accent' or (jsonb_typeof(p_value->'colors'->'accent')='string' and p_value->'colors'->>'accent' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'icon' or (jsonb_typeof(p_value->'colors'->'icon')='string' and p_value->'colors'->>'icon' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'effect' or (jsonb_typeof(p_value->'colors'->'effect')='string' and p_value->'colors'->>'effect' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'gradientStart' or (jsonb_typeof(p_value->'colors'->'gradientStart')='string' and p_value->'colors'->>'gradientStart' ~ '^#[0-9a-fA-F]{6}$'))
-     and (not (p_value->'colors') ? 'gradientEnd' or (jsonb_typeof(p_value->'colors'->'gradientEnd')='string' and p_value->'colors'->>'gradientEnd' ~ '^#[0-9a-fA-F]{6}$'))
+     and not exists (
+       select 1 from jsonb_object_keys(p_value->'colors') as colour_key
+       where colour_key not in ('background','text','accent','icon','effect','gradientStart','gradientEnd')
+     )
+     and ((p_value->'colors'->'background' is null) or (jsonb_typeof(p_value->'colors'->'background')='string' and p_value->'colors'->>'background' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'text' is null) or (jsonb_typeof(p_value->'colors'->'text')='string' and p_value->'colors'->>'text' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'accent' is null) or (jsonb_typeof(p_value->'colors'->'accent')='string' and p_value->'colors'->>'accent' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'icon' is null) or (jsonb_typeof(p_value->'colors'->'icon')='string' and p_value->'colors'->>'icon' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'effect' is null) or (jsonb_typeof(p_value->'colors'->'effect')='string' and p_value->'colors'->>'effect' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'gradientStart' is null) or (jsonb_typeof(p_value->'colors'->'gradientStart')='string' and p_value->'colors'->>'gradientStart' ~ '^#[0-9a-fA-F]{6}$'))
+     and ((p_value->'colors'->'gradientEnd' is null) or (jsonb_typeof(p_value->'colors'->'gradientEnd')='string' and p_value->'colors'->>'gradientEnd' ~ '^#[0-9a-fA-F]{6}$'))
    )),false)
  else false end
 $$;
