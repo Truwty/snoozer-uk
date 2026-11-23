@@ -26,6 +26,9 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
       if (timer !== undefined) window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
+    const markUnavailable = () => {
+      if (active) setPresence({ ...initialPresence, state: "unavailable", status: null, activity: null, customStatus: null, observedAt: null });
+    };
     refresh = async () => {
       if (document.visibilityState === "hidden") return;
       try {
@@ -38,11 +41,18 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
           stopPolling();
           return;
         }
-        if (!response.ok) return;
+        if (!response.ok) {
+          markUnavailable();
+          return;
+        }
         const parsed = discordPresencePublic.safeParse(await response.json());
-        if (active && parsed.success) setPresence(parsed.data);
+        if (parsed.success) {
+          if (active) setPresence(parsed.data);
+        } else {
+          markUnavailable();
+        }
       } catch {
-        // Keep the last server-rendered snapshot while the network is unavailable.
+        markUnavailable();
       }
     };
     timer = window.setInterval(refresh, 45_000);
