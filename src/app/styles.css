@@ -970,3 +970,106 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .spotify-widget__header { padding-inline: .15rem; }
   .spotify-widget__brand { font-size: .65rem; }
 }
+
+
+/* Discord Presence — quiet, compact profile-native treatment. */
+.discord-presence-card {
+  position: relative;
+  display: grid;
+  gap: .58rem;
+  width: 100%;
+  min-width: 0;
+  padding: .82rem .9rem .72rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #5865f2 23%, var(--edge));
+  border-radius: calc(var(--block-radius) + .1rem);
+  background: linear-gradient(112deg,
+    color-mix(in srgb, #5865f2 8%, var(--chip)),
+    color-mix(in srgb, var(--chip) 96%, transparent));
+  color: var(--text);
+  text-align: start;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+}
+.discord-presence-header { display: flex; align-items: center; gap: .68rem; min-width: 0; }
+.discord-presence-icon {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, #7280ff 32%, var(--edge));
+  border-radius: .72rem;
+  background: color-mix(in srgb, #5865f2 13%, var(--page));
+  color: color-mix(in srgb, #8c98ff 76%, var(--detail));
+}
+.discord-presence-icon svg { display: block; width: 1.28rem; height: 1.28rem; }
+.discord-presence-heading { display: grid; flex: 1; min-width: 0; gap: .04rem; }
+.discord-presence-eyebrow { color: color-mix(in srgb, #929cff 70%, var(--detail)); font-size: .61rem; font-weight: 800; letter-spacing: .16em; line-height: 1.2; }
+.discord-presence-heading strong { overflow-wrap: anywhere; font-size: .94rem; line-height: 1.25; font-weight: 720; }
+.discord-presence-state {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  flex: 0 0 auto;
+  max-width: 48%;
+  padding: .28rem .52rem;
+  border: 1px solid color-mix(in srgb, var(--detail) 19%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--page) 45%, transparent);
+  color: var(--detail);
+  font-size: .68rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.discord-presence-dot { width: .48rem; height: .48rem; flex: 0 0 auto; border-radius: 50%; background: #8b929b; }
+.discord-presence-card[data-status="online"] .discord-presence-dot { background: #43b581; }
+.discord-presence-card[data-status="idle"] .discord-presence-dot { background: #faa61a; }
+.discord-presence-card[data-status="dnd"] .discord-presence-dot { background: #ed4245; }
+.discord-presence-card[data-status="offline"] .discord-presence-dot,
+.discord-presence-card[data-status="unavailable"] .discord-presence-dot { background: #8b929b; }
+.discord-presence-activity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .15rem .65rem;
+  padding: .62rem .72rem;
+  border-top: 1px solid color-mix(in srgb, var(--detail) 16%, transparent);
+  background: color-mix(in srgb, var(--page) 28%, transparent);
+  overflow-wrap: anywhere;
+}
+.discord-presence-activity-type {
+  align-self: start;
+  margin-top: .12rem;
+  color: color-mix(in srgb, #929cff 72%, var(--detail));
+  font-size: .59rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.discord-presence-activity-copy { display: grid; min-width: 0; gap: .08rem; }
+.discord-presence-activity-copy strong { font-size: .86rem; line-height: 1.3; }
+.discord-presence-activity-copy span { color: var(--detail); font-size: .76rem; line-height: 1.35; }
+.discord-presence-custom {
+  width: fit-content;
+  max-width: 100%;
+  padding: .3rem .55rem;
+  border: 1px solid color-mix(in srgb, var(--detail) 20%, transparent);
+  border-radius: .55rem;
+  color: var(--detail);
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+.discord-presence-footer {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--detail);
+  font-size: .65rem;
+  line-height: 1.2;
+}
+.discord-presence-live-mark { width: .36rem; height: .36rem; flex: 0 0 auto; border-radius: 50%; background: #43b581; }
+.discord-presence-card[data-state="unavailable"] .discord-presence-live-mark { background: #8b929b; }
+@media (max-width: 420px) {
+  .discord-presence-card { padding: .7rem .72rem .64rem; }
+  .discord-presence-state { max-width: 44%; padding-inline: .4rem; font-size: .63rem; }
+}
