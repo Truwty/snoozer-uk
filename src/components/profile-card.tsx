@@ -210,7 +210,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       const mark = socialMark(url);
       return mark ? [{ label, url, index, mark }] : [];
     });
-    const regular = valid.filter(({ url }) => !socialMark(url) || Boolean(spotifyResource(url)) || Boolean(youtubeVideoId(url)) || Boolean(metadataWidget(url)) || Boolean(twitchChannel(url)) || Boolean(robloxPlace(url)));
+    const hasProviderEmbed = (url: string) => Boolean(
+      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
+    );
+    const regular = valid.filter(({ url }) => !socialMark(url) || hasProviderEmbed(url));
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
         {social.map(({ label, url, index, mark }) => <a key={url + index} className="profile-social-link" href={url}
@@ -294,7 +297,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-decoration" aria-hidden="true" />
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
-      <div className="profile-layout" aria-label="Profile content">
+      <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
         {layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
