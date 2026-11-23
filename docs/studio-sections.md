@@ -51,3 +51,15 @@ Use **Copy or paste appearance** in Studio to copy a version 1 code or select it
 Choose **Fade in** under **Background entrance** to animate the decorative background when the card loads. The effect uses the browser's reduced-motion preference and leaves text readable throughout. The choice is saved with appearance settings and included in copied appearance codes.
 
 The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.
+
+## Unified public page layout
+
+Studio now stores one ordered page layout for independently movable text sections plus the existing Links, Interactive widgets and Gallery groups. The profile identity remains the page header. Social URLs are presented as compact icon links; their original link destinations and provider-backed widgets remain attached to the same source links.
+
+The layout is a reference list, not a second copy of profile content. Text section references use their current section position and are remapped when the existing section editor reorders, edits, adds or removes sections. Links, widget configuration and gallery files continue to be stored by their existing systems. Guestbook, Testimonials, Poll and FAQ remain one interactive module with their existing internal widget order and APIs.
+
+Migration `20261123040000_profile_page_layout.sql` adds a validated `page_layout` JSONB snapshot to draft and published profiles. The additive save RPC overload checks the layout references against the submitted sections, links, enabled widgets and uploaded gallery before calling the established revision-checked save transaction. Publication snapshots copy the layout alongside the other profile fields; restoring a publication restores the saved layout as well. Existing profiles receive an empty legacy layout, which the application resolves to their former Sections → Links → Widgets → Gallery order until the creator changes or saves the arrangement.
+
+The Studio canvas uses the same `ProfileCard` renderer as the public profile. In preview mode, its layout handles expose cross-category drag ordering and its component surfaces open the matching existing editing panel. Public visitors never receive editor drag controls. Drag-and-drop is an enhancement; keyboard and click-based editing, the existing section/link reorder actions, save/publish controls and revision-conflict protection remain available.
+
+Social destinations use compact, labelled profile icons where the provider is recognised. YouTube, Twitch, Spotify, GitHub/Discord metadata and Roblox-specific link rendering remain connected to their existing link entries rather than being replaced by decorative icon-only links. Interactive widget previews do not issue visitor submissions or votes.

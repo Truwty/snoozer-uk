@@ -683,8 +683,8 @@ test("portfolio projects persist, publish and restore with responsive public ren
   }
 });
 
-test("Studio block library adds blocks by click and drag across desktop and mobile layouts", async ({ page }) => {
-  test.setTimeout(90000);
+test("Studio builder adds, reorders, saves and publishes blocks across desktop and mobile layouts", async ({ page }) => {
+  test.setTimeout(120000);
   const name = `builder-${randomUUID().slice(0, 8)}`;
   const email = `${name}@example.com`;
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
@@ -722,6 +722,31 @@ test("Studio block library adds blocks by click and drag across desktop and mobi
     await editorTab(page, "Widgets");
     await expect(page.getByLabel("Enable Guestbook", { exact: true })).toBeChecked();
 
+    const blocks = page.locator(".preview-card .profile-layout-block");
+    await expect(blocks).toHaveCount(3);
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
+    await expect(blocks.nth(2)).toHaveAttribute("data-layout-type", "widgets");
+    await blocks.nth(2).locator(".profile-layout-drag-handle").dragTo(blocks.nth(0));
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
+    await page.reload();
+    const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
+    await expect(reloadedBlocks).toHaveCount(3);
+    await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await page.goto("/" + name);
+    const publicBlocks = page.locator(".public-page .profile-layout-block");
+    await expect(publicBlocks).toHaveCount(3);
+    await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.goto("/studio");
     await page.setViewportSize({ width: 360, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();

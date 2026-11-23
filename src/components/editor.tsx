@@ -22,6 +22,7 @@ import { TextSectionsEditor } from "./text-sections-editor";
 import { ProfileWidgetsEditor } from "./profile-widgets-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
+import { moveProfilePageElement, normalizeProfilePageLayout, remapProfileSectionPositions, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 
 type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq";
 
@@ -56,21 +57,46 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
   const galleryWarning = galleryMemoryWarning(saved.gallery);
+  const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
 
   function set<K extends keyof ProfileContent>(field: K, value: ProfileContent[K]) {
-    edit((current) => ({ ...current, content: { ...current.content, [field]: value } }));
+    edit((current) => {
+      const nextContent = { ...current.content, [field]: value };
+      const currentLayout = normalizeProfilePageLayout(current.content.pageLayout, {
+        ...current.content, gallery: saved.gallery,
+      });
+      const nextLayout = field === "sections"
+        ? remapProfileSectionPositions(currentLayout, current.content.sections,
+            value as ProfileContent["sections"], { ...nextContent, gallery: saved.gallery })
+        : field === "pageLayout" ? value : currentLayout;
+      return {
+        ...current,
+        content: {
+          ...nextContent,
+          pageLayout: normalizeProfilePageLayout(nextLayout, { ...nextContent, gallery: saved.gallery }),
+        },
+      };
+    });
   }
 
   function applyTemplate(includeSections: boolean) {
     if (!template) return;
-    edit((current) => ({
-      ...current,
-      content: {
-        ...current.content, theme: template.theme, appearance: { ...current.content.appearance, ...template.appearance },
+    edit((current) => {
+      const nextContent = {
+        ...current.content,
+        theme: template.theme,
+        appearance: { ...current.content.appearance, ...template.appearance },
         sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
-      },
-    }));
+      };
+      return {
+        ...current,
+        content: {
+          ...nextContent,
+          pageLayout: normalizeProfilePageLayout(current.content.pageLayout, { ...nextContent, gallery: saved.gallery }),
+        },
+      };
+    });
     setTemplateId("");
   }
 
@@ -505,7 +531,14 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
         } : { ...saved, ...content }}
-          avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
+          avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined}
+          onMoveLayoutItem={(from, to) => set("pageLayout", moveProfilePageElement(pageLayout, from, to, { ...content, gallery: saved.gallery }))}
+          onSelectLayoutItem={(item: ProfilePageLayoutItem) => {
+            if (item.type === "section") setTab("Sections");
+            else if (item.type === "links") setTab("Links");
+            else if (item.type === "widgets") setTab("Widgets");
+            else window.location.assign(galleryHref);
+          }} />
         {dropActive && <div className="preview-drop-overlay" aria-hidden="true"><span>Drop to add to your page</span></div>}
       </div>
       <p className="preview-drop-help">Tip: drag any block from <strong>Add to page</strong> and drop it onto this preview. You can also use the <strong>+</strong> buttons.</p>
