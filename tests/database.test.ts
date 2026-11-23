@@ -1455,7 +1455,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(save(2, "Cross-user overwrite", [], true)).rejects.toMatchObject({ code: "40001" });
     await act("anon");
     expect(await published("alice")).toEqual({
-      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [], seo: { title: "", description: "" },
+      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null,
+      indexable: false, blocks: [], links: links.map((link) => ({ ...link, hidden: false })),
+      sections: [], gallery: [], seo: { title: "", description: "" },
       widgets: defaultProfileWidgets, pageLayout: { version: 1, items: [] },
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
