@@ -32,7 +32,7 @@ export function StudioSidebar() {
 
   return <aside className={"studio-sidebar" + (mobileOpen ? " is-mobile-open" : "")} aria-label="Studio navigation">
     <div className="studio-sidebar-brand-row">
-      <Link href={selectedProfile ? "/studio?profile=" + encodeURIComponent(selectedProfile) : "/studio"} className="studio-sidebar-brand" aria-label="Snoozer Studio home">
+      <Link href={selectedProfile ? "/studio?profile=" + encodeURIComponent(selectedProfile) : "/studio"} className="studio-sidebar-brand">
         <span className="studio-brand-mark" aria-hidden="true">S</span>
         <span className="studio-brand-word">snoozer<small>STUDIO</small></span>
       </Link>
