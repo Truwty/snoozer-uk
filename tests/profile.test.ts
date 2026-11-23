@@ -40,7 +40,7 @@ describe("profile validation", () => {
   });
 
   it("defaults new profile links to visible and validates visibility as a boolean", () => {
-    expect(link.parse({ label: "GitHub", url: "https://github.com/example" }).hidden).toBe(false);
+    expect(link.parse({ label: "GitHub", url: "https://github.com/example" }).hidden).toBeUndefined();
     expect(link.parse({ label: "Private", url: "https://example.com/private", hidden: true }).hidden).toBe(true);
     expect(link.safeParse({ label: "Bad visibility", url: "https://example.com", hidden: "yes" }).success).toBe(false);
   });

@@ -58,7 +58,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     ...(backgroundImage && { backgroundImage }),
     ...(effects && { effects }),
   };
-  const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
+  const links = content.links.map(({ label, url, hidden }) => ({ label, url: new URL(url).href, hidden: hidden ?? false }));
   const { client } = await requireAccount();
   const planResult = await client.rpc("get_my_plan");
   const plan = accountPlan.safeParse(planResult.data);
