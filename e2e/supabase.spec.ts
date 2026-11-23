@@ -197,6 +197,8 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    // Wait for the server action to finish and persist the account session before navigating.
+    await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/discord");
     await expect(page.getByRole("heading", { name: "Discord Presence" })).toBeVisible();
     await expect(page.getByText("Discord account not connected", { exact: true })).toBeVisible();
