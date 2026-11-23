@@ -1808,3 +1808,92 @@ test("independent appeals require a verified email, one-time token and service p
  })).error).not.toBeNull();
  // Existing account/provider Auth ban behavior is tested separately in staging.
 });
+
+
+test("interactive profile widgets publish, accept visitor interactions and enforce moderation and voting privacy", async ({ browser }) => {
+  test.setTimeout(90000);
+  const suffix = randomUUID().slice(0, 10);
+  const name = "widgets-" + suffix;
+  const email = name + "@example.com";
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(created.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  const visitor = await browser.newContext({ baseURL: "http://localhost:3000" });
+  try {
+    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
+    const draft = await owner.rpc("get_draft");
+    expect(draft.error).toBeNull();
+    const profileId = draft.data.profile_id as string;
+    const pollId = randomUUID();
+    const optionA = randomUUID();
+    const optionB = randomUUID();
+    const widgets = {
+      version: 1,
+      order: ["guestbook", "testimonials", "poll", "faq"],
+      guestbook: { enabled: true, heading: "Guestbook", description: "Leave a message for the creator.", maxEntries: 10, submissionsOpen: true },
+      testimonials: { enabled: true, heading: "Kind words", items: [
+        { id: randomUUID(), quote: "A lovely project.", author: "A customer", role: "Client" },
+      ] },
+      poll: { enabled: true, id: pollId, question: "Which feature do you use most?", options: [
+        { id: optionA, label: "Community" }, { id: optionB, label: "Polls" },
+      ], open: true, closesAt: null, showResultsBeforeVote: false },
+      faq: { enabled: true, heading: "Questions", items: [
+        { id: randomUUID(), question: "Where can I find updates?", answer: "Check the creator's links." },
+      ] },
+    };
+    const saved = await owner.rpc("save_profile", {
+      p_profile: profileId, p_expected: 0, p_name: "Interactive widgets fixture",
+      p_bio: "Widget test profile", p_theme: "midnight", p_indexable: false,
+      p_links: [], p_publish: true, p_remove_avatar: false, p_sections: [],
+      p_appearance: { density: "balanced", corners: "soft" },
+      p_seo: { title: "", description: "" }, p_widgets: widgets,
+    });
+    expect(saved.error).toBeNull();
+
+    await visitor.addInitScript(() => {
+      try { localStorage.setItem("snoozer-analytics-consent-v3", "no"); } catch { /* Optional storage. */ }
+    });
+    const page = await visitor.newPage();
+    await page.goto("/" + name);
+    await expect(page.getByRole("heading", { name: "Kind words" })).toBeVisible();
+    await expect(page.getByText("A lovely project.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
+    await expect(page.getByText("Where can I find updates?", { exact: true })).toBeVisible();
+
+    const privateResults = await visitor.request.get("/api/v1/widgets/poll", {
+      params: { username: name, pollId },
+    });
+    expect(privateResults.status()).toBe(403);
+
+    await page.getByRole("button", { name: "Community", exact: true }).click();
+    await page.getByRole("button", { name: "Vote", exact: true }).click();
+    await expect(page.getByText("Your vote has been recorded.", { exact: true })).toBeVisible();
+    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "I already voted — show results", exact: true }).click();
+    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
+
+    await page.getByLabel("Your name").fill("Visitor");
+    await page.getByLabel("Message").fill("First visitor note");
+    await page.getByRole("button", { name: "Sign guestbook", exact: true }).click();
+    await expect(page.getByText("Message submitted. It will appear if the creator approves it.", { exact: true })).toBeVisible();
+    await expect(page.getByText("First visitor note", { exact: true })).toHaveCount(0);
+
+    const queue = await owner.rpc("owner_guestbook_queue", { p_profile: profileId, p_limit: 10 });
+    expect(queue.error).toBeNull();
+    expect(queue.data).toMatchObject([{ displayName: "Visitor", message: "First visitor note", status: "pending" }]);
+    const entryId = queue.data[0].id;
+    const approved = await owner.rpc("moderate_guestbook_entry", {
+      p_profile: profileId, p_entry: entryId, p_status: "approved",
+    });
+    expect(approved.error).toBeNull();
+    expect(approved.data).toBe(true);
+    await page.reload();
+    await expect(page.getByText("First visitor note", { exact: true })).toBeVisible();
+  } finally {
+    await visitor.close();
+    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
+  }
+});
