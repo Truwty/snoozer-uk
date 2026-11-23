@@ -41,25 +41,25 @@ begin
     item_type := item->>'type';
 
     if item_type = 'heading' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'text' - 'level' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'text'::text - 'level'::text <> '{}'::jsonb
         or jsonb_typeof(item->'text') is distinct from 'string'
         or char_length(btrim(item->>'text')) not between 1 and 160
         or coalesce(item->>'level','h2') not in ('h2','h3') then return false; end if;
     elsif item_type = 'about' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'body' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'body'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'body') is distinct from 'string'
         or char_length(btrim(item->>'body')) not between 1 and 2000 then return false; end if;
     elsif item_type = 'callout' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'body' - 'tone' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'body'::text - 'tone'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'body') is distinct from 'string'
         or char_length(btrim(item->>'body')) not between 1 and 1200
         or coalesce(item->>'tone','accent') not in ('neutral','accent','info','success','warning') then return false; end if;
     elsif item_type = 'quote' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'quote' - 'attribution' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'quote'::text - 'attribution'::text <> '{}'::jsonb
         or jsonb_typeof(item->'quote') is distinct from 'string'
         or char_length(btrim(item->>'quote')) not between 1 and 1000
         or jsonb_typeof(item->'attribution') is distinct from 'string'
@@ -68,7 +68,7 @@ begin
       target_url := item->>'url';
       target_host := substring(target_url from '^https?://([a-z0-9.-]+)');
       if target_url is null
-        or item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'title' - 'description' - 'url' - 'buttonLabel' <> '{}'::jsonb
+        or item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'title'::text - 'description'::text - 'url'::text - 'buttonLabel'::text <> '{}'::jsonb
         or jsonb_typeof(item->'title') is distinct from 'string'
         or char_length(btrim(item->>'title')) not between 1 and 100
         or jsonb_typeof(item->'description') is distinct from 'string'
@@ -79,7 +79,7 @@ begin
         or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$'
         or target_host ~ '\\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
     elsif item_type = 'skills' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'items' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'items'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'items') is distinct from 'array'
@@ -91,7 +91,7 @@ begin
       target_url := item->>'url';
       target_host := substring(target_url from '^https?://([a-z0-9.-]+)');
       if target_url is null
-        or item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'body' - 'label' - 'url' <> '{}'::jsonb
+        or item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'body'::text - 'label'::text - 'url'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 100
         or jsonb_typeof(item->'body') is distinct from 'string'
@@ -102,10 +102,10 @@ begin
         or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$'
         or target_host ~ '\\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
     elsif item_type = 'divider' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'style' <> '{}'
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'style'::text <> '{}'
         or coalesce(item->>'style','line') not in ('line','space','dotted') then return false; end if;
     elsif item_type = 'countdown' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'target' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'target'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'target') is distinct from 'string'
@@ -116,14 +116,14 @@ begin
         return false;
       end;
     elsif item_type = 'stats' then
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'items' <> '{}'::jsonb
+      if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'items'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'items') is distinct from 'array'
         or jsonb_array_length(item->'items') not between 1 and 6 then return false; end if;
       for entry in select value from jsonb_array_elements(item->'items') loop
         if jsonb_typeof(entry) is distinct from 'object'
-          or entry - 'label' - 'value' <> '{}'::jsonb
+          or entry - 'label'::text - 'value'::text <> '{}'::jsonb
           or jsonb_typeof(entry->'label') is distinct from 'string'
           or char_length(btrim(entry->>'label')) not between 1 and 40
           or jsonb_typeof(entry->'value') is distinct from 'string'
@@ -155,7 +155,7 @@ declare
   seen text[] := array[]::text[];
 begin
   if jsonb_typeof(p_value) is distinct from 'object'
-    or p_value - 'version' - 'items' <> '{}'::jsonb
+    or p_value - 'version'::text - 'items'::text <> '{}'::jsonb
     or p_value->>'version' is distinct from '1'
     or jsonb_typeof(p_value->'items') is distinct from 'array'
     or jsonb_array_length(p_value->'items') > 41 then
@@ -166,12 +166,12 @@ begin
     if jsonb_typeof(item) is distinct from 'object' then return false; end if;
     item_type := item->>'type';
     if item_type = 'section' then
-      if item - 'type' - 'index' <> '{}'::jsonb
+      if item - 'type'::text - 'index'::text <> '{}'::jsonb
         or jsonb_typeof(item->'index') is distinct from 'number'
         or coalesce(item->>'index','') !~ '^[0-5]$' then return false; end if;
       item_key := 'section:' || (item->>'index');
     elsif item_type = 'block' then
-      if item - 'type' - 'id' <> '{}'::jsonb
+      if item - 'type'::text - 'id'::text <> '{}'::jsonb
         or jsonb_typeof(item->'id') is distinct from 'string'
         or item->>'id' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then return false; end if;
       item_key := 'block:' || lower(item->>'id');
@@ -192,16 +192,19 @@ end $$;
 revoke execute on function snoozer.valid_profile_page_layout(jsonb) from public, anon, authenticated, service_role;
 
 create or replace function snoozer.copy_profile_blocks_to_publication() returns trigger
-language plpgsql security definer set search_path = '' as $$
+language plpgsql security definer set search_path = '' as $
+declare
+  snapshot_blocks jsonb;
 begin
-  select p.blocks into new.blocks
+  select p.blocks into snapshot_blocks
   from snoozer.profiles p
   where p.id = new.profile_id and p.owner_id = new.owner_id;
-  if new.blocks is null then
+  if snapshot_blocks is null then
     raise exception 'Profile blocks snapshot unavailable' using errcode = '23503';
   end if;
+  new.blocks := snapshot_blocks;
   return new;
-end $$;
+end $;
 revoke execute on function snoozer.copy_profile_blocks_to_publication() from public, anon, authenticated, service_role;
 create trigger published_profile_blocks_snapshot
   before insert on snoozer.published_profiles
