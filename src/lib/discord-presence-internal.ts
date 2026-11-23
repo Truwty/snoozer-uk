@@ -3,6 +3,13 @@ import { z } from "zod";
 import { boundedBody } from "./bounded-request";
 import { discordPresenceEvent, discordSnowflake } from "./discord-presence";
 
+const presenceSubscription = z.strictObject({
+  discordUserId: discordSnowflake,
+  showStatus: z.boolean(),
+  showActivity: z.boolean(),
+  showCustomStatus: z.boolean(),
+});
+
 const internalMessage = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("subscriptions") }),
   z.strictObject({ type: z.literal("heartbeat"), connected: z.boolean(), guildReady: z.boolean() }),
@@ -64,8 +71,8 @@ export async function receiveDiscordPresenceInternal(
 
   try {
     if (parsed.data.type === "subscriptions") {
-      const ids = z.array(discordSnowflake).max(5000).safeParse(await dependencies.subscriptions());
-      return ids.success ? response(200, { discordUserIds: ids.data }) : response(503);
+      const subscriptions = z.array(presenceSubscription).max(5000).safeParse(await dependencies.subscriptions());
+      return subscriptions.success ? response(200, { subscriptions: subscriptions.data }) : response(503);
     }
     if (parsed.data.type === "heartbeat") {
       const ok = await dependencies.heartbeat(parsed.data.connected, parsed.data.guildReady && parsed.data.connected);
