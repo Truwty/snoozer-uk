@@ -16,7 +16,7 @@ services:
       - key: DISCORD_BOT_TOKEN
         sync: false
       - key: DISCORD_PRESENCE_GUILD_ID
-        sync: false
+        value: "1574262035519115284"
       - key: SNOOZER_PRESENCE_URL
         value: https://snoozer.uk
       - key: DISCORD_PRESENCE_INGEST_SECRET
