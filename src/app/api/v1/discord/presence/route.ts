@@ -2,7 +2,7 @@ import { publicDomainContext } from "@/lib/domain-context";
 import { discordPresencePublic } from "@/lib/discord-presence";
 import { siteUrl } from "@/lib/env";
 import { username } from "@/lib/profile";
-import { anonymousClient } from "@/lib/supabase";
+import { storageAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data, error } = await anonymousClient().rpc("discord_presence_public", { p_username: name.data });
+    const { data, error } = await storageAdmin().rpc("discord_presence_public", { p_username: name.data });
     if (error) return Response.json({ error: "Presence unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
     if (data === null) return Response.json({ error: "Presence is not enabled." }, { status: 404, headers: { "Cache-Control": "no-store" } });
     const result = discordPresencePublic.safeParse(data);
