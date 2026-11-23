@@ -69,6 +69,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
     className="discord-presence-badge"
     data-status={state}
     data-state={presence.state}
+    // Native title avoids clipping inside the profile card’s overflow boundary.
     title={tooltip}
     role="img"
     aria-label={`Discord status: ${label}`}
