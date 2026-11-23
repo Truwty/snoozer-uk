@@ -1,6 +1,12 @@
-## Feature #7 — Visual refresh (23 Nov 2026)
+## Feature #8 — Discord Presence (23 Nov 2026)
 
-Replace the ugly consent-first Spotify card with a compact theme-aware embedded player that appears automatically, remove the redundant big link, accordions and explanatory text, preserve official Spotify playback/links, tracking and accessibility, and test responsive output. Update privacy disclosures and acknowledge third-party cookie/UK PECR consent implications. Confirm full CI, merge, deploy and live checks before completion.
+Owner approved first-party, consent-based Discord Presence. The website, signed worker API, Node Gateway worker, Supabase schema, Studio controls, public profile card, privacy disclosure, data archive and tests are being implemented on `feat/discord-presence`.
+
+**Hard external prerequisites:** The connected GitHub account has no Discord bot source repository, and the inspected Render workspace has no bot worker. A separate always-on Render Background Worker is described in `render.presence-worker.yaml` but has not been provisioned because it is a recurring paid resource (paid Starter plan; confirm current price in Render before creating it). The owner must create/select a Discord application, enable Presence Intent, invite its bot to the shared Snoozer server, supply its token directly to Render secrets (never chat or Git), set the guild ID, configure the same HMAC secret on web and worker, and provide the server invite. Existing email accounts may also require Supabase Manual Identity Linking to be enabled.
+
+The worker uses only GUILDS and GUILD_PRESENCES intents, filters to published opt-in Discord identities, and sends only selected fields. Custom status is not collected unless explicitly enabled. Presence is not Premium-gated or used for ads. Before launch, review whether displaying Discord API Data inside Snoozer's wider paid SaaS is permitted by current Discord Developer Terms.
+
+**Do not mark Feature #8 complete** until green CI, live Supabase migration, merged production code, the worker is running and connected to the configured shared guild, real Discord status/activity transitions are tested with a consenting account, privacy disable/disconnect and member removal are verified, and Render deployment is live. See `docs/discord-presence.md`.
 
 ---
 

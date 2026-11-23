@@ -5,10 +5,11 @@ import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import { ProfileAnalyticsConsent } from "@/components/profile-analytics-consent";
 import { ProfileCard } from "@/components/profile-card";
+import { discordPresencePublic } from "@/lib/discord-presence";
 import { profileBackgroundImage } from "@/lib/profile";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { readPublished } from "@/lib/profiles-server";
-import { anonymousClient } from "@/lib/supabase";
+import { anonymousClient, storageAdmin } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 
 type Props = { params: Promise<{ username: string }> };
@@ -32,12 +33,18 @@ export default async function Page({ params }: Props) {
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   // A selected gallery photo backgrounds the whole published page, not only the card.
   const background = profileBackgroundImage(profile);
-  const { data: ownerBadge, error: ownerError } = await anonymousClient().rpc("is_owner_profile", { p_name: profile.username });
+  const [ownerResult, presenceResult] = await Promise.all([
+    anonymousClient().rpc("is_owner_profile", { p_name: profile.username }),
+    process.env.DISCORD_PRESENCE_ENABLED === "true"
+      ? storageAdmin().rpc("discord_presence_public", { p_username: profile.username })
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  const presence = !presenceResult.error ? discordPresencePublic.safeParse(presenceResult.data) : null;
   const pageStyle = background
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
-    <ProfileCard profile={profile} ownerBadge={!ownerError && ownerBadge === true} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <div className="stack" style={{ alignItems: "center", marginTop: ".75rem" }}><Link href={new URL("/report/" + profile.username, siteUrl()).href} className="muted">Report profile</Link><Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link></div>
   </main>;

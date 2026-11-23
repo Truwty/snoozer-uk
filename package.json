@@ -11,7 +11,7 @@
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run && node --test scripts/dependency-audit.test.mjs",
+    "test": "vitest run && node --test scripts/dependency-audit.test.mjs tests/discord-presence-worker.test.mjs",
     "audit": "node scripts/dependency-audit.mjs",
     "test:e2e": "playwright test",
     "moderation:gallery": "node --env-file-if-exists=.env.local scripts/take-down-gallery-image.mjs",
@@ -21,7 +21,8 @@
     "cleanup:analytics": "node --env-file-if-exists=.env.local scripts/purge-analytics.mjs",
     "billing:live:preflight": "node --env-file-if-exists=.env.local scripts/premium-live-preflight.mjs",
     "prestart": "node scripts/premium-live-startup-check.mjs",
-    "billing:live:key-check": "node --env-file-if-exists=.env.local scripts/premium-live-startup-check.mjs"
+    "billing:live:key-check": "node --env-file-if-exists=.env.local scripts/premium-live-startup-check.mjs",
+    "discord:presence": "node workers/discord-presence/worker.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

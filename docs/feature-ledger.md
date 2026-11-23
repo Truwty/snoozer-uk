@@ -4,6 +4,8 @@
 
 # Feature ledger
 
+> **Product roadmap Feature #8 — Discord Presence:** In progress. This is the product roadmap item, separate from specification section 8 below. Website-side implementation and first-party Gateway worker are being built; live Discord credentials, shared guild, paid always-on worker and real provider acceptance remain external prerequisites. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
+
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
 
 Deferred entries are implementation work. Milestone 4 scope/entitlement decisions and reasons are in [milestone-4-review.md](milestone-4-review.md). Provider-dependent results are tracked in PROGRESS.md. The roadmap also covers the specification’s cross-cutting sections and acceptance gates.

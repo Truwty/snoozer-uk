@@ -37,6 +37,8 @@ it("bounds host input, routable paths and public IPv4 targets", () => {
   expect(domainRoute("/", "GET", "creator")).toBe(true);
   expect(domainRoute("/api/v1/analytics/view", "POST", "creator")).toBe(true);
   expect(domainRoute("/api/v1/spotify/now-playing", "GET", "creator")).toBe(false);
+  expect(domainRoute("/api/v1/discord/presence", "GET", "creator")).toBe(true);
+  expect(domainRoute("/api/v1/discord/presence", "POST", "creator")).toBe(false);
   expect(domainRoute("/api/v1/spotify/connect", "GET", "creator")).toBe(false);
   for (const path of ["/studio", "/sign-in", "/api/v1/billing/stripe/webhook", "/media/avatar/another/00000000-0000-4000-8000-000000000001"]) expect(domainRoute(path, "GET", "creator")).toBe(false);
   expect(domainRoute("/", "POST", "creator")).toBe(false);

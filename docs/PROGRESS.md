@@ -1,6 +1,16 @@
+## Feature #8 — Discord Presence (23 Nov 2026)
+
+Owner approved first-party Discord Presence. Implementing consent-based identity linking, per-profile field visibility, a private Supabase cache and signed internal ingestion, a public profile card, Studio controls, a standalone Node Gateway worker, account export, privacy disclosure and tests.
+
+The website-side implementation is under development on `feat/discord-presence`. The actual Discord bot application/token, shared guild, manual identity-linking setting (for email-first accounts) and always-on worker deployment are external dependencies. No worker has been provisioned because it adds a recurring paid Render resource. The owner must approve the cost and configure credentials directly in Render. No bot token is stored in GitHub or chat.
+
+Do not claim complete until CI and migration pass, code is merged/deployed, the worker heartbeat is live, and a consenting real Discord account has passed online/idle/DND/offline/activity/custom-status, disable, disconnect, leave-server and outage acceptance. See `docs/discord-presence.md`.
+
+---
+
 ## Feature #7 — Spotify embed visual redesign (23 Nov 2026)
 
-Owner-requested appearance refresh: the official Spotify iframe now renders automatically (lazy network load) inside a compact Snoozer theme-aware card with one understated Spotify action, replacing the old duplicate link button, privacy accordion and load/hide controls. Link analytics are retained on the Open link and Spotify iframe remains the official provider code. Updates to published and preview appearance, Studio guidance, privacy disclosures, E2E tests and documentation. Provider requests can occur without per-widget consent; legal/privacy review recommended for UK PECR before broad rollout. **Pending CI and Render sign-off**; do not claim live until verified.
+Owner-requested appearance refresh: the official Spotify iframe now renders automatically (lazy network load) inside a compact Snoozer theme-aware card with one understated Spotify action, replacing the old duplicate link button, privacy accordion and load/hide controls. Link analytics are retained on the Open link and Spotify iframe remains the official provider code. Updates to published and preview appearance, Studio guidance, privacy disclosures, E2E tests and documentation. Provider requests can occur without per-widget consent; legal/privacy review recommended for UK PECR before broad rollout. Merged in PR #79 as commit e807ef5; GitHub Actions run 45096515897 passed, and Render deployment dep-dc1pp7nf3r2c73dd98gg reached Live. Automated browser checks passed; visual verification remains owner-confirmed.
 
 ---
 
