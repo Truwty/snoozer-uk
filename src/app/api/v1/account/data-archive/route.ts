@@ -18,6 +18,7 @@ const archive=z.object({
  moderation_appeals:z.array(z.record(z.string(),z.unknown())),
  privacy_requests:z.array(z.record(z.string(),z.unknown())),
  account_notifications:z.array(z.record(z.string(),z.unknown())),
+ discord_presence:z.unknown(),
 });
 
 function unavailable(status:number){
