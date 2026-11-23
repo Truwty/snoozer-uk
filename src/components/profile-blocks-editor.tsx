@@ -102,10 +102,18 @@ export function ProfileBlocksEditor({ blocks, onChange }: Props) {
             <label>Attribution<input maxLength={100} value={block.attribution} onChange={(event) => update(block, { attribution: event.target.value })}/></label>
           </>}
           {block.type === "project" && <>
-            <label>Project title<input maxLength={100} value={block.title} onChange={(event) => update(block, { title: event.target.value })}/></label>
-            <label>Description<textarea maxLength={600} rows={3} value={block.description} onChange={(event) => update(block, { description: event.target.value })}/></label>
-            <label>Project URL<input type="url" maxLength={2048} value={block.url} onChange={(event) => update(block, { url: event.target.value })}/></label>
-            <label>Button label<input maxLength={40} value={block.buttonLabel} onChange={(event) => update(block, { buttonLabel: event.target.value })}/></label>
+            <label htmlFor={"profile-block-" + block.id + "-project-title"}>Project title</label>
+            <input id={"profile-block-" + block.id + "-project-title"} maxLength={100} value={block.title}
+              onChange={(event) => update(block, { title: event.target.value })}/>
+            <label htmlFor={"profile-block-" + block.id + "-description"}>Description</label>
+            <textarea id={"profile-block-" + block.id + "-description"} maxLength={600} rows={3} value={block.description}
+              onChange={(event) => update(block, { description: event.target.value })}/>
+            <label htmlFor={"profile-block-" + block.id + "-project-url"}>Project URL</label>
+            <input id={"profile-block-" + block.id + "-project-url"} type="url" maxLength={2048} value={block.url}
+              onChange={(event) => update(block, { url: event.target.value })}/>
+            <label htmlFor={"profile-block-" + block.id + "-button-label"}>Button label</label>
+            <input id={"profile-block-" + block.id + "-button-label"} maxLength={40} value={block.buttonLabel}
+              onChange={(event) => update(block, { buttonLabel: event.target.value })}/>
           </>}
           {block.type === "skills" && <>
             <label>Title<input maxLength={80} value={block.heading} onChange={(event) => update(block, { heading: event.target.value })}/></label>
