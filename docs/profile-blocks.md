@@ -21,7 +21,7 @@ A profile can contain up to 32 blocks. Each block has a generated UUID, visibili
 
 ## Editing and ordering
 
-Open Studio → Page Builder and add a block from the library. Select a block to open its editing fields in the Blocks panel. The page preview is also an ordering surface: use the drag handle to reposition blocks, or the move-up/move-down controls for a keyboard-accessible alternative. The library supports both drag-to-add and click-to-add. Duplicate a block to start from its current content and styling; the copy receives a fresh ID and starts unlocked.
+Open Studio → Page Builder and add a block from the library. Native Callout and Quote blocks are labelled separately from the older section-based Callout and Quote tools. Select a block to open its editing fields in the Blocks panel. The page preview is also an ordering surface: use the drag handle to reposition blocks, or the move-up/move-down controls for a keyboard-accessible alternative. The library supports both drag-to-add and click-to-add. Duplicate a block to start from its current content and styling; the copy receives a fresh ID and starts unlocked.
 
 A hidden block remains in the draft and publication history but is omitted from the public profile and its public layout. A locked block cannot be edited, restyled or removed until it is unlocked; its visibility and lock controls remain available. Width, alignment and presentation can be changed independently on unlocked blocks. Full, half and third widths can be mixed and collapse to one column on narrow cards.
 
