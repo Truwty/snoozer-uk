@@ -2,8 +2,8 @@ import type { ProfileWidgets, ProfileWidgetKind } from "@/lib/profile-widgets";
 import { GuestbookWidget } from "./guestbook-widget";
 import { PollWidget } from "./poll-widget";
 
-export function InteractiveProfileWidgets({ widgets, username, preview = false }: {
-  widgets: ProfileWidgets; username: string; preview?: boolean;
+export function InteractiveProfileWidgets({ widgets, username, preview = false, reportBaseUrl }: {
+  widgets: ProfileWidgets; username: string; preview?: boolean; reportBaseUrl?: string;
 }) {
   const active = widgets.order.filter((kind) => widgets[kind].enabled);
   if (active.length === 0) return null;
@@ -13,7 +13,7 @@ export function InteractiveProfileWidgets({ widgets, username, preview = false }
         ? <section className="profile-widget" key={kind}><h2>{widgets.guestbook.heading}</h2><p className="widget-preview-note">Visitor messages and moderation are available after publishing.</p></section>
         : <GuestbookWidget key={kind} username={username} heading={widgets.guestbook.heading}
             description={widgets.guestbook.description} maxEntries={widgets.guestbook.maxEntries}
-            submissionsOpen={widgets.guestbook.submissionsOpen} />;
+            submissionsOpen={widgets.guestbook.submissionsOpen} reportBaseUrl={reportBaseUrl} />;
       if (kind === "testimonials") return <section className="profile-widget profile-testimonials" key={kind}>
         <h2>{widgets.testimonials.heading}</h2>
         <div className="testimonial-list">{widgets.testimonials.items.map((item) => <figure key={item.id}>
