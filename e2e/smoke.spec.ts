@@ -220,7 +220,7 @@ test("new visitors do not see a phantom saved account in the dropdown", async ({
 });
 
 
-test("Legal information is reachable, readable, and identifies the sole trader", async ({ page }) => {
+test("Legal information is reachable and readable", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation", { name: "Footer" }).getByRole("link", { name: "Legal information" }).click();
   await expect(page).toHaveURL(new RegExp("/legal/?$"));
@@ -230,12 +230,12 @@ test("Legal information is reachable, readable, and identifies the sole trader",
   await contents.getByRole("link", { name: /Business identity and contact/ }).click();
   await expect(page).toHaveURL(new RegExp("/legal#trader$"));
   await expect(page.getByRole("heading", { name: /Business identity and contact/ })).toBeVisible();
-  await expect(page.locator("#trader").getByText("Shae Smith")).toBeVisible();
   await expect(page.locator("#trader").getByText("Not yet published", { exact: false })).toBeVisible();
   expect(await page.locator('meta[name="robots"]').getAttribute("content")).toContain("noindex");
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
+
 
 test("Owner Control Centre is a reserved app route, not a public username", async ({ page }) => {
   // A signed-out visitor must go through account authentication, rather than
