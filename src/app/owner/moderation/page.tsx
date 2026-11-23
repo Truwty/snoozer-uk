@@ -3,7 +3,7 @@ import Link from "next/link";
 import {requireOwner} from "@/lib/owner/auth";
 import {changeCaseStatus,triageReport,reviewModerationAppeal,blockModeratedProfile,unblockModeratedProfile,takeDownModeratedGalleryImage} from "../actions";
 const casesSchema=z.array(z.object({id:z.uuid(),target_id:z.uuid().nullable(),category:z.string(),status:z.string(),reason:z.string(),created_at:z.string(),updated_at:z.string()}));
-const reportsSchema=z.array(z.object({id:z.uuid(),reporter_id:z.uuid(),profile_id:z.uuid(),username:z.string(),category:z.string(),reason:z.string(),case_id:z.uuid().nullable(),created_at:z.string()}));
+const reportsSchema=z.array(z.object({id:z.uuid(),reporter_id:z.uuid(),profile_id:z.uuid(),username:z.string(),category:z.string(),reason:z.string(),case_id:z.uuid().nullable(),guestbook_entry_id:z.uuid().nullable(),created_at:z.string()}));
 const appealsSchema=z.array(z.object({id:z.uuid(),case_id:z.uuid(),user_id:z.uuid(),reason:z.string(),status:z.string(),response:z.string().nullable(),created_at:z.string(),reviewed_at:z.string().nullable()}));
 export default async function Moderation({searchParams}:{searchParams:Promise<{admin?:string}>}) {
  const {client}=await requireOwner();
@@ -21,7 +21,7 @@ export default async function Moderation({searchParams}:{searchParams:Promise<{a
  {message&&<p role="status">Result: {message==="denied"?"Action rejected. Check MFA, case status and input.":message}</p>}
  <section className="stack"><h2>Incoming profile reports</h2>
  {reportsResult.error||!reports.success?<p role="alert">Reports unavailable.</p>:reports.data.length===0?<p>No reports yet.</p>:reports.data.map(r=><div className="panel stack" key={r.id}>
-  <h3>{r.category}: @{r.username}</h3><p>{r.reason}</p><p className="muted">Submitted {new Date(r.created_at).toLocaleString("en-GB")} · {r.id}</p>
+  <h3>{r.category}: @{r.username}</h3><p>{r.reason}</p>{r.guestbook_entry_id&&<p className="muted">Reported Guestbook entry: {r.guestbook_entry_id}</p>}<p className="muted">Submitted {new Date(r.created_at).toLocaleString("en-GB")} · {r.id}</p>
   <Link href={"/"+r.username}>View public profile</Link>
   {r.case_id?<p>Linked case {r.case_id}</p>:<form action={triageReport} className="stack"><input type="hidden" name="report" value={r.id}/>
    <label>Review note<input name="reason" minLength={8} maxLength={500} required/></label>
