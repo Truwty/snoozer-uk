@@ -210,7 +210,7 @@ begin
   end if;
   new.blocks := snapshot_blocks;
   return new;
-end $$;
+end; $;
 revoke execute on function snoozer.copy_profile_blocks_to_publication() from public, anon, authenticated, service_role;
 create trigger published_profile_blocks_snapshot
   before insert on snoozer.published_profiles
