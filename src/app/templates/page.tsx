@@ -40,7 +40,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
           username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
           indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, pageLayout: { version: 1, items: [] }, gallery: [], widgets: defaultProfileWidgets, links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
         }} />
-        <Link className="button primary" href={`/studio?template=${template.id}`}>Use this template</Link>
+        <Link className="button primary" href={`/studio/builder?template=${template.id}`}>Use this template</Link>
       </li>)}
     </ul>
   </main>;

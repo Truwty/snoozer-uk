@@ -37,10 +37,10 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "faq", label: "FAQ", description: "Answer common questions", symbol: "?" },
 ];
 
-export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
+export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Widgets", "Settings"] as const;
-  const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
+  const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
@@ -256,7 +256,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <button form="profile-editor" className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
       </div>
     </header>
-    <div className="editor-grid">
+    <div className={"editor-grid" + (panelOnly ? " panel-only" : "")}>
       <aside className="editor-sidebar" aria-label="Studio tools">
         <section className="editor-navigation">
           <div className="editor-sidebar-heading">
