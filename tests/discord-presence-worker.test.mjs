@@ -12,7 +12,7 @@ test("Gateway presence projection drops secrets and keeps only public activity f
       { type: 0, name: "Minecraft", details: "Building", state: "Survival", application_id: "private", secrets: { join: "secret" }, buttons: ["private"] },
       { type: 4, name: "Custom Status", state: "Working on it", emoji: { id: "private" } },
     ],
-  }, "2026-11-23T00:00:00.000Z");
+  }, "2026-11-23T00:00:00.000Z", { showStatus: true, showActivity: true, showCustomStatus: true });
   assert.deepEqual(event, {
     type: "presence",
     eventId: event.eventId,
