@@ -107,7 +107,7 @@ The application side can be built, migrated and CI-tested without the Discord to
 - A consenting Discord test account linked to Snoozer and a member of the shared server
 - Live tests for online, idle, DND, offline/invisible, activity changes, custom status opt-in, leaving the shared server, disconnect, disabled consent and worker outage
 
-Before public launch, confirm that displaying Discord API Data inside a SaaS that has other paid plans is permitted under the current Discord Developer Terms/Policy. The implementation intentionally does not sell, gate, advertise against or otherwise monetise the presence data.
+Before public launch, obtain written confirmation from Discord that displaying Discord API Data inside Snoozer's wider SaaS (which has other paid plans) is permitted under the current Developer Terms/Policy. The implementation intentionally does not sell, gate, advertise against or otherwise monetise the presence data.
 
 ## References
 
