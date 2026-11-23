@@ -21,14 +21,15 @@ export function SpotifyNowPlaying({ username }: { username: string }) {
   }, [username]);
   useEffect(() => {
     if (!opened) return;
-    void refresh();
     const id = setInterval(() => void refresh(), 60_000);
     return () => clearInterval(id);
   }, [opened, refresh]);
   return <section className="spotify-now-playing" aria-label="Live Spotify listening">
     <div className="actions"><strong>Now Playing · Spotify</strong>
       <button type="button" className="button small" aria-expanded={opened} onClick={() => {
-        setOpened((value) => !value); setStatus(null);
+        if (!opened) void refresh();
+        setOpened((value) => !value);
+        setStatus(null);
       }}>{opened ? "Hide live status" : "Show live status"}</button></div>
     {opened && <div aria-live="polite" className="stack">
       {loading && !status && <p className="muted">Checking Spotify…</p>}
