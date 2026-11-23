@@ -716,13 +716,15 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     const workspace = page.locator("main.studio-shell");
     expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    await expect(page.locator(".block-library-item")).toHaveCount(16);
+    await expect(page.locator(".block-library-item")).toHaveCount(18);
+    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled native callout" })).toBeVisible();
+    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled quotation" })).toBeVisible();
 
     await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
     await editorTab(page, "Sections");
     await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
 
-    await page.locator(".block-library-item").filter({ hasText: "Callout" }).dragTo(page.locator(".preview"));
+    await page.locator(".block-library-item").filter({ hasText: "Highlight an update" }).dragTo(page.locator(".preview"));
     await editorTab(page, "Sections");
     await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
 
