@@ -1,5 +1,6 @@
 import { domainName } from "./domains";
 import { z } from "zod";
+import { safeLink } from "./safe-link";
 import { galleryItem, galleryLimit } from "./gallery";
 import { linkAccents } from "./link-accent";
 import { countdownTarget } from "./countdown";
@@ -57,17 +58,7 @@ export function canonicalUsername(value: string) {
   return /^[A-Za-z0-9-]+$/.test(trimmed) ? trimmed.toLowerCase() : "";
 }
 
-export function safeLink(value: string) {
-  if (!/^https?:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?(?:[/?#][^\\\s]*)?$/i.test(value)) return false;
-  try {
-    const url = new URL(value);
-    return /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(url.hostname)
-      && !/\.(?:local|localhost|internal|test|invalid|example|onion)$/i.test(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
+export { safeLink } from "./safe-link";
 export const freeProfileLinkLimit = 20;
 export const maximumProfileLinkLimit = 2000;
 
