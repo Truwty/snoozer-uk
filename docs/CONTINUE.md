@@ -1,3 +1,32 @@
+## Snoozer Studio workspace and visual builder redesign — continue PR #95
+
+**Current branch:** `feature/studio-platform-redesign-v2`  
+**Pull request:** https://github.com/Truwty/snoozer-uk/pull/95  
+**Latest recorded head:** `136d609cf7b2a917ccbf15fce900c5e8b2c9fc8c`  
+**Release state:** Open PR, not merged; no hosted migration or Render deploy performed.
+
+### Current implementation
+
+The PR contains the full-width Studio shell and navigation, account overview, dedicated builder/customize/links/widgets/settings routes, responsive three-panel editor and focused two-panel routes. It also adds ten native, validated profile content block types with drag-to-add, drag/touch/keyboard ordering, edit/visibility/locking controls, duplication, mixed widths and database-backed draft/publication history.
+
+### Verified so far
+
+An earlier CI revision passed secret scanning, npm audit, lint, TypeScript and the 330-test unit/database suite. That suite includes database coverage for block creation/editing, hidden-block exclusion, immutable publication snapshot, restoration and the legacy 14-argument save function. Do not treat the earlier green result as the final gate: duplication, lock enforcement, mixed-width CSS and updated Playwright checks were added afterwards.
+
+### Required next steps
+
+1. Check the latest-head GitHub Actions run for `136d609cf7b2a917ccbf15fce900c5e8b2c9fc8c`. Require secret scan, audit, lint, typecheck, unit/database tests, disposable Supabase, production build and Chromium Playwright to pass.
+2. Fix any build/browser regressions on the same branch and re-run latest-head CI. The new Studio E2E flow must cover overview vs builder routes, responsive widths, drag-to-add, block editing, duplication, save/reload and public publication.
+3. Review PR #95 and ensure mergeability. Do not merge a failing or unverified revision.
+4. After green CI and merge, apply migration `20261123224000_profile_blocks.sql` through the normal hosted Supabase release process together with the earlier PR migrations, verify the migration registry and the RPC compatibility grants, then manually deploy the merged commit to the intended Render staging service (auto-deploy is intentionally disabled).
+5. Check service readiness and test an authenticated Studio session, save/publish/restore of a test profile and its public URL. Do not run destructive actions against customer accounts.
+6. Update this file, `docs/PROGRESS.md` and `docs/feature-ledger.md` with the real run, merge, migration and deployment identifiers only after each step is verified.
+
+### Intentionally not marked complete
+
+This redesign does not implement arbitrary HTML/CSS/JavaScript, unrestricted per-element code, snap-to-grid, bulk-edit tooling, template asset-attribution import, or every deferred layout/effect in the wider product feature ledger. Keep those statuses explicit rather than treating them as part of the new block editor.
+---
+
 ## Feature #29 — Interactive Profile Widgets (completed 23 November 2026)
 
 **Status: Complete — merged and deployed to staging.**
