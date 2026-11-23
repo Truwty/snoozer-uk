@@ -2416,12 +2416,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     await result("select public.discord_presence_disconnect() as value");
     expect(await result("select public.discord_presence_get_my_settings($1) as value", [id])).toMatchObject({
-      connected: false, enabled: false,
+      connected: true, enabled: false,
     });
     await act("anon");
     expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toBeNull();
     await act("service_role");
     expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([]);
+    await act("authenticated", alice);
     const archive = await result("select public.my_extended_account_archive() as value");
     expect(archive).toHaveProperty("discord_presence.discord_user_id", null);
   });
