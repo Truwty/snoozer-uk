@@ -162,6 +162,7 @@ export class DiscordPresenceWorker {
           || previous.showCustomStatus !== fields.showCustomStatus) changed.push(id);
       }
       this.subscriptions = next;
+      this.logger.info(`[discord-presence] subscription refresh succeeded (${next.size} opted-in Discord account(s)).`);
       if (changed.length && this.guildReady) void this.requestSnapshots(changed);
     } catch (error) {
       this.logger.error("[discord-presence] subscription refresh failed:", error?.message ?? error);
@@ -253,6 +254,7 @@ export class DiscordPresenceWorker {
     const data = event.d ?? {};
     switch (event.t) {
       case "READY":
+        this.logger.info("[discord-presence] Discord Gateway READY received.");
         this.sessionId = data.session_id ?? null;
         this.resumeUrl = data.resume_gateway_url ?? null;
         this.reconnectAttempt = 0;
@@ -264,6 +266,7 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_CREATE":
         if (data.id === this.config.guildId) {
+          this.logger.info("[discord-presence] Connected to the configured shared Discord server.");
           this.connected = true;
           this.guildKnown = true;
           this.guildReady = true;
@@ -308,7 +311,9 @@ export class DiscordPresenceWorker {
     if (!this.WebSocketImpl) throw new Error("This worker requires Node.js with the built-in WebSocket client.");
     const base = this.sessionId && this.resumeUrl ? this.resumeUrl : "wss://gateway.discord.gg";
     const url = base + (base.includes("?") ? "&" : "?") + "v=10&encoding=json";
+    this.logger.info("[discord-presence] Connecting to Discord Gateway.");
     this.socket = new this.WebSocketImpl(url);
+    this.socket.onopen = () => this.logger.info("[discord-presence] Discord Gateway WebSocket opened.");
     this.socket.onmessage = event => {
       void this.handleMessage(event.data);
     };
@@ -316,6 +321,7 @@ export class DiscordPresenceWorker {
       this.logger.warn("[discord-presence] Discord Gateway socket error.");
     };
     this.socket.onclose = event => {
+      this.logger.error(`[discord-presence] Discord Gateway closed (code=${event.code}, reason=${event.reason || "no reason supplied"}).`);
       this.connected = false;
       this.guildReady = false;
       this.stopHeartbeat();
@@ -333,6 +339,7 @@ export class DiscordPresenceWorker {
       if (Number.isInteger(packet.s)) this.sequence = packet.s;
 
       if (packet.op === 10) {
+        this.logger.info("[discord-presence] Discord Gateway HELLO received; identifying or resuming.");
         this.heartbeatInterval = packet.d.heartbeat_interval;
         this.startHeartbeat();
         if (this.sessionId && this.sequence !== null) {
@@ -360,6 +367,7 @@ export class DiscordPresenceWorker {
         return;
       }
       if (packet.op === 9) {
+        this.logger.error(`[discord-presence] Discord Gateway invalidated the session (resumable=${Boolean(packet.d)}).`);
         if (!packet.d) {
           this.sessionId = null;
           this.sequence = null;
@@ -412,6 +420,7 @@ export class DiscordPresenceWorker {
   }
 
   async start() {
+    this.logger.info("[discord-presence] Worker process started; validating the signed Snoozer endpoint.");
     await this.refreshSubscriptions();
     this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
     this.snapshotTimer = setInterval(() => void this.requestSnapshots([...this.subscriptions]), SNAPSHOT_REFRESH_MS);
