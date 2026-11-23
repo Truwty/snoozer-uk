@@ -9,3 +9,16 @@ export function supabaseConfig() {
   if (!supabaseUrl || !supabaseKey) throw new Error("Supabase is not configured.");
   return { url: supabaseUrl, key: supabaseKey };
 }
+
+export function discordPresenceInviteUrl() {
+  const value = process.env.DISCORD_PRESENCE_INVITE_URL?.trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const hostAllowed = ["discord.gg", "www.discord.gg", "discord.com", "www.discord.com"].includes(url.hostname.toLowerCase());
+    const pathAllowed = /^\/(?:invite\/)?[A-Za-z0-9-]{2,64}\/?$/.test(url.pathname);
+    return url.protocol === "https:" && hostAllowed && pathAllowed && !url.search && !url.hash ? url.href : null;
+  } catch {
+    return null;
+  }
+}
