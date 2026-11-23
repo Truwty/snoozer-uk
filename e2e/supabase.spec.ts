@@ -1892,6 +1892,8 @@ test("interactive profile widgets publish, accept visitor interactions and enfor
     expect(approved.data).toBe(true);
     await page.reload();
     await expect(page.getByText("First visitor note", { exact: true })).toBeVisible();
+    const reportLink = page.getByRole("link", { name: "Report message", exact: true });
+    await expect(reportLink).toHaveAttribute("href", new RegExp("entry=" + entryId));
   } finally {
     await visitor.close();
     if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
