@@ -7,6 +7,7 @@ import { anonymousClient } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") return Response.json({ error: "Presence is not enabled." }, { status: 404, headers: { "Cache-Control": "no-store" } });
   const url = new URL(request.url);
   const name = username.safeParse(url.searchParams.get("username"));
   if (!name.success) return Response.json({ error: "Profile not found." }, { status: 400, headers: { "Cache-Control": "no-store" } });
