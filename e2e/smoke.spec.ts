@@ -62,6 +62,8 @@ test("Privacy and Terms footer links open their legal pages", async ({ page }) =
     .toHaveAttribute("href", "https://support-dev.discord.com/hc/en-us/articles/8562894815383-Discord-Developer-Terms-of-Service");
   await expect(page.getByRole("link", { name: "Developer Policy", exact: true }))
     .toHaveAttribute("href", "https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy");
+  await expect(page.getByText("Although Snoozer may offer paid subscriptions for unrelated platform features, those subscriptions do not buy, license or grant additional rights in Discord API Data.", { exact: false })).toBeVisible();
+  await expect(page.getByText("These terms do not establish Discord approval", { exact: false })).toBeVisible();
 });
 
 test("privacy choices can be declined and reopened", async ({ page }) => {
