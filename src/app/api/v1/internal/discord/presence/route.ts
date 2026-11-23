@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
   const secret = process.env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
   if (!/^[a-f0-9]{64}$/i.test(secret)) return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
 
