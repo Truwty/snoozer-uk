@@ -54,7 +54,7 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
       return;
     }
     try {
-      const query = new URLSearchParams({ username, pollId, visitorToken: widgetVisitorToken() });
+      const query = new URLSearchParams({ username, pollId, visitorToken: widgetVisitorToken("poll:" + pollId) });
       const response = await fetch("/api/v1/widgets/poll?" + query.toString(), { cache: "no-store" });
       if (!response.ok) throw new Error("Poll results are unavailable for this browser.");
       const parsed = resultSchema.safeParse(await response.json());
