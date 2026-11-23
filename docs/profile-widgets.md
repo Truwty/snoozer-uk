@@ -13,7 +13,7 @@ Open Studio → Widgets. Each profile can enable one of each widget type and cho
 
 ## Voting and visitor privacy
 
-Polls limit each browser token to one vote per poll. The token is random, created only when a visitor submits a message or votes, and stored in browser local storage. Snoozer stores only its SHA-256 hash with the interaction record. This is an abuse-prevention measure, not proof of a unique person; clearing browser storage or using another browser can allow another vote.
+Polls limit each browser token to one vote per poll. The token is random, created only when a visitor submits a message or votes, and stored in browser local storage with a separate scope for each profile Guestbook or poll. Snoozer stores only its SHA-256 hash with the interaction record. This is an abuse-prevention measure, not proof of a unique person; clearing browser storage or using another browser can allow another vote.
 
 Widget endpoints do not request or store visitor IP addresses in widget records. Hosting and database providers may retain separate technical request logs under their own policies. Visitor messages are plain text and are never interpreted as HTML or scripts. The submission form includes a hidden honeypot field to discard basic automated submissions.
 
