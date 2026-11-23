@@ -48,7 +48,7 @@ export function GuestbookWidget({ username, heading, description, maxEntries, su
       const website = String(new FormData(event.currentTarget).get("website") ?? "");
       const response = await fetch("/api/v1/widgets/guestbook", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, displayName: name, message, visitorToken: widgetVisitorToken(), website }),
+        body: JSON.stringify({ username, displayName: name, message, visitorToken: widgetVisitorToken("guestbook:" + username), website }),
       });
       if (response.status === 429) throw new Error("You have reached the Guestbook submission limit. Try again later.");
       if (response.status === 404) throw new Error("This Guestbook is no longer accepting messages.");
