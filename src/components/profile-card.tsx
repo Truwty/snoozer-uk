@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, DragEvent, MouseEvent, ReactNode } from "react";
+import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -54,6 +54,37 @@ function LayoutBlock({
 }) {
   const label = item.type === "section" ? `Section ${item.index + 1}`
     : item.type === "links" ? "Social links" : item.type === "widgets" ? "Interactive widgets" : "Gallery";
+  const touchDrag = useRef<{ pointerId: number; from: number; x: number; y: number; active: boolean } | null>(null);
+
+  function pointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (!preview || !onMove || event.pointerType === "mouse" || !event.isPrimary || touchDrag.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    touchDrag.current = { pointerId: event.pointerId, from: position, x: event.clientX, y: event.clientY, active: false };
+  }
+
+  function pointerMove(event: PointerEvent<HTMLButtonElement>) {
+    const active = touchDrag.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    if (!active.active && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
+    active.active = true;
+    document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+      .forEach((node) => delete node.dataset.dropTarget);
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".profile-layout-block");
+    if (target) target.dataset.dropTarget = "true";
+  }
+
+  function pointerFinish(event: PointerEvent<HTMLButtonElement>, commit: boolean) {
+    const active = touchDrag.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    touchDrag.current = null;
+    document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+      .forEach((node) => delete node.dataset.dropTarget);
+    if (!commit || !active.active || !onMove) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".profile-layout-block");
+    const destination = Number(target?.dataset.layoutPosition);
+    if (Number.isInteger(destination)) onMove(active.from, destination);
+  }
 
   function onDragOver(event: DragEvent<HTMLDivElement>) {
     if (!preview || !onMove || !Array.from(event.dataTransfer.types).includes("application/x-snoozer-layout-item")) return;
@@ -89,6 +120,10 @@ function LayoutBlock({
     {preview && onMove && <div className="profile-layout-controls">
       <button type="button" className="profile-layout-drag-handle" draggable
         aria-label={`Drag ${label} to change its position`}
+        onPointerDown={pointerDown} onPointerMove={pointerMove}
+        onPointerUp={(event) => pointerFinish(event, true)}
+        onPointerCancel={(event) => pointerFinish(event, false)}
+        onLostPointerCapture={(event) => pointerFinish(event, false)}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("application/x-snoozer-layout-item", String(position));
