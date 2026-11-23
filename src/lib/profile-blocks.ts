@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { safeLink } from "./profile";
+import { safeLink } from "./safe-link";
 
 const common = {
   id: z.uuid(),
