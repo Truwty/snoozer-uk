@@ -275,7 +275,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         {content.links.length < linkLimit && <details>
           <summary>Add Spotify music or playlist</summary>
           <div className="stack">
-            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. No Spotify account connection is required. Visitors choose whether to load the player.</p>
+            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. No Spotify account connection is required. The player appears automatically on the published profile.</p>
             <label>Spotify share URL<input type="url" maxLength={2048} value={spotifyUrl}
               placeholder="https://open.spotify.com/playlist/…"
               aria-invalid={spotifyError} aria-describedby={spotifyError ? "spotify-url-error" : undefined}

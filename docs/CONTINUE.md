@@ -1,3 +1,9 @@
+## Feature #7 — Visual refresh (23 Nov 2026)
+
+Replace the ugly consent-first Spotify card with a compact theme-aware embedded player that appears automatically, remove the redundant big link, accordions and explanatory text, preserve official Spotify playback/links, tracking and accessibility, and test responsive output. Update privacy disclosures and acknowledge third-party cookie/UK PECR consent implications. Confirm full CI, merge, deploy and live checks before completion.
+
+---
+
 ## Feature #7 — Spotify next steps (23 Nov 2026)
 
 Owner chose **public Spotify embeds only** (no paid Spotify developer subscription). Remove the OAuth/Now Playing beta and private database schema using a forward migration, keep published links and opt-in players, run CI and confirm the new Render deploy. No Spotify Client ID, token key or developer app is required. See `docs/spotify-integration.md`.

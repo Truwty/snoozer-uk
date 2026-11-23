@@ -1,52 +1,58 @@
-"use client";
-
-import { useState } from "react";
-import { Disclosure } from "./ui";
 import { spotifyEmbedUrl, spotifyLink, type SpotifyResource } from "@/lib/spotify";
 
 /**
- * Load Spotify only on a visitor's explicit, local action. No API token,
- * third-party iframe or Spotify script is present before that choice.
+ * A clean, always-visible official Spotify player. Spotify owns the iframe UI,
+ * playback and availability; the surrounding chrome inherits the Snoozer theme.
+ * No Web API, OAuth or client-side state is required.
  */
-export function SpotifyWidget({ resource, label }: { resource: SpotifyResource; label: string }) {
-  const [loaded, setLoaded] = useState(false);
+export function SpotifyWidget({
+  resource, label, analyticsUsername, analyticsPosition,
+}: {
+  resource: SpotifyResource;
+  label: string;
+  analyticsUsername?: string;
+  analyticsPosition?: number;
+}) {
   const source = spotifyEmbedUrl(resource);
   const link = spotifyLink(resource);
   if (!source || !link) return null;
-  const kindLabel = resource.kind === "show" ? "podcast" : resource.kind;
-  const short = resource.kind === "track" || resource.kind === "episode";
 
-  return <div className="spotify-widget">
-    <p className="muted">Optional Spotify {kindLabel} player · loads only when you choose.</p>
-    <Disclosure title="Learn more about Spotify privacy">
-      <p className="muted">
-        Loading the official Spotify player connects your browser directly to Spotify and
-        shares connection data such as your IP address and the website origin.
-        This choice is separate from Snoozer profile analytics and is not remembered.
-      </p>
-    </Disclosure>
-    <button type="button" className="button small" aria-expanded={loaded}
-      onClick={() => setLoaded((previous) => !previous)}>
-      {loaded ? "Hide Spotify player" : "Load Spotify player"}
-    </button>
-    {loaded && <>
+  const kind = resource.kind === "show" ? "podcast" : resource.kind;
+  const isCompact = resource.kind === "track" || resource.kind === "episode";
+
+  return <section className="spotify-widget" aria-label={`Spotify ${kind} player`}>
+    <div className="spotify-widget__header">
+      <span className="spotify-widget__brand">
+        <svg className="spotify-widget__brand-icon" viewBox="0 0 24 24" role="img" aria-label="Spotify" focusable="false">
+          <circle cx="12" cy="12" r="11" fill="currentColor" />
+          <path d="M5.5 9.1c4.6-1.4 9.7-.8 13.2 1.3M6.4 12.7c3.8-1 8-.5 11 1.4M7.4 16c3-.7 6.4-.3 8.9 1.2"
+            fill="none" stroke="#11251b" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        <span>Spotify <span className="spotify-widget__kind">/ {kind}</span></span>
+      </span>
+      <a className="spotify-widget__open" href={link} target="_blank" rel="ugc nofollow noopener noreferrer"
+        aria-label={`Open ${label} on Spotify`}
+        data-analytics-profile={analyticsUsername} data-analytics-position={analyticsPosition}>
+        Open
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor"
+          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+          <path d="M4 12 12 4M5 4h7v7" />
+        </svg>
+      </a>
+    </div>
+    <div className="spotify-widget__player">
       <iframe
+        className="spotify-widget__iframe"
         title={`Spotify: ${label}`}
         src={source}
         loading="lazy"
         width="100%"
-        height={short ? 152 : 352}
-        style={{ display: "block", width: "100%", maxWidth: "100%", border: 0, borderRadius: 12 }}
-        referrerPolicy="strict-origin"
+        height={isCompact ? 152 : 352}
+        referrerPolicy="no-referrer"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
         allowFullScreen
       />
-      <p className="muted">
-        Spotify controls playback, content availability and any sign-in requirements.
-        <a href={link} rel="ugc nofollow noreferrer" target="_blank"> Open in Spotify</a> if the embed is unavailable.
-        Hiding the player removes it and stops future iframe requests.
-      </p>
-    </>}
-  </div>;
+    </div>
+  </section>;
 }

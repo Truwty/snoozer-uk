@@ -850,5 +850,87 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .owner-nav + main .actions { flex-wrap: wrap; }
 }
 
-/* Feature #7: official Spotify embeds remain styled by the published profile theme. */
-.spotify-widget { margin-top: .75rem; padding: .85rem; border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 14px; background: color-mix(in srgb, var(--surface, #111) 88%, transparent); }
+/* Spotify: a single compact, theme-aware music tile around the unmodified official player. */
+.profile-links > li.spotify-link-slot { min-width: 0; }
+.spotify-widget {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  isolation: isolate;
+  padding: .58rem;
+  border: 1px solid color-mix(in srgb, var(--detail) 27%, transparent);
+  border-radius: calc(var(--block-radius) + .35rem);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--chip) 89%, #123a2b 11%),
+    color-mix(in srgb, var(--page) 91%, #071810 9%));
+  box-shadow: 0 10px 28px rgba(0,0,0,.11), inset 0 1px 0 color-mix(in srgb, var(--detail) 16%, transparent);
+  text-align: start;
+}
+.spotify-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  min-height: 31px;
+  padding: 0 .2rem .52rem .26rem;
+}
+.spotify-widget__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .48rem;
+  min-width: 0;
+  color: var(--text);
+  font-size: .71rem;
+  font-weight: 760;
+  line-height: 1.25;
+  letter-spacing: .015em;
+  white-space: nowrap;
+}
+.spotify-widget__brand-icon { display: block; width: 19px; height: 19px; flex: none; color: #1ed760; }
+.spotify-widget__kind { color: var(--detail); font-weight: 520; text-transform: capitalize; }
+.profile-links .spotify-widget__open {
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: center;
+  gap: .24rem;
+  min-height: 30px;
+  width: auto;
+  flex: none;
+  padding: .22rem .48rem;
+  border: 1px solid color-mix(in srgb, var(--detail) 24%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--page) 45%, transparent);
+  color: var(--text);
+  font-size: .68rem;
+  font-weight: 640;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.profile-links .spotify-widget__open:hover {
+  border-color: color-mix(in srgb, var(--detail) 62%, transparent);
+  background: color-mix(in srgb, var(--detail) 12%, transparent);
+  text-decoration: none;
+}
+.profile-links .spotify-widget__open:focus-visible { outline: 2px solid var(--detail); outline-offset: 2px; }
+.spotify-widget__player {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: calc(var(--block-radius) - .05rem);
+  background: #171c1a;
+  line-height: 0;
+}
+.spotify-widget__iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  border-radius: inherit;
+}
+@container (max-width: 20rem) {
+  .spotify-widget { padding: .4rem; }
+  .spotify-widget__header { padding-inline: .15rem; }
+  .spotify-widget__brand { font-size: .65rem; }
+}
