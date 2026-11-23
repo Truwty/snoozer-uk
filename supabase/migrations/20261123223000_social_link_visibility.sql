@@ -163,8 +163,10 @@ layout_links_count integer;
 layout_widgets_count integer;
 layout_gallery_count integer;
 expected_links_count integer;
+expected_links_layout_count integer;
 expected_widgets_count integer;
 expected_gallery_count integer;
+has_invalid_section_reference boolean;
 begin
   if not snoozer.valid_profile_page_layout(p_page_layout) then
     raise exception 'Invalid profile page layout' using errcode = '22023';
@@ -189,15 +191,21 @@ begin
   select count(*) into expected_links_count
   from jsonb_array_elements(p_links) item
   where coalesce(item->>'hidden','false') <> 'true';
-  expected_widgets_count := case when has_widgets then 1 else 0 end;
-  expected_gallery_count := case when has_gallery then 1 else 0 end;
+  expected_links_layout_count := 0;
+  if expected_links_count > 0 then expected_links_layout_count := 1; end if;
+  expected_widgets_count := 0;
+  if has_widgets then expected_widgets_count := 1; end if;
+  expected_gallery_count := 0;
+  if has_gallery then expected_gallery_count := 1; end if;
 
-  if exists (
-      select 1 from jsonb_array_elements(p_page_layout->'items') item
-      where item->>'type'='section' and (item->>'index')::integer >= section_count
-    )
+  select exists (
+    select 1 from jsonb_array_elements(p_page_layout->'items') item
+    where item->>'type'='section' and (item->>'index')::integer >= section_count
+  ) into has_invalid_section_reference;
+
+  if has_invalid_section_reference
     or layout_section_count <> section_count
-    or layout_links_count <> case when expected_links_count > 0 then 1 else 0 end
+    or layout_links_count <> expected_links_layout_count
     or layout_widgets_count <> expected_widgets_count
     or layout_gallery_count <> expected_gallery_count then
     raise exception 'Page layout does not match profile content' using errcode='22023';
