@@ -17,24 +17,23 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
   const [results, setResults] = useState<z.infer<typeof resultSchema> | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const isClosed = !open || Boolean(closesAt && Date.parse(closesAt) <= Date.now());
-  const showResults = showResultsBeforeVote || voted || isClosed;
+  const [timeClosed, setTimeClosed] = useState(false);
+  const isClosed = !open || timeClosed;
+  const showResults = showResultsBeforeVote || voted;
+
+  useEffect(() => {
+    if (!closesAt) return;
+    const delay = Math.max(0, Date.parse(closesAt) - Date.now());
+    const timer = window.setTimeout(() => setTimeClosed(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [closesAt]);
 
   useEffect(() => {
     const controller = new AbortController();
-    let hadVoted = false;
-    let visitorToken: string | null = null;
-    try {
-      hadVoted = window.localStorage.getItem("snoozer-poll-vote:" + pollId) === "yes";
-      if (hadVoted) visitorToken = widgetVisitorToken();
-    } catch { /* Storage is optional. */ }
-    if (hadVoted) setVoted(true);
     async function loadResults() {
       try {
         const query = new URLSearchParams({ username, pollId });
-        if (visitorToken) query.set("visitorToken", visitorToken);
-        const url = "/api/v1/widgets/poll?" + query.toString();
-        const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+        const response = await fetch("/api/v1/widgets/poll?" + query.toString(), { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Poll results unavailable.");
         const parsed = resultSchema.safeParse(await response.json());
         if (!parsed.success || parsed.data.pollId !== pollId) throw new Error("Poll results invalid.");
@@ -43,9 +42,30 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
         if (!controller.signal.aborted) setNotice("Poll results are temporarily unavailable.");
       }
     }
-    if (showResultsBeforeVote || hadVoted || isClosed) void loadResults();
+    if (showResultsBeforeVote) void loadResults();
     return () => controller.abort();
-  }, [username, pollId, showResultsBeforeVote, isClosed]);
+  }, [username, pollId, showResultsBeforeVote]);
+
+  async function revealPreviousVote() {
+    let hasVoted = false;
+    try { hasVoted = window.localStorage.getItem("snoozer-poll-vote:" + pollId) === "yes"; } catch { /* Storage is optional. */ }
+    if (!hasVoted) {
+      setNotice("Vote in this browser first to view the results.");
+      return;
+    }
+    try {
+      const query = new URLSearchParams({ username, pollId, visitorToken: widgetVisitorToken() });
+      const response = await fetch("/api/v1/widgets/poll?" + query.toString(), { cache: "no-store" });
+      if (!response.ok) throw new Error("Poll results are unavailable for this browser.");
+      const parsed = resultSchema.safeParse(await response.json());
+      if (!parsed.success) throw new Error("Poll results could not be read.");
+      setResults(parsed.data);
+      setVoted(true);
+      setNotice("");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Poll results could not be read.");
+    }
+  }
 
   async function vote(optionId: string) {
     if (busy || voted || isClosed) return;
@@ -85,6 +105,7 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
         key={option.id} aria-pressed={selected === option.id} onClick={() => setSelected(option.id)}>{option.label}</button>)}
       <button className="button small primary" type="button" disabled={!selected || busy} onClick={() => void vote(selected)}>{busy ? "Submitting…" : "Vote"}</button>
     </div>}
+    {!showResults && <button type="button" className="button small" onClick={() => void revealPreviousVote()}>I already voted — show results</button>}
     {showResults && <div className="poll-results" aria-live="polite">
       {options.map((option) => {
         const count = results?.counts[option.id] ?? 0;
