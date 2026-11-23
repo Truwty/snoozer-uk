@@ -74,7 +74,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
         </div>
 
         {invite && <p className="muted">The presence bot can only see activity from members of the shared Snoozer Discord server. <a href={invite} target="_blank" rel="noopener noreferrer">Join the Snoozer Discord server</a>.</p>}
-        {!invite && <p className="muted">To share live presence, your Discord account must be in the server where Snoozer's presence bot is installed. The server invite will be provided when the bot is configured.</p>}
+        {!invite && <p className="muted">To share live presence, your Discord account must be in the server where Snoozer&apos;s presence bot is installed. The server invite will be provided when the bot is configured.</p>}
 
         <div className={settings.data.serviceReady ? "discord-service-status is-ready" : "discord-service-status"} role="status">
           <span className="discord-service-indicator" aria-hidden="true"/>
