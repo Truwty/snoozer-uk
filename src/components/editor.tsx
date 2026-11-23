@@ -19,12 +19,13 @@ import { ProfileCard } from "./profile-card";
 import { EffectsEditor } from "./effects-editor";
 import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
+import { ProfileWidgetsEditor } from "./profile-widgets-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
 export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
-  const tabs = ["Profile", "Design", "Links", "Sections", "Settings"] as const;
+  const tabs = ["Profile", "Design", "Links", "Sections", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
@@ -243,6 +244,10 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
         <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
+      </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Widgets" id="editor-panel-Widgets" data-editor-panel="Widgets" hidden={tab !== "Widgets"} className="editor-panel stack">
+        <ProfileWidgetsEditor value={content.widgets} onChange={(widgets) => set("widgets", widgets)} />
+        <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
       <fieldset className="stack" ref={linkList}>
