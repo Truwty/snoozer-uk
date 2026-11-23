@@ -1,3 +1,9 @@
+## Feature #7 Spotify Phase 2 code candidate — 23 November 2026
+
+Branch `feat/spotify-now-playing` adds a separate opt-in Spotify OAuth PKCE connection, encrypted refresh/access tokens in a private schema, rate-limited public Now Playing, disconnect/visibility settings, a single-owner lookup and refreshed UI. **Feature #7 is not yet accepted as complete:** migration, CI, Spotify Premium developer app, <=5 authorised beta users, real provider acceptance and Render deploy remain gated. Public Spotify embeds from PR #75 do not require OAuth. See `docs/spotify-integration.md`.
+
+---
+
 ## Feature #7 — Spotify public Embeds (implementation started, 23 Nov 2026)
 
 Work in branch `feat/spotify-public-embeds` adds the Spotify track/album/playlist/artist/show/episode URL parser, first-party Studio "Add Spotify music or playlist" shortcut, a strictly consent-first official Spotify iframe widget on published profiles and previews, and a narrow CSP frame-src update for `https://open.spotify.com`. It needs **no Web API quota, Spotify Premium developer login, new Supabase schema or paid external service**. New unit tests exercise safe URL parsing; Playwright covers an actual published playlist, explicit visitor opt-in, zero pre-consent iframes and Hide teardown. Details: `docs/spotify-integration.md`.
