@@ -122,6 +122,11 @@ alter table snoozer.published_profiles add column widgets jsonb not null default
 '{"version":1,"order":["guestbook","testimonials","poll","faq"],"guestbook":{"enabled":false,"heading":"Guestbook","description":"Leave a message.","maxEntries":10,"submissionsOpen":true},"testimonials":{"enabled":false,"heading":"Testimonials","items":[]},"poll":{"enabled":false,"id":"00000000-0000-4000-8000-000000000001","question":"","options":[],"open":true,"closesAt":null,"showResultsBeforeVote":false},"faq":{"enabled":false,"heading":"Frequently asked questions","items":[]}}'::jsonb
 check (snoozer.valid_profile_widgets(widgets));
 
+-- Reuse the existing account inbox for a generic, non-sensitive moderation notice.
+alter table snoozer.account_notifications drop constraint if exists account_notifications_kind_check;
+alter table snoozer.account_notifications add constraint account_notifications_kind_check
+  check(kind in ('restriction','reinstatement','premium_granted','premium_revoked','appeal_review','guestbook_message'));
+
 create function snoozer.copy_profile_widgets_to_publication() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
@@ -268,6 +273,10 @@ begin
  delete from snoozer.guestbook_entries e using old_entries o where e.id=o.id;
  insert into snoozer.guestbook_entries(profile_id,display_name,message,visitor_hash)
  values(v_profile_id,btrim(p_display_name),btrim(p_message),p_visitor_hash) returning id into entry_id;
+ insert into snoozer.account_notifications(user_id,kind,title,body)
+   select p.owner_id,'guestbook_message','New guestbook message',
+     'A visitor left a message in your Guestbook. Review it in Studio.'
+   from snoozer.profiles p where p.id=v_profile_id;
  return entry_id;
 end $$;
 
