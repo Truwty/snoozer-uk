@@ -1456,6 +1456,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("anon");
     expect(await published("alice")).toEqual({
       username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [], seo: { title: "", description: "" },
+      widgets: defaultProfileWidgets,
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
     await act("authenticated", alice);
