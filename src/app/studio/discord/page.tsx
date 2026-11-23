@@ -17,6 +17,7 @@ type Query = StudioProfileQuery & {
 const errors: Record<string, string> = {
   profile: "Choose a valid profile before changing Discord Presence.",
   disabled: "Discord Presence has not been activated yet. It will be enabled after the Discord bot, worker and policy review are complete.",
+  age: "Confirm that you meet Discord’s minimum age requirement for your country before connecting.",
   link: "Discord could not be linked. If you already use email sign-in, manual identity linking may need to be enabled in Supabase Auth settings.",
   connect: "Connect a Discord account to this Snoozer account before enabling presence.",
   fields: "Select at least one field to share, or turn public presence off.",
@@ -67,6 +68,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
           </div>
           {!settings.data.connected && <form action={connectDiscordPresence}>
             <input type="hidden" name="profileId" value={draft.profile_id}/>
+            <label className="checkbox-row"><input type="checkbox" name="discordAgeConfirmed" required/> I meet Discord’s minimum age requirement for my country.</label>
             <button className="button primary" type="submit">Connect Discord</button>
           </form>}
         </div>
