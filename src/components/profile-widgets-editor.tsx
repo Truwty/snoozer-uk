@@ -3,6 +3,11 @@
 import type { ProfileWidgets } from "@/lib/profile-widgets";
 
 function newId() { return crypto.randomUUID(); }
+function localDateTime(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 
 export function ProfileWidgetsEditor({ value, onChange }: {
   value: ProfileWidgets;
@@ -99,7 +104,7 @@ export function ProfileWidgetsEditor({ value, onChange }: {
       </div>)}
       <button type="button" className="button small" disabled={value.poll.options.length >= 6}
         onClick={() => updatePoll({ options: [...value.poll.options, { id: newId(), label: "" }] }, true)}>Add poll option</button>
-      <label>Close poll at (optional)<input type="datetime-local" value={value.poll.closesAt ? value.poll.closesAt.slice(0,16) : ""}
+      <label>Close poll at (optional)<input type="datetime-local" value={localDateTime(value.poll.closesAt)}
         onChange={(event) => updatePoll({ closesAt: event.target.value ? new Date(event.target.value).toISOString() : null })}/></label>
       <label className="check"><input type="checkbox" checked={value.poll.open}
         onChange={(event) => updatePoll({ open: event.target.checked })}/> Poll is open for voting</label>
