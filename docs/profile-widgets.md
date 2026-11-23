@@ -19,7 +19,7 @@ Widget endpoints do not request or store visitor IP addresses in widget records.
 
 ## Moderation and retention
 
-Guestbook messages are pending by default. Only approved messages appear publicly. Profile owners can approve, reject or delete entries. Visitors can report an individual approved message from its **Report message** link; signed-in reports enter the existing Owner moderation queue with the entry reference. Reports are limited to three per verified account in a rolling 24-hour period. The account inbox receives a generic notice when a new message arrives; the message itself and moderation notes are not placed in that notice.
+Guestbook messages are pending by default. Only approved messages appear publicly. Profile owners can approve, reject or delete entries. Visitors can report an individual approved message from its **Report message** link; signed-in reports enter the existing Owner moderation queue with the entry reference. Reports are limited to three per verified account in a rolling 24-hour period. The account inbox receives a generic notice when a new message arrives. If the separate account-notification email dispatcher is configured and enabled, the creator may also receive a generic email notice. Neither notice contains the visitor's message, reporter details or moderation notes.
 
 Rejected messages older than 30 days are removed opportunistically when a new submission arrives. Approved and pending messages remain until the profile owner removes them or the profile/account is deleted. Poll votes are retained with their poll; changing the poll configuration creates a separate poll identifier.
 
