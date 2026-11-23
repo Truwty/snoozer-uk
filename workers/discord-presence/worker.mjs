@@ -175,6 +175,10 @@ export class DiscordPresenceWorker {
     return true;
   }
 
+  subscribedDiscordUserIds() {
+    return [...this.subscriptions.keys()];
+  }
+
   async sendPresence(discordUserId, presence) {
     const fields = this.subscriptions.get(discordUserId);
     if (!fields) return;
@@ -300,7 +304,7 @@ export class DiscordPresenceWorker {
           const subscribedInitialPresences = initialPresences.filter(presence => presence?.user?.id && this.subscriptions.has(presence.user.id));
           this.logger.info(`[discord-presence] Initial guild presence snapshot received (entries=${initialPresences.length}; opted_in_matches=${subscribedInitialPresences.length}).`);
           for (const presence of subscribedInitialPresences) await this.sendPresence(presence.user.id, presence);
-          void this.requestSnapshots([...this.subscriptions]);
+          void this.requestSnapshots(this.subscribedDiscordUserIds());
         }
         break;
       case "GUILD_DELETE":
@@ -449,7 +453,7 @@ export class DiscordPresenceWorker {
     this.logger.info("[discord-presence] Worker process started; validating the signed Snoozer endpoint.");
     await this.refreshSubscriptions();
     this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
-    this.snapshotTimer = setInterval(() => void this.requestSnapshots([...this.subscriptions]), SNAPSHOT_REFRESH_MS);
+    this.snapshotTimer = setInterval(() => void this.requestSnapshots(this.subscribedDiscordUserIds()), SNAPSHOT_REFRESH_MS);
     this.workerHeartbeatTimer = setInterval(() => void this.heartbeat(this.connected, this.guildReady), HEARTBEAT_INTERVAL_MS);
     this.connect();
   }
