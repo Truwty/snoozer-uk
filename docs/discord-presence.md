@@ -80,7 +80,7 @@ Set the same value in the Snoozer web service and the worker.
 
 The existing Snoozer web service is a free web service and can sleep. It is not suitable for a continuously connected Gateway process. `render.presence-worker.yaml` defines a separate always-on Render Background Worker using Node's built-in WebSocket client; no Docker image or extra npm dependency is required.
 
-The blueprint uses Render's Starter worker plan. It is a separate recurring paid resource (currently listed at approximately US$7/month; verify the current price before creating it). It has **not** been provisioned. Do not create or sync this worker until the owner has approved the recurring cost and supplied the Discord bot configuration.
+The blueprint uses Render's Starter worker plan. It is a separate recurring paid resource (check the current price in Render before creating it). It has **not** been provisioned. Do not create or sync this worker until the owner has approved the recurring cost and supplied the Discord bot configuration.
 
 Start command:
 
