@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { accountPlan, can } from "../src/lib/entitlements";
 import { publicationList, publicationPreview } from "../src/lib/publication";
+import { defaultProfileWidgets } from "../src/lib/profile-widgets";
 
 const alice = "00000000-0000-4000-8000-000000000001";
 const bob = "00000000-0000-4000-8000-000000000002";
@@ -2439,5 +2440,84 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(archive).toHaveProperty("discord_user_id", null);
   });
 
+
+
+  it("keeps interactive widget configuration revisioned and protects guestbook and poll interactions", async () => {
+    await act("authenticated", alice);
+    await claim("widget-sql");
+    const profileId = (await draft() as { profile_id: string }).profile_id;
+    expect((await draft() as { widgets: unknown }).widgets).toEqual(defaultProfileWidgets);
+
+    const pollId = "00000000-0000-4000-8000-000000000301";
+    const optionA = "00000000-0000-4000-8000-000000000302";
+    const optionB = "00000000-0000-4000-8000-000000000303";
+    const testimonialId = "00000000-0000-4000-8000-000000000304";
+    const faqId = "00000000-0000-4000-8000-000000000305";
+    const widgets = {
+      ...defaultProfileWidgets,
+      guestbook: { ...defaultProfileWidgets.guestbook, enabled: true },
+      testimonials: { ...defaultProfileWidgets.testimonials, enabled: true, items: [
+        { id: testimonialId, quote: "Excellent work.", author: "Client", role: "Customer" },
+      ] },
+      poll: { ...defaultProfileWidgets.poll, enabled: true, id: pollId,
+        question: "Which widget should we add next?",
+        options: [{ id: optionA, label: "Guestbook" }, { id: optionB, label: "Polls" }],
+      },
+      faq: { ...defaultProfileWidgets.faq, enabled: true, items: [
+        { id: faqId, question: "How do I get in touch?", answer: "Use the contact link." },
+      ] },
+    };
+    const saveWidgets = (revision: number, value: unknown, publish: boolean) => result<number>(
+      "select public.save_profile($1::uuid,$2::integer,'Widget profile','Bio','lagoon',false,'[]'::jsonb,$4::boolean,false,'[]'::jsonb,'{\"density\":\"balanced\",\"corners\":\"soft\"}'::jsonb,'{\"title\":\"\",\"description\":\"\"}'::jsonb,$3::jsonb) as value",
+      [profileId, revision, JSON.stringify(value), publish],
+    );
+
+    await saveWidgets(0, widgets, true);
+    expect(await published("widget-sql")).toMatchObject({ widgets });
+    await saveWidgets(1, { ...widgets, faq: { ...widgets.faq, heading: "Updated questions" } }, false);
+    expect((await draft() as { widgets: typeof widgets }).widgets.faq.heading).toBe("Updated questions");
+    expect((await published("widget-sql") as { widgets: typeof widgets }).widgets.faq.heading).toBe("Frequently asked questions");
+
+    await act("authenticated", alice);
+    await result("select public.restore_publication($1::uuid,1,2) as value", [profileId]);
+    expect((await draft() as { widgets: typeof widgets }).widgets).toEqual(widgets);
+
+    const visitorHash = "a".repeat(64);
+    await act("service_role");
+    const entryId = await result<string>("select public.submit_profile_guestbook_entry('widget-sql','Visitor','A useful message', $1) as value", [visitorHash]);
+    expect(await result("select public.get_public_guestbook_entries('widget-sql',10) as value")).toEqual([]);
+    await act("authenticated", alice);
+    const queue = await result<Array<{ id: string; status: string; message: string }>>(
+      "select public.owner_guestbook_queue($1,10) as value", [profileId],
+    );
+    expect(queue).toMatchObject([{ id: entryId, status: "pending", message: "A useful message" }]);
+    expect(await result("select public.moderate_guestbook_entry($1,$2,'approved') as value", [profileId, entryId])).toBe(true);
+    await act("service_role");
+    expect(await result<Array<{ id: string; displayName: string; message: string }>>(
+      "select public.get_public_guestbook_entries('widget-sql',10) as value",
+    )).toMatchObject([{ id: entryId, displayName: "Visitor", message: "A useful message" }]);
+
+    const voteHash = "b".repeat(64);
+    const firstVote = await result<{ accepted: boolean; total: number }>(
+      "select public.submit_public_poll_vote('widget-sql',$1::uuid,$2::uuid,$3) as value",
+      [pollId, optionA, voteHash],
+    );
+    expect(firstVote).toMatchObject({ accepted: true, total: 1 });
+    const duplicateVote = await result<{ accepted: boolean; total: number }>(
+      "select public.submit_public_poll_vote('widget-sql',$1::uuid,$2::uuid,$3) as value",
+      [pollId, optionB, voteHash],
+    );
+    expect(duplicateVote).toMatchObject({ accepted: false, total: 1 });
+    expect(await result("select public.get_public_poll_results('widget-sql',$1::uuid,null) as value", [pollId])).toBeNull();
+    expect(await result("select public.get_public_poll_results('widget-sql',$1::uuid,$2) as value", [pollId, voteHash])).toMatchObject({ total: 1 });
+
+    await act("authenticated", bob);
+    await expect(db.query("select public.owner_guestbook_queue($1,10)", [profileId])).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.guestbook_entries")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(db.query("select public.submit_public_poll_vote('widget-sql',$1::uuid,$2::uuid,$3)", [pollId, optionA, "c".repeat(64)]))
+      .rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.poll_votes")).rejects.toMatchObject({ code: "42501" });
+  });
 
 });
