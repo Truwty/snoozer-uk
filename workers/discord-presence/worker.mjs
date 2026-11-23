@@ -22,20 +22,24 @@ const activityTypes = new Map([
   [5, "competing"],
 ]);
 
-export function normaliseGatewayPresence(discordUserId, presence, observedAt = new Date().toISOString()) {
+export function normaliseGatewayPresence(discordUserId, presence, observedAt = new Date().toISOString(), fields = {}) {
   if (!/^[1-9][0-9]{16,19}$/.test(discordUserId)) return null;
   const status = presence?.status === "invisible" ? "offline" : presence?.status;
   if (!["online", "idle", "dnd", "offline"].includes(status)) return null;
 
+  const showStatus = fields.showStatus ?? true;
+  const showActivity = fields.showActivity ?? true;
+  const showCustomStatus = fields.showCustomStatus ?? false;
   const activities = Array.isArray(presence?.activities) ? presence.activities.slice(0, 12) : [];
   let customStatus = null;
   let activity = null;
   for (const item of activities) {
     if (!item || typeof item !== "object") continue;
     if (item.type === 4) {
-      customStatus ??= cleanText(item.state, 128);
+      if (showCustomStatus) customStatus ??= cleanText(item.state, 128);
       continue;
     }
+    if (!showActivity) continue;
     const type = activityTypes.get(item.type);
     const name = cleanText(item.name, 100);
     if (!type || !name || activity) continue;
@@ -54,9 +58,9 @@ export function normaliseGatewayPresence(discordUserId, presence, observedAt = n
     type: "presence",
     eventId: randomUUID(),
     discordUserId,
-    status,
-    activity,
-    customStatus,
+    status: showStatus ? status : null,
+    activity: showActivity ? activity : null,
+    customStatus: showCustomStatus ? customStatus : null,
     observedAt,
   };
 }
@@ -91,7 +95,7 @@ export class DiscordPresenceWorker {
     this.WebSocketImpl = dependencies.WebSocketImpl ?? globalThis.WebSocket;
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
-    this.subscriptions = new Set();
+    this.subscriptions = new Map();
     this.pendingChunks = new Map();
     this.socket = null;
     this.heartbeatTimer = null;
@@ -137,13 +141,28 @@ export class DiscordPresenceWorker {
   async refreshSubscriptions() {
     try {
       const result = await this.post({ type: "subscriptions" });
-      const ids = Array.isArray(result?.discordUserIds)
-        ? result.discordUserIds.filter(id => /^[1-9][0-9]{16,19}$/.test(id))
-        : [];
-      const next = new Set(ids);
-      const added = ids.filter(id => !this.subscriptions.has(id));
+      const entries = Array.isArray(result?.subscriptions) ? result.subscriptions : [];
+      const next = new Map();
+      for (const entry of entries) {
+        if (!entry || !/^[1-9][0-9]{16,19}$/.test(entry.discordUserId)
+          || typeof entry.showStatus !== "boolean"
+          || typeof entry.showActivity !== "boolean"
+          || typeof entry.showCustomStatus !== "boolean") continue;
+        next.set(entry.discordUserId, {
+          showStatus: entry.showStatus,
+          showActivity: entry.showActivity,
+          showCustomStatus: entry.showCustomStatus,
+        });
+      }
+      const changed = [];
+      for (const [id, fields] of next) {
+        const previous = this.subscriptions.get(id);
+        if (!previous || previous.showStatus !== fields.showStatus
+          || previous.showActivity !== fields.showActivity
+          || previous.showCustomStatus !== fields.showCustomStatus) changed.push(id);
+      }
       this.subscriptions = next;
-      if (added.length && this.guildReady) void this.requestSnapshots(added);
+      if (changed.length && this.guildReady) void this.requestSnapshots(changed);
     } catch (error) {
       this.logger.error("[discord-presence] subscription refresh failed:", error?.message ?? error);
     }
@@ -156,8 +175,9 @@ export class DiscordPresenceWorker {
   }
 
   async sendPresence(discordUserId, presence) {
-    if (!this.subscriptions.has(discordUserId)) return;
-    const event = normaliseGatewayPresence(discordUserId, presence);
+    const fields = this.subscriptions.get(discordUserId);
+    if (!fields) return;
+    const event = normaliseGatewayPresence(discordUserId, presence, new Date().toISOString(), fields);
     if (!event) return;
     try {
       await this.post(event);
