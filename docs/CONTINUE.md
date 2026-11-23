@@ -4,7 +4,7 @@
 
 PR #87 fixed the Map-key snapshot bug and is live. PR #91 added recovery from transient initial projection errors, passed the full CI workflow and merged as `5501c9ed`. Render deployment `dep-dc1tjpdg1s2s73ecbk00` is live on the connected service, primary URL `https://snoozer.uk`. Render logs confirm health-check success, Discord Gateway READY, the configured shared guild, one opted-in subscription and a matching targeted member chunk. Supabase reports the worker ready and one fresh snapshot.
 
-**No further technical implementation remains for Feature #8.** The free Render worker may sleep; the ten-minute wake workflow is best-effort and no scheduled run has yet been observed. Written Discord confirmation for API Data display inside the wider SaaS is also not evidenced. Keep this external compliance position separate from the owner's accepted technical completion and do not claim Discord approval. See `docs/discord-presence.md`.
+The Terms and Privacy now explicitly separate Discord Presence from Snoozer's other paid subscriptions: paying for unrelated platform features does not buy or license Discord API Data, and Presence is not sold, Premium-gated, used for upselling or a condition of subscription. The wording does not claim Discord approval. **No further technical implementation remains for Feature #8.** The free Render worker may sleep; the ten-minute wake workflow is best-effort and no scheduled run has yet been observed. Written Discord confirmation for API Data display inside the wider SaaS is also not evidenced. Keep this external compliance position separate from the owner's accepted technical completion and do not claim Discord approval. See `docs/discord-presence.md`.
 ---
 
 ---
