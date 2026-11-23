@@ -78,7 +78,7 @@ create function public.save_profile(
   p_links jsonb, p_publish boolean, p_remove_avatar boolean, p_sections jsonb,
   p_appearance jsonb, p_seo jsonb, p_widgets jsonb
 ) returns integer
-language plpgsql security definer set search_path = '' as $
+language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
 declare saved integer;
 begin
@@ -93,7 +93,7 @@ begin
     p_sections,p_appearance,p_seo,p_widgets
   );
   return saved;
-end $;
+end $$;
 revoke execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb)
   from public, anon, authenticated, service_role;
 grant execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb)
