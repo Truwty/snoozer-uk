@@ -206,13 +206,13 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url }) => safeLink(url));
+    const hasProviderEmbed = (url: string) => Boolean(
+      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
+    );
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
       const mark = socialMark(url);
       return mark && !hasProviderEmbed(url) ? [{ label, url, index, mark }] : [];
     });
-    const hasProviderEmbed = (url: string) => Boolean(
-      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
-    );
     const regular = valid.filter(({ url }) => !socialMark(url) || hasProviderEmbed(url));
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
