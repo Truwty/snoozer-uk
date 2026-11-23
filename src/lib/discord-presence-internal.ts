@@ -75,7 +75,8 @@ export async function receiveDiscordPresenceInternal(
       const ok = await dependencies.clear(parsed.data.discordUserId, parsed.data.eventId);
       return response(ok ? 204 : 503);
     }
-    const event = discordPresenceEvent.parse(parsed.data);
+    const { type: _type, ...eventData } = parsed.data;
+    const event = discordPresenceEvent.parse(eventData);
     const ok = await dependencies.ingest(event);
     return response(ok ? 204 : 503);
   } catch {
