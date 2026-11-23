@@ -698,7 +698,9 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
+    await page.goto("/studio/builder");
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });
     const workspace = page.locator("main.studio-shell");
@@ -766,9 +768,21 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.locator(".public-page .profile-block-project a")).toHaveAttribute("href", "https://portfolio.example.org/work");
 
     await page.goto("/studio");
+    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 360, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+    await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await expect(page.locator(".preview-card")).toBeVisible();
+
+    await page.goto("/studio/customize");
+    await expect(page.getByRole("heading", { name: "Customize", exact: true })).toBeVisible();
+    await expect(page.locator(".editor-grid.panel-only")).toBeVisible();
+    await expect(page.locator(".editor-grid.panel-only .editor-sidebar")).toBeHidden();
+    await expect(page.locator(".preview-card")).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
