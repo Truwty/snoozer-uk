@@ -19,7 +19,7 @@ The feature is free for all account tiers. Presence data is not a Premium entitl
 - The worker filters Gateway events to those IDs and only serialises the fields enabled by at least one of their published profiles.
 - Custom status is not extracted or sent to Snoozer unless the creator explicitly enables it.
 - Activity payloads are reduced to type, name, details and state. Application IDs, assets, buttons, URLs, party secrets, join secrets, message content, server messages, friends and private channels are not stored.
-- Snoozer stores a single current snapshot, not a presence history. Snapshots expire after ten minutes and are refreshed every five minutes while the worker is connected.
+- Snoozer stores a single current snapshot, not a presence history. Snapshots are no longer served after ten minutes without a refresh and are physically purged on the next worker sync; they are refreshed every five minutes while the worker is connected.
 - The public projection is unavailable if the worker heartbeat is older than 90 seconds, the shared guild is unavailable, the snapshot has expired, the profile is unpublished or consent is disabled.
 - Disconnect removes the identity mapping and cache. Disabling the last published presence profile or unpublishing the last enabled profile prunes the cache. Account deletion cascades to the mapping, snapshot and event-deduplication records.
 - The account data archive includes the Discord presence connection and profile settings.
