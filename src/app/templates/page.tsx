@@ -37,7 +37,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
         <p className="eyebrow">EXAMPLE · {template.id}</p>
         <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{ seo: { title: "", description: "" },
           username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
-          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
+          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], widgets: defaultProfileWidgets, links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
         }} />
         <Link className="button primary" href={`/studio?template=${template.id}`}>Use this template</Link>
       </li>)}
