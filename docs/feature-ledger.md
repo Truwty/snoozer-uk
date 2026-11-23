@@ -70,8 +70,8 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 7.1 | Drag-And-Drop Blocks | Studio section and link reordering verified with mouse and emulated touch in disposable Supabase CI. Other block groups remain open |
-| 7.2 | Keyboard-Accessible Reorder | Partially implemented |
+| 7.1 | Drag-And-Drop Blocks | Studio section/link reordering and native typed block drag-to-add/reorder covered by the Studio browser journey; this redesign PR adds explicit drag-to-add persistence coverage |
+| 7.2 | Keyboard-Accessible Reorder | Move-up/move-down alternatives for page content remain available alongside pointer/touch drag controls |
 | 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
 | 7.5 | Draft Versus Published State | Tested locally |
@@ -79,11 +79,11 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 7.7 | Live Responsive Preview | Tested in disposable CI for live preview, with matching Studio and public card measurements at 320 and 375 px |
 | 7.8 | Snap-To-Grid Where Applicable | Deferred |
 | 7.9 | Global Design Tokens | Partially implemented |
-| 7.10 | Per-Block Overrides | Deferred |
+| 7.10 | Per-Block Overrides | Typed profile blocks support bounded width, alignment and presentation variants; arbitrary per-block CSS remains intentionally unsupported |
 | 7.11 | Theme Presets | Partially implemented |
 | 7.12 | Copy And Paste Styles | Versioned appearance transfer and undo verified in disposable Supabase CI |
 | 7.13 | Template Import With Asset Attribution | Deferred |
-| 7.14 | Component Lock And Hide | Section visibility and locking verified in disposable Supabase CI |
+| 7.14 | Component Lock And Hide | Sections and native content blocks support visibility and lock controls; locked blocks are read-only and hidden blocks remain in private history but are omitted publicly |
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Retained image reuse verified in disposable Supabase CI |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
@@ -103,7 +103,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 8.8 | Professional Business Card | Deferred |
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
-| 8.11 | Custom Sections | Text, callout and quote sections verified in disposable Supabase CI for preview, publication and restore |
+| 8.11 | Custom Sections | Text/callout/quote sections plus ten typed native profile block types are supported; custom block draft, public snapshot, hidden filtering and restore are covered by database tests |
 | 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing, corner, layout and link accent values verified in disposable Supabase CI |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
