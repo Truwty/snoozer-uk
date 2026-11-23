@@ -1,27 +1,30 @@
-## Feature #29 — Interactive Profile Widgets release checklist (23 November 2026)
+## Feature #29 — Interactive Profile Widgets (completed 23 November 2026)
 
-**Current branch:** `feature/interactive-profile-widgets`  
-**Pull request:** #93 → `main`  
-**Last implementation commit at this note:** `87ff6a8` (strict public poll-results response fix)
+<badge>Completed — merged and deployed to staging</badge>
 
-### Before merge
-1. Confirm a new full CI run is attached to the latest PR head. Required green checks: secret scan, dependency audit, lint, TypeScript, unit/database tests, disposable Supabase startup, production build, Chromium install and the complete Playwright suite. The prior E2E run failed only because the browser's strict poll response schema rejected the internal `accepted` boolean; the API now strips that field from successful and duplicate-vote result payloads.
-2. If CI exposes another failure, fix it on this branch and rerun the entire suite. Keep PR #92 and unrelated main-branch work untouched.
-3. Review the updated Terms and Privacy passages, including the clarification that Guestbook account notifications are generic and email delivery is conditional on the separate dispatcher being configured and enabled.
-4. Update this file and `docs/PROGRESS.md` with the final CI run ID/result before merging.
+**Release identifiers**
+- PR [#93](https://github.com/Truwty/snoozer-uk/pull/93), merged to `main`
+- Merge commit: `ef83846a7fe8fc6d4b8ff00e114ac8b08ad454bf`
+- CI run [#724](https://github.com/Truwty/snoozer-uk/actions/runs/45149332149): success on tested head `9698ee306c93f246dfde9235cae747d9bb08d3c0`
+- Supabase project `edgptbiwswcdmmxzwhxv`: migration `interactive_profile_widgets` recorded as version `20261123094933`
+- Render service `srv-dbts6jon74is73en2rjg`: deployment `dep-dc20oeh42hec738m1rag`, status `live`, commit `ef83846`
 
-### Merge and release
-1. Merge PR #93 only when the latest commit is green and GitHub reports it mergeable. Verify the merged commit is on `main`.
-2. Apply `supabase/migrations/20261123030000_interactive_profile_widgets.sql` to Supabase project `edgptbiwswcdmmxzwhxv` using the approved migration workflow. Verify migration version `20261123030000` is recorded and inspect the new RLS/execute grants; do not expose the private widget tables to anon or authenticated direct table access.
-3. Render staging service `srv-dbts6jon74is73en2rjg` has `autoDeploy=no`; trigger a manual deployment after the migration is applied. Verify the deployment is Live and points to the merged `main` commit.
-4. Verify the Render service logs contain no startup or database errors. Smoke-test a published profile with FAQ, Testimonials, Poll and Guestbook enabled; submit a pending Guestbook note, approve it in Studio, vote once and check results privacy, and open the canonical report form for an approved message.
-5. Recheck public profile rendering and existing profile/Studio functionality. Do not claim production verification beyond the staging service actually exercised.
+### Verified
+- CI secret scan, dependency audit, ESLint, TypeScript, unit/database tests, disposable Supabase startup, production build and Chromium install all passed.
+- Unit/database tests: **314 passed**.
+- Browser E2E: **65 passed, 1 skipped**.
+- Render build/deploy events succeeded; the application logged `Ready` and Render logged `Web service health check passed`.
+- Post-deploy Render application log query returned no warning/error entries.
+- Terms, Privacy and `docs/profile-widgets.md` include the final widget, reporting, privacy, retention and conditional email-notice disclosures.
+- Render auto-deploy is still disabled; the release was deployed manually.
 
-### Deployment safeguards
-- Do not apply the new migration before the merge and green CI.
-- Do not turn on automatic Render deploys; the service is intentionally configured for manual deploys.
-- Do not enable the separate Guestbook email notification dispatcher as part of this release. Generic in-app notices work independently; outbound email remains subject to its existing explicit configuration and acceptance process.
+### Remaining manual observation
+The service is deployed and its platform health check passed, but a direct HTTP request from the execution environment could not resolve the Render hostname, and Render's free-plan HTTP metrics were empty. Do not describe this as an independently completed public-browser smoke test. A final owner-side check on the live profile can confirm the widgets render correctly with a real account. The automated Playwright suite already covers the complete visitor flow, including publishing, Guestbook pending/approval, voting, result privacy and message reporting.
 
+### Operational notes
+- Do not enable the separate email notification dispatcher as part of this feature; generic in-app notices work independently and email remains conditional on its existing explicit configuration/acceptance process.
+- Keep Render auto-deploy disabled unless the owner changes that deployment policy.
+- The feature implementation has no remaining code/CI blockers.
 ---
 
 ## Feature #8 — Discord Presence (23 Nov 2026)
