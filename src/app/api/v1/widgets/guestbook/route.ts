@@ -10,7 +10,7 @@ import { boundedBody } from "@/lib/bounded-request";
 export const dynamic = "force-dynamic";
 const submitSchema = z.strictObject({
   username: usernameSchema, displayName: z.string().trim().min(1).max(80),
-  message: z.string().trim().min(3).max(500), visitorToken: z.uuid(),
+  message: z.string().trim().min(3).max(500), visitorToken: z.uuid(), website: z.string().max(200).optional(),
 });
 const reply = (body: unknown, status = 200) => Response.json(body, {
   status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
   } catch { return reply({ error: "Invalid request." }, 400); }
   const parsed = submitSchema.safeParse(raw);
   if (!parsed.success) return reply({ error: "Check your name and message." }, 400);
+  if (parsed.data.website?.trim()) return reply({ accepted: true }, 202);
   if (domain && domain.username !== parsed.data.username) return reply({ error: "Profile unavailable." }, 404);
   try {
     const { data, error } = await storageAdmin().rpc("submit_profile_guestbook_entry", {
