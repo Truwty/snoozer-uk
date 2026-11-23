@@ -28,7 +28,7 @@ import { usePointerReorder } from "./use-pointer-reorder";
 import { moveProfilePageElement, normalizeProfilePageLayout, remapProfileSectionPositions, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 
 type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq"
-  | ProfileBlock["type"];
+  | ProfileBlock["type"] | "block-callout" | "block-quote";
 
 const blockLibrary: { id: BuilderBlock; label: string; description: string; symbol: string }[] = [
   { id: "text", label: "Text", description: "A heading and paragraph", symbol: "Aa" },
@@ -47,6 +47,8 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "divider", label: "Divider", description: "Separate page content", symbol: "—" },
   { id: "countdown", label: "Countdown", description: "Count down to a date", symbol: "◷" },
   { id: "stats", label: "Statistics", description: "Show key numbers", symbol: "#" },
+  { id: "block-callout", label: "Callout block", description: "Add a styled native callout", symbol: "!" },
+  { id: "block-quote", label: "Quote block", description: "Add a styled quotation", symbol: "“" },
 ];
 
 export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
@@ -173,14 +175,17 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   }
 
   function addBlock(kind: BuilderBlock) {
-    if (kind === "heading" || kind === "about" || kind === "project" || kind === "skills"
-      || kind === "cta" || kind === "divider" || kind === "countdown" || kind === "stats") {
+    const nativeType: ProfileBlock["type"] | null = kind === "block-callout" ? "callout"
+      : kind === "block-quote" ? "quote"
+      : ["heading", "about", "project", "skills", "cta", "divider", "countdown", "stats"].includes(kind)
+        ? kind as ProfileBlock["type"] : null;
+    if (nativeType) {
       if (content.blocks.length >= 32) {
         setTab("Blocks");
         setAnnouncement("Your page already has the maximum of 32 custom blocks.");
         return;
       }
-      const block = makeProfileBlock(kind);
+      const block = makeProfileBlock(nativeType);
       set("blocks", [...content.blocks, block]);
       setTab("Blocks");
       setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added. Edit it in the Blocks panel.");
