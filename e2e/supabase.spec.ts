@@ -68,6 +68,7 @@ test("profile analytics requires consent, counts published link clicks and expor
   const profileLinks = [
     { label: "Work", url: "https://example.com/" },
     { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
+    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
     { label: "Repository", url: `https://github.com/${githubResource}` },
     { label: "Community", url: `https://discord.gg/${discordInvite}` },
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
@@ -165,6 +166,25 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
     await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
     await expect(publicPage.locator("iframe")).toHaveCount(0);
+    // Spotify requires no app credentials. Its iframe is opt-in, not an
+    // automatic tracking request or an analytics-consent side effect.
+    let spotifyRequests = 0;
+    await expect(publicPage.getByRole("button", { name: "Load Spotify player" })).toBeVisible();
+    expect(spotifyRequests).toBe(0);
+    await publicPage.route("https://open.spotify.com/embed/**", (route) => {
+      spotifyRequests++;
+      return route.abort();
+    });
+    await publicPage.getByRole("button", { name: "Load Spotify player" }).click();
+    const spotify = publicPage.getByTitle("Spotify: Playlist");
+    await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
+    await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin");
+    await spotify.scrollIntoViewIfNeeded();
+    await expect.poll(() => spotifyRequests).toBe(1);
+    await publicPage.getByRole("button", { name: "Hide Spotify player" }).click();
+    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    await expect(publicPage.getByRole("link", { name: "Playlist · Spotify", exact: false }))
+      .toHaveAttribute("href", /open\.spotify\.com\/playlist\/37i9dQZF1DXcBWIGoYBM5M/);
     expect(events).toHaveLength(2); // embed consent does not enable analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
 
