@@ -69,7 +69,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
     className="discord-presence-badge"
     data-status={state}
     data-state={presence.state}
-    data-tooltip={tooltip}
+    title={tooltip}
     role="img"
     aria-label={`Discord status: ${label}`}
     tabIndex={0}
