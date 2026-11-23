@@ -97,7 +97,9 @@ export class DiscordPresenceWorker {
     this.heartbeatTimer = null;
     this.subscriptionTimer = null;
     this.snapshotTimer = null;
+    this.workerHeartbeatTimer = null;
     this.reconnectTimer = null;
+    this.pendingSnapshotIds = new Set();
     this.heartbeatInterval = 45_000;
     this.heartbeatOutstanding = false;
     this.connected = false;
@@ -173,7 +175,12 @@ export class DiscordPresenceWorker {
   }
 
   async requestSnapshots(userIds) {
-    if (this.snapshotRunning || !this.guildReady || this.socket?.readyState !== 1 || userIds.length === 0) return;
+    if (userIds.length === 0) return;
+    if (this.snapshotRunning) {
+      for (const id of userIds) if (this.subscriptions.has(id)) this.pendingSnapshotIds.add(id);
+      return;
+    }
+    if (!this.guildReady || this.socket?.readyState !== 1) return;
     this.snapshotRunning = true;
     try {
       for (const batch of chunks([...new Set(userIds)].filter(id => this.subscriptions.has(id)), MAX_USER_IDS_PER_REQUEST)) {
@@ -192,6 +199,9 @@ export class DiscordPresenceWorker {
       }
     } finally {
       this.snapshotRunning = false;
+      const queued = [...this.pendingSnapshotIds];
+      this.pendingSnapshotIds.clear();
+      if (queued.length && this.guildReady && !this.stopped) void this.requestSnapshots(queued);
     }
   }
 
@@ -246,6 +256,11 @@ export class DiscordPresenceWorker {
       case "GUILD_DELETE":
         if (data.id === this.config.guildId) {
           this.guildReady = false;
+          if (!data.unavailable) {
+            this.sessionId = null;
+            this.sequence = null;
+            this.resumeUrl = null;
+          }
           await this.heartbeat(this.connected, false);
         }
         break;
@@ -372,14 +387,16 @@ export class DiscordPresenceWorker {
     await this.refreshSubscriptions();
     this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
     this.snapshotTimer = setInterval(() => void this.requestSnapshots([...this.subscriptions]), SNAPSHOT_REFRESH_MS);
+    this.workerHeartbeatTimer = setInterval(() => void this.heartbeat(this.connected, this.guildReady), HEARTBEAT_INTERVAL_MS);
     this.connect();
   }
 
   async stop() {
     this.stopped = true;
-    for (const timer of [this.subscriptionTimer, this.snapshotTimer, this.reconnectTimer]) if (timer) clearInterval(timer);
+    for (const timer of [this.subscriptionTimer, this.snapshotTimer, this.workerHeartbeatTimer, this.reconnectTimer]) if (timer) clearInterval(timer);
     this.subscriptionTimer = null;
     this.snapshotTimer = null;
+    this.workerHeartbeatTimer = null;
     this.reconnectTimer = null;
     this.stopHeartbeat();
     this.socket?.close(1000, "Worker shutting down");
