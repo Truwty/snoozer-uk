@@ -116,6 +116,9 @@ begin
     or p_show_activity is null or p_show_custom_status is null then
     raise exception 'Invalid presence settings' using errcode='22023';
   end if;
+  if p_enabled and not (p_show_status or p_show_activity or p_show_custom_status) then
+    raise exception 'Choose at least one Discord presence field to share' using errcode='22023';
+  end if;
   if not exists (select 1 from snoozer.profiles where id=p_profile and owner_id=actor) then
     raise exception 'Profile not found' using errcode='42501';
   end if;
@@ -285,7 +288,7 @@ language plpgsql security definer set search_path = '' as $$
 begin
   if p_event_id is null or p_discord_user_id is null
     or p_discord_user_id !~ '^[1-9][0-9]{16,19}$'
-    or p_status not in ('online','idle','dnd','offline')
+    or p_status is null or p_status not in ('online','idle','dnd','offline')
     or p_observed_at is null
     or p_observed_at > now()+interval '30 seconds'
     or p_observed_at < now()-interval '5 minutes'
@@ -293,11 +296,13 @@ begin
     or (p_activity is not null and (
       jsonb_typeof(p_activity)<>'object'
       or octet_length(p_activity::text)>1024
+      or p_activity->>'type' is null
       or p_activity->>'type' not in ('playing','streaming','listening','watching','competing')
+      or p_activity->>'name' is null
       or char_length(coalesce(p_activity->>'name','')) not between 1 and 100
       or char_length(coalesce(p_activity->>'details',''))>120
       or char_length(coalesce(p_activity->>'state',''))>120
-      or exists(select 1 from jsonb_object_keys(p_activity) k where k not in ('type','name','details','state'))
+      or exists(select 1 from jsonb_object_keys(p_activity) as keys(key) where key not in ('type','name','details','state'))
     )) then
     raise exception 'Invalid Discord presence event' using errcode='22023';
   end if;
