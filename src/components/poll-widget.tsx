@@ -19,7 +19,7 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
   const [notice, setNotice] = useState("");
   const [timeClosed, setTimeClosed] = useState(false);
   const isClosed = !open || timeClosed;
-  const showResults = showResultsBeforeVote || voted;
+  const showResults = showResultsBeforeVote || voted || isClosed;
 
   useEffect(() => {
     if (!closesAt) return;
@@ -42,9 +42,9 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
         if (!controller.signal.aborted) setNotice("Poll results are temporarily unavailable.");
       }
     }
-    if (showResultsBeforeVote) void loadResults();
+    if (showResultsBeforeVote || isClosed) void loadResults();
     return () => controller.abort();
-  }, [username, pollId, showResultsBeforeVote]);
+  }, [username, pollId, showResultsBeforeVote, isClosed]);
 
   async function revealPreviousVote() {
     let hasVoted = false;
