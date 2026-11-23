@@ -13,14 +13,17 @@ import { PublicMetadataWidget } from "./public-metadata-widget";
 import { TwitchWidget } from "./twitch-widget";
 import { ProfileEffectsLayer } from "./profile-effects";
 import { defaultEffects } from "@/lib/profile-effects";
+import { DiscordPresenceWidget } from "./discord-presence-widget";
+import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
   preview?: boolean;
   previewLabel?: string;
   ownerBadge?: boolean;
+  discordPresence?: DiscordPresencePublic | null;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
@@ -103,6 +106,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
+      {!preview && discordPresence && <DiscordPresenceWidget username={profile.username} initialPresence={discordPresence} />}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">
