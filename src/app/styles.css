@@ -1415,3 +1415,15 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (prefers-reduced-motion: reduce) {
   .block-library-item { transition: none; }
 }
+
+.studio-root > main.shell:not(.studio-shell) {
+  width: min(100% - 2.5rem, 120rem);
+  margin-inline: auto;
+  padding-block: 1.1rem 2.5rem;
+}
+@media (max-width: 54rem) {
+  .studio-root > main.shell:not(.studio-shell) {
+    width: min(100% - 1.25rem, 100%);
+    padding-top: .5rem;
+  }
+}
