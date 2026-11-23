@@ -276,7 +276,12 @@ begin
  insert into snoozer.account_notifications(user_id,kind,title,body)
    select p.owner_id,'guestbook_message','New guestbook message',
      'A visitor left a message in your Guestbook. Review it in Studio.'
-   from snoozer.profiles p where p.id=v_profile_id;
+   from snoozer.profiles p where p.id=v_profile_id
+     and not exists (
+       select 1 from snoozer.account_notifications n
+       where n.user_id=p.owner_id and n.kind='guestbook_message'
+         and n.created_at>now()-interval '1 hour'
+     );
  return entry_id;
 end $$;
 
