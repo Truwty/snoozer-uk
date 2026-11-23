@@ -1071,7 +1071,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("background-color", "rgb(37, 52, 95)");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("color", "rgb(255, 255, 255)");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("text-align", "start");
-    await expect(publicPage.locator(".profile-inner")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
+    await expect(publicPage.locator(".profile-identity")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-density", "compact");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("border-radius", "0px");
     await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
