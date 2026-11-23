@@ -34,7 +34,7 @@ The feature is free for all account tiers. Presence data is not a Premium entitl
 1. Supabase Auth supplies the verified Discord identity. A user-provided Discord ID is never accepted as proof of ownership.
 2. A dedicated Node worker connects to Discord Gateway v10 using only the `GUILDS` and privileged `GUILD_PRESENCES` intents.
 3. The bot must be a member of the shared Snoozer Discord server. A creator must also be a member of that server.
-4. The worker requests targeted snapshots for opted-in user IDs (batches of at most 100) and listens for `PRESENCE_UPDATE` events. It does not request the full guild member list and does not request Message Content or the Guild Members intent.
+4. The worker requests targeted snapshots for opted-in user IDs only (batches of at most 100 using the Gateway `user_ids` field) and listens for `PRESENCE_UPDATE` events. It never requests the full guild member list and does not request Message Content or the Guild Members intent. Discord documents that the Guild Members intent is required for full-list member requests, while the Presence intent is required to include presence payloads. See [Request Guild Members](https://docs.discord.com/developers/events/gateway-events#request-guild-members).
 5. The worker signs internal requests with HMAC-SHA256. Snoozer checks the timestamp, exact request body and signature before accepting any update.
 6. Private Supabase tables have RLS enabled and no direct grants. Narrow RPCs enforce account ownership or service-role-only worker access.
 7. Public profiles call a read-only projection that returns only the creator-selected fields.
