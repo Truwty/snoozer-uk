@@ -1090,3 +1090,52 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .discord-presence-card { padding: .7rem .72rem .64rem; }
   .discord-presence-state { max-width: 44%; padding-inline: .4rem; font-size: .63rem; }
 }
+
+
+/* Interactive profile widgets */
+.profile-widgets { display: grid; gap: 1rem; width: 100%; margin-top: 1.4rem; text-align: left; }
+.profile-widget { min-width: 0; display: grid; gap: .8rem; padding: 1rem; border: 1px solid color-mix(in srgb, var(--detail) 22%, transparent); background: color-mix(in srgb, var(--page) 42%, transparent); }
+.profile-widget h2 { font-size: clamp(1.05rem, 2vw, 1.35rem); letter-spacing: -.02em; }
+.profile-widget-description { color: var(--detail); font-size: .88rem; }
+.profile-widget .muted { color: var(--detail); font-size: .82rem; }
+.testimonial-list { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit,minmax(min(100%,15rem),1fr)); }
+.testimonial-list figure { margin: 0; padding: .85rem; border-left: 2px solid color-mix(in srgb,var(--detail) 60%,transparent); background: color-mix(in srgb,var(--page) 45%,transparent); }
+.testimonial-list blockquote { margin: 0; }
+.testimonial-list figcaption { display: grid; gap: .08rem; margin-top: .7rem; font-size: .82rem; }
+.testimonial-list figcaption span { color: var(--detail); font-size: .76rem; }
+.profile-faq details { border-top: 1px solid color-mix(in srgb,var(--detail) 22%,transparent); padding-top: .6rem; }
+.profile-faq summary { cursor: pointer; font-weight: 650; min-height: 2.5rem; display: flex; align-items: center; }
+.profile-faq-answer { padding: .35rem 0 .55rem; color: var(--detail); overflow-wrap: anywhere; }
+.guestbook-entries { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+.guestbook-entries li { padding: .7rem 0; border-top: 1px solid color-mix(in srgb,var(--detail) 20%,transparent); overflow-wrap: anywhere; }
+.guestbook-entries footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; color: var(--detail); font-size: .75rem; }
+.guestbook-form { padding-top: .6rem; border-top: 1px solid color-mix(in srgb,var(--detail) 20%,transparent); }
+.guestbook-form label,.profile-widgets-editor label { display: grid; gap: .35rem; }
+.guestbook-form input,.guestbook-form textarea,.profile-widgets-editor input,.profile-widgets-editor textarea,.profile-widgets-editor select { width: 100%; min-width: 0; border: 1px solid color-mix(in srgb,var(--detail) 30%,transparent); background: var(--page); color: var(--ink); padding: .65rem .72rem; }
+.guestbook-form textarea,.profile-widgets-editor textarea { resize: vertical; }
+.poll-options { display: flex; flex-wrap: wrap; gap: .5rem; }
+.poll-options .is-selected { border-color: var(--accent); }
+.poll-results { display: grid; gap: .7rem; }
+.poll-result { display: grid; gap: .28rem; }
+.poll-result-label { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .4rem; font-size: .82rem; }
+.poll-result-track { height: .45rem; border-radius: 99px; overflow: hidden; background: color-mix(in srgb,var(--detail) 20%,transparent); }
+.poll-result-track span { display: block; height: 100%; background: var(--accent); transition: width .2s ease; }
+.widget-preview-note { color: var(--detail); font-size: .82rem; }
+.profile-widgets-editor { width: 100%; }
+.profile-widgets-editor fieldset { min-width: 0; }
+.widget-config-card { border: 1px solid var(--line); padding: 1rem; }
+.widget-config-card > legend { font-weight: 700; padding-inline: .25rem; }
+.widget-item-editor { padding: .8rem; border: 1px solid var(--line); }
+.widget-item-editor h3 { font-size: .95rem; }
+.widget-option-editor { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: .6rem; }
+.widget-order-list { margin: 0; padding-left: 1.4rem; display: grid; gap: .6rem; }
+.widget-order-list li { display: flex; justify-content: space-between; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.guestbook-moderation-list { display: grid; gap: 1rem; }
+.widget-status { text-transform: uppercase; letter-spacing: .06em; color: var(--detail); font-size: .7rem; }
+@media (max-width: 420px) {
+  .profile-widget { padding: .75rem; }
+  .widget-option-editor { grid-template-columns: 1fr; align-items: stretch; }
+}
+@media (prefers-reduced-motion: reduce) { .poll-result-track span { transition: none; } }
+
+.widget-honeypot { position: absolute !important; left: -10000px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { defaultAppearance, type PublishedProfile } from "@/lib/profile";
 import { ProfileCard } from "./profile-card";
+import { defaultProfileWidgets } from "@/lib/profile-widgets";
 
 const themes = [
   { value: "midnight", label: "Midnight" },
@@ -27,6 +28,7 @@ export function HomeProfileDemo() {
       theme,
       indexable: false,
       avatar: null,
+      widgets: defaultProfileWidgets,
       appearance: { ...defaultAppearance, layout },
       gallery: [],
       links: [

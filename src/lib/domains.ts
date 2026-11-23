@@ -8,12 +8,13 @@ export const domainVerificationMarker = "snoozer-domain-v1";
 export const domainChallenge = z.string().regex(/^snoozer-domain=[0-9a-f-]{36}$/);
 
 export function domainRoute(path: string, method: string, username: string) {
-  if (method === "POST") return ["/api/v1/analytics/view", "/api/v1/widgets/public"].includes(path);
+  if (method === "POST") return ["/api/v1/analytics/view", "/api/v1/widgets/public", "/api/v1/widgets/guestbook", "/api/v1/widgets/poll"].includes(path);
   if (!["GET", "HEAD"].includes(method)) return false;
   return path === "/" || path === "/.well-known/snoozer-domain" || path === "/icon.svg"
     || new RegExp("^/media/(?:avatar|gallery)/" + username + "/[0-9a-f-]{36}$").test(path)
     || path === "/media/profile-card/" + username
-    || path === "/api/v1/discord/presence";
+    || path === "/api/v1/discord/presence"
+    || path === "/api/v1/widgets/guestbook" || path === "/api/v1/widgets/poll";
 }
 
 export function publicIPv4(value: string) {

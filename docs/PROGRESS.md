@@ -1,3 +1,23 @@
+## Feature #29 — Interactive Profile Widgets (23 November 2026)
+
+**Implementation:** PR #93, branch `feature/interactive-profile-widgets`. The implementation adds four creator-configurable widgets to Snoozer profiles: FAQ (up to 10 entries), creator-curated Testimonials (up to 6), Polls (2–6 choices) and a moderated Guestbook. Studio controls enablement, content and display order. Configuration is saved with the profile draft, snapshotted into immutable publication revisions and restored through the existing publication-history path. Basic widgets are available on all profile plans.
+
+**Visitor and moderation behaviour:**
+- Guestbook messages are held as pending until the profile owner approves them. Owners can approve, reject or delete messages in Studio.
+- Visitors can report individual approved Guestbook messages. Reports require a verified account, use the existing Owner moderation queue, reject self-reports and limit each account to three reports per rolling 24 hours (with duplicate same-entry reports suppressed).
+- Polls enforce one vote per per-poll browser token at the database boundary. Only the token hash is stored. Results are hidden until the visitor has voted unless the creator enables pre-vote results; results become public when a poll closes.
+- FAQ and Testimonials render as plain text / native disclosure components; no arbitrary visitor HTML or scripts are accepted.
+
+**Security and privacy:** widget configuration and visitor interaction tables are private under RLS. Public interaction APIs use bounded JSON requests, strict validation and server-side database functions. Guestbook submissions include a honeypot and per-browser / platform rate limits. A generic account notification is created for the profile owner; email notification is conditional on the separate, explicitly enabled notification dispatcher, and no visitor message or moderation details are included in notices. Privacy Policy and Terms explain message moderation, poll limitations, per-browser token limitations, report processing and conditional notification delivery.
+
+**Documentation:** `docs/profile-widgets.md` describes creator and visitor behaviour, privacy, moderation, voting limitations and retention. The Help Centre article is `docs/profile-widgets.md` (feature guide).
+
+**Validation history:** CI run #716 on the previous branch head passed secret scanning, dependency audit, ESLint, TypeScript, unit/database migrations, disposable Supabase startup, production build and Chromium installation. The 66-test Playwright suite recorded 64 passed, 1 skipped and 1 failed: the vote API returned an internal `accepted` flag not allowed by the browser's strict public-results schema. That response mismatch is corrected in commit `87ff6a8` by returning only `pollId`, `total` and `counts` to the browser (the internal flag still controls duplicate-vote status). A fresh full CI run on the corrected head is required before merge; do not treat the earlier E2E result as a pass.
+
+**Release state:** PR #93 is open and not merged. The hosted Supabase project has not yet received migration `20261123030000_interactive_profile_widgets`. Render staging (`snoozer-uk-staging`, service `srv-dbts6jon74is73en2rjg`) still runs the older `main` deployment and has automatic deploys disabled. Apply the migration and manually deploy only after the final CI run is fully green and PR #93 is merged.
+
+---
+
 ## Feature #8 — Discord Presence (23 Nov 2026)
 
 The core integration is merged: PR #80 introduced consent-based Discord identity linking, per-profile field permissions, private cache, signed worker ingestion, public projection, Studio controls, account export and the Gateway worker; PR #81 added the event-owner index. Migrations `20261123024924_discord_presence` and `20261123025021_discord_presence_event_owner_index` are applied. Private tables have RLS enabled and no direct application-role grants; public reads go through a restricted projection RPC.

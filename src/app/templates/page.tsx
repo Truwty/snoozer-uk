@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { ProfileCard } from "@/components/profile-card";
+import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileLayouts, themes } from "@/lib/profile";
 import { findTemplates, templateFilters } from "@/lib/studio-templates";
@@ -37,7 +38,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
         <p className="eyebrow">EXAMPLE · {template.id}</p>
         <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{ seo: { title: "", description: "" },
           username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
-          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
+          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, gallery: [], widgets: defaultProfileWidgets, links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
         }} />
         <Link className="button primary" href={`/studio?template=${template.id}`}>Use this template</Link>
       </li>)}

@@ -77,6 +77,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_sections: content.sections.map((section) => ({ ...section, hidden: section.hidden ?? false, locked: section.locked ?? false })),
     p_publish: intent === "publish",
     p_remove_avatar: removeAvatar,
+    p_widgets: content.widgets,
   });
   if (error?.code === "P1010") return { status: "error", message: "These effects require a higher plan or exceed your plan’s limits." };
   if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };

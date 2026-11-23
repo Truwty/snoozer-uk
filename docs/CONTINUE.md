@@ -1,3 +1,29 @@
+## Feature #29 — Interactive Profile Widgets release checklist (23 November 2026)
+
+**Current branch:** `feature/interactive-profile-widgets`  
+**Pull request:** #93 → `main`  
+**Last implementation commit at this note:** `87ff6a8` (strict public poll-results response fix)
+
+### Before merge
+1. Confirm a new full CI run is attached to the latest PR head. Required green checks: secret scan, dependency audit, lint, TypeScript, unit/database tests, disposable Supabase startup, production build, Chromium install and the complete Playwright suite. The prior E2E run failed only because the browser's strict poll response schema rejected the internal `accepted` boolean; the API now strips that field from successful and duplicate-vote result payloads.
+2. If CI exposes another failure, fix it on this branch and rerun the entire suite. Keep PR #92 and unrelated main-branch work untouched.
+3. Review the updated Terms and Privacy passages, including the clarification that Guestbook account notifications are generic and email delivery is conditional on the separate dispatcher being configured and enabled.
+4. Update this file and `docs/PROGRESS.md` with the final CI run ID/result before merging.
+
+### Merge and release
+1. Merge PR #93 only when the latest commit is green and GitHub reports it mergeable. Verify the merged commit is on `main`.
+2. Apply `supabase/migrations/20261123030000_interactive_profile_widgets.sql` to Supabase project `edgptbiwswcdmmxzwhxv` using the approved migration workflow. Verify migration version `20261123030000` is recorded and inspect the new RLS/execute grants; do not expose the private widget tables to anon or authenticated direct table access.
+3. Render staging service `srv-dbts6jon74is73en2rjg` has `autoDeploy=no`; trigger a manual deployment after the migration is applied. Verify the deployment is Live and points to the merged `main` commit.
+4. Verify the Render service logs contain no startup or database errors. Smoke-test a published profile with FAQ, Testimonials, Poll and Guestbook enabled; submit a pending Guestbook note, approve it in Studio, vote once and check results privacy, and open the canonical report form for an approved message.
+5. Recheck public profile rendering and existing profile/Studio functionality. Do not claim production verification beyond the staging service actually exercised.
+
+### Deployment safeguards
+- Do not apply the new migration before the merge and green CI.
+- Do not turn on automatic Render deploys; the service is intentionally configured for manual deploys.
+- Do not enable the separate Guestbook email notification dispatcher as part of this release. Generic in-app notices work independently; outbound email remains subject to its existing explicit configuration and acceptance process.
+
+---
+
 ## Feature #8 — Discord Presence (23 Nov 2026)
 
 Core implementation and migrations are merged in PR #80 and PR #81. The minimal profile badge, 8-second no-store refresh, Terms/Privacy disclosure and native non-clipped hover tooltip are merged and deployed (PRs #83 and #85). PR #84's first Keep Snoozer awake workflow run succeeded, but a scheduled `schedule` event has not yet been observed. The free Render worker runs as a web-service child and may have sleep gaps.
