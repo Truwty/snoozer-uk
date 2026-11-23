@@ -24,6 +24,7 @@ export default function Terms() {
       <h2>Acceptable use</h2>
       <p>Do not use Snoozer to break the law, infringe another person’s rights, expose private information without permission, distribute harmful or misleading content, interfere with the service, bypass security controls, or upload content you are not allowed to share. Do not misuse links, analytics, referrals, purchases or support features.</p>
       <p>We may restrict or remove content or access where reasonably necessary to protect people, comply with law, investigate abuse or maintain the service. Where appropriate, we will provide an explanation or a way to contact support.</p>
+      <p>Interactive widgets may allow visitors to submit Guestbook messages or vote in informal polls. Guestbook messages are held for the profile owner to review and approve before publication. Profile owners are responsible for moderating messages and must not publish content that breaches these terms. Polls are for informal engagement only and are not verified ballots or suitable for high-stakes decisions. We may remove abusive submissions or disable a widget where necessary to protect users or the service.</p>
     </section>
     <section className="legal-section stack">
       <h2>Service availability and purchases</h2>
