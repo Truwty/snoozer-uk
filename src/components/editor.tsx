@@ -244,6 +244,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <span className="block-library-add" aria-hidden="true">+</span>
             </button>)}
           </div>
+          <p className="sr-only" aria-live="polite">{announcement}</p>
           </section>
       </aside>
       <div className="editor-column">
