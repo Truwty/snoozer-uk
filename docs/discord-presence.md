@@ -64,6 +64,7 @@ Set the same value in the Snoozer web service and the worker.
 
 ### Snoozer web service
 
+- `DISCORD_PRESENCE_ENABLED=false` — default kill switch. Set to `true` only after policy clearance and after the bot/worker secrets are configured.
 - `DISCORD_PRESENCE_INGEST_SECRET` — 64-character random hex secret; required for signed internal worker requests.
 - `DISCORD_PRESENCE_INVITE_URL` — optional HTTPS Discord invite URL shown in Studio.
 
