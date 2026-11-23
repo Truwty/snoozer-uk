@@ -277,6 +277,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
 
   function dropBlock(event: DragEvent<HTMLElement>) {
     event.preventDefault();
+    event.stopPropagation();
     setDropActive(false);
     const candidate = draggedBlock.current || event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
     draggedBlock.current = null;
@@ -660,7 +661,8 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
-      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}>
+      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}
+        onDrop={dropBlock}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
