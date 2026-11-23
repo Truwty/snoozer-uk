@@ -67,30 +67,36 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   const title = presence.state === "unavailable" ? "Presence unavailable"
     : presence.status ? labels[presence.status]
     : presence.activity || presence.customStatus ? "Active on Discord" : "No activity shared";
-  return <section className="discord-presence-card" aria-label="Discord presence" data-status={presence.status ?? "hidden"} data-state={presence.state}>
+  const live = presence.state === "live";
+  return <section className="discord-presence-card" aria-label="Discord presence"
+    data-status={presence.status ?? "hidden"} data-state={presence.state}>
     <header className="discord-presence-header">
       <span className="discord-presence-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M8 8.5c2.5-1.2 5.5-1.2 8 0l1.1 7.2c-2 1.6-8.2 1.6-10.2 0L8 8.5Z"/>
-          <path d="M9 9 7.8 6.8M15 9l1.2-2.2M9.5 13h.01M14.5 13h.01M9 16c1.8.9 4.2.9 6 0"/>
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.7 5.4a18.6 18.6 0 0 0-4.6-1.4l-.6 1.2a17.2 17.2 0 0 0-5 0L8.9 4a18.5 18.5 0 0 0-4.6 1.4C1.4 9.7.6 13.9 1 18a18.7 18.7 0 0 0 5.6 2.8l1.2-2a12 12 0 0 1-1.9-.9l.5-.4a13.4 13.4 0 0 0 11.2 0l.5.4a12 12 0 0 1-1.9.9l1.2 2A18.7 18.7 0 0 0 23 18c.5-4.8-.8-8.9-3.3-12.6ZM8.6 15.3c-1.1 0-2-1-2-2.2s.9-2.2 2-2.2 2 1 2 2.2-.9 2.2-2 2.2Zm6.8 0c-1.1 0-2-1-2-2.2s.9-2.2 2-2.2 2 1 2 2.2-.9 2.2-2 2.2Z"/>
         </svg>
       </span>
       <span className="discord-presence-heading">
-        <span className="discord-presence-eyebrow">DISCORD PRESENCE</span>
+        <span className="discord-presence-eyebrow">DISCORD</span>
         <strong>{title}</strong>
       </span>
-      {presence.status && <span className="discord-presence-dot" aria-hidden="true"/>}
+      <span className="discord-presence-state">
+        <span className="discord-presence-dot" aria-hidden="true"/>
+        {presence.status ? labels[presence.status] : presence.state === "live" ? "Active" : "Unavailable"}
+      </span>
     </header>
-    {presence.activity && presence.state === "live" && <div className="discord-presence-activity">
+    {presence.activity && live && <div className="discord-presence-activity">
       <span className="discord-presence-activity-type">{presence.activity.type}</span>
-      <strong>{presence.activity.name}</strong>
-      {presence.activity.details && <span>{presence.activity.details}</span>}
-      {presence.activity.state && <span>{presence.activity.state}</span>}
+      <div className="discord-presence-activity-copy">
+        <strong>{presence.activity.name}</strong>
+        {presence.activity.details && <span>{presence.activity.details}</span>}
+        {presence.activity.state && <span>{presence.activity.state}</span>}
+      </div>
     </div>}
-    {presence.customStatus && presence.state === "live" && <p className="discord-presence-custom">{presence.customStatus}</p>}
+    {presence.customStatus && live && <p className="discord-presence-custom">{presence.customStatus}</p>}
     <footer className="discord-presence-footer">
-      <span>{presence.state === "live" ? "Live status from Discord" : "Waiting for a fresh Discord update"}</span>
-      <span>Discord</span>
+      <span className="discord-presence-live-mark" aria-hidden="true"/>
+      <span>{live ? "Live from Discord" : "Waiting for a fresh Discord update"}</span>
     </footer>
   </section>;
 }
