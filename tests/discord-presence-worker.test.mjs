@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import test from "node:test";
-import { normaliseGatewayPresence, signInternalRequest } from "../workers/discord-presence/worker.mjs";
+import { DiscordPresenceWorker, normaliseGatewayPresence, signInternalRequest } from "../workers/discord-presence/worker.mjs";
 
 const discordUserId = "111111111111111111";
 
@@ -41,6 +41,70 @@ test("invisible and offline states never retain activity or custom status", () =
 test("invalid Discord IDs and unknown statuses are ignored", () => {
   assert.equal(normaliseGatewayPresence("not-a-snowflake", { status: "online" }), null);
   assert.equal(normaliseGatewayPresence(discordUserId, { status: "unknown" }), null);
+});
+
+
+test("live Gateway PRESENCE_UPDATE events are ingested only for the configured guild and opted-in identity", async () => {
+  const posted = [];
+  const fetcher = async (_url, options) => {
+    posted.push(JSON.parse(options.body));
+    return new Response(null, { status: 204 });
+  };
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId: "222222222222222222",
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.subscriptions.set(discordUserId, {
+    showStatus: true,
+    showActivity: true,
+    showCustomStatus: false,
+  });
+
+  await worker.dispatch({
+    t: "PRESENCE_UPDATE",
+    d: {
+      guild_id: "333333333333333333",
+      user: { id: discordUserId },
+      status: "online",
+      activities: [],
+    },
+  });
+  await worker.dispatch({
+    t: "PRESENCE_UPDATE",
+    d: {
+      guild_id: "222222222222222222",
+      user: { id: "444444444444444444" },
+      status: "online",
+      activities: [],
+    },
+  });
+  assert.equal(posted.length, 0);
+
+  await worker.dispatch({
+    t: "PRESENCE_UPDATE",
+    d: {
+      guild_id: "222222222222222222",
+      user: { id: discordUserId },
+      status: "idle",
+      activities: [{ type: 0, name: "Minecraft", details: "Building" }],
+    },
+  });
+  assert.equal(posted.length, 1);
+  assert.equal(posted[0].type, "presence");
+  assert.equal(posted[0].discordUserId, discordUserId);
+  assert.equal(posted[0].status, "idle");
+  assert.deepEqual(posted[0].activity, {
+    type: "playing",
+    name: "Minecraft",
+    details: "Building",
+    state: null,
+  });
+  assert.equal(posted[0].customStatus, null);
 });
 
 test("worker signs the exact JSON body with a timestamped HMAC", () => {

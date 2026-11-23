@@ -1,6 +1,11 @@
 # Discord Presence
 
-Status: implementation merged in PR #80 (`ca332cc`); the event-owner index follow-up merged in PR #81 (`a169b7e`). Both Discord Presence migrations are applied to the connected Snoozer staging project. The Render web service is live with `DISCORD_PRESENCE_ENABLED=true` for controlled verification. The worker now waits for web readiness, successfully calls the signed internal endpoint, and reaches Discord Gateway READY. Latest Gateway READY reports zero guilds, so the configured bot token is not currently connected to the shared Snoozer server. The subscription projection currently returns zero opted-in accounts. Public launch remains blocked on correct bot guild membership, a consenting test account, live privacy acceptance tests and written Discord policy clearance. The free setup runs the worker as a child process of the web service; the separate paid Background Worker is optional and has not been provisioned.
+Status: application implementation deployed to Snoozer staging on 23 November 2026. PR #80 introduced the integration, PR #81 added the event-owner index, PR #82 improved its earlier profile card, and the current follow-up replaces that card with a status-coloured Discord icon beside the profile name. The badge title and hover tooltip show the current status and any activity fields the creator chose to share. The browser fetches the public projection without cache every 8 seconds while the page is visible and checks immediately when the tab returns to the foreground.
+
+The Render web service is live with `DISCORD_PRESENCE_ENABLED=true`. On 23 November 2026, the live worker authenticated with Discord Gateway, received `READY` with the configured shared guild, received a matching `GUILD_CREATE`, and retrieved one opted-in Discord account. Supabase reported `connected=true` and `guild_ready=true` with an advancing heartbeat. The free Render setup runs the worker as a child of the web service and is woken best-effort by GitHub Actions; it is not an always-on service.
+
+The public Terms and Privacy Policy now explain the Discord integration and link Discord’s current Developer Terms and Developer Policy. This does not constitute written approval by Discord. Public launch approval remains blocked on confirmation that using Discord API Data inside Snoozer’s wider SaaS is permitted under the current non-commercialisation policy and on a real consenting-account status-transition/privacy acceptance run.
+
 
 ## Behaviour
 
@@ -105,7 +110,7 @@ The application side can be built, migrated and CI-tested without the Discord to
 
 - Discord Presence Intent enabled for the bot application
 - Bot invited to the shared server and the server ID configured
-- The worker deployed as an always-on service
+- The worker deployed and reliably woken; the current free web-child worker is best-effort and can have gaps during Render sleep or delayed/skipped scheduled wake-ups
 - The same HMAC secret configured on web and worker
 - Supabase Manual Identity Linking enabled if existing email accounts must link Discord
 - A consenting Discord test account linked to Snoozer and a member of the shared server

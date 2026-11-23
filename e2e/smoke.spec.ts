@@ -57,6 +57,11 @@ test("Privacy and Terms footer links open their legal pages", async ({ page }) =
   await page.getByRole("link", { name: "Terms", exact: true }).click();
   await expect(page).toHaveURL(/\/terms\/?$/);
   await expect(page.getByRole("heading", { name: "Terms and Conditions", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Discord integration and Discord API Data", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Developer Terms of Service", exact: true }))
+    .toHaveAttribute("href", "https://support-dev.discord.com/hc/en-us/articles/8562894815383-Discord-Developer-Terms-of-Service");
+  await expect(page.getByRole("link", { name: "Developer Policy", exact: true }))
+    .toHaveAttribute("href", "https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy");
 });
 
 test("privacy choices can be declined and reopened", async ({ page }) => {

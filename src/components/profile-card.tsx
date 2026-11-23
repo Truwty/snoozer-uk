@@ -39,6 +39,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage } as CSSProperties
     : undefined;
+  const discordBadge = !preview && discordPresence
+    ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
+    : null;
 
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
@@ -62,7 +65,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
         : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
       <p className="profile-handle">@{profile.username}</p>
-      {preview ? <h2 className="profile-name-heading">{profile.display_name}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
+      {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
       {profile.bio && <p className="profile-bio">{profile.bio}</p>}
       {visibleSections.length > 0 && <div className="profile-sections">
         {visibleSections.map((section, index) => {
@@ -106,7 +109,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      {!preview && discordPresence && <DiscordPresenceWidget key={JSON.stringify(discordPresence)} username={profile.username} initialPresence={discordPresence} />}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">
