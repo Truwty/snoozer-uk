@@ -38,7 +38,7 @@ function response(status: number, body?: unknown) {
 }
 
 export function verifyDiscordPresenceSignature(secret: string, timestamp: string, signature: string, body: string, now = Date.now()) {
-  if (secret.length < 64 || !/^[0-9]{13}$/.test(timestamp) || Math.abs(now - Number(timestamp)) > 60_000) return false;
+  if (!/^[a-f0-9]{64}$/i.test(secret) || !/^[0-9]{13}$/.test(timestamp) || Math.abs(now - Number(timestamp)) > 60_000) return false;
   const supplied = signature.replace(/^sha256=/, "");
   if (!/^[a-f0-9]{64}$/i.test(supplied)) return false;
   const expected = createHmac("sha256", secret).update(timestamp + "." + body).digest();
