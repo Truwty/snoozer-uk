@@ -21,7 +21,7 @@ export function SpotifyWidget({ resource, label }: { resource: SpotifyResource; 
     <Disclosure title="Learn more about Spotify privacy">
       <p className="muted">
         Loading the official Spotify player connects your browser directly to Spotify and
-        shares connection data such as your IP address and this site's origin.
+        shares connection data such as your IP address and the website origin.
         This choice is separate from Snoozer profile analytics and is not remembered.
       </p>
     </Disclosure>
