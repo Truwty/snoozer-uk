@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
+import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
@@ -30,6 +31,8 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const template = studioTemplates.find(({ id }) => id === templateId);
   const [kofiUrl, setKofiUrl] = useState("");
   const [kofiError, setKofiError] = useState(false);
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
@@ -81,6 +84,19 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     setKofiUrl("");
     setKofiError(false);
     setAnnouncement("Ko-fi support link added.");
+    focusLink(content.links.length);
+  }
+
+  function addSpotifyLink() {
+    if (content.links.length >= linkLimit) return;
+    const resource = spotifyResource(spotifyUrl);
+    const url = resource ? spotifyLink(resource) : null;
+    if (!url || !resource) { setSpotifyError(true); return; }
+    const name = resource.kind === "show" ? "Podcast" : resource.kind[0].toUpperCase() + resource.kind.slice(1);
+    set("links", [...content.links, { label: "Spotify " + name, url }]);
+    setSpotifyUrl("");
+    setSpotifyError(false);
+    setAnnouncement("Added a Spotify " + resource.kind + " link.");
     focusLink(content.links.length);
   }
 
@@ -256,6 +272,19 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             set("links", [...content.links, { label: "", url: "" }]);
             focusLink(content.links.length);
           }}>Add link</button>
+        {content.links.length < linkLimit && <details>
+          <summary>Add Spotify music or playlist</summary>
+          <div className="stack">
+            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. No Spotify account connection is required. Visitors choose whether to load the player.</p>
+            <label>Spotify share URL<input type="url" maxLength={2048} value={spotifyUrl}
+              placeholder="https://open.spotify.com/playlist/…"
+              aria-invalid={spotifyError} aria-describedby={spotifyError ? "spotify-url-error" : undefined}
+              onChange={(event) => { setSpotifyUrl(event.target.value); setSpotifyError(false); }}
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSpotifyLink(); } }} /></label>
+            {spotifyError && <p id="spotify-url-error" role="alert">Enter a recognised open.spotify.com track, album, playlist, artist, show or episode link.</p>}
+            <button type="button" className="button small" onClick={addSpotifyLink}>Add Spotify link</button>
+          </div>
+        </details>}
         {content.links.length < linkLimit && <details>
           <summary>Add Ko-fi support link</summary>
           <div className="stack">

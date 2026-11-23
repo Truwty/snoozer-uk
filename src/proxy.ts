@@ -44,7 +44,7 @@ export async function proxy(request: NextRequest) {
     "default-src 'self'", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'",
     "form-action 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "font-src 'self'",
-    "frame-src https://www.youtube-nocookie.com https://player.twitch.tv",
+    "frame-src https://www.youtube-nocookie.com https://player.twitch.tv https://open.spotify.com",
     `connect-src 'self' ${storage}`, ...(siteUrl().protocol === "https:" ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
   const headers = new Headers(request.headers);

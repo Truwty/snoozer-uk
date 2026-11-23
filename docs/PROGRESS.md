@@ -1,3 +1,11 @@
+## Feature #7 — Spotify public Embeds (implementation started, 23 Nov 2026)
+
+Work in branch `feat/spotify-public-embeds` adds the Spotify track/album/playlist/artist/show/episode URL parser, first-party Studio "Add Spotify music or playlist" shortcut, a strictly consent-first official Spotify iframe widget on published profiles and previews, and a narrow CSP frame-src update for `https://open.spotify.com`. It needs **no Web API quota, Spotify Premium developer login, new Supabase schema or paid external service**. New unit tests exercise safe URL parsing; Playwright covers an actual published playlist, explicit visitor opt-in, zero pre-consent iframes and Hide teardown. Details: `docs/spotify-integration.md`.
+
+Status: **implementation and validation in progress**. Phase 1 must not be declared done until PR CI and production acceptance pass. Phase 2 OAuth / Now Playing remains gated on a Spotify app, Premium developer membership and Spotify's five-user Development Mode policy; no misleading claim of a compliant unlimited Web API bypass. Phases 3–5 (live display, premium styling, extended access sign-off) are still to be implemented.
+
+---
+
 ## Feature #20 — Single-step reviewed erasure UX fix (22 Nov 2026)
 
 **Reproduced on real disposable UID `ff1646ea-961e-47aa-ac71-805eea03bd9f`:** It is confirmed, not an Owner, has one normal auto-created profile, zero Stripe customers/checkouts/products, zero media objects, zero bans/cases, and one `open` deletion request `8feabd7d-8bc2-4587-8cf7-71b547899af5`. **No privacy evidence row or erasure job was created.** The old Execute handler required a separate evidence form and returned only `erasure-blocked`, so the user had no actionable explanation. The clean profile itself is a normal `ON DELETE CASCADE` dependency and must not be considered a blocker.
