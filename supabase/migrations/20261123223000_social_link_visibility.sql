@@ -203,12 +203,20 @@ begin
     where item->>'type'='section' and (item->>'index')::integer >= section_count
   ) into has_invalid_section_reference;
 
-  if has_invalid_section_reference
-    or layout_section_count <> section_count
-    or layout_links_count <> expected_links_layout_count
-    or layout_widgets_count <> expected_widgets_count
-    or layout_gallery_count <> expected_gallery_count then
-    raise exception 'Page layout does not match profile content' using errcode='22023';
+  if has_invalid_section_reference then
+    raise exception 'Page layout contains an unavailable section' using errcode='22023';
+  end if;
+  if layout_section_count <> section_count then
+    raise exception 'Page layout section count does not match profile content' using errcode='22023';
+  end if;
+  if layout_links_count <> expected_links_layout_count then
+    raise exception 'Page layout link count does not match profile content' using errcode='22023';
+  end if;
+  if layout_widgets_count <> expected_widgets_count then
+    raise exception 'Page layout widget count does not match profile content' using errcode='22023';
+  end if;
+  if layout_gallery_count <> expected_gallery_count then
+    raise exception 'Page layout gallery count does not match profile content' using errcode='22023';
   end if;
 
   update snoozer.profiles set page_layout=p_page_layout
