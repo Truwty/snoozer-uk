@@ -2513,6 +2513,17 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.get_public_poll_results('widget-sql',$1::uuid,$2) as value", [pollId, voteHash])).toMatchObject({ total: 1 });
 
     await act("authenticated", bob);
+    const entryReport = await result<string>(
+      "select public.submit_guestbook_entry_report('widget-sql',$1::uuid,'spam','This approved message is unsolicited spam.') as value",
+      [entryId],
+    );
+    expect(entryReport).toMatch(/^[0-9a-f-]{36}$/);
+    await expect(result("select public.submit_guestbook_entry_report('widget-sql',$1::uuid,'spam','This approved message is unsolicited spam.') as value",[entryId]))
+      .rejects.toThrow();
+    await act("authenticated", alice);
+    await expect(result("select public.submit_guestbook_entry_report('widget-sql',$1::uuid,'spam','This approved message is unsolicited spam.') as value",[entryId]))
+      .rejects.toThrow();
+    await act("authenticated", bob);
     await expect(db.query("select public.owner_guestbook_queue($1,10)", [profileId])).rejects.toMatchObject({ code: "42501" });
     await expect(db.query("select * from snoozer.guestbook_entries")).rejects.toMatchObject({ code: "42501" });
     await act("anon");
