@@ -9,7 +9,7 @@ import { discordPresencePublic } from "@/lib/discord-presence";
 import { profileBackgroundImage } from "@/lib/profile";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { readPublished } from "@/lib/profiles-server";
-import { anonymousClient } from "@/lib/supabase";
+import { anonymousClient, storageAdmin } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 
 type Props = { params: Promise<{ username: string }> };
@@ -36,7 +36,7 @@ export default async function Page({ params }: Props) {
   const [ownerResult, presenceResult] = await Promise.all([
     anonymousClient().rpc("is_owner_profile", { p_name: profile.username }),
     process.env.DISCORD_PRESENCE_ENABLED === "true"
-      ? anonymousClient().rpc("discord_presence_public", { p_username: profile.username })
+      ? storageAdmin().rpc("discord_presence_public", { p_username: profile.username })
       : Promise.resolve({ data: null, error: null }),
   ]);
   const presence = !presenceResult.error ? discordPresencePublic.safeParse(presenceResult.data) : null;
