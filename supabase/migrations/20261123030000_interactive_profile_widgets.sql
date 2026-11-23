@@ -318,9 +318,17 @@ begin
  return changed=1;
 end $$;
 
-create function public.get_public_poll_results(p_username text,p_poll uuid) returns jsonb
-language sql stable security definer set search_path='' as $$
- select case when v.widgets->'poll'->>'enabled'='true' and v.widgets->'poll'->>'id'=p_poll::text
+create function public.get_public_poll_results(p_username text,p_poll uuid,p_visitor_hash text) returns jsonb
+language sql stable security definer set search_path='' as $
+ select case when v.widgets->'poll'->>'enabled'='true'
+   and v.widgets->'poll'->>'id'=p_poll::text
+   and (
+     v.widgets->'poll'->>'showResultsBeforeVote'='true'
+     or v.widgets->'poll'->>'open'='false'
+     or (v.widgets->'poll'->>'closesAt' is not null and (v.widgets->'poll'->>'closesAt')::timestamptz<=now())
+     or exists(select 1 from snoozer.poll_votes mine
+       where mine.profile_id=p.id and mine.poll_id=p_poll and mine.visitor_hash=p_visitor_hash)
+   )
    then jsonb_build_object('pollId',p_poll,'total',coalesce(t.total,0),'counts',coalesce(t.counts,'{}'::jsonb))
    else null end
  from snoozer.profiles p join snoozer.published_profiles v
@@ -332,7 +340,7 @@ language sql stable security definer set search_path='' as $$
      where profile_id=p.id and poll_id=p_poll group by option_id) counts
  ) t on true
  where p.username=p_username and p.published_revision is not null
-$$;
+$;
 
 create function public.submit_public_poll_vote(
  p_username text,p_poll uuid,p_option uuid,p_visitor_hash text
@@ -378,7 +386,7 @@ end $$;
 
 revoke execute on function public.get_public_guestbook_entries(text,integer),
  public.submit_profile_guestbook_entry(text,text,text,text),
- public.get_public_poll_results(text,uuid),
+ public.get_public_poll_results(text,uuid,text),
  public.submit_public_poll_vote(text,uuid,uuid,text) from public,anon,authenticated,service_role;
 grant execute on function public.get_public_guestbook_entries(text,integer),
  public.submit_profile_guestbook_entry(text,text,text,text),
