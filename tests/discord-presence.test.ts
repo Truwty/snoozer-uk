@@ -26,7 +26,7 @@ function signedRequest(payload: unknown, timestamp = now, bodyOverride?: string)
 
 function dependencies() {
   return {
-    subscriptions: vi.fn(async () => [discordUserId]),
+    subscriptions: vi.fn(async () => [{ discordUserId, showStatus: true, showActivity: true, showCustomStatus: false }]),
     heartbeat: vi.fn(async () => true),
     ingest: vi.fn(async () => true),
     clear: vi.fn(async () => true),
@@ -41,7 +41,7 @@ describe("Discord Gateway presence projection", () => {
         { type: 0, name: "Minecraft", details: "Building", state: "Survival", application_id: "private", secrets: { join: "secret" } },
         { type: 4, name: "Custom Status", state: "Working on a build", emoji: { id: "private" } },
       ],
-    }, eventId, observedAt)).toEqual({
+    }, eventId, observedAt, { showStatus: true, showActivity: true, showCustomStatus: true })).toEqual({
       eventId, discordUserId, status: "online",
       activity: { type: "playing", name: "Minecraft", details: "Building", state: "Survival" },
       customStatus: "Working on a build", observedAt,
@@ -52,7 +52,7 @@ describe("Discord Gateway presence projection", () => {
     expect(normaliseDiscordPresence(discordUserId, {
       status: "invisible",
       activities: [{ type: 0, name: "Private game" }, { type: 4, state: "Hidden status" }],
-    }, eventId, observedAt)).toMatchObject({
+    }, eventId, observedAt, { showStatus: true, showActivity: true, showCustomStatus: true })).toMatchObject({
       status: "offline", activity: null, customStatus: null,
     });
   });
@@ -78,7 +78,7 @@ describe("signed worker ingestion boundary", () => {
     const deps = dependencies();
     const response = await receiveDiscordPresenceInternal(signedRequest({ type: "subscriptions" }), secret, deps, now);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ discordUserIds: [discordUserId] });
+    expect(await response.json()).toEqual({ subscriptions: [{ discordUserId, showStatus: true, showActivity: true, showCustomStatus: false }] });
     expect(deps.subscriptions).toHaveBeenCalledOnce();
   });
 
