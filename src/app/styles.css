@@ -185,40 +185,6 @@ textarea { resize: vertical; }
 .discord-presence-badge[data-status="dnd"] { --discord-status-colour: #f05b68; }
 .discord-presence-badge[data-status="offline"],
 .discord-presence-badge[data-status="unavailable"] { --discord-status-colour: #89919d; }
-.discord-presence-badge::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  z-index: 60;
-  left: 50%;
-  bottom: calc(100% + .58rem);
-  width: max-content;
-  max-width: min(17rem, calc(100vw - 2rem));
-  padding: .42rem .58rem;
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: .45rem;
-  background: rgba(15,18,28,.97);
-  color: #f7f7fb;
-  box-shadow: 0 8px 24px rgba(0,0,0,.24);
-  font-size: .68rem;
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: start;
-  white-space: pre-line;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translate(-50%, .2rem);
-  transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
-}
-.discord-presence-badge:hover::after,
-.discord-presence-badge:focus-visible::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%, 0);
-}
-@media (prefers-reduced-motion: reduce) {
-  .discord-presence-badge::after { transition: none; }
-}
 .discord-settings-panel { width: min(100%, 48rem); margin: 1.5rem auto 3rem; }
 .discord-settings-profile { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .8rem .9rem; border: 1px solid var(--edge); border-radius: .8rem; background: var(--ground); }
 .discord-settings-connection { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--edge); border-radius: .9rem; background: var(--ground); }
