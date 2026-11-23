@@ -91,7 +91,8 @@ describe("signed worker ingestion boundary", () => {
     };
     const presenceResponse = await receiveDiscordPresenceInternal(signedRequest(presence), secret, deps, now);
     expect(presenceResponse.status).toBe(204);
-    expect(deps.ingest).toHaveBeenCalledWith(presence);
+    const { type: _type, ...expectedEvent } = presence;
+    expect(deps.ingest).toHaveBeenCalledWith(expectedEvent);
 
     const heartbeatResponse = await receiveDiscordPresenceInternal(
       signedRequest({ type: "heartbeat", connected: true, guildReady: true }), secret, deps, now,
