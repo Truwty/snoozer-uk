@@ -1,6 +1,10 @@
 name: Keep Snoozer awake
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/keep-snoozer-awake.yml"
   schedule:
     # Render free web services sleep after inactivity. Ping every 10 minutes.
     - cron: "*/10 * * * *"
