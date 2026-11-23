@@ -53,7 +53,7 @@ create or replace function snoozer.save_profile_for_id(
 ) returns integer
 language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
-current snoozer.profiles;
+profile_row snoozer.profiles;
 item jsonb;
 address text;
 hostname text;
@@ -93,13 +93,13 @@ begin
   if p_publish then
     perform pg_advisory_xact_lock(hashtextextended('profile-publication:' || actor::text, 0));
   end if;
-  select * into current from snoozer.profiles where id = p_profile and owner_id = actor for update;
-  if not found or current.revision <> p_expected then
+  select * into profile_row from snoozer.profiles where id = p_profile and owner_id = actor for update;
+  if not found or profile_row.revision <> p_expected then
     raise exception 'Profile revision conflict' using errcode = '40001';
   end if;
   if p_publish and
     (select count(*) from snoozer.profiles where owner_id = actor and published_revision is not null)
-      + (case when current.published_revision is null then 1 else 0 end)
+      + (case when profile_row.published_revision is null then 1 else 0 end)
       > coalesce((select (plan).profiles from snoozer.effective_plan(actor)), 0) then
     raise exception 'Published profile limit reached' using errcode = 'P1005';
   end if;
@@ -111,14 +111,14 @@ begin
       from snoozer.links where profile_id = p_profile
     )
   ) then
-    raise exception 'Draft exceeds the current link allowance' using errcode = 'P1004';
+    raise exception 'Draft exceeds the profile_row link allowance' using errcode = 'P1004';
   end if;
 
   update snoozer.profiles set
     display_name = btrim(p_name), bio = btrim(p_bio), theme = p_theme, indexable = p_indexable,
     avatar = case when p_remove_avatar then null else avatar end,
     revision = revision + 1, updated_at = now()
-  where id = p_profile returning * into current;
+  where id = p_profile returning * into profile_row;
 
   delete from snoozer.links where profile_id = p_profile;
   insert into snoozer.links(owner_id, position, label, url, hidden, profile_id)
@@ -127,23 +127,23 @@ begin
     from jsonb_array_elements(normalized_links) with ordinality as items(value, position);
   if p_publish then
     insert into snoozer.published_profiles(owner_id, revision, display_name, bio, theme, indexable, avatar, profile_id)
-      values (actor, current.revision, current.display_name, current.bio, current.theme, current.indexable, current.avatar, p_profile);
+      values (actor, profile_row.revision, profile_row.display_name, profile_row.bio, profile_row.theme, profile_row.indexable, profile_row.avatar, p_profile);
     insert into snoozer.published_links(owner_id, revision, position, label, url, hidden, profile_id)
-      select actor, current.revision, position, label, url, hidden, p_profile
+      select actor, profile_row.revision, position, label, url, hidden, p_profile
       from snoozer.links where profile_id = p_profile;
-    update snoozer.profiles set published_revision = current.revision where id = p_profile;
+    update snoozer.profiles set published_revision = profile_row.revision where id = p_profile;
     delete from snoozer.published_profiles
     where profile_id = p_profile and revision in (
       select revision from snoozer.published_profiles
       where profile_id = p_profile order by revision desc offset 20
     )
-    and revision is distinct from current.published_revision
+    and revision is distinct from profile_row.published_revision
     and not exists(
       select 1 from snoozer.publication_schedules s
       where s.profile_id=p_profile and s.revision=published_profiles.revision and s.state='pending'
     );
   end if;
-  return current.revision;
+  return profile_row.revision;
 end;
 $$;
 
