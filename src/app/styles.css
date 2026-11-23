@@ -1344,8 +1344,12 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   border-radius: .85rem;
 }
 .studio-workspace .preview-wide { --preview-card-width: 100%; }
-.studio-workspace .preview-phone { --preview-card-width: min(100%, 375px); }
-.studio-workspace .preview-narrow { --preview-card-width: min(100%, 320px); }
+.studio-workspace .preview-phone { --preview-card-width: min(100%, calc(375px - 2rem)); }
+.studio-workspace .preview-narrow { --preview-card-width: min(100%, calc(320px - 2rem)); }
+.studio-workspace .preview.is-drop-active .preview-card {
+  outline: 2px dashed var(--accent);
+  outline-offset: 6px;
+}
 .studio-workspace .preview-card.is-drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: 6px;
