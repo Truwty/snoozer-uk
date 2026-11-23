@@ -567,7 +567,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
     await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
     await expect(page.getByText("Plus", { exact: true }).first()).toBeVisible();
-    await page.getByRole("link", { name: "Back to Studio", exact: true }).click();
+    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
     await page.getByLabel("Display name").fill("Portfolio SEO publication");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -837,7 +837,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.setViewportSize({ width: 1280, height: 720 });
     await checkLighthouse(page, "/studio");
     await page.getByRole("link", { name: "Premium & Usage" }).click();
-    await expect(page.getByRole("heading", { name: "Premium & Usage" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
     await expect(page.getByText(`@${name} · Draft`, { exact: true })).toBeVisible();
@@ -1209,7 +1209,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const responsivePage = await page.context().newPage();
     try {
       await responsivePage.setViewportSize({ width: 360, height: 812 });
-      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
+      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio/builder?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
         const response = await responsivePage.goto(path);
         expect(response?.status()).toBe(path === "/studio/billing-diagnostics" ? 404 : 200);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(360);
@@ -1485,7 +1485,7 @@ test("gallery images upload to private Storage and follow publication visibility
   expect((await request.get(publicPath)).status()).toBe(404);
   await page.getByRole("link", { name: "Back to image gallery" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("link", { name: "Back to Page Builder" }).click();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
   expect(await (await request.get("/" + name)).text()).toContain('data-background-image="true"');
