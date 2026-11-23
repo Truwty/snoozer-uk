@@ -1,10 +1,14 @@
 ## Feature #8 — Discord Presence (23 Nov 2026)
 
-Owner approved first-party Discord Presence. Implementing consent-based identity linking, per-profile field visibility, a private Supabase cache and signed internal ingestion, a public profile card, Studio controls, a standalone Node Gateway worker, account export, privacy disclosure and tests.
+Owner-approved implementation merged in PR #80 as `ca332cc`. GitHub Actions run `45101782835` passed all gates, including 64 Playwright tests and a Lighthouse Studio accessibility score of 100. The Supabase migration `20261123024924_discord_presence` and the event-owner index migration `20261123025021_discord_presence_event_owner_index` are applied to the connected Snoozer staging project. The Render web-service deployment has been triggered with `DISCORD_PRESENCE_ENABLED=false`; the feature remains disabled until external launch prerequisites are met.
 
-The website-side implementation is under development on `feat/discord-presence`. The actual Discord bot application/token, shared guild, manual identity-linking setting (for email-first accounts) and always-on worker deployment are external dependencies. No worker has been provisioned because it adds a recurring paid Render resource. The owner must approve the cost and configure credentials directly in Render. No bot token is stored in GitHub or chat.
+The implementation includes consent-based Discord identity linking, per-profile field visibility, a private Supabase cache and signed internal ingestion, a public profile card, Studio controls, a standalone Node Gateway worker, account export, privacy disclosure and automated tests. Private tables have RLS enabled with no direct grants; the public projection RPC is restricted to the service role.
 
-Do not claim complete until CI and migration pass, code is merged/deployed, the worker heartbeat is live, and a consenting real Discord account has passed online/idle/DND/offline/activity/custom-status, disable, disconnect, leave-server and outage acceptance. See `docs/discord-presence.md`.
+**Remaining external launch requirements:** written Discord confirmation that this API Data use is permitted within Snoozer's wider paid SaaS; a Discord bot application with Presence Intent approved; a shared Snoozer guild and bot token; owner approval for the recurring paid Render Starter worker; secrets configured directly in Render; Supabase Manual Identity Linking for email-first accounts; and live acceptance tests with a consenting Discord account. No worker has been provisioned and no Discord credentials are stored in GitHub or chat.
+
+Do not claim Feature #8 complete until the worker is connected, real presence transitions and opt-out/deletion behaviour are verified, and the live deployment is confirmed. See `docs/discord-presence.md`.
+
+---
 
 ---
 

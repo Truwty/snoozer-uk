@@ -1,6 +1,6 @@
 # Discord Presence
 
-Status: implementation in progress. The website, database contract and standalone Gateway worker are being built on the `feat/discord-presence` branch. The live Discord bot credentials, shared guild and always-on worker still need to be configured before real provider acceptance.
+Status: implementation merged in PR #80 (`ca332cc`) and CI-tested; the connected Supabase schema is applied. The Render web deployment is being rolled out with `DISCORD_PRESENCE_ENABLED=false`, so the feature is not yet active. Live activation is blocked on written Discord policy clearance, bot configuration, a shared guild and an owner-approved always-on worker.
 
 ## Behaviour
 
@@ -39,6 +39,13 @@ The feature is free for all account tiers. Presence data is not a Premium entitl
 Existing Discord sign-in identities are reused. For creators who signed up with email and need to attach Discord to that same Snoozer account, the Studio action uses Supabase Auth `linkIdentity`. Supabase's Manual Identity Linking feature must be enabled in Auth settings for that flow. Do not merge accounts by matching an unverified email or by accepting a Discord ID from the browser.
 
 Disconnecting Discord Presence deliberately does not unlink Discord as a Snoozer sign-in method; it only removes the presence mapping and cached data.
+
+For email/password Snoozer accounts, Discord identity linking also needs the Discord OAuth provider configured in Supabase Auth:
+
+- Enable **Discord** under Supabase **Authentication → Sign In / Providers** and enter the Discord application's OAuth Client ID and Client Secret.
+- In the Discord Developer Portal, add the Supabase project's displayed Auth callback URL (normally `https://<project-ref>.supabase.co/auth/v1/callback`) to the application's OAuth2 redirect URIs.
+- In Supabase Auth URL Configuration, allow the Snoozer callback `https://snoozer.uk/auth/callback` (and any other canonical site origin actually used by the deployment).
+- Enable **Manual Identity Linking** in Supabase Auth settings. The app requests only the `identify` scope and never trusts a Discord ID submitted by the browser.
 
 ## Discord Developer Portal setup
 
@@ -100,7 +107,7 @@ The application side can be built, migrated and CI-tested without the Discord to
 - A consenting Discord test account linked to Snoozer and a member of the shared server
 - Live tests for online, idle, DND, offline/invisible, activity changes, custom status opt-in, leaving the shared server, disconnect, disabled consent and worker outage
 
-Before public launch, confirm that displaying Discord API Data inside a SaaS that has other paid plans is permitted under the current Discord Developer Terms/Policy. The implementation intentionally does not sell, gate, advertise against or otherwise monetise the presence data.
+Before public launch, obtain written confirmation from Discord that displaying Discord API Data inside Snoozer's wider SaaS (which has other paid plans) is permitted under the current Developer Terms/Policy. The implementation intentionally does not sell, gate, advertise against or otherwise monetise the presence data.
 
 ## References
 
