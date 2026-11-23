@@ -16,5 +16,5 @@ export default defineConfig({
   projects: [{ name: "chromium", use: {
     ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
   } }],
-  webServer: { command: "npm start", url: `${baseURL}/health/live`, reuseExistingServer: !process.env.CI },
+  webServer: { command: "npm start", url: `${baseURL}/health/live`, reuseExistingServer: !process.env.CI, env: { ...process.env, DISCORD_PRESENCE_ENABLED: "true" } },
 });
