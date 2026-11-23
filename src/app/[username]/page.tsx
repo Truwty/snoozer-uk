@@ -40,11 +40,13 @@ export default async function Page({ params }: Props) {
       : Promise.resolve({ data: null, error: null }),
   ]);
   const presence = !presenceResult.error ? discordPresencePublic.safeParse(presenceResult.data) : null;
+  const presenceNeedsRefresh = process.env.DISCORD_PRESENCE_ENABLED === "true"
+    && (Boolean(presenceResult.error) || (presenceResult.data !== null && !presence?.success));
   const pageStyle = background
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
-    <ProfileCard profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} discordPresenceRetry={presenceNeedsRefresh} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <div className="stack" style={{ alignItems: "center", marginTop: ".75rem" }}><Link href={new URL("/report/" + profile.username, siteUrl()).href} className="muted">Report profile</Link><Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link></div>
   </main>;
