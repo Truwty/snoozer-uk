@@ -6,6 +6,7 @@ import { kofiProfileUrl } from "@/lib/kofi-link";
 import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
@@ -20,12 +21,14 @@ import { ProfileCard } from "./profile-card";
 import { EffectsEditor } from "./effects-editor";
 import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
+import { ProfileBlocksEditor } from "./profile-blocks-editor";
 import { ProfileWidgetsEditor } from "./profile-widgets-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 import { moveProfilePageElement, normalizeProfilePageLayout, remapProfileSectionPositions, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 
-type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq";
+type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq"
+  | ProfileBlock["type"];
 
 const blockLibrary: { id: BuilderBlock; label: string; description: string; symbol: string }[] = [
   { id: "text", label: "Text", description: "A heading and paragraph", symbol: "Aa" },
@@ -36,11 +39,19 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "testimonials", label: "Testimonials", description: "Show trusted feedback", symbol: "★" },
   { id: "poll", label: "Poll", description: "Ask visitors a question", symbol: "◉" },
   { id: "faq", label: "FAQ", description: "Answer common questions", symbol: "?" },
+  { id: "heading", label: "Heading", description: "Add a page title", symbol: "H" },
+  { id: "about", label: "About", description: "Tell your story", symbol: "Aa" },
+  { id: "project", label: "Project", description: "Feature your work", symbol: "↗" },
+  { id: "skills", label: "Skills", description: "Show your toolkit", symbol: "✳" },
+  { id: "cta", label: "Call to action", description: "Add a prominent button", symbol: "→" },
+  { id: "divider", label: "Divider", description: "Separate page content", symbol: "—" },
+  { id: "countdown", label: "Countdown", description: "Count down to a date", symbol: "◷" },
+  { id: "stats", label: "Statistics", description: "Show key numbers", symbol: "#" },
 ];
 
 export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
-  const tabs = ["Profile", "Design", "Links", "Sections", "Widgets", "Settings"] as const;
+  const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
@@ -162,6 +173,20 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   }
 
   function addBlock(kind: BuilderBlock) {
+    if (kind === "heading" || kind === "about" || kind === "project" || kind === "skills"
+      || kind === "cta" || kind === "divider" || kind === "countdown" || kind === "stats") {
+      if (content.blocks.length >= 32) {
+        setTab("Blocks");
+        setAnnouncement("Your page already has the maximum of 32 custom blocks.");
+        return;
+      }
+      const block = makeProfileBlock(kind);
+      set("blocks", [...content.blocks, block]);
+      setTab("Blocks");
+      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added. Edit it in the Blocks panel.");
+      return;
+    }
+
     if (kind === "text" || kind === "callout" || kind === "quote") {
       if (content.sections.length >= 6) {
         setTab("Sections");
@@ -291,7 +316,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <section className="block-library" aria-labelledby="block-library-title">
           <div className="block-library-heading">
             <div><p className="eyebrow">BUILDER</p><h2 id="block-library-title">Add to page</h2></div>
-            <span className="block-library-count">8 blocks</span>
+            <span className="block-library-count">{blockLibrary.length} blocks</span>
           </div>
           <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
           <div className="block-library-grid">
@@ -479,6 +504,9 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
         <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
       </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Blocks" id="editor-panel-Blocks" data-editor-panel="Blocks" hidden={tab !== "Blocks"} className="editor-panel stack">
+        <ProfileBlocksEditor blocks={content.blocks} onChange={(blocks) => set("blocks", blocks)} />
+      </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Widgets" id="editor-panel-Widgets" data-editor-panel="Widgets" hidden={tab !== "Widgets"} className="editor-panel stack">
         <ProfileWidgetsEditor value={content.widgets} onChange={(widgets) => set("widgets", widgets)} />
         <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
@@ -635,6 +663,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           onMoveLayoutItem={(from, to) => set("pageLayout", moveProfilePageElement(pageLayout, from, to, { ...content, gallery: saved.gallery }))}
           onSelectLayoutItem={(item: ProfilePageLayoutItem) => {
             if (item.type === "section") setTab("Sections");
+            else if (item.type === "block") setTab("Blocks");
             else if (item.type === "links") setTab("Links");
             else if (item.type === "widgets") setTab("Widgets");
             else window.location.assign(galleryHref);
