@@ -92,6 +92,31 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
+    slug: "interactive-widgets", title: "Use interactive profile widgets", category: "Profiles & Studio",
+    summary: "Set up a Guestbook, Testimonials, Poll and FAQ in Studio.",
+    sections: [
+      { heading: "Configure your widgets", steps: [
+        "Open Studio and select the Widgets tab in the profile editor.",
+        "Enable any of the Guestbook, Testimonials, Poll or FAQ widgets and use Move up or Move down to choose their display order.",
+        "Add your FAQ questions and answers, creator-curated testimonials, poll question and options, or Guestbook heading and submission settings.",
+        "Save your draft to keep editing later, then Publish page to show the widgets on your public profile.",
+      ] },
+      { heading: "Guestbook moderation and reports", paragraphs: [
+        "Visitor messages are held privately until you approve them. Open Studio → Widgets → Moderate Guestbook messages to approve, reject or delete submissions. You receive a generic in-app notice about new messages; the message itself is not included in the notice.",
+        "Visitors can report an approved message using its Report message link. Reports from verified accounts enter Snoozer's existing moderation queue. You can still close new submissions without removing previously approved messages.",
+      ] },
+      { heading: "Polls and voting", paragraphs: [
+        "A poll supports two to six options. Changing its question or options starts a new poll so previous votes are not mixed into the new results. You can close a poll manually or choose a closing date and time.",
+        "Polls limit one vote per random browser token, scoped to that poll. This is an abuse-prevention control, not proof of a unique person: clearing browser storage or using another browser can permit another vote. Polls are for informal engagement, not elections or high-stakes decisions.",
+        "Results stay hidden until a visitor votes unless you enable Show results before visitors vote. Results become visible once the poll closes.",
+      ] },
+      { heading: "Content and availability", paragraphs: [
+        "All basic widgets are available on Free, Plus, Pro and Studio. FAQ and testimonial content is public when published. Testimonials are creator-curated; only publish feedback you have permission to use.",
+        "Widget text is plain text. Visitors cannot add HTML or scripts. Guestbook entries are pending by default and only approved entries appear on your profile.",
+      ] },
+    ],
+  },
+  {
     slug: "profile-analytics", title: "Understand your analytics", category: "Profiles & Studio",
     summary: "Track consented views, clicks and campaign results.",
     sections: [
