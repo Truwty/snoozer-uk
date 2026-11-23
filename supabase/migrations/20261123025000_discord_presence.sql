@@ -109,12 +109,22 @@ begin
 end;
 $$;
 
-create trigger discord_presence_settings_prune
-  after update or delete on snoozer.discord_presence_settings
+create trigger discord_presence_settings_prune_update
+  after update of enabled,show_status,show_activity,show_custom_status on snoozer.discord_presence_settings
+  for each row execute function snoozer.discord_presence_prune_trigger();
+create trigger discord_presence_settings_prune_delete
+  after delete on snoozer.discord_presence_settings
   for each row execute function snoozer.discord_presence_prune_trigger();
 
-create trigger discord_presence_publication_prune
-  after delete or update on snoozer.published_profiles
+create trigger discord_presence_publication_prune_update
+  after update of revision,owner_id on snoozer.published_profiles
+  for each row execute function snoozer.discord_presence_prune_trigger();
+create trigger discord_presence_publication_prune_delete
+  after delete on snoozer.published_profiles
+  for each row execute function snoozer.discord_presence_prune_trigger();
+
+create trigger discord_presence_profile_revision_prune
+  after update of published_revision or delete on snoozer.profiles
   for each row execute function snoozer.discord_presence_prune_trigger();
 
 revoke all on function snoozer.discord_presence_prune_owner(uuid),
