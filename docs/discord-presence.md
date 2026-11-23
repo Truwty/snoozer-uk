@@ -40,6 +40,13 @@ Existing Discord sign-in identities are reused. For creators who signed up with 
 
 Disconnecting Discord Presence deliberately does not unlink Discord as a Snoozer sign-in method; it only removes the presence mapping and cached data.
 
+For email/password Snoozer accounts, Discord identity linking also needs the Discord OAuth provider configured in Supabase Auth:
+
+- Enable **Discord** under Supabase **Authentication → Sign In / Providers** and enter the Discord application's OAuth Client ID and Client Secret.
+- In the Discord Developer Portal, add the Supabase project's displayed Auth callback URL (normally `https://<project-ref>.supabase.co/auth/v1/callback`) to the application's OAuth2 redirect URIs.
+- In Supabase Auth URL Configuration, allow the Snoozer callback `https://snoozer.uk/auth/callback` (and any other canonical site origin actually used by the deployment).
+- Enable **Manual Identity Linking** in Supabase Auth settings. The app requests only the `identify` scope and never trusts a Discord ID submitted by the browser.
+
 ## Discord Developer Portal setup
 
 1. Create or select a Discord application that will own the presence bot.
