@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const secret = process.env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
-  if (secret.length < 64) return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (!/^[a-f0-9]{64}$/i.test(secret)) return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
 
   return receiveDiscordPresenceInternal(request, secret, {
     async subscriptions() {
