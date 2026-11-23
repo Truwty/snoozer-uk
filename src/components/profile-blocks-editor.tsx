@@ -60,25 +60,25 @@ export function ProfileBlocksEditor({ blocks, onChange }: Props) {
               onClick={() => remove(block)} aria-label={"Remove block " + (index + 1)}>Remove</button>
           </div>
         </header>
-        <div className="studio-block-layout-controls">
-          <label>Width
-            <select value={block.width} onChange={(event) => update(block, { width: event.target.value })}>
-              <option value="full">Full</option><option value="half">Half</option><option value="third">Third</option>
-            </select>
-          </label>
-          <label>Alignment
-            <select value={block.align} onChange={(event) => update(block, { align: event.target.value })}>
-              <option value="start">Left</option><option value="center">Centre</option><option value="end">Right</option>
-            </select>
-          </label>
-          <label>Style
-            <select value={block.variant} onChange={(event) => update(block, { variant: event.target.value })}>
-              <option value="plain">Plain</option><option value="surface">Surface</option>
-              <option value="outline">Outline</option><option value="accent">Accent</option>
-            </select>
-          </label>
-        </div>
         <fieldset className="studio-block-fields stack" disabled={block.locked}>
+          <div className="studio-block-layout-controls">
+            <label>Width
+              <select value={block.width} onChange={(event) => update(block, { width: event.target.value })}>
+                <option value="full">Full</option><option value="half">Half</option><option value="third">Third</option>
+              </select>
+            </label>
+            <label>Alignment
+              <select value={block.align} onChange={(event) => update(block, { align: event.target.value })}>
+                <option value="start">Left</option><option value="center">Centre</option><option value="end">Right</option>
+              </select>
+            </label>
+            <label>Style
+              <select value={block.variant} onChange={(event) => update(block, { variant: event.target.value })}>
+                <option value="plain">Plain</option><option value="surface">Surface</option>
+                <option value="outline">Outline</option><option value="accent">Accent</option>
+              </select>
+            </label>
+          </div>
           {block.type === "heading" && <>
             <label>Heading text<input maxLength={160} value={block.text} onChange={(event) => update(block, { text: event.target.value })}/></label>
             <label>Heading size<select value={block.level} onChange={(event) => update(block, { level: event.target.value })}>
