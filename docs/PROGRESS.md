@@ -1,3 +1,31 @@
+## Snoozer Studio workspace and visual builder redesign — PR #95 (23 November 2026)
+
+**Status: Implementation in progress on `feature/studio-platform-redesign-v2`; not merged and not deployed.** This redesign replaces the cramped editor experience with a wider Studio workspace, clear account overview and dedicated editing destinations. It extends the existing drag-and-drop foundation from PR #94; it does not replace or rebuild unrelated working Snoozer features.
+
+### Delivered in the PR branch
+
+- Full-width Studio service shell with grouped, searchable navigation, Ctrl/Cmd+K focus, mobile navigation, account switching control and Help Centre access.
+- Account overview with profile status/completion, consent-aware views/click activity, aliases and plan links.
+- Dedicated Page Builder, Customize, Links, Widgets and Profile Settings destinations. Focused destinations use a two-panel inspector/preview arrangement instead of repeating the full builder palette.
+- Desktop three-column builder (component library, live profile canvas, editing inspector), responsive tablet/mobile layouts, desktop/phone/narrow-phone preview widths, draft/publish actions and existing undo/redo integration.
+- Drag-to-add for the component library, drag/touch reorder in the profile canvas, keyboard move controls, and click-to-add alternatives.
+- Ten safe native content block types: Heading, About, Callout, Quote, Project, Skills, Call to action, Divider, Countdown and Statistics. Blocks have bounded content, visibility/lock state, full/half/third width, alignment and presentation variants; creators can duplicate a block with a fresh ID.
+- Typed blocks persist through revision-checked draft saving, immutable publication snapshots and publication restoration. Public reads omit hidden blocks and layout references. The older 14-argument save RPC remains compatible and preserves existing blocks.
+- Profile rendering supports mixed full/half/third-width block layouts and collapses to one column on narrow cards.
+- Original Snoozer profile presentation styling, responsive public preview, focused route styling and documentation.
+
+### Verification evidence
+
+- The disposable unit/database suite on an earlier revision of this branch reported **330 passing tests across 44 files**, including block validation, hidden filtering, publication snapshot, restoration and legacy RPC compatibility.
+- On that run, secret scanning, dependency audit, ESLint and TypeScript checks passed.
+- The branch has since gained block duplication, mixed-width layout and strict lock behavior; a fresh full CI run is required to validate those latest edits and the Playwright journey before release.
+- The active latest-head workflow is recorded in the PR and must be rechecked before this progress section is changed to complete.
+
+### Release boundary
+
+No hosted Supabase migration has been applied and no Render deployment has been made for PR #95. The branch is not a production release. Keep the PR open until the latest-head CI, including production build and Chromium Playwright, passes. Only after review/merge should the Supabase migration be applied and the configured staging release performed. Validate the live Studio and a published test profile before describing the redesign as deployed.
+---
+
 ## Feature #29 — Interactive Profile Widgets (23 November 2026)
 
 **Status: Complete — merged and deployed to staging.**
