@@ -13,6 +13,7 @@ export async function connectDiscordPresence(formData: FormData) {
   const profileId = profileIdSchema.safeParse(formData.get("profileId"));
   if (!profileId.success) redirect("/studio/discord?error=profile");
   if (process.env.DISCORD_PRESENCE_ENABLED !== "true") redirect(studioHref("/studio/discord?error=disabled", profileId.data));
+  if (formData.get("discordAgeConfirmed") !== "on") redirect(studioHref("/studio/discord?error=age", profileId.data));
 
   const { client } = await requireAccount();
   const jar = await cookies();
