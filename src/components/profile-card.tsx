@@ -17,7 +17,7 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
@@ -26,6 +26,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   ownerBadge?: boolean;
   discordPresence?: DiscordPresencePublic | null;
   discordPresenceRetry?: boolean;
+  reportBaseUrl?: string;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
@@ -111,7 +112,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} />
+      <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">
