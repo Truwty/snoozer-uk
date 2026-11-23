@@ -372,7 +372,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
-        <p className="sr-only" aria-live="polite">{announcement}</p>
         {content.links.length > linkLimit && <p>Remove links until you reach your current allowance before saving link edits or publishing.</p>}
         {content.links.map((item, index) => <div className="link-editor link-row" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
