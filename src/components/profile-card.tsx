@@ -273,7 +273,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     else child = renderGallery();
     if (!child) return null;
     return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type}
-      item={item} position={position} preview={preview} onMove={onMoveLayoutItem}
+      item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
