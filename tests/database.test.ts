@@ -2392,13 +2392,15 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Not consented',$4::timestamptz)",
       ["00000000-0000-4000-8000-000000000203", discordId, activity, new Date().toISOString()])).rejects.toMatchObject({ code: "22023" });
 
-    await act("anon");
+    await act("service_role");
     const publicPresence = await result("select public.discord_presence_public('discord-presence-test') as value");
     expect(publicPresence).toMatchObject({
       version: 1, state: "live", status: "online",
       activity: { type: "playing", name: "Minecraft", details: "Building", state: null },
       customStatus: null,
     });
+    await act("anon");
+    await expect(db.query("select public.discord_presence_public('discord-presence-test')")).rejects.toMatchObject({ code: "42501" });
     await expect(db.query("select * from snoozer.discord_presence_cache")).rejects.toMatchObject({ code: "42501" });
 
     await act("authenticated", bob);
@@ -2412,13 +2414,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const customEventId = "00000000-0000-4000-8000-000000000202";
     expect(await result("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Working on a build',$4::timestamptz) as value",
       [customEventId, discordId, activity, new Date().toISOString()])).toBe(true);
-    await act("anon");
+    await act("service_role");
     expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toMatchObject({
       customStatus: "Working on a build",
     });
 
     await db.exec("reset role; update snoozer.discord_presence_worker_state set heartbeat_at=now()-interval '2 minutes'");
-    await act("anon");
+    await act("service_role");
     expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toMatchObject({
       state: "unavailable", status: null, activity: null, customStatus: null,
     });
@@ -2428,7 +2430,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.discord_presence_get_my_settings($1) as value", [id])).toMatchObject({
       connected: true, enabled: false,
     });
-    await act("anon");
+    await act("service_role");
     expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toBeNull();
     await act("service_role");
     expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([]);
