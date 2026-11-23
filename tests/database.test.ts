@@ -2377,11 +2377,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(saved).toMatchObject({ connected: true, enabled: true, showStatus: true, showActivity: true, showCustomStatus: false });
 
     await act("service_role");
-    expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([discordId]);
+    expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([{ discordUserId: discordId, showStatus: true, showActivity: true, showCustomStatus: false }]);
     const eventId = "00000000-0000-4000-8000-000000000201";
     const activity = JSON.stringify({ type: "playing", name: "Minecraft", details: "Building", state: null });
     expect(await result("select public.discord_presence_heartbeat(true,true) as value")).toBe(true);
-    expect(await result("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Working on a build',$4::timestamptz) as value",
+    expect(await result("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,null,$4::timestamptz) as value",
       [eventId, discordId, activity, new Date().toISOString()])).toBe(true);
     // Event IDs are idempotent: a replay cannot overwrite a newer status.
     expect(await result("select public.discord_presence_ingest($1,$2,'offline',null,null,$3::timestamptz) as value",
@@ -2402,6 +2402,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     const withCustomStatus = await result("select public.discord_presence_save_settings($1,true,true,true,true) as value", [id]);
     expect(withCustomStatus).toMatchObject({ showCustomStatus: true });
+    await act("service_role");
+    expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([{ discordUserId: discordId, showStatus: true, showActivity: true, showCustomStatus: true }]);
+    const customEventId = "00000000-0000-4000-8000-000000000202";
+    expect(await result("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Working on a build',$4::timestamptz) as value",
+      [customEventId, discordId, activity, new Date().toISOString()])).toBe(true);
     await act("anon");
     expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toMatchObject({
       customStatus: "Working on a build",
