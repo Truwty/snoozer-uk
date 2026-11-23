@@ -6,7 +6,10 @@ declare item jsonb;
 declare entry_count integer;
 declare unique_count integer;
 declare target timestamptz;
+declare default_value constant jsonb := '{"version":1,"order":["guestbook","testimonials","poll","faq"],"guestbook":{"enabled":false,"heading":"Guestbook","description":"Leave a message.","maxEntries":10,"submissionsOpen":true},"testimonials":{"enabled":false,"heading":"Testimonials","items":[]},"poll":{"enabled":false,"id":"00000000-0000-4000-8000-000000000001","question":"","options":[],"open":true,"closesAt":null,"showResultsBeforeVote":false},"faq":{"enabled":false,"heading":"Frequently asked questions","items":[]}}'::jsonb;
 begin
+  -- Existing profiles receive this explicit safe default during the additive migration.
+  if p_value = default_value then return true; end if;
   if jsonb_typeof(p_value) is distinct from 'object'
     or p_value - array['version','order','guestbook','testimonials','poll','faq'] <> '{}'::jsonb
     or p_value->>'version' is distinct from '1'
