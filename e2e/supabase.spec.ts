@@ -712,7 +712,7 @@ test("Studio block library adds blocks by click and drag across desktop and mobi
 
     await page.locator(".block-library-item").filter({ hasText: "Callout" }).dragTo(page.locator(".preview"));
     await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 2 type", { exact: true })).toHaveValue("callout");
+    await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
 
     await page.locator(".block-library-item").filter({ hasText: "FAQ" }).dragTo(page.locator(".preview"));
     await editorTab(page, "Widgets");
