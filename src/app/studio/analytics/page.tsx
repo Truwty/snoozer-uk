@@ -26,7 +26,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const browsers = browserAnalytics.safeParse(browserResponse?.data);
 
   return <main className="shell analytics-shell">
-    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/builder", draft?.profile_id)}>Back to Page Builder</Link></header>
     <section className="panel stack">
       <h1>Profile analytics</h1>
       {draft ? <p className="muted">@{draft.username} · Views and clicks from visitors who allowed analytics. Dates are UTC. Signed-in owner visits are excluded.</p>
