@@ -5,13 +5,9 @@ begin;
 create or replace function snoozer.valid_profile_appearance(p_value jsonb) returns boolean
 language sql immutable set search_path = '' as $$
  select case when jsonb_typeof(p_value)='object' then coalesce(
-   not exists (
-     select 1 from jsonb_object_keys(p_value) as appearance_key
-     where appearance_key not in (
-       'density','corners','layout','accent','entrance','backgroundImage','effects','colors','font',
-       'gradientEnabled','opacity','blur','monochromeIcons','animatedTitle','usernameGlow','socialGlow','badgeGlow'
-     )
-   )
+   (p_value - 'density' - 'corners' - 'layout' - 'accent' - 'entrance' - 'backgroundImage' - 'effects' - 'colors' - 'font'
+      - 'gradientEnabled' - 'opacity' - 'blur' - 'monochromeIcons' - 'animatedTitle'
+      - 'usernameGlow' - 'socialGlow' - 'badgeGlow') = '{}'::jsonb
    and p_value->'density' is not null and p_value->'corners' is not null
    and p_value->>'density' in ('compact','balanced','airy')
    and p_value->>'corners' in ('square','soft','round')
@@ -33,10 +29,7 @@ language sql immutable set search_path = '' as $$
    and (p_value->'badgeGlow' is null or jsonb_typeof(p_value->'badgeGlow')='boolean')
    and (p_value->'colors' is null or (
      jsonb_typeof(p_value->'colors')='object'
-     and not exists (
-       select 1 from jsonb_object_keys(p_value->'colors') as colour_key
-       where colour_key not in ('background','text','accent','icon','effect','gradientStart','gradientEnd')
-     )
+     and (p_value->'colors' - 'background' - 'text' - 'accent' - 'icon' - 'effect' - 'gradientStart' - 'gradientEnd') = '{}'::jsonb
      and ((p_value->'colors'->'background' is null) or (jsonb_typeof(p_value->'colors'->'background')='string' and p_value->'colors'->>'background' ~ '^#[0-9a-fA-F]{6}$'))
      and ((p_value->'colors'->'text' is null) or (jsonb_typeof(p_value->'colors'->'text')='string' and p_value->'colors'->>'text' ~ '^#[0-9a-fA-F]{6}$'))
      and ((p_value->'colors'->'accent' is null) or (jsonb_typeof(p_value->'colors'->'accent')='string' and p_value->'colors'->>'accent' ~ '^#[0-9a-fA-F]{6}$'))
