@@ -29,6 +29,7 @@ export function HomeProfileDemo() {
       indexable: false,
       avatar: null,
       widgets: defaultProfileWidgets,
+      blocks: [],
       appearance: { ...defaultAppearance, layout },
       pageLayout: { version: 1, items: [] },
       gallery: [],
