@@ -16,6 +16,7 @@ type Query = StudioProfileQuery & {
 
 const errors: Record<string, string> = {
   profile: "Choose a valid profile before changing Discord Presence.",
+  disabled: "Discord Presence has not been activated yet. It will be enabled after the Discord bot, worker and policy review are complete.",
   link: "Discord could not be linked. If you already use email sign-in, manual identity linking may need to be enabled in Supabase Auth settings.",
   connect: "Connect a Discord account to this Snoozer account before enabling presence.",
   fields: "Select at least one field to share, or turn public presence off.",
@@ -25,6 +26,7 @@ const errors: Record<string, string> = {
 
 export default async function Page({ searchParams }: { searchParams: Promise<Query> }) {
   const query = await searchParams;
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") return <main className="shell"><nav className="nav studio-subnav"><Link className="button small" href="/studio">Back to Studio</Link></nav><section className="panel stack discord-settings-panel"><p className="eyebrow">STUDIO / INTEGRATIONS</p><h1>Discord Presence</h1><p className="muted">This integration is prepared but not activated. No Discord presence data is being collected or displayed.</p><div className="discord-service-status"><span className="discord-service-indicator" aria-hidden="true"/><span>Activation is pending Discord policy clearance, bot credentials, a shared server and an always-on worker.</span></div></section></main>;
   const draft = await readStudioDraft(query.profile);
   const client = await sessionClient();
   const response = draft
