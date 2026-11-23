@@ -16,7 +16,7 @@ import { defaultEffects } from "@/lib/profile-effects";
 import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
@@ -24,6 +24,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   previewLabel?: string;
   ownerBadge?: boolean;
   discordPresence?: DiscordPresencePublic | null;
+  discordPresenceRetry?: boolean;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
@@ -39,7 +40,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage } as CSSProperties
     : undefined;
-  const discordBadge = !preview && discordPresence
+  const discordBadge = !preview && (discordPresence !== null || discordPresenceRetry)
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;
 

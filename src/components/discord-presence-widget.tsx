@@ -37,7 +37,8 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   const [presence, setPresence] = useState(initialPresence);
 
   useEffect(() => {
-    if (!initialPresence) return;
+    // A server-side lookup can fail transiently. Keep the client poller active
+    // when the page has already opted in so the badge can recover without reload.
     const poller = createDiscordPresencePoller({
       username,
       onPresence: setPresence,
