@@ -107,6 +107,110 @@ test("live Gateway PRESENCE_UPDATE events are ingested only for the configured g
   assert.equal(posted[0].customStatus, null);
 });
 
+
+test("worker requests targeted snapshots only for opted-in IDs and handles the response chunk", async () => {
+  const posted = [];
+  const gatewayMessages = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId: "222222222222222222",
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher: async (_url, options) => {
+      posted.push(JSON.parse(options.body));
+      return new Response(null, { status: 204 });
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.subscriptions.set(discordUserId, {
+    showStatus: true,
+    showActivity: true,
+    showCustomStatus: false,
+  });
+  worker.guildReady = true;
+  worker.socket = {
+    readyState: 1,
+    send: (payload) => gatewayMessages.push(JSON.parse(payload)),
+  };
+
+  const pending = worker.requestSnapshots([discordUserId, "333333333333333333"]);
+  const request = gatewayMessages[0];
+  assert.equal(request.op, 8);
+  assert.deepEqual(request.d.user_ids, [discordUserId]);
+  assert.equal(request.d.presences, true);
+  assert.equal(request.d.query, undefined);
+  assert.equal(request.d.limit, undefined);
+
+  await worker.handleChunk({
+    guild_id: "222222222222222222",
+    nonce: request.d.nonce,
+    chunk_index: 0,
+    chunk_count: 1,
+    members: [{ user: { id: discordUserId } }],
+    presences: [{
+      user: { id: discordUserId },
+      status: "idle",
+      activities: [{ type: 0, name: "Minecraft", details: "Building" }],
+    }],
+    not_found: [],
+  });
+  await pending;
+
+  assert.equal(posted.length, 1);
+  assert.equal(posted[0].type, "presence");
+  assert.equal(posted[0].discordUserId, discordUserId);
+  assert.equal(posted[0].status, "idle");
+  assert.equal(posted[0].activity.name, "Minecraft");
+});
+
+test("worker clears cached presence when a targeted snapshot reports the account is not in the guild", async () => {
+  const posted = [];
+  const gatewayMessages = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId: "222222222222222222",
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher: async (_url, options) => {
+      posted.push(JSON.parse(options.body));
+      return new Response(null, { status: 204 });
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.subscriptions.set(discordUserId, {
+    showStatus: true,
+    showActivity: true,
+    showCustomStatus: false,
+  });
+  worker.guildReady = true;
+  worker.socket = {
+    readyState: 1,
+    send: (payload) => gatewayMessages.push(JSON.parse(payload)),
+  };
+
+  const pending = worker.requestSnapshots([discordUserId]);
+  const request = gatewayMessages[0];
+  await worker.handleChunk({
+    guild_id: "222222222222222222",
+    nonce: request.d.nonce,
+    chunk_index: 0,
+    chunk_count: 1,
+    members: [],
+    presences: [],
+    not_found: [discordUserId],
+  });
+  await pending;
+
+  assert.deepEqual(posted, [{
+    type: "clear",
+    eventId: posted[0].eventId,
+    discordUserId,
+  }]);
+  assert.match(posted[0].eventId, /^[0-9a-f-]{36}$/);
+});
+
 test("worker signs the exact JSON body with a timestamped HMAC", () => {
   const secret = "b".repeat(64);
   const payload = { type: "heartbeat", connected: true, guildReady: true };
