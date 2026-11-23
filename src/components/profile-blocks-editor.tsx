@@ -7,9 +7,6 @@ type Props = {
   onChange: (blocks: ProfileBlock[]) => void;
 };
 
-const textField = (block: ProfileBlock, key: string) =>
-  typeof block[key as keyof ProfileBlock] === "string" ? String(block[key as keyof ProfileBlock]) : "";
-
 export function ProfileBlocksEditor({ blocks, onChange }: Props) {
   function update(block: ProfileBlock, patch: Record<string, unknown>) {
     onChange(blocks.map((item) => item.id === block.id ? { ...item, ...patch } as ProfileBlock : item));
