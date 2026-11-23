@@ -701,7 +701,7 @@ test("Studio block library adds blocks by click and drag across desktop and mobi
     await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    const workspace = page.locator(".studio-shell");
+    const workspace = page.locator("main.studio-shell");
     expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
     await expect(page.locator(".block-library-item")).toHaveCount(8);
