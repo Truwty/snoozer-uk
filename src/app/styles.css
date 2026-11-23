@@ -1137,3 +1137,5 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .widget-option-editor { grid-template-columns: 1fr; align-items: stretch; }
 }
 @media (prefers-reduced-motion: reduce) { .poll-result-track span { transition: none; } }
+
+.widget-honeypot { position: absolute !important; left: -10000px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
