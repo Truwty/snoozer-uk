@@ -145,7 +145,7 @@ begin
   end if;
   return current.revision;
 end;
-$;
+$$;
 
 create or replace function public.save_profile(
   p_profile uuid, p_expected integer, p_name text, p_bio text, p_theme text,
@@ -213,7 +213,7 @@ begin
   );
   return saved;
 end;
-$;
+$$;
 
 create or replace function snoozer.restore_publication_for_id(
   p_profile uuid, p_revision integer, p_expected integer
@@ -248,7 +248,7 @@ begin
     select owner_id, position, label, url, hidden, profile_id
     from snoozer.published_links where profile_id = p_profile and revision = p_revision;
 end;
-$;
+$$;
 
 create or replace function snoozer.restore_publication(p_revision integer, p_expected integer)
 returns void language plpgsql security definer set search_path = '' as $$
@@ -277,7 +277,7 @@ begin
     select owner_id, position, label, url, hidden
     from snoozer.published_links where owner_id = actor and revision = p_revision;
 end;
-$;
+$$;
 
 create or replace function snoozer.profile_snapshot(p_profile uuid, p_revision integer, p_public boolean)
 returns jsonb language sql stable set search_path = '' as $$
