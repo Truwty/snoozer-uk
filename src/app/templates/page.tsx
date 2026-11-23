@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { ProfileCard } from "@/components/profile-card";
+import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileLayouts, themes } from "@/lib/profile";
 import { findTemplates, templateFilters } from "@/lib/studio-templates";
