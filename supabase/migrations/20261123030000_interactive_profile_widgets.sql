@@ -19,16 +19,16 @@ begin
     or jsonb_typeof(p_value->'testimonials') is distinct from 'object'
     or jsonb_typeof(p_value->'poll') is distinct from 'object'
     or jsonb_typeof(p_value->'faq') is distinct from 'object'
-  then raise exception 'widget validation guard 1'; end if;
+  then return false; end if;
 
   select count(*),count(distinct value) into entry_count,unique_count
     from jsonb_array_elements_text(p_value->'order');
   if entry_count <> 4 or unique_count <> 4 or exists (
     select 1 from jsonb_array_elements_text(p_value->'order') x(value)
     where x.value not in ('guestbook','testimonials','poll','faq')
-  ) then raise exception 'widget validation guard 2'; end if;
+  ) then return false; end if;
 
-  if p_value->'guestbook' - array['enabled','heading','description','maxEntries','submissionsOpen'] <> '{}'::jsonb
+  if (p_value->'guestbook') - array['enabled','heading','description','maxEntries','submissionsOpen'] <> '{}'::jsonb
     or jsonb_typeof(p_value->'guestbook'->'enabled') is distinct from 'boolean'
     or jsonb_typeof(p_value->'guestbook'->'heading') is distinct from 'string'
     or char_length(btrim(p_value->'guestbook'->>'heading')) not between 1 and 80
@@ -38,16 +38,16 @@ begin
     or (p_value->'guestbook'->>'maxEntries') !~ '^[0-9]{1,2}$'
     or (p_value->'guestbook'->>'maxEntries')::integer not between 1 and 10
     or jsonb_typeof(p_value->'guestbook'->'submissionsOpen') is distinct from 'boolean'
-  then raise exception 'widget validation guard 3'; end if;
+  then return false; end if;
 
-  if p_value->'testimonials' - array['enabled','heading','items'] <> '{}'::jsonb
+  if (p_value->'testimonials') - array['enabled','heading','items'] <> '{}'::jsonb
     or jsonb_typeof(p_value->'testimonials'->'enabled') is distinct from 'boolean'
     or jsonb_typeof(p_value->'testimonials'->'heading') is distinct from 'string'
     or char_length(btrim(p_value->'testimonials'->>'heading')) not between 1 and 80
     or jsonb_typeof(p_value->'testimonials'->'items') is distinct from 'array'
     or jsonb_array_length(p_value->'testimonials'->'items') > 6
     or ((p_value->'testimonials'->>'enabled')::boolean and jsonb_array_length(p_value->'testimonials'->'items') < 1)
-  then raise exception 'widget validation guard 4'; end if;
+  then return false; end if;
   for item in select value from jsonb_array_elements(p_value->'testimonials'->'items') loop
     if jsonb_typeof(item) is distinct from 'object'
       or item - array['id','quote','author','role'] <> '{}'::jsonb
@@ -57,10 +57,10 @@ begin
       or jsonb_typeof(item->'author') is distinct from 'string'
       or char_length(btrim(item->>'author')) not between 1 and 80
       or (item ? 'role' and (jsonb_typeof(item->'role') is distinct from 'string' or char_length(item->>'role') > 80))
-    then raise exception 'widget validation guard 5'; end if;
+    then return false; end if;
   end loop;
 
-  if p_value->'poll' - array['enabled','id','question','options','open','closesAt','showResultsBeforeVote'] <> '{}'::jsonb
+  if (p_value->'poll') - array['enabled','id','question','options','open','closesAt','showResultsBeforeVote'] <> '{}'::jsonb
     or jsonb_typeof(p_value->'poll'->'enabled') is distinct from 'boolean'
     or coalesce(p_value->'poll'->>'id','') !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
     or jsonb_typeof(p_value->'poll'->'question') is distinct from 'string'
@@ -74,16 +74,16 @@ begin
       char_length(btrim(p_value->'poll'->>'question')) not between 5 and 180
       or jsonb_array_length(p_value->'poll'->'options') not between 2 and 6
     ))
-  then raise exception 'widget validation guard 6'; end if;
+  then return false; end if;
   if p_value->'poll'->'closesAt' is distinct from 'null'::jsonb then
     if jsonb_typeof(p_value->'poll'->'closesAt') is distinct from 'string'
       or (p_value->'poll'->>'closesAt') !~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})$' then
-      raise exception 'widget validation guard 7';
+      return false;
     end if;
     begin
       target := (p_value->'poll'->>'closesAt')::timestamptz;
     exception when others then
-      raise exception 'widget validation guard 8';
+      return false;
     end;
   end if;
   for item in select value from jsonb_array_elements(p_value->'poll'->'options') loop
@@ -93,19 +93,19 @@ begin
       or jsonb_typeof(item->'label') is distinct from 'string'
       or char_length(item->>'label') > 80
       or ((p_value->'poll'->>'enabled')::boolean and char_length(btrim(item->>'label')) not between 1 and 80)
-    then raise exception 'widget validation guard 9'; end if;
+    then return false; end if;
   end loop;
   select count(*),count(distinct value->>'id') into entry_count,unique_count from jsonb_array_elements(p_value->'poll'->'options');
-  if entry_count <> unique_count then raise exception 'widget validation guard 10'; end if;
+  if entry_count <> unique_count then return false; end if;
 
-  if p_value->'faq' - array['enabled','heading','items'] <> '{}'::jsonb
+  if (p_value->'faq') - array['enabled','heading','items'] <> '{}'::jsonb
     or jsonb_typeof(p_value->'faq'->'enabled') is distinct from 'boolean'
     or jsonb_typeof(p_value->'faq'->'heading') is distinct from 'string'
     or char_length(btrim(p_value->'faq'->>'heading')) not between 1 and 80
     or jsonb_typeof(p_value->'faq'->'items') is distinct from 'array'
     or jsonb_array_length(p_value->'faq'->'items') > 10
     or ((p_value->'faq'->>'enabled')::boolean and jsonb_array_length(p_value->'faq'->'items') < 1)
-  then raise exception 'widget validation guard 11'; end if;
+  then return false; end if;
   for item in select value from jsonb_array_elements(p_value->'faq'->'items') loop
     if jsonb_typeof(item) is distinct from 'object'
       or item - array['id','question','answer'] <> '{}'::jsonb
@@ -114,13 +114,14 @@ begin
       or char_length(btrim(item->>'question')) not between 1 and 120
       or jsonb_typeof(item->'answer') is distinct from 'string'
       or char_length(btrim(item->>'answer')) not between 1 and 1000
-    then raise exception 'widget validation guard 12'; end if;
+    then return false; end if;
   end loop;
   select count(*),count(distinct value->>'id') into entry_count,unique_count from jsonb_array_elements(p_value->'faq'->'items');
-  if entry_count <> unique_count then raise exception 'widget validation guard 13'; end if;
+  if entry_count <> unique_count then return false; end if;
   select count(*),count(distinct value->>'id') into entry_count,unique_count from jsonb_array_elements(p_value->'testimonials'->'items');
-  if entry_count <> unique_count then raise exception 'widget validation guard 14'; end if;
+  if entry_count <> unique_count then return false; end if;
   return true;
+exception when others then return false;
 end $$;
 revoke execute on function snoozer.valid_profile_widgets(jsonb) from public,anon,authenticated,service_role;
 
