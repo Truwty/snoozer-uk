@@ -17,7 +17,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
   if (error?.code === "23505") return { status: "error", message: "That address is unavailable. If you already claimed a page, reload Studio." };
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours. Try again later." };
   if (error) return { status: "error", message: "Couldn’t claim your address. Try again." };
-  redirect("/studio");
+  redirect("/studio/builder");
 }
 
 export async function claimAdditional(_: ActionState, form: FormData): Promise<ActionState> {
@@ -30,7 +30,7 @@ export async function claimAdditional(_: ActionState, form: FormData): Promise<A
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours." };
   const profile = z.uuid().safeParse(data);
   if (error || !profile.success) return { status: "error", message: "Couldn’t claim your address. Try again." };
-  redirect(studioHref("/studio", profile.data));
+  redirect(studioHref("/studio/builder", profile.data));
 }
 
 const saveRequest = z.object({
