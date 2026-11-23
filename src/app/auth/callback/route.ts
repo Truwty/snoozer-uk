@@ -12,10 +12,16 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const presenceFlow = url.searchParams.get("flow") === "discord-presence";
   const profile = z.uuid().safeParse(url.searchParams.get("profile"));
-  const presenceTarget = presenceFlow && profile.success ? `/studio/discord?profile=${encodeURIComponent(profile.data)}` : "/studio/discord";
+  const presenceTarget = new URL("/studio/discord", siteUrl());
+  if (presenceFlow && profile.success) presenceTarget.searchParams.set("profile", profile.data);
   const failed = async () => {
     try { clearPending(await cookies()); } catch { /* No pending session to clear. */ }
-    return NextResponse.redirect(new URL(presenceFlow ? presenceTarget + "&error=link" : "/sign-in?discord=failed", siteUrl()), 303);
+    if (presenceFlow) {
+      const target = new URL(presenceTarget);
+      target.searchParams.set("error", "link");
+      return NextResponse.redirect(target, 303);
+    }
+    return NextResponse.redirect(new URL("/sign-in?discord=failed", siteUrl()), 303);
   };
 
   if (!code || !supabaseUrl || !supabaseKey) return failed();
@@ -38,7 +44,11 @@ export async function GET(request: Request) {
       saveAccount(jar, slot, data.user.id, data.user.email);
     }
     clearPending(jar);
-    return NextResponse.redirect(new URL(presenceFlow ? presenceTarget + "&linked=1" : "/studio", siteUrl()), 303);
+    if (presenceFlow) {
+      presenceTarget.searchParams.set("linked", "1");
+      return NextResponse.redirect(presenceTarget, 303);
+    }
+    return NextResponse.redirect(new URL("/studio", siteUrl()), 303);
   } catch {
     return failed();
   }
