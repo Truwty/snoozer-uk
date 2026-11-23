@@ -114,6 +114,9 @@ declare layout_section_count integer;
 declare layout_links_count integer;
 declare layout_widgets_count integer;
 declare layout_gallery_count integer;
+declare expected_links_count integer;
+declare expected_widgets_count integer;
+declare expected_gallery_count integer;
 begin
   if not snoozer.valid_profile_page_layout(p_page_layout) then
     raise exception 'Invalid profile page layout' using errcode = '22023';
@@ -135,14 +138,18 @@ begin
   into layout_section_count,layout_links_count,layout_widgets_count,layout_gallery_count
   from jsonb_array_elements(p_page_layout->'items') item;
 
+  expected_links_count := case when coalesce(jsonb_array_length(p_links),0)>0 then 1 else 0 end;
+  expected_widgets_count := case when has_widgets then 1 else 0 end;
+  expected_gallery_count := case when has_gallery then 1 else 0 end;
+
   if exists (
       select 1 from jsonb_array_elements(p_page_layout->'items') item
       where item->>'type'='section' and (item->>'index')::integer >= section_count
     )
     or layout_section_count <> section_count
-    or layout_links_count <> case when coalesce(jsonb_array_length(p_links),0)>0 then 1 else 0 end
-    or layout_widgets_count <> case when has_widgets then 1 else 0 end
-    or layout_gallery_count <> case when has_gallery then 1 else 0 end then
+    or layout_links_count <> expected_links_count
+    or layout_widgets_count <> expected_widgets_count
+    or layout_gallery_count <> expected_gallery_count then
     raise exception 'Page layout does not match profile content' using errcode='22023';
   end if;
 
