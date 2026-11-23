@@ -16,6 +16,14 @@ export function ProfileBlocksEditor({ blocks, onChange }: Props) {
     onChange(blocks.filter((item) => item.id !== block.id));
   }
 
+  function duplicate(block: ProfileBlock, index: number) {
+    if (blocks.length >= 32) return;
+    const copy = structuredClone(block);
+    copy.id = crypto.randomUUID();
+    copy.locked = false;
+    onChange([...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)]);
+  }
+
   return <section className="studio-profile-blocks stack" aria-labelledby="studio-profile-blocks-title">
     <header className="studio-blocks-heading">
       <div>
@@ -46,6 +54,8 @@ export function ProfileBlocksEditor({ blocks, onChange }: Props) {
                 onChange={(event) => update(block, { locked: event.target.checked })}/>
               Locked
             </label>
+            <button type="button" className="button small" disabled={blocks.length >= 32}
+              onClick={() => duplicate(block, index)} aria-label={"Duplicate block " + (index + 1)}>Duplicate</button>
             <button type="button" className="button small danger" disabled={block.locked}
               onClick={() => remove(block)} aria-label={"Remove block " + (index + 1)}>Remove</button>
           </div>
