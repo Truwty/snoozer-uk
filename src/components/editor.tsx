@@ -162,7 +162,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       widgets.testimonials = {
         ...widgets.testimonials, enabled: true,
         items: widgets.testimonials.items.length ? widgets.testimonials.items : [
-          { id: crypto.randomUUID(), quote: "Add your testimonial here.", author: "Your client", role: "" },
+          { id: crypto.randomUUID(), quote: "Add your testimonial here.", author: "Add author name", role: "" },
         ],
       };
     } else if (kind === "poll") {
@@ -237,10 +237,11 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           </div>
           <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
           <div className="block-library-grid">
-            {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item" draggable
+            {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item"
+              aria-label={`Add ${block.label}`} aria-describedby={`block-description-${block.id}`} draggable
               onDragStart={(event) => startBlockDrag(event, block.id)} onClick={() => addBlock(block.id)}>
               <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
-              <span className="block-library-copy"><strong>{block.label}</strong><small>{block.description}</small></span>
+              <span className="block-library-copy"><strong>{block.label}</strong><small id={`block-description-${block.id}`}>{block.description}</small></span>
               <span className="block-library-add" aria-hidden="true">+</span>
             </button>)}
           </div>
