@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { filterStudioNavigation } from "@/lib/studio-navigation";
 
 export function StudioSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedProfile = searchParams.get("profile");
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,7 +32,7 @@ export function StudioSidebar() {
 
   return <aside className={"studio-sidebar" + (mobileOpen ? " is-mobile-open" : "")} aria-label="Studio navigation">
     <div className="studio-sidebar-brand-row">
-      <Link href="/studio" className="studio-sidebar-brand" aria-label="Snoozer Studio home">
+      <Link href={selectedProfile ? "/studio?profile=" + encodeURIComponent(selectedProfile) : "/studio"} className="studio-sidebar-brand" aria-label="Snoozer Studio home">
         <span className="studio-brand-mark" aria-hidden="true">S</span>
         <span className="studio-brand-word">snoozer<small>STUDIO</small></span>
       </Link>
@@ -51,7 +53,10 @@ export function StudioSidebar() {
         {group.items.map((item) => {
           const active = item.href === "/studio" ? pathname === "/studio"
             : pathname === item.href || pathname.startsWith(item.href + "/");
-          return <Link key={item.href} href={item.href} className={"studio-sidebar-link" + (active ? " is-active" : "")}
+          const href = selectedProfile && item.href.startsWith("/studio")
+            ? item.href + (item.href.includes("?") ? "&" : "?") + "profile=" + encodeURIComponent(selectedProfile)
+            : item.href;
+          return <Link key={item.href} href={href} className={"studio-sidebar-link" + (active ? " is-active" : "")}
             aria-current={active ? "page" : undefined} onClick={() => setMobileOpen(false)}>
             <span className="studio-sidebar-icon" aria-hidden="true">{item.icon}</span>
             <span>{item.label}</span>
