@@ -23,11 +23,17 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
   useEffect(() => {
     const controller = new AbortController();
     let hadVoted = false;
-    try { hadVoted = window.localStorage.getItem("snoozer-poll-vote:" + pollId) === "yes"; } catch { /* Storage is optional. */ }
+    let visitorToken: string | null = null;
+    try {
+      hadVoted = window.localStorage.getItem("snoozer-poll-vote:" + pollId) === "yes";
+      if (hadVoted) visitorToken = widgetVisitorToken();
+    } catch { /* Storage is optional. */ }
     if (hadVoted) setVoted(true);
     async function loadResults() {
       try {
-        const url = "/api/v1/widgets/poll?username=" + encodeURIComponent(username) + "&pollId=" + encodeURIComponent(pollId);
+        const query = new URLSearchParams({ username, pollId });
+        if (visitorToken) query.set("visitorToken", visitorToken);
+        const url = "/api/v1/widgets/poll?" + query.toString();
         const response = await fetch(url, { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Poll results unavailable.");
         const parsed = resultSchema.safeParse(await response.json());
