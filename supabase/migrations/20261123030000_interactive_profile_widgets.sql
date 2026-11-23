@@ -398,7 +398,7 @@ revoke execute on function public.get_public_guestbook_entries(text,integer),
  public.submit_public_poll_vote(text,uuid,uuid,text) from public,anon,authenticated,service_role;
 grant execute on function public.get_public_guestbook_entries(text,integer),
  public.submit_profile_guestbook_entry(text,text,text,text),
- public.get_public_poll_results(text,uuid),
+ public.get_public_poll_results(text,uuid,text),
  public.submit_public_poll_vote(text,uuid,uuid,text) to service_role;
 
 revoke execute on function public.owner_guestbook_queue(uuid,integer),
