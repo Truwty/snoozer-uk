@@ -49,6 +49,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [dropActive, setDropActive] = useState(false);
+  const draggedBlock = useRef<BuilderBlock | null>(null);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
@@ -187,17 +188,33 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   }
 
   function startBlockDrag(event: DragEvent<HTMLButtonElement>, kind: BuilderBlock) {
+    draggedBlock.current = kind;
     event.dataTransfer.effectAllowed = "copy";
     event.dataTransfer.setData("application/x-snoozer-block", kind);
     event.dataTransfer.setData("text/plain", kind);
   }
 
-  function dropBlock(event: DragEvent<HTMLDivElement>) {
+  function allowBlockDrop(event: DragEvent<HTMLElement>) {
+    const types = Array.from(event.dataTransfer.types);
+    if (draggedBlock.current || types.includes("application/x-snoozer-block") || types.includes("text/plain")) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      setDropActive(true);
+    }
+  }
+
+  function dropBlock(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     setDropActive(false);
-    const candidate = event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
+    const candidate = draggedBlock.current || event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
+    draggedBlock.current = null;
     const block = blockLibrary.find(({ id }) => id === candidate);
     if (block) addBlock(block.id);
+  }
+
+  function endBlockDrag() {
+    draggedBlock.current = null;
+    setDropActive(false);
   }
 
   return <div className="studio-workspace">
@@ -239,7 +256,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           <div className="block-library-grid">
             {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item"
               aria-describedby={`block-description-${block.id}`} draggable
-              onDragStart={(event) => startBlockDrag(event, block.id)} onClick={() => addBlock(block.id)}>
+              onDragStart={(event) => startBlockDrag(event, block.id)} onDragEnd={endBlockDrag} onClick={() => addBlock(block.id)}>
               <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
               <span className="block-library-copy"><strong>{block.label}</strong><small id={`block-description-${block.id}`}>{block.description}</small></span>
               <span className="block-library-add" aria-hidden="true">+</span>
@@ -466,7 +483,8 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       {settings}
       </section>
     </div>
-    <aside className="preview stack">
+    <aside className={"preview stack" + (dropActive ? " is-drop-active" : "")}
+      onDragOver={allowBlockDrop} onDrop={dropBlock} data-drop-active={dropActive || undefined}>
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
         <label>Preview width
@@ -482,18 +500,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
-      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}
-        onDragOver={(event) => {
-          if (Array.from(event.dataTransfer.types).includes("application/x-snoozer-block")) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
-            setDropActive(true);
-          }
-        }}
-        onDragLeave={(event) => {
-          if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDropActive(false);
-        }}
-        onDrop={dropBlock} data-drop-active={dropActive || undefined}>
+      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
