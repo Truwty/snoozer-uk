@@ -184,12 +184,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     ...(colors?.accent ? { "--detail": colors.accent } : {}),
     ...(colors?.effect ? { "--wash": colors.effect } : {}),
     "--profile-icon-color": colors?.icon ?? "var(--text)",
-    "--profile-opacity": profile.appearance.opacity + "%",
-    "--profile-blur": profile.appearance.blur + "px",
-    "--profile-font": fontFamilies[profile.appearance.font],
+    "--profile-opacity": (profile.appearance.opacity ?? 100) + "%",
+    "--profile-blur": (profile.appearance.blur ?? 0) + "px",
+    "--profile-font": fontFamilies[profile.appearance.font ?? "system"],
     "--profile-gradient-start": colors?.gradientStart ?? "#493c96",
     "--profile-gradient-end": colors?.gradientEnd ?? "#137f83",
-  } as CSSProperties;
+  } as unknown as CSSProperties;
   const discordBadge = !preview && (discordPresence !== null || discordPresenceRetry)
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;

@@ -402,21 +402,21 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           <label>Gradient end<input type="color" value={customColours.gradientEnd ?? "#137f83"}
             onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientEnd: event.target.value } })}/></label>
         </div>
-        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled}
+        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, gradientEnabled: event.target.checked })}/> Enable profile gradient</label>
       </fieldset>
       <fieldset className="stack studio-customize-panel">
         <legend className="section-title">Surface and typography</legend>
-        <label>Profile opacity: {content.appearance.opacity}%
-          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity}
+        <label>Profile opacity: {content.appearance.opacity ?? 100}%
+          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity ?? 100}
             onChange={(event) => set("appearance", { ...content.appearance, opacity: Number(event.target.value) })}/>
         </label>
-        <label>Background blur: {content.appearance.blur}px
-          <input type="range" min={0} max={24} step={1} value={content.appearance.blur}
+        <label>Background blur: {content.appearance.blur ?? 0}px
+          <input type="range" min={0} max={24} step={1} value={content.appearance.blur ?? 0}
             onChange={(event) => set("appearance", { ...content.appearance, blur: Number(event.target.value) })}/>
         </label>
         <label>Typography
-          <select value={content.appearance.font} onChange={(event) => {
+          <select value={content.appearance.font ?? "system"} onChange={(event) => {
             const font = ["system", "sans", "serif", "mono"].find((value) => value === event.target.value);
             if (font) set("appearance", { ...content.appearance, font: font as typeof content.appearance.font });
           }}>
@@ -427,15 +427,15 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </fieldset>
       <fieldset className="stack studio-customize-panel">
         <legend className="section-title">Profile details and effects</legend>
-        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons}
+        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle}
+        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow}
+        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow}
+        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow}
+        <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, badgeGlow: event.target.checked })}/> Badge glow</label>
       </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
