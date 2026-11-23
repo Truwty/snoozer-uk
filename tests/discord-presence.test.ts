@@ -116,7 +116,12 @@ describe("signed worker ingestion boundary", () => {
     });
     expect((await receiveDiscordPresenceInternal(unsigned, secret, deps, now)).status).toBe(401);
 
-    const tampered = signedRequest({ type: "subscriptions" }, now, validBody + " ");
+    const validSignature = createHmac("sha256", secret).update(String(now) + "." + validBody).digest("hex");
+    const tampered = new Request("https://snoozer.uk/api/v1/internal/discord/presence", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-snoozer-timestamp": String(now), "x-snoozer-signature": "sha256=" + validSignature },
+      body: validBody + " ",
+    });
     expect((await receiveDiscordPresenceInternal(tampered, secret, deps, now)).status).toBe(401);
     expect((await receiveDiscordPresenceInternal(signedRequest({ type: "subscriptions" }, now - 61_000), secret, deps, now)).status).toBe(401);
 
