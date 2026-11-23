@@ -57,7 +57,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   const status = presence.status ?? "unavailable";
   const title = presence.state === "unavailable" ? "Presence unavailable"
     : presence.status ? labels[presence.status]
-    : presence.activity || presence.customStatus ? "Active on Discord" : "Discord presence";
+    : presence.activity || presence.customStatus ? "Active on Discord" : "No activity shared";
   return <section className="discord-presence-card" aria-label="Discord presence" data-status={status} data-state={presence.state}>
     <header className="discord-presence-header">
       <span className="discord-presence-icon" aria-hidden="true">
