@@ -357,13 +357,17 @@ export class DiscordPresenceWorker {
   startHeartbeat() {
     this.stopHeartbeat();
     this.heartbeatOutstanding = false;
-    this.heartbeatTimer = setInterval(() => {
+    const tick = () => {
       if (this.heartbeatOutstanding) {
         this.socket?.close(4000, "Discord heartbeat acknowledgement timed out");
         return;
       }
       this.sendHeartbeat();
-    }, this.heartbeatInterval);
+    };
+    this.heartbeatTimer = setTimeout(() => {
+      tick();
+      this.heartbeatTimer = setInterval(tick, this.heartbeatInterval);
+    }, Math.random() * this.heartbeatInterval);
   }
 
   stopHeartbeat() {
