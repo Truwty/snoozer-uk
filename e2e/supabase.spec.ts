@@ -745,6 +745,12 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByLabel("Project title", { exact: true }).fill("Studio portfolio project");
     await page.getByLabel("Description", { exact: true }).fill("A project created in the custom block editor.");
     await page.getByLabel("Project URL", { exact: true }).fill("https://portfolio.example.org/work");
+    const firstProjectEditor = page.locator(".studio-block-editor").first();
+    await firstProjectEditor.getByLabel("Locked").check();
+    await expect(firstProjectEditor.getByLabel("Width")).toBeDisabled();
+    await expect(firstProjectEditor.getByLabel("Project title")).toBeDisabled();
+    await firstProjectEditor.getByLabel("Locked").uncheck();
+    await expect(firstProjectEditor.getByLabel("Width")).toBeEnabled();
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("Studio portfolio project");
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
     await page.getByRole("button", { name: "Duplicate block 1" }).click();
