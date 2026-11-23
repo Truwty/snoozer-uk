@@ -68,11 +68,11 @@ test("profile analytics requires consent, counts published link clicks and expor
   const profileLinks = [
     { label: "Work", url: "https://example.com/" },
     { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
-    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
     { label: "Repository", url: `https://github.com/${githubResource}` },
     { label: "Community", url: `https://discord.gg/${discordInvite}` },
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
     { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
+    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
   ];
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
