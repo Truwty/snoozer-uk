@@ -21,11 +21,12 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
     if (!initialPresence) return;
     let active = true;
     let timer: number | undefined;
+    let refresh: () => Promise<void> = async () => {};
     const stopPolling = () => {
       if (timer !== undefined) window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
-    const refresh = async () => {
+    refresh = async () => {
       if (document.visibilityState === "hidden") return;
       try {
         const response = await fetch(`/api/v1/discord/presence?username=${encodeURIComponent(username)}`, {
