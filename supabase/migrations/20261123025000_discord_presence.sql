@@ -21,7 +21,7 @@ create index discord_presence_settings_owner on snoozer.discord_presence_setting
 
 create table snoozer.discord_presence_cache (
   discord_user_id text primary key references snoozer.discord_presence_links(discord_user_id) on delete cascade check (discord_user_id ~ '^[1-9][0-9]{16,19}
-  status text not null check (status in ('online','idle','dnd','offline')),
+  status text check (status is null or status in ('online','idle','dnd','offline')),
   activity jsonb check (activity is null or (jsonb_typeof(activity)='object' and octet_length(activity::text)<=1024)),
   custom_status text check (custom_status is null or char_length(custom_status)<=128),
   observed_at timestamptz not null,
@@ -278,12 +278,20 @@ $$;
 
 create or replace function public.discord_presence_subscriptions() returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare active_ids jsonb;
+declare active_subscriptions jsonb;
 begin
-  select coalesce(jsonb_agg(ids.discord_user_id order by ids.discord_user_id),'[]'::jsonb)
-    into active_ids
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'discordUserId',ids.discord_user_id,
+    'showStatus',ids.show_status,
+    'showActivity',ids.show_activity,
+    'showCustomStatus',ids.show_custom_status
+  ) order by ids.discord_user_id),'[]'::jsonb)
+    into active_subscriptions
     from (
-      select distinct l.discord_user_id
+      select l.discord_user_id,
+        bool_or(s.show_status) as show_status,
+        bool_or(s.show_activity) as show_activity,
+        bool_or(s.show_custom_status) as show_custom_status
       from snoozer.discord_presence_links l
       join auth.identities i on i.user_id=l.owner_id and i.provider='discord' and i.provider_id=l.discord_user_id
       join snoozer.discord_presence_settings s on s.owner_id=l.owner_id and s.enabled
@@ -291,15 +299,22 @@ begin
       join snoozer.profiles p on p.id=s.profile_id and p.owner_id=s.owner_id and p.published_revision is not null
       join snoozer.published_profiles pp on pp.profile_id=p.id and pp.owner_id=p.owner_id
         and pp.revision=p.published_revision
+      group by l.discord_user_id
     ) ids;
 
   delete from snoozer.discord_presence_cache c
-    where not exists (select 1 from jsonb_array_elements_text(active_ids) a(value) where a.value=c.discord_user_id);
+    where not exists (
+      select 1 from jsonb_array_elements(active_subscriptions) a
+      where a->>'discordUserId'=c.discord_user_id
+    );
   delete from snoozer.discord_presence_events e
     where e.created_at < now()-interval '24 hours'
-      or not exists (select 1 from jsonb_array_elements_text(active_ids) a(value) where a.value=e.discord_user_id);
+      or not exists (
+        select 1 from jsonb_array_elements(active_subscriptions) a
+        where a->>'discordUserId'=e.discord_user_id
+      );
 
-  return active_ids;
+  return active_subscriptions;
 end;
 $$;
 
@@ -328,10 +343,13 @@ create or replace function public.discord_presence_ingest(
   p_observed_at timestamptz
 ) returns boolean
 language plpgsql security definer set search_path = '' as $$
+declare allow_status boolean;
+declare allow_activity boolean;
+declare allow_custom_status boolean;
 begin
   if p_event_id is null or p_discord_user_id is null
     or p_discord_user_id !~ '^[1-9][0-9]{16,19}$'
-    or p_status is null or p_status not in ('online','idle','dnd','offline')
+    or (p_status is not null and p_status not in ('online','idle','dnd','offline'))
     or p_observed_at is null
     or p_observed_at > now()+interval '30 seconds'
     or p_observed_at < now()-interval '5 minutes'
@@ -350,8 +368,8 @@ begin
     raise exception 'Invalid Discord presence event' using errcode='22023';
   end if;
 
-  if not exists (
-    select 1
+  select bool_or(s.show_status),bool_or(s.show_activity),bool_or(s.show_custom_status)
+    into allow_status,allow_activity,allow_custom_status
     from snoozer.discord_presence_links l
     join auth.identities i on i.user_id=l.owner_id and i.provider='discord' and i.provider_id=l.discord_user_id
     join snoozer.discord_presence_settings s on s.owner_id=l.owner_id and s.enabled
@@ -359,9 +377,13 @@ begin
     join snoozer.profiles p on p.id=s.profile_id and p.owner_id=s.owner_id and p.published_revision is not null
     join snoozer.published_profiles pp on pp.profile_id=p.id and pp.owner_id=p.owner_id
       and pp.revision=p.published_revision
-    where l.discord_user_id=p_discord_user_id
-  ) then
-    return true;
+    where l.discord_user_id=p_discord_user_id;
+
+  if allow_status is null then return true; end if;
+  if (allow_status and p_status is null) or (not allow_status and p_status is not null)
+    or (not allow_activity and p_activity is not null)
+    or (not allow_custom_status and p_custom_status is not null) then
+    raise exception 'Discord presence fields exceed the creator consent settings' using errcode='22023';
   end if;
 
   insert into snoozer.discord_presence_events(event_id,discord_user_id)
