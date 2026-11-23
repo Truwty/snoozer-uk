@@ -144,6 +144,8 @@ test("profile analytics requires consent, counts published link clicks and expor
     const events: string[] = [];
     publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
     await publicPage.goto("/" + name);
+    await expect(publicPage.locator(".discord-presence-card")).toHaveCount(0);
+    expect((await visitor.request.get("/api/v1/discord/presence?username=" + name)).status()).toBe(404);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
@@ -195,6 +197,13 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.goto("/studio/discord");
+    await expect(page.getByRole("heading", { name: "Discord Presence" })).toBeVisible();
+    await expect(page.getByText("Discord account not connected", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Connect Discord" })).toBeEnabled();
+    await expect(page.getByRole("checkbox", { name: /Show Discord Presence on this profile/ })).not.toBeChecked();
+    await expect(page.getByRole("checkbox", { name: /Custom status/ })).toBeDisabled();
+    await page.getByRole("link", { name: "Back to Studio" }).click();
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
     await page.getByText("Daily activity table", { exact: true }).click();
     await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
