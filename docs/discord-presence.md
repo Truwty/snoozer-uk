@@ -69,6 +69,7 @@ Set the same value in the Snoozer web service and the worker.
 
 ### Presence worker
 
+- `DISCORD_PRESENCE_ENABLED=true` — explicit activation switch; leave false until policy clearance and the service is ready.
 - `DISCORD_BOT_TOKEN` — Discord bot token, secret.
 - `DISCORD_PRESENCE_GUILD_ID` — the one shared Discord server ID.
 - `SNOOZER_PRESENCE_URL` — `https://snoozer.uk` (no trailing slash).
