@@ -89,7 +89,7 @@ describe("live public presence updates", () => {
     }));
     expect(markup).toContain('class="discord-presence-badge"');
     expect(markup).toContain('data-status="dnd"');
-    expect(markup).toContain('title="Discord status: Do Not Disturb"');
+    expect(markup).toContain('data-tooltip="Discord status: Do Not Disturb"');
     expect(markup).toContain("Do Not Disturb");
     expect(markup).not.toContain("discord-presence-card");
     expect(markup).not.toContain("LIVE PROFILE STATUS");
