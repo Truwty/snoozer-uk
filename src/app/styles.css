@@ -1954,3 +1954,39 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .studio-block-fields { padding-inline: .6rem; }
   .studio-stat-editor-row { grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; }
 }
+
+
+/* Focused Studio destinations use the shared outer navigation and keep only
+   the selected inspector plus the live preview. The builder palette is shown
+   only in the full Page Builder workspace. */
+.studio-workspace .editor-grid.panel-only {
+  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, .92fr);
+  grid-template-areas: "inspector canvas";
+}
+.studio-workspace .editor-grid.panel-only .editor-sidebar { display: none; }
+.studio-workspace .editor-grid.panel-only .editor-column { grid-area: inspector; min-width: 0; }
+.studio-workspace .editor-grid.panel-only .preview { grid-area: canvas; min-width: 0; }
+@media (min-width: 54.01rem) and (max-width: 76rem) {
+  .studio-workspace .editor-grid.panel-only {
+    grid-template-columns: minmax(0, 1.08fr) minmax(18rem, .92fr);
+    grid-template-areas: "inspector canvas";
+  }
+  .studio-workspace .editor-grid.panel-only .preview,
+  .studio-workspace .editor-grid.panel-only .editor-column {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+@media (max-width: 54rem) {
+  .studio-workspace .editor-grid.panel-only {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "inspector" "canvas";
+  }
+  .studio-workspace .editor-grid.panel-only .preview,
+  .studio-workspace .editor-grid.panel-only .editor-column {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
