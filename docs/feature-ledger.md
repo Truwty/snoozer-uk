@@ -4,7 +4,7 @@
 
 # Feature ledger
 
-> **Product roadmap Feature #8 — Discord Presence:** Core implementation merged; staging Gateway is connected and one linked account is opted in. PR #83 is adding the minimal inline status badge, automatic refresh and policy disclosure. Real account transition/privacy acceptance and written Discord confirmation for use inside Snoozer's wider SaaS remain public-launch blockers. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
+> **Product roadmap Feature #8 — Discord Presence:** Core implementation, minimal inline status badge, eight-second automatic refresh, Terms/Privacy disclosures and native non-clipped tooltip are merged and deployed. The Gateway is connected to the configured guild, but the one opted-in account currently has no cached presence; PR #86 is adding targeted-snapshot diagnostics. Real-account transition/privacy acceptance and written Discord confirmation for API Data use inside Snoozer's wider SaaS remain launch blockers. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
 
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
 
