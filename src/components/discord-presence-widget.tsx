@@ -13,9 +13,8 @@ const labels: Record<string, string> = {
 };
 
 function statusLabel(presence: DiscordPresencePublic) {
-  return presence.state === "live" && presence.status
-    ? labels[presence.status]
-    : "Unavailable";
+  if (presence.state !== "live") return "Unavailable";
+  return presence.status ? labels[presence.status] : "Status hidden";
 }
 
 function tooltipText(presence: DiscordPresencePublic) {
@@ -64,7 +63,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   if (!presence) return null;
   const label = statusLabel(presence);
   const tooltip = tooltipText(presence);
-  const state = presence.state === "live" && presence.status ? presence.status : "unavailable";
+  const state = presence.state === "live" ? presence.status ?? "hidden" : "unavailable";
 
   return <span
     className="discord-presence-badge"
