@@ -4,7 +4,7 @@
 
 # Feature ledger
 
-> **Product roadmap Feature #8 — Discord Presence:** Core implementation, minimal inline badge, eight-second refresh, Terms/Privacy disclosures and native tooltip are deployed. PR #86 diagnostics exposed the Map entry/Map key bug; PR #87 fixed initial and periodic targeted snapshots, passed full CI and is deployed. The worker now receives a matched targeted member chunk and Supabase has a fresh offline snapshot. Real-account online/idle/DND transition and privacy acceptance, plus written Discord confirmation for API Data use inside Snoozer's wider SaaS, remain launch blockers. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
+> **Product roadmap Feature #8 — Discord Presence: COMPLETE (owner-confirmed 23 Nov 2026).** The consent-based integration, compact status-coloured badge, hover tooltip, eight-second refresh, Studio controls, Terms/Privacy disclosures, targeted Gateway snapshots and initial-read recovery are merged and deployed. PR #87 fixed the Map-key snapshot defect; PR #91 adds transient initial-projection recovery and is merged as `5501c9ed`, with Render deployment `dep-dc1tjpdg1s2s73ecbk00` live. The owner confirms the live profile behaviour works as intended. Render and Supabase show the worker ready with a fresh snapshot. The free-tier wake workflow is best-effort; written Discord clarification for API Data display within Snoozer's wider SaaS is not evidenced and remains a separate external policy matter. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
 
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
 
@@ -169,7 +169,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 11.1 | Discord Presence With Consent | Deferred |
+| 11.1 | Discord Presence With Consent | Implemented; owner-confirmed live acceptance 23 Nov 2026; PR #91 merged and deployed. External Discord API Data policy clarification is tracked separately |
 | 11.2 | Discord Server Preview | Tested public summary/cached adapter in CI 44187169499 and real staging provider responses. See public-widgets.md |
 | 11.3 | Github Contribution Summary | Deferred |
 | 11.4 | Roblox Game Showcase | Deferred API showcase: stable API/OAuth design required; validated outbound game links work. See public-widgets.md |
