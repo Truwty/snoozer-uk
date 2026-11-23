@@ -332,6 +332,7 @@ begin
       group by l.discord_user_id
     ) ids;
 
+  delete from snoozer.discord_presence_cache where expires_at <= now();
   delete from snoozer.discord_presence_cache c
     where not exists (
       select 1 from jsonb_array_elements(active_subscriptions) a
