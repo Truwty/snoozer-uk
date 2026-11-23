@@ -20,6 +20,7 @@ import { defaultEffects } from "@/lib/profile-effects";
 import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
+import type { ProfileBlock } from "@/lib/profile-blocks";
 
 type SocialLink = { label: string; url: string; index: number; mark: string };
 
@@ -37,6 +38,7 @@ function LayoutBlock({
   children: ReactNode;
 }) {
   const label = item.type === "section" ? `Section ${item.index + 1}`
+    : item.type === "block" ? "Content block"
     : item.type === "links" ? "Social links" : item.type === "widgets" ? "Interactive widgets" : "Gallery";
   const touchDrag = useRef<{ pointerId: number; from: number; x: number; y: number; active: boolean } | null>(null);
 
@@ -100,6 +102,7 @@ function LayoutBlock({
 
   return <div className="profile-layout-block" data-layout-type={item.type} data-layout-position={position}
     data-section-index={item.type === "section" ? item.index : undefined}
+    data-block-id={item.type === "block" ? item.id : undefined}
     onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={onClick}>
     {preview && onMove && <div className="profile-layout-controls">
       <button type="button" className="profile-layout-drag-handle" draggable
@@ -253,6 +256,53 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </>;
   }
 
+  function renderBlock(id: string) {
+    const block = profile.blocks.find((item) => item.id === id && !item.hidden);
+    if (!block) return null;
+    const className = "profile-content-block profile-block-" + block.type;
+    const common = { className, "data-width": block.width, "data-align": block.align, "data-variant": block.variant };
+
+    if (block.type === "heading") return <section {...common}>
+      {block.level === "h3" ? <h3>{block.text}</h3> : <h2>{block.text}</h2>}
+    </section>;
+    if (block.type === "about") return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <p>{block.body}</p>
+    </section>;
+    if (block.type === "callout") return <section {...common} data-tone={block.tone}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <p>{block.body}</p>
+    </section>;
+    if (block.type === "quote") return <figure {...common}>
+      <blockquote><p>{block.quote}</p></blockquote>
+      {block.attribution && <figcaption>{block.attribution}</figcaption>}
+    </figure>;
+    if (block.type === "project") return <article {...common}>
+      <h3>{block.title}</h3><p>{block.description}</p>
+      {safeLink(block.url) && <a className="profile-block-action" href={block.url} rel="ugc nofollow noreferrer">{block.buttonLabel} <span aria-hidden="true">↗</span></a>}
+    </article>;
+    if (block.type === "skills") return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <ul className="profile-skill-list">{block.items.map((skill, index) => <li key={index}>{skill}</li>)}</ul>
+    </section>;
+    if (block.type === "cta") return <section {...common}>
+      <h3>{block.heading}</h3><p>{block.body}</p>
+      {safeLink(block.url) && <a className="profile-block-action" href={block.url} rel="ugc nofollow noreferrer">{block.label} <span aria-hidden="true">↗</span></a>}
+    </section>;
+    if (block.type === "divider") return <div {...common} aria-hidden="true"><hr data-divider-style={block.style}/></div>;
+    if (block.type === "countdown") {
+      const target = countdownTarget(block.target);
+      return <section {...common}>
+        <h3>{block.heading}</h3>
+        {target && <><p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p><Countdown key={block.target} target={target.valueOf()}/></>}
+      </section>;
+    }
+    return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <dl className="profile-stats-grid">{block.items.map((item, index) => <div key={index}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl>
+    </section>;
+  }
+
   function renderWidgets() {
     return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />;
   }
@@ -276,11 +326,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   function renderItem(item: ProfilePageLayoutItem, position: number) {
     let child: ReactNode;
     if (item.type === "section") child = renderSection(item.index);
+    else if (item.type === "block") child = renderBlock(item.id);
     else if (item.type === "links") child = renderLinks();
     else if (item.type === "widgets") child = renderWidgets();
     else child = renderGallery();
     if (!child) return null;
-    return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type}
+    return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type === "block" ? "block-" + item.id : item.type}
       item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
