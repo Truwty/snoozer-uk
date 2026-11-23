@@ -104,6 +104,7 @@ export class DiscordPresenceWorker {
     this.heartbeatOutstanding = false;
     this.connected = false;
     this.guildReady = false;
+    this.guildKnown = false;
     this.stopped = false;
     this.sequence = null;
     this.sessionId = null;
@@ -238,12 +239,13 @@ export class DiscordPresenceWorker {
         break;
       case "RESUMED":
         this.connected = true;
-        this.guildReady = true;
-        await this.heartbeat(true, true);
+        this.guildReady = this.guildKnown;
+        await this.heartbeat(true, this.guildReady);
         break;
       case "GUILD_CREATE":
         if (data.id === this.config.guildId) {
           this.connected = true;
+          this.guildKnown = true;
           this.guildReady = true;
           await this.heartbeat(true, true);
           for (const presence of Array.isArray(data.presences) ? data.presences : []) {
@@ -255,6 +257,7 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_DELETE":
         if (data.id === this.config.guildId) {
+          this.guildKnown = false;
           this.guildReady = false;
           if (!data.unavailable) {
             this.sessionId = null;
@@ -281,7 +284,8 @@ export class DiscordPresenceWorker {
   }
 
   connect() {
-    if (this.stopped || !this.WebSocketImpl) return;
+    if (this.stopped) return;
+    if (!this.WebSocketImpl) throw new Error("This worker requires Node.js with the built-in WebSocket client.");
     const base = this.sessionId && this.resumeUrl ? this.resumeUrl : "wss://gateway.discord.gg";
     const url = base + (base.includes("?") ? "&" : "?") + "v=10&encoding=json";
     this.socket = new this.WebSocketImpl(url);
