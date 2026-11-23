@@ -180,12 +180,42 @@ revoke execute on function snoozer.profile_draft(uuid), snoozer.profile_draft_wi
 
 alter function snoozer.profile_snapshot(uuid,integer,boolean) rename to profile_snapshot_without_page_layout;
 create function snoozer.profile_snapshot(p_profile uuid,p_revision integer,p_public boolean) returns jsonb
-language sql stable set search_path = '' as $$
+language sql stable set search_path = '' as $
   select snoozer.profile_snapshot_without_page_layout(p_profile,p_revision,p_public)
-    || jsonb_build_object('pageLayout',v.page_layout)
+    || jsonb_build_object(
+      'pageLayout',
+      case when p_public then jsonb_build_object(
+        'version', v.page_layout->'version',
+        'items', coalesce((
+          select jsonb_agg(
+            case when layout_item.item->>'type'='section' then jsonb_build_object(
+              'type','section',
+              'index', (
+                select count(*)::integer - 1
+                from snoozer.published_sections visible_section
+                where visible_section.owner_id=v.owner_id
+                  and visible_section.revision=v.revision
+                  and visible_section.position <= (layout_item.item->>'index')::integer + 1
+                  and not visible_section.hidden
+              )
+            ) else layout_item.item end
+            order by layout_item.ordinality
+          )
+          from jsonb_array_elements(v.page_layout->'items') with ordinality as layout_item(item, ordinality)
+          where layout_item.item->>'type' is distinct from 'section'
+             or exists (
+               select 1 from snoozer.published_sections visible_section
+               where visible_section.owner_id=v.owner_id
+                 and visible_section.revision=v.revision
+                 and visible_section.position=(layout_item.item->>'index')::integer + 1
+                 and not visible_section.hidden
+             )
+        ), '[]'::jsonb)
+      ) else v.page_layout end
+    )
   from snoozer.published_profiles v
   where v.profile_id=p_profile and v.revision=p_revision
-$$;
+$;
 revoke execute on function snoozer.profile_snapshot(uuid,integer,boolean),
   snoozer.profile_snapshot_without_page_layout(uuid,integer,boolean)
   from public, anon, authenticated, service_role;
