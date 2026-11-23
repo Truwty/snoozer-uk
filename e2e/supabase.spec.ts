@@ -206,7 +206,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(page.getByRole("checkbox", { name: /Show Discord Presence on this profile/ })).not.toBeChecked();
     await expect(page.getByRole("checkbox", { name: /Custom status/ })).toBeDisabled();
     await expect(page.getByRole("checkbox", { name: /I meet Discord’s minimum age requirement/ })).not.toBeChecked();
-    await page.getByRole("link", { name: "Back to Studio" }).click();
+    await page.getByRole("link", { name: "Back to Page Builder" }).click();
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
     await page.getByText("Daily activity table", { exact: true }).click();
     await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
