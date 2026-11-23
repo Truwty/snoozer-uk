@@ -74,7 +74,7 @@ export function PollWidget({ username, pollId, question, options, open, closesAt
     try {
       const response = await fetch("/api/v1/widgets/poll", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, pollId, optionId, visitorToken: widgetVisitorToken() }),
+        body: JSON.stringify({ username, pollId, optionId, visitorToken: widgetVisitorToken("poll:" + pollId) }),
       });
       const payload = await response.json();
       if (response.status === 409 && payload.results) {
