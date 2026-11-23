@@ -486,7 +486,7 @@ grant execute on function public.discord_presence_get_my_settings(uuid),
   public.discord_presence_disconnect(),
   public.discord_presence_export()
   to authenticated;
-grant execute on function public.discord_presence_public(text) to anon,authenticated;
+grant execute on function public.discord_presence_public(text) to service_role;
 grant execute on function public.discord_presence_subscriptions(),
   public.discord_presence_heartbeat(boolean,boolean),
   public.discord_presence_ingest(uuid,text,text,jsonb,text,timestamptz),
