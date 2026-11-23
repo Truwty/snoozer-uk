@@ -1,6 +1,10 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { normaliseDiscordPresence } from "../src/lib/discord-presence";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { DiscordPresenceWidget } from "../src/components/discord-presence-widget";
+import { normaliseDiscordPresence, type DiscordPresencePublic } from "../src/lib/discord-presence";
+import { createDiscordPresencePoller, DISCORD_PRESENCE_POLL_INTERVAL_MS } from "../src/lib/discord-presence-polling";
 import { receiveDiscordPresenceInternal, verifyDiscordPresenceSignature } from "../src/lib/discord-presence-internal";
 
 const secret = "a".repeat(64);
@@ -60,6 +64,111 @@ describe("Discord Gateway presence projection", () => {
   it("rejects malformed Discord IDs and unsupported presence statuses", () => {
     expect(normaliseDiscordPresence("not-a-snowflake", { status: "online" }, eventId, observedAt)).toBeNull();
     expect(normaliseDiscordPresence(discordUserId, { status: "unknown" }, eventId, observedAt)).toBeNull();
+  });
+});
+
+describe("live public presence updates", () => {
+  const projection = (status: "online" | "idle" | "dnd" | "offline"): DiscordPresencePublic => ({
+    version: 1,
+    state: "live",
+    status,
+    activity: null,
+    customStatus: null,
+    observedAt,
+  });
+  const response = (status: number, value: unknown) => ({
+    status,
+    ok: status >= 200 && status < 300,
+    json: async () => value,
+  }) as unknown as Response;
+
+  it("renders only a compact Discord mark and exposes the live state in its hover label", () => {
+    const markup = renderToStaticMarkup(createElement(DiscordPresenceWidget, {
+      username: "example",
+      initialPresence: projection("dnd"),
+    }));
+    expect(markup).toContain('class="discord-presence-badge"');
+    expect(markup).toContain('data-status="dnd"');
+    expect(markup).toContain('title="Discord status: Do Not Disturb"');
+    expect(markup).toContain("Do Not Disturb");
+    expect(markup).not.toContain("discord-presence-card");
+    expect(markup).not.toContain("LIVE PROFILE STATUS");
+  });
+
+  it("fetches a fresh projection immediately and updates the status on the next poll", async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(response(200, projection("online")))
+      .mockResolvedValueOnce(response(200, projection("idle")));
+    const changes: string[] = [];
+    const poller = createDiscordPresencePoller({
+      username: "example",
+      fetcher: fetcher as unknown as typeof fetch,
+      onPresence: (value) => changes.push(value.status ?? "hidden"),
+      onUnavailable: vi.fn(),
+      onDisabled: vi.fn(),
+    });
+    try {
+      await poller.start();
+      expect(changes).toEqual(["online"]);
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(fetcher).toHaveBeenCalledWith(
+        "/api/v1/discord/presence?username=example",
+        expect.objectContaining({ cache: "no-store" }),
+      );
+      expect(DISCORD_PRESENCE_POLL_INTERVAL_MS).toBe(8_000);
+
+      await vi.advanceTimersByTimeAsync(DISCORD_PRESENCE_POLL_INTERVAL_MS);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(changes).toEqual(["online", "idle"]);
+    } finally {
+      poller.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops polling and removes the badge when public consent is withdrawn", async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn().mockResolvedValue(response(404, { error: "Presence is not enabled." }));
+    const onDisabled = vi.fn();
+    const poller = createDiscordPresencePoller({
+      username: "example",
+      fetcher: fetcher as unknown as typeof fetch,
+      onPresence: vi.fn(),
+      onUnavailable: vi.fn(),
+      onDisabled,
+    });
+    try {
+      await poller.start();
+      expect(onDisabled).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(DISCORD_PRESENCE_POLL_INTERVAL_MS * 3);
+      expect(fetcher).toHaveBeenCalledOnce();
+    } finally {
+      poller.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not poll a hidden tab and refreshes as soon as it becomes visible", async () => {
+    let visible = false;
+    const fetcher = vi.fn().mockResolvedValue(response(200, projection("online")));
+    const poller = createDiscordPresencePoller({
+      username: "example",
+      fetcher: fetcher as unknown as typeof fetch,
+      isVisible: () => visible,
+      onPresence: vi.fn(),
+      onUnavailable: vi.fn(),
+      onDisabled: vi.fn(),
+    });
+    try {
+      await poller.start();
+      expect(fetcher).not.toHaveBeenCalled();
+      visible = true;
+      await poller.refreshNow();
+      expect(fetcher).toHaveBeenCalledOnce();
+    } finally {
+      poller.stop();
+    }
   });
 });
 
