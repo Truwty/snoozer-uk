@@ -5,7 +5,7 @@ import { receiveDiscordPresenceInternal, verifyDiscordPresenceSignature } from "
 
 const secret = "a".repeat(64);
 const now = 1_800_000_000_000;
-const discordUserId = "123456789012345678";
+const discordUserId = "111111111111111111";
 const eventId = "00000000-0000-4000-8000-000000000201";
 const observedAt = new Date(now).toISOString();
 
