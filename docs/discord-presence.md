@@ -1,6 +1,6 @@
 # Discord Presence
 
-Status: implementation merged in PR #80 (`ca332cc`); the event-owner index follow-up merged in PR #81 (`a169b7e`). PR #80's full CI run passed (including 64 Playwright tests and Studio Lighthouse accessibility score 100); PR #81's CI passed. Both Discord Presence migrations are applied to the connected Snoozer staging project. The Render web deployment still requires live verification and the feature remains disabled with `DISCORD_PRESENCE_ENABLED=false`. Activation is blocked on written Discord policy clearance, bot configuration, a shared guild and an owner-approved always-on worker.
+Status: implementation merged in PR #80 (`ca332cc`); the event-owner index follow-up merged in PR #81 (`a169b7e`). Both Discord Presence migrations are applied to the connected Snoozer staging project. The Render web service is live with `DISCORD_PRESENCE_ENABLED=true` for controlled verification. The worker now waits for web readiness, successfully calls the signed internal endpoint, and reaches Discord Gateway READY. Latest Gateway READY reports zero guilds, so the configured bot token is not currently connected to the shared Snoozer server. The subscription projection currently returns zero opted-in accounts. Public launch remains blocked on correct bot guild membership, a consenting test account, live privacy acceptance tests and written Discord policy clearance. The free setup runs the worker as a child process of the web service; the separate paid Background Worker is optional and has not been provisioned.
 
 ## Behaviour
 
