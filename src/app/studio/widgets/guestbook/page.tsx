@@ -20,7 +20,7 @@ export default async function GuestbookModeration({ searchParams }: {
   const { data, error } = await client.rpc("owner_guestbook_queue", { p_profile: draft.profile_id, p_limit: 100 });
   const entries = queueSchema.safeParse(data);
   return <main className="shell stack">
-    <Link href={studioHref("/studio", draft.profile_id)}>← Back to Studio</Link>
+    <Link href={studioHref("/studio/builder", draft.profile_id)}>← Back to Page Builder</Link>
     <p className="eyebrow">STUDIO / WIDGETS</p>
     <h1>Guestbook moderation</h1>
     <p className="muted">New messages stay private until you approve them. Rejected messages are not shown on your public profile.</p>
