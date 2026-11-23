@@ -730,6 +730,13 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
 
+    await blocks.nth(0).getByRole("button", { name: "Move Interactive widgets down" }).press("Enter");
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "widgets");
+    await blocks.nth(1).getByRole("button", { name: "Move Interactive widgets up" }).press("Enter");
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
     await page.reload();

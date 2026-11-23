@@ -1690,3 +1690,46 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
     grid-column: 1;
   }
 }
+
+
+/* Keyboard-accessible movement controls for the ordered public page canvas. */
+.profile-layout-controls {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: .35rem;
+  inset-inline-end: .35rem;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  opacity: 0;
+  transition: opacity .14s ease;
+}
+.profile-layout-controls:focus-within,
+.profile-layout-block:hover .profile-layout-controls { opacity: 1; }
+.profile-layout-drag-handle,
+.profile-layout-move-button {
+  position: static;
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: .5rem;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 .2rem .8rem rgb(0 0 0 / 14%);
+}
+.profile-layout-drag-handle { cursor: grab; touch-action: none; }
+.profile-layout-drag-handle:active { cursor: grabbing; }
+.profile-layout-drag-handle span { font-size: 1.3rem; line-height: 1; }
+.profile-layout-move-button { font-size: 1.1rem; font-weight: 750; }
+.profile-layout-move-button:disabled { opacity: .4; cursor: not-allowed; }
+@media (pointer: coarse) {
+  .profile-layout-controls { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-layout-controls { transition: none; }
+}

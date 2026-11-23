@@ -30,6 +30,7 @@ export function HomeProfileDemo() {
       avatar: null,
       widgets: defaultProfileWidgets,
       appearance: { ...defaultAppearance, layout },
+      pageLayout: { version: 1, items: [] },
       gallery: [],
       links: [
         { label: "GitHub", url: "https://github.com/" }, { label: "YouTube", url: "https://www.youtube.com/" },

@@ -42,10 +42,11 @@ function socialMark(url: string): string | null {
 }
 
 function LayoutBlock({
-  item, position, preview, onMove, onSelect, children,
+  item, position, total, preview, onMove, onSelect, children,
 }: {
   item: ProfilePageLayoutItem;
   position: number;
+  total: number;
   preview: boolean;
   onMove?: (from: number, to: number) => void;
   onSelect?: (item: ProfilePageLayoutItem) => void;
@@ -85,18 +86,24 @@ function LayoutBlock({
   return <div className="profile-layout-block" data-layout-type={item.type} data-layout-position={position}
     data-section-index={item.type === "section" ? item.index : undefined}
     onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={onClick}>
-    {preview && onMove && <button type="button" className="profile-layout-drag-handle" draggable
-      aria-label={`Drag ${label} to change its position`}
-      onDragStart={(event) => {
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("application/x-snoozer-layout-item", String(position));
-      }}
-      onDragEnd={() => {
-        document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
-          .forEach((node) => delete node.dataset.dropTarget);
-      }}>
-      <span aria-hidden="true">⠿</span>
-    </button>}
+    {preview && onMove && <div className="profile-layout-controls">
+      <button type="button" className="profile-layout-drag-handle" draggable
+        aria-label={`Drag ${label} to change its position`}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("application/x-snoozer-layout-item", String(position));
+        }}
+        onDragEnd={() => {
+          document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+            .forEach((node) => delete node.dataset.dropTarget);
+        }}>
+        <span aria-hidden="true">⠿</span>
+      </button>
+      <button type="button" className="profile-layout-move-button" disabled={position === 0}
+        aria-label={`Move ${label} up`} onClick={() => onMove(position, position - 1)}>↑</button>
+      <button type="button" className="profile-layout-move-button" disabled={position === total - 1}
+        aria-label={`Move ${label} down`} onClick={() => onMove(position, position + 1)}>↓</button>
+    </div>}
     {children}
   </div>;
 }
