@@ -108,6 +108,65 @@ test("live Gateway PRESENCE_UPDATE events are ingested only for the configured g
 });
 
 
+
+test("GUILD_CREATE requests a targeted snapshot using Map keys, not subscription entry tuples", async () => {
+  const posted = [];
+  const gatewayMessages = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId: "222222222222222222",
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher: async (_url, options) => {
+      posted.push(JSON.parse(options.body));
+      return new Response(null, { status: 204 });
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.subscriptions.set(discordUserId, {
+    showStatus: true,
+    showActivity: true,
+    showCustomStatus: false,
+  });
+  worker.socket = {
+    readyState: 1,
+    send: (payload) => gatewayMessages.push(JSON.parse(payload)),
+  };
+
+  await worker.dispatch({
+    t: "GUILD_CREATE",
+    d: {
+      id: "222222222222222222",
+      presences: [],
+    },
+  });
+
+  const request = gatewayMessages.find(message => message.op === 8);
+  assert.ok(request, "GUILD_CREATE should immediately request a targeted presence snapshot");
+  assert.deepEqual(request.d.user_ids, [discordUserId]);
+  assert.equal(request.d.user_ids.some(Array.isArray), false);
+  assert.equal(request.d.presences, true);
+
+  await worker.handleChunk({
+    guild_id: "222222222222222222",
+    nonce: request.d.nonce,
+    chunk_index: 0,
+    chunk_count: 1,
+    members: [{ user: { id: discordUserId } }],
+    presences: [{
+      user: { id: discordUserId },
+      status: "online",
+      activities: [],
+    }],
+    not_found: [],
+  });
+
+  assert.equal(posted.some(payload => payload.type === "presence"
+    && payload.discordUserId === discordUserId
+    && payload.status === "online"), true);
+});
+
 test("worker requests targeted snapshots only for opted-in IDs and handles the response chunk", async () => {
   const posted = [];
   const gatewayMessages = [];
