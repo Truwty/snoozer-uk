@@ -20,6 +20,11 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   useEffect(() => {
     if (!initialPresence) return;
     let active = true;
+    let timer: number | undefined;
+    const stopPolling = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
     const refresh = async () => {
       if (document.visibilityState === "hidden") return;
       try {
@@ -29,6 +34,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
         });
         if (response.status === 404) {
           if (active) setPresence(null);
+          stopPolling();
           return;
         }
         if (!response.ok) return;
@@ -38,12 +44,11 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
         // Keep the last server-rendered snapshot while the network is unavailable.
       }
     };
-    const timer = window.setInterval(refresh, 45_000);
+    timer = window.setInterval(refresh, 45_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
+      stopPolling();
     };
   }, [initialPresence, username]);
 
