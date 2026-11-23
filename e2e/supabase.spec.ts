@@ -504,6 +504,7 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
     await page.getByText("Withdraw or prevent referral attribution", { exact: true }).click();
     await page.getByRole("button", { name: "Withdraw referral attribution", exact: true }).click();
     await expect(page.getByText("Attribution withdrawn. This account cannot be attributed again.", { exact: true })).toBeVisible();
+    await expect(page).toHaveTitle(/Growth/);
     expect((await owner.rpc("get_my_growth")).data.verified).toBe(0);
     await page.setViewportSize({ width: 360, height: 850 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
@@ -644,7 +645,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Publish history", exact: true }).click();
+    await page.getByRole("link", { name: "Publish History", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: "Portfolio first publication" }).getByRole("link", { name: /Preview version/ }).click();
     await page.getByRole("button", { name: "Restore to draft", exact: true }).click();
     await editorTab(page, "Sections");
@@ -1182,7 +1183,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
-    await page.getByRole("link", { name: "Publish history" }).click();
+    await page.getByRole("link", { name: "Publish History", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
     const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
     const historyPreviewHref = (await firstVersion.getByRole("link", { name: /Preview version/ }).getAttribute("href"))!;
@@ -1529,7 +1530,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
   const stale = await page.context().newPage();
-  await stale.goto("/studio");
+  await stale.goto("/studio/builder");
   await expect(stale.getByLabel("Display name")).toHaveValue(name);
 
   await editorTab(page, "Profile");
