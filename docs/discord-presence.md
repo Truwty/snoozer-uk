@@ -1,6 +1,6 @@
 # Discord Presence
 
-Status: implementation merged in PR #80 (`ca332cc`) and CI-tested; the connected Supabase schema is applied. The Render web deployment is being rolled out with `DISCORD_PRESENCE_ENABLED=false`, so the feature is not yet active. Live activation is blocked on written Discord policy clearance, bot configuration, a shared guild and an owner-approved always-on worker.
+Status: implementation merged in PR #80 (`ca332cc`); the event-owner index follow-up merged in PR #81 (`a169b7e`). PR #80's full CI run passed (including 64 Playwright tests and Studio Lighthouse accessibility score 100); PR #81's CI passed. Both Discord Presence migrations are applied to the connected Snoozer staging project. The Render web deployment still requires live verification and the feature remains disabled with `DISCORD_PRESENCE_ENABLED=false`. Activation is blocked on written Discord policy clearance, bot configuration, a shared guild and an owner-approved always-on worker.
 
 ## Behaviour
 
@@ -57,7 +57,7 @@ For email/password Snoozer accounts, Discord identity linking also needs the Dis
 6. Publish the server invite in `DISCORD_PRESENCE_INVITE_URL` so creators know where they must be members.
 7. Keep the bot token private. Never put it in GitHub, source code, browser configuration or ChatGPT messages.
 
-Discord may require privileged-intent review or additional access depending on the application's scale and current Discord policy. The app must be approved for Presence Intent before live presence can work.
+Discord's 10 June 2026 privileged-intent rules use the number of unique users who can access the app across all installed servers, not the number of servers. Apps accessible to fewer than 10,000 users may enable Presence Intent using the Developer Portal toggle. At 10,000 users, Discord notifies the owner and requires a privileged-intent review request within 90 days; apps granted access through review must reapply annually when notified. Check the Developer Portal for the app's current eligibility and any review notice before launch. These intent-access rules do not resolve the separate policy question about displaying Discord API Data inside Snoozer's wider paid SaaS; obtain written confirmation from Discord before enabling public presence.
 
 ## Environment
 
