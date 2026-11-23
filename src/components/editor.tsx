@@ -222,6 +222,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       return;
     }
 
+    if (kind !== "guestbook" && kind !== "testimonials" && kind !== "poll" && kind !== "faq") return;
     const widgets = { ...content.widgets };
     if (widgets[kind].enabled) {
       setTab("Widgets");
