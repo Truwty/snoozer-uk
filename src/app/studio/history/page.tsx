@@ -16,7 +16,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const versions = publicationList.parse(data);
 
   return <main className="shell narrow stack">
-    <Link href={studioHref("/studio", selected)}>← Back to Studio</Link>
+    <Link href={studioHref("/studio/builder", selected)}>← Back to Page Builder</Link>
     <section className="stack">
       <h1>Publish history</h1>
       <p className="muted">Snoozer keeps your 20 most recent versions and protects live or pending scheduled snapshots. Open a version to preview it and restore it to your draft.</p>
