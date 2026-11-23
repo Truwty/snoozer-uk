@@ -45,9 +45,10 @@ export function GuestbookWidget({ username, heading, description, maxEntries, su
     setSubmitting(true);
     setNotice("");
     try {
+      const website = String(new FormData(event.currentTarget).get("website") ?? "");
       const response = await fetch("/api/v1/widgets/guestbook", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, displayName: name, message, visitorToken: widgetVisitorToken() }),
+        body: JSON.stringify({ username, displayName: name, message, visitorToken: widgetVisitorToken(), website }),
       });
       if (response.status === 429) throw new Error("You have reached the Guestbook submission limit. Try again later.");
       if (response.status === 404) throw new Error("This Guestbook is no longer accepting messages.");
@@ -72,6 +73,7 @@ export function GuestbookWidget({ username, heading, description, maxEntries, su
       </li>)}</ol>}
     {submissionsOpen ? <form className="guestbook-form stack" onSubmit={submit}>
       <label>Your name<input required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} /></label>
+      <label className="widget-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
       <label>Message<textarea required minLength={3} maxLength={500} rows={3} value={message} onChange={(event) => setMessage(event.target.value)} /></label>
       <button className="button small" type="submit" disabled={submitting}>{submitting ? "Submitting…" : "Sign guestbook"}</button>
     </form> : <p className="muted">The creator has closed new Guestbook submissions.</p>}
