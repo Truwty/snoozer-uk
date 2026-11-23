@@ -65,7 +65,17 @@ export async function POST(request: Request) {
     if (error?.code === "P2021") return reply({ error: "This poll has closed." }, 410);
     if (error?.code === "P2020") return reply({ error: "Poll unavailable." }, 404);
     if (error) return reply({ error: "Vote unavailable." }, 503);
-    if (!data?.accepted) return reply({ error: "A vote is already recorded.", results: data }, 409);
-    return reply(data);
+
+    // Keep the visitor-facing response shape identical to the public results
+    // endpoint. The internal accepted flag is only used to select HTTP status.
+    const publicResults = z.strictObject({
+      pollId: z.uuid(),
+      total: z.number().int().nonnegative(),
+      counts: z.record(z.string(), z.number().int().nonnegative()),
+    }).safeParse({ pollId: data?.pollId, total: data?.total, counts: data?.counts });
+    if (!publicResults.success || typeof data?.accepted !== "boolean")
+      return reply({ error: "Vote response unavailable." }, 503);
+    if (!data.accepted) return reply({ error: "A vote is already recorded.", results: publicResults.data }, 409);
+    return reply(publicResults.data);
   } catch { return reply({ error: "Vote unavailable." }, 503); }
 }
