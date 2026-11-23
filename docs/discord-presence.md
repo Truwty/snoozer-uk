@@ -71,7 +71,9 @@ Set the same value in the Snoozer web service and the worker.
 
 ### Snoozer web service
 
-- `DISCORD_PRESENCE_ENABLED=false` — default kill switch. Set to `true` only after policy clearance and after the bot/worker secrets are configured.
+- `DISCORD_PRESENCE_ENABLED=false` — default kill switch. Set to `true` only after policy clearance and after the bot/worker secrets are configured. In the free setup, this starts the worker as a child of the web service.
+- `DISCORD_BOT_TOKEN` — Discord bot token, secret.
+- `DISCORD_PRESENCE_GUILD_ID` — the shared Discord server ID.
 - `DISCORD_PRESENCE_INGEST_SECRET` — 64-character random hex secret; required for signed internal worker requests.
 - `DISCORD_PRESENCE_INVITE_URL` — optional HTTPS Discord invite URL shown in Studio.
 
@@ -85,14 +87,16 @@ Set the same value in the Snoozer web service and the worker.
 
 ## Render worker
 
-The existing Snoozer web service is a free web service and can sleep. It is not suitable for a continuously connected Gateway process. `render.presence-worker.yaml` defines a separate always-on Render Background Worker using Node's built-in WebSocket client; no Docker image or extra npm dependency is required.
+The default deployment runs the Discord Gateway worker as a child process alongside the Next.js web server on the existing free Render web service. `scripts/start.mjs` starts both processes when `DISCORD_PRESENCE_ENABLED=true`; when the flag is false, it starts only the web server. No Docker image, extra npm dependency or paid Background Worker is required for this sleep-and-wake setup.
 
-The blueprint uses Render's Starter worker plan. It is a separate recurring paid resource (check the current price in Render before creating it). It has **not** been provisioned. Do not create or sync this worker until the owner has approved the recurring cost and supplied the Discord bot configuration.
+Render's free web service can sleep after inactivity. `.github/workflows/keep-snoozer-awake.yml` sends an HTTP request to `https://snoozer.uk/` every 10 minutes. That request wakes the web service, which starts both Next.js and the Discord worker. The Gateway reconnect logic restores the Discord connection after a sleep/restart. GitHub scheduled workflows can be delayed or skipped, so this is best-effort rather than an always-on guarantee; presence updates can have gaps during sleep or wake-up.
 
-Start command:
+The separate `render.presence-worker.yaml` remains an optional always-on Background Worker deployment for a future paid setup. It is not part of the free wake-up architecture and has not been provisioned.
+
+The web service's Render start command remains `npm start`; the package script now invokes:
 
 ```bash
-node workers/discord-presence/worker.mjs
+node scripts/start.mjs
 ```
 
 ## Rollout and acceptance
