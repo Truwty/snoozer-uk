@@ -20,10 +20,10 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   useEffect(() => {
     if (!initialPresence) return;
     let active = true;
-    let timer: number | undefined;
+    const timerRef: { value?: number } = {};
     let refresh: () => Promise<void> = async () => {};
     const stopPolling = () => {
-      if (timer !== undefined) window.clearInterval(timer);
+      if (timerRef.value !== undefined) window.clearInterval(timerRef.value);
       document.removeEventListener("visibilitychange", refresh);
     };
     const markUnavailable = () => {
@@ -55,7 +55,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
         markUnavailable();
       }
     };
-    timer = window.setInterval(refresh, 45_000);
+    timerRef.value = window.setInterval(refresh, 45_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       active = false;
