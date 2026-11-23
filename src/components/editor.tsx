@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
@@ -23,6 +23,19 @@ import { ProfileWidgetsEditor } from "./profile-widgets-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 
+type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq";
+
+const blockLibrary: { id: BuilderBlock; label: string; description: string; symbol: string }[] = [
+  { id: "text", label: "Text", description: "A heading and paragraph", symbol: "Aa" },
+  { id: "callout", label: "Callout", description: "Highlight an update", symbol: "!" },
+  { id: "quote", label: "Quote", description: "A quote with attribution", symbol: "“" },
+  { id: "link", label: "Link", description: "A button to another page", symbol: "↗" },
+  { id: "guestbook", label: "Guestbook", description: "Let visitors leave a message", symbol: "G" },
+  { id: "testimonials", label: "Testimonials", description: "Show trusted feedback", symbol: "★" },
+  { id: "poll", label: "Poll", description: "Ask visitors a question", symbol: "◉" },
+  { id: "faq", label: "FAQ", description: "Answer common questions", symbol: "?" },
+];
+
 export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Widgets", "Settings"] as const;
@@ -35,6 +48,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [dropActive, setDropActive] = useState(false);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
@@ -105,6 +119,87 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     window.requestAnimationFrame(() => (linkLabels.current[index] ?? addLink.current)?.focus());
   }
 
+  function addBlock(kind: BuilderBlock) {
+    if (kind === "text" || kind === "callout" || kind === "quote") {
+      if (content.sections.length >= 6) {
+        setTab("Sections");
+        setAnnouncement("Your profile already has the maximum of six sections.");
+        return;
+      }
+      const section = kind === "text"
+        ? { heading: "New section", body: "Add your content here." }
+        : kind === "callout"
+          ? { kind: "callout" as const, heading: "Announcement", body: "Share an update with visitors." }
+          : { kind: "quote" as const, heading: "Your name", body: "Add your quote here." };
+      set("sections", [...content.sections, section]);
+      setTab("Sections");
+      setAnnouncement(kind[0].toUpperCase() + kind.slice(1) + " added to your page. Edit the new section in the Sections panel.");
+      return;
+    }
+
+    if (kind === "link") {
+      if (content.links.length >= linkLimit) {
+        setTab("Links");
+        setAnnouncement("Your current plan's link limit has been reached.");
+        return;
+      }
+      set("links", [...content.links, { label: "New link", url: "https://snoozer.uk" }]);
+      setTab("Links");
+      setAnnouncement("A new link has been added. Update its label and destination in the Links panel.");
+      focusLink(content.links.length);
+      return;
+    }
+
+    const widgets = { ...content.widgets };
+    if (widgets[kind].enabled) {
+      setTab("Widgets");
+      setAnnouncement((kind === "faq" ? "FAQ" : kind[0].toUpperCase() + kind.slice(1)) + " is already on your page. Its settings are open.");
+      return;
+    }
+    if (kind === "guestbook") {
+      widgets.guestbook = { ...widgets.guestbook, enabled: true };
+    } else if (kind === "testimonials") {
+      widgets.testimonials = {
+        ...widgets.testimonials, enabled: true,
+        items: widgets.testimonials.items.length ? widgets.testimonials.items : [
+          { id: crypto.randomUUID(), quote: "Add your testimonial here.", author: "Your client", role: "" },
+        ],
+      };
+    } else if (kind === "poll") {
+      const options = [...widgets.poll.options];
+      while (options.length < 2) options.push({ id: crypto.randomUUID(), label: "Option " + (options.length + 1) });
+      widgets.poll = {
+        ...widgets.poll, enabled: true, id: crypto.randomUUID(),
+        question: widgets.poll.question.length >= 5 ? widgets.poll.question : "What would you like to see next?",
+        options,
+      };
+    } else {
+      widgets.faq = {
+        ...widgets.faq, enabled: true,
+        items: widgets.faq.items.length ? widgets.faq.items : [
+          { id: crypto.randomUUID(), question: "Add your first question", answer: "Add your answer here." },
+        ],
+      };
+    }
+    set("widgets", widgets);
+    setTab("Widgets");
+    setAnnouncement((kind === "faq" ? "FAQ" : kind[0].toUpperCase() + kind.slice(1)) + " added to your page. You can customise it in the Widgets panel.");
+  }
+
+  function startBlockDrag(event: DragEvent<HTMLButtonElement>, kind: BuilderBlock) {
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/x-snoozer-block", kind);
+    event.dataTransfer.setData("text/plain", kind);
+  }
+
+  function dropBlock(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDropActive(false);
+    const candidate = event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
+    const block = blockLibrary.find(({ id }) => id === candidate);
+    if (block) addBlock(block.id);
+  }
+
   return <div className="studio-workspace">
     <header className="editor-topbar">
       <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p></div>
@@ -119,7 +214,39 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </div>
     </header>
     <div className="editor-grid">
-    <div className="editor-column">
+      <aside className="editor-sidebar" aria-label="Studio tools">
+        <section className="editor-navigation">
+          <div className="editor-sidebar-heading">
+            <p className="eyebrow">WORKSPACE</p>
+            <h2>Edit profile</h2>
+          </div>
+      <div className="editor-tabs" role="tablist" aria-label="Profile editor">
+        {tabs.map((name, index) => <button key={name} id={`editor-tab-${name}`} type="button" role="tab" aria-selected={tab === name}
+          aria-controls={`editor-panel-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)}
+          onKeyDown={(event) => {
+            const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+            const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : direction ? (index + direction + tabs.length) % tabs.length : null;
+            if (next !== null) { event.preventDefault(); setTab(tabs[next]); document.getElementById(`editor-tab-${tabs[next]}`)?.focus(); }
+          }}>{name}</button>)}
+      </div>
+        </section>
+        <section className="block-library" aria-labelledby="block-library-title">
+          <div className="block-library-heading">
+            <div><p className="eyebrow">BUILDER</p><h2 id="block-library-title">Add to page</h2></div>
+            <span className="block-library-count">8 blocks</span>
+          </div>
+          <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
+          <div className="block-library-grid">
+            {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item" draggable
+              onDragStart={(event) => startBlockDrag(event, block.id)} onClick={() => addBlock(block.id)}>
+              <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
+              <span className="block-library-copy"><strong>{block.label}</strong><small>{block.description}</small></span>
+              <span className="block-library-add" aria-hidden="true">+</span>
+            </button>)}
+          </div>
+          </section>
+      </aside>
+      <div className="editor-column">
     <form id="profile-editor" className="editor-form stack" onInvalidCapture={(event) => {
       const panel = (event.target as HTMLElement).closest<HTMLElement>("[data-editor-panel]");
       if (panel) {
@@ -131,15 +258,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       const button = (event.nativeEvent as SubmitEvent).submitter;
       void commit(button instanceof HTMLButtonElement && button.value === "publish" ? "publish" : "draft");
     }}>
-      <div className="editor-tabs" role="tablist" aria-label="Profile editor">
-        {tabs.map((name, index) => <button key={name} id={`editor-tab-${name}`} type="button" role="tab" aria-selected={tab === name}
-          aria-controls={`editor-panel-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)}
-          onKeyDown={(event) => {
-            const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-            const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : direction ? (index + direction + tabs.length) % tabs.length : null;
-            if (next !== null) { event.preventDefault(); setTab(tabs[next]); document.getElementById(`editor-tab-${tabs[next]}`)?.focus(); }
-          }}>{name}</button>)}
-      </div>
+
       <section role="tabpanel" aria-labelledby="editor-tab-Profile" id="editor-panel-Profile" data-editor-panel="Profile" hidden={tab !== "Profile"} className="editor-panel stack">
         <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>
       <fieldset className="stack">
@@ -362,13 +481,26 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
-      <div className={"preview-card preview-" + previewSize}>
+      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}
+        onDragOver={(event) => {
+          if (Array.from(event.dataTransfer.types).includes("application/x-snoozer-block")) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setDropActive(true);
+          }
+        }}
+        onDragLeave={(event) => {
+          if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDropActive(false);
+        }}
+        onDrop={dropBlock} data-drop-active={dropActive || undefined}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
         } : { ...saved, ...content }}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined} />
+        {dropActive && <div className="preview-drop-overlay" aria-hidden="true"><span>Drop to add to your page</span></div>}
       </div>
+      <p className="preview-drop-help">Tip: drag any block from <strong>Add to page</strong> and drop it onto this preview. You can also use the <strong>+</strong> buttons.</p>
     </aside>
   </div></div>;
 }
