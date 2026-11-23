@@ -437,7 +437,7 @@ function loadConfig(env = process.env) {
   const guildId = env.DISCORD_PRESENCE_GUILD_ID ?? "";
   const baseUrl = env.SNOOZER_PRESENCE_URL ?? "";
   const secret = env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
-  if (!token || !/^[1-9][0-9]{16,19}$/.test(guildId) || !/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || secret.length < 64) {
+  if (!token || !/^[1-9][0-9]{16,19}$/.test(guildId) || !/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || !/^[a-f0-9]{64}$/i.test(secret)) {
     throw new Error("Set DISCORD_BOT_TOKEN, DISCORD_PRESENCE_GUILD_ID, SNOOZER_PRESENCE_URL and a 64-character DISCORD_PRESENCE_INGEST_SECRET.");
   }
   return { token, guildId, baseUrl: baseUrl.replace(/\/$/, ""), secret };
