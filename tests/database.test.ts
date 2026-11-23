@@ -1969,6 +1969,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await draft()).toMatchObject({ revision: 4, appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
   });
 
+  it("keeps hidden links in drafts, omits them publicly and restores their visibility", async () => {
+    await act("authenticated", alice);
+    await claim("link-visibility");
+    const visible = { label: "GitHub", url: "https://github.com/example", hidden: false };
+    const hidden = { label: "Private", url: "https://example.net/private", hidden: true };
+    await save(0, "Link visibility", [visible, hidden], true);
+
+    expect(await draft()).toMatchObject({ links: [visible, hidden] });
+    expect(await published("link-visibility")).toMatchObject({ links: [visible] });
+
+    const profileId = (await draft() as { profile_id: string }).profile_id;
+    await db.query("select public.restore_publication($1,1,1)", [profileId]);
+    expect(await draft()).toMatchObject({ revision: 2, links: [visible, hidden] });
+  });
+
   it("lists only live, indexable profiles in the public sitemap", async () => {
     await act("authenticated", alice);
     await claim("sitemap-public");

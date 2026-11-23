@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, link, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
   it("accepts only bounded built-in motion presets without executable appearance settings", () => {
@@ -37,6 +37,12 @@ describe("profile validation", () => {
     expect(profileBackgroundImage({ appearance, gallery })).toEqual(gallery[0]);
     expect(profileBackgroundImage({ appearance, gallery: [] })).toBeNull();
     expect(profileAppearance.safeParse({ ...defaultAppearance, backgroundImage: "not-an-id" }).success).toBe(false);
+  });
+
+  it("defaults new profile links to visible and validates visibility as a boolean", () => {
+    expect(link.parse({ label: "GitHub", url: "https://github.com/example" }).hidden).toBe(false);
+    expect(link.parse({ label: "Private", url: "https://example.com/private", hidden: true }).hidden).toBe(true);
+    expect(link.safeParse({ label: "Bad visibility", url: "https://example.com", hidden: "yes" }).success).toBe(false);
   });
 
   it("canonicalises ASCII usernames and rejects confusables", () => {
