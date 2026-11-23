@@ -63,25 +63,38 @@ comment on table snoozer.discord_presence_worker_state is
   'Worker heartbeat only. Public presence is unavailable when the heartbeat or guild connection is stale.';
 
 create or replace function snoozer.discord_presence_prune_owner(p_owner uuid) returns void
-language plpgsql security definer set search_path = '' as $
+language plpgsql security definer set search_path = '' as $$
 declare discord_id text;
+declare allow_status boolean;
+declare allow_activity boolean;
+declare allow_custom_status boolean;
 begin
   select discord_user_id into discord_id from snoozer.discord_presence_links where owner_id=p_owner;
   if discord_id is null then return; end if;
-  if not exists (
-    select 1
+
+  select bool_or(s.show_status),bool_or(s.show_activity),bool_or(s.show_custom_status)
+    into allow_status,allow_activity,allow_custom_status
     from snoozer.discord_presence_settings s
     join snoozer.profiles p on p.id=s.profile_id and p.owner_id=s.owner_id
     join snoozer.published_profiles pp on pp.profile_id=p.id and pp.owner_id=p.owner_id
       and pp.revision=p.published_revision
     where s.owner_id=p_owner and s.enabled
-      and (s.show_status or s.show_activity or s.show_custom_status)
-  ) then
+      and (s.show_status or s.show_activity or s.show_custom_status);
+
+  if allow_status is null then
     delete from snoozer.discord_presence_cache where discord_user_id=discord_id;
     delete from snoozer.discord_presence_events where discord_user_id=discord_id;
+    return;
   end if;
+
+  -- Remove fields as soon as the last published profile stops consenting to them.
+  update snoozer.discord_presence_cache set
+    status=case when allow_status then status else null end,
+    activity=case when allow_activity then activity else null end,
+    custom_status=case when allow_custom_status then custom_status else null end
+  where discord_user_id=discord_id;
 end;
-$;
+$$;
 
 create or replace function snoozer.discord_presence_prune_trigger() returns trigger
 language plpgsql security definer set search_path = '' as $
