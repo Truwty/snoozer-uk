@@ -143,7 +143,7 @@ begin
   return true;
 exception when others then
   return false;
-end; $;
+end; $$;
 
 revoke execute on function snoozer.valid_profile_blocks(jsonb) from public, anon, authenticated, service_role;
 
@@ -194,7 +194,7 @@ begin
   return true;
 exception when others then
   return false;
-end; $;
+end; $$;
 revoke execute on function snoozer.valid_profile_page_layout(jsonb) from public, anon, authenticated, service_role;
 
 create or replace function snoozer.copy_profile_blocks_to_publication() returns trigger
@@ -210,7 +210,7 @@ begin
   end if;
   new.blocks := snapshot_blocks;
   return new;
-end $;
+end $$;
 revoke execute on function snoozer.copy_profile_blocks_to_publication() from public, anon, authenticated, service_role;
 create trigger published_profile_blocks_snapshot
   before insert on snoozer.published_profiles
@@ -321,7 +321,7 @@ begin
     p_sections,p_appearance,p_seo,p_widgets,p_page_layout
   );
   return saved;
-end; $;
+end; $$;
 revoke execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb)
   from public, anon, authenticated, service_role;
 grant execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb)
@@ -345,7 +345,7 @@ begin
     p_profile,p_expected,p_name,p_bio,p_theme,p_indexable,p_links,p_publish,p_remove_avatar,
     p_sections,p_appearance,p_seo,p_widgets,p_page_layout,current_blocks
   );
-end; $;
+end; $$;
 revoke execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb,jsonb)
   from public, anon, authenticated, service_role;
 grant execute on function public.save_profile(uuid,integer,text,text,text,boolean,jsonb,boolean,boolean,jsonb,jsonb,jsonb,jsonb,jsonb)
@@ -372,7 +372,7 @@ begin
   where p.id=p_profile and v.profile_id=p_profile and v.revision=p_revision
     and p.owner_id=snoozer.verified_user();
   if not found then raise exception 'Publication unavailable' using errcode='42501'; end if;
-end; $;
+end; $$;
 
 -- Filter hidden block references alongside hidden sections and links in the
 -- public page order, while preserving the owner's complete revision history.
