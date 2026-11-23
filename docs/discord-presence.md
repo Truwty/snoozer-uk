@@ -1,6 +1,6 @@
 # Discord Presence
 
-Status: implementation in progress. The website, database contract and standalone Gateway worker are being built on the `feat/discord-presence` branch. The live Discord bot credentials, shared guild and always-on worker still need to be configured before real provider acceptance.
+Status: implementation merged in PR #80 (`ca332cc`) and CI-tested; the connected Supabase schema is applied. The Render web deployment is being rolled out with `DISCORD_PRESENCE_ENABLED=false`, so the feature is not yet active. Live activation is blocked on written Discord policy clearance, bot configuration, a shared guild and an owner-approved always-on worker.
 
 ## Behaviour
 
