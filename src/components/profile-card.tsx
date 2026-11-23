@@ -20,7 +20,6 @@ import { defaultEffects } from "@/lib/profile-effects";
 import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
-import type { ProfileBlock } from "@/lib/profile-blocks";
 
 type SocialLink = { label: string; url: string; index: number; mark: string };
 
