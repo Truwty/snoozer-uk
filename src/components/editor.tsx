@@ -238,7 +238,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
           <div className="block-library-grid">
             {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item"
-              aria-label={`Add ${block.label}`} aria-describedby={`block-description-${block.id}`} draggable
+              aria-describedby={`block-description-${block.id}`} draggable
               onDragStart={(event) => startBlockDrag(event, block.id)} onClick={() => addBlock(block.id)}>
               <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
               <span className="block-library-copy"><strong>{block.label}</strong><small id={`block-description-${block.id}`}>{block.description}</small></span>
