@@ -11,18 +11,16 @@ import { SpotifyWidget } from "./spotify-widget";
 import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 import { PublicMetadataWidget } from "./public-metadata-widget";
 import { TwitchWidget } from "./twitch-widget";
-import { SpotifyNowPlaying } from "./spotify-now-playing";
 import { ProfileEffectsLayer } from "./profile-effects";
 import { defaultEffects } from "@/lib/profile-effects";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, spotifyEnabled = false }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
   preview?: boolean;
   previewLabel?: string;
   ownerBadge?: boolean;
-  spotifyEnabled?: boolean;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
   const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
@@ -101,7 +99,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      {!preview && spotifyEnabled && <SpotifyNowPlaying key={profile.username} username={profile.username} />}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">

@@ -36,7 +36,7 @@ it("bounds host input, routable paths and public IPv4 targets", () => {
   for (const address of ["0.0.0.0", "10.0.0.1", "127.0.0.1", "100.64.0.1", "169.254.1.1", "172.31.2.1", "192.168.1.1", "198.18.0.1", "224.0.0.1", "012.1.1.1", "999.1.1.1", "::1"]) expect(publicIPv4(address)).toBe(false);
   expect(domainRoute("/", "GET", "creator")).toBe(true);
   expect(domainRoute("/api/v1/analytics/view", "POST", "creator")).toBe(true);
-  expect(domainRoute("/api/v1/spotify/now-playing", "GET", "creator")).toBe(true);
+  expect(domainRoute("/api/v1/spotify/now-playing", "GET", "creator")).toBe(false);
   expect(domainRoute("/api/v1/spotify/connect", "GET", "creator")).toBe(false);
   for (const path of ["/studio", "/sign-in", "/api/v1/billing/stripe/webhook", "/media/avatar/another/00000000-0000-4000-8000-000000000001"]) expect(domainRoute(path, "GET", "creator")).toBe(false);
   expect(domainRoute("/", "POST", "creator")).toBe(false);

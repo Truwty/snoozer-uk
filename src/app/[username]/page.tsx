@@ -32,15 +32,12 @@ export default async function Page({ params }: Props) {
   if (name !== profile.username) permanentRedirect(`/${profile.username}`);
   // A selected gallery photo backgrounds the whole published page, not only the card.
   const background = profileBackgroundImage(profile);
-  const [{ data: ownerBadge, error: ownerError }, spotify] = await Promise.all([
-    anonymousClient().rpc("is_owner_profile", { p_name: profile.username }),
-    anonymousClient().rpc("spotify_public_enabled", { p_name: profile.username }),
-  ]);
+  const { data: ownerBadge, error: ownerError } = await anonymousClient().rpc("is_owner_profile", { p_name: profile.username });
   const pageStyle = background
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
-    <ProfileCard profile={profile} ownerBadge={!ownerError && ownerBadge === true} spotifyEnabled={!spotify.error && spotify.data === true} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard profile={profile} ownerBadge={!ownerError && ownerBadge === true} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <div className="stack" style={{ alignItems: "center", marginTop: ".75rem" }}><Link href={new URL("/report/" + profile.username, siteUrl()).href} className="muted">Report profile</Link><Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link></div>
   </main>;
