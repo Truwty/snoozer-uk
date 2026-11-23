@@ -1,14 +1,6 @@
-## Feature #7 — Next actions (23 Nov 2026)
+## Feature #7 — Spotify next steps (23 Nov 2026)
 
-Complete PR #75 public Spotify embed CI/merge/deploy. Finish `feat/spotify-now-playing` CI and review, then apply the private Spotify connection migration, set server-only Spotify developer variables and enable OAuth only for allowed beta users. Run an actual Spotify OAuth and playback/paused/revocation/429 acceptance test, owner-visibility consent test and Render deploy verification. Do not claim a bypass of Spotify's five-authorised-user Development Mode cap; broad public access remains embeds only. See `docs/spotify-integration.md`.
-
----
-
-## Feature #7 — Spotify public Embeds (implementation started, 23 Nov 2026)
-
-Work in branch `feat/spotify-public-embeds` adds the Spotify track/album/playlist/artist/show/episode URL parser, first-party Studio "Add Spotify music or playlist" shortcut, a strictly consent-first official Spotify iframe widget on published profiles and previews, and a narrow CSP frame-src update for `https://open.spotify.com`. It needs **no Web API quota, Spotify Premium developer login, new Supabase schema or paid external service**. New unit tests exercise safe URL parsing; Playwright covers an actual published playlist, explicit visitor opt-in, zero pre-consent iframes and Hide teardown. Details: `docs/spotify-integration.md`.
-
-Status: **implementation and validation in progress**. Phase 1 must not be declared done until PR CI and production acceptance pass. Phase 2 OAuth / Now Playing remains gated on a Spotify app, Premium developer membership and Spotify's five-user Development Mode policy; no misleading claim of a compliant unlimited Web API bypass. Phases 3–5 (live display, premium styling, extended access sign-off) are still to be implemented.
+Owner chose **public Spotify embeds only** (no paid Spotify developer subscription). Remove the OAuth/Now Playing beta and private database schema using a forward migration, keep published links and opt-in players, run CI and confirm the new Render deploy. No Spotify Client ID, token key or developer app is required. See `docs/spotify-integration.md`.
 
 ---
 

@@ -1,14 +1,6 @@
-## Feature #7 Spotify Phase 2 code candidate — 23 November 2026
+## Feature #7 — Spotify embeds only (23 Nov 2026)
 
-Branch `feat/spotify-now-playing` adds a separate opt-in Spotify OAuth PKCE connection, encrypted refresh/access tokens in a private schema, rate-limited public Now Playing, disconnect/visibility settings, a single-owner lookup and refreshed UI. **Feature #7 is not yet accepted as complete:** migration, CI, Spotify Premium developer app, <=5 authorised beta users, real provider acceptance and Render deploy remain gated. Public Spotify embeds from PR #75 do not require OAuth. See `docs/spotify-integration.md`.
-
----
-
-## Feature #7 — Spotify public Embeds (implementation started, 23 Nov 2026)
-
-Work in branch `feat/spotify-public-embeds` adds the Spotify track/album/playlist/artist/show/episode URL parser, first-party Studio "Add Spotify music or playlist" shortcut, a strictly consent-first official Spotify iframe widget on published profiles and previews, and a narrow CSP frame-src update for `https://open.spotify.com`. It needs **no Web API quota, Spotify Premium developer login, new Supabase schema or paid external service**. New unit tests exercise safe URL parsing; Playwright covers an actual published playlist, explicit visitor opt-in, zero pre-consent iframes and Hide teardown. Details: `docs/spotify-integration.md`.
-
-Status: **implementation and validation in progress**. Phase 1 must not be declared done until PR CI and production acceptance pass. Phase 2 OAuth / Now Playing remains gated on a Spotify app, Premium developer membership and Spotify's five-user Development Mode policy; no misleading claim of a compliant unlimited Web API bypass. Phases 3–5 (live display, premium styling, extended access sign-off) are still to be implemented.
+**Owner decision:** retain free, consent-first official Spotify links and embedded players; remove all Spotify OAuth and live Now Playing features. The existing Spotify parser/widget, Studio shortcut, CSP and embed E2E coverage remain. Removed account linking, callbacks, Web API polling, token storage, public listening status, OAuth tests and configuration. Added a forward Supabase migration to remove the unused table and RPCs; confirmed **0 connected Spotify accounts** before removal. Studio /spotify now explains how to add a free embed. Verify CI, production Render deployment and database migration before marking fully live. See `docs/spotify-integration.md`.
 
 ---
 

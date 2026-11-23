@@ -850,12 +850,5 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .owner-nav + main .actions { flex-wrap: wrap; }
 }
 
-/* Feature #7 Spotify widgets. Inherit the published card theme and Premium effects. */
-.spotify-now-playing,.spotify-widget { margin-top: .75rem; padding: .85rem; border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 14px; background: color-mix(in srgb, var(--surface, #111) 88%, transparent); }
-.spotify-now-playing .actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
-.spotify-now-playing a { text-decoration: underline; text-underline-offset: .2em; }
-.spotify-now-playing p { overflow-wrap: anywhere; }
-.profile-card[data-effect-interaction="tilt"] .spotify-now-playing { transition: transform 250ms ease; }
-@media (prefers-reduced-motion: no-preference) {
-  .profile-card[data-effect-interaction="tilt"] .spotify-now-playing:hover { transform: translateY(-2px); }
-}
+/* Feature #7: official Spotify embeds remain styled by the published profile theme. */
+.spotify-widget { margin-top: .75rem; padding: .85rem; border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 14px; background: color-mix(in srgb, var(--surface, #111) 88%, transparent); }

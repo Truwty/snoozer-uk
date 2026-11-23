@@ -11,7 +11,6 @@ export function domainRoute(path: string, method: string, username: string) {
   if (method === "POST") return ["/api/v1/analytics/view", "/api/v1/widgets/public"].includes(path);
   if (!["GET", "HEAD"].includes(method)) return false;
   return path === "/" || path === "/.well-known/snoozer-domain" || path === "/icon.svg"
-    || path === "/api/v1/spotify/now-playing"
     || new RegExp("^/media/(?:avatar|gallery)/" + username + "/[0-9a-f-]{36}$").test(path)
     || path === "/media/profile-card/" + username;
 }
