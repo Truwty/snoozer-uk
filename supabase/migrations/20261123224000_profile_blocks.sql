@@ -25,8 +25,11 @@ begin
       or item->>'id' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or jsonb_typeof(item->'hidden') is distinct from 'boolean'
       or jsonb_typeof(item->'locked') is distinct from 'boolean'
+      or jsonb_typeof(item->'width') is distinct from 'string'
       or item->>'width' not in ('full','half','third')
+      or jsonb_typeof(item->'align') is distinct from 'string'
       or item->>'align' not in ('start','center','end')
+      or jsonb_typeof(item->'variant') is distinct from 'string'
       or item->>'variant' not in ('plain','surface','outline','accent')
       or jsonb_typeof(item->'type') is distinct from 'string' then
       return false;
@@ -64,7 +67,8 @@ begin
     elsif item_type = 'project' then
       target_url := item->>'url';
       target_host := substring(target_url from '^https?://([a-z0-9.-]+)');
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'title' - 'description' - 'url' - 'buttonLabel' <> '{}'::jsonb
+      if target_url is null
+        or item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'title' - 'description' - 'url' - 'buttonLabel' <> '{}'::jsonb
         or jsonb_typeof(item->'title') is distinct from 'string'
         or char_length(btrim(item->>'title')) not between 1 and 100
         or jsonb_typeof(item->'description') is distinct from 'string'
@@ -86,7 +90,8 @@ begin
     elsif item_type = 'cta' then
       target_url := item->>'url';
       target_host := substring(target_url from '^https?://([a-z0-9.-]+)');
-      if item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'body' - 'label' - 'url' <> '{}'::jsonb
+      if target_url is null
+        or item - 'id' - 'hidden' - 'locked' - 'width' - 'align' - 'variant' - 'type' - 'heading' - 'body' - 'label' - 'url' <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 100
         or jsonb_typeof(item->'body') is distinct from 'string'
