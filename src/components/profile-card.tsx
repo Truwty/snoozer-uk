@@ -208,7 +208,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       .filter(({ url }) => safeLink(url));
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
       const mark = socialMark(url);
-      return mark ? [{ label, url, index, mark }] : [];
+      return mark && !hasProviderEmbed(url) ? [{ label, url, index, mark }] : [];
     });
     const hasProviderEmbed = (url: string) => Boolean(
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
