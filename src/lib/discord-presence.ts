@@ -14,7 +14,7 @@ export const discordPresenceActivity = z.strictObject({
 export const discordPresenceEvent = z.strictObject({
   eventId: z.uuid(),
   discordUserId: discordSnowflake,
-  status: z.enum(discordPresenceStatuses),
+  status: z.enum(discordPresenceStatuses).nullable(),
   activity: discordPresenceActivity.nullable(),
   customStatus: z.string().trim().max(128).nullable(),
   observedAt: z.iso.datetime({ offset: true }),
@@ -62,6 +62,7 @@ export function normaliseDiscordPresence(
   presence: { status?: unknown; activities?: unknown },
   eventId: string,
   observedAt = new Date().toISOString(),
+  fields: { showStatus?: boolean; showActivity?: boolean; showCustomStatus?: boolean } = {},
 ): DiscordPresenceEvent | null {
   const rawStatus = presence.status;
   const status = rawStatus === "invisible" ? "offline"
@@ -69,6 +70,9 @@ export function normaliseDiscordPresence(
     : null;
   if (!status || !discordSnowflake.safeParse(discordUserId).success) return null;
 
+  const showStatus = fields.showStatus ?? true;
+  const showActivity = fields.showActivity ?? true;
+  const showCustomStatus = fields.showCustomStatus ?? false;
   const rawActivities = Array.isArray(presence.activities) ? presence.activities.slice(0, 12) : [];
   let customStatus: string | null = null;
   const candidates: DiscordPresenceActivity[] = [];
@@ -77,9 +81,11 @@ export function normaliseDiscordPresence(
     if (!raw || typeof raw !== "object") continue;
     const item = raw as Record<string, unknown>;
     if (item.type === 4) {
+      if (!showCustomStatus) continue;
       customStatus ??= safeText(item.state, 128);
       continue;
     }
+    if (!showActivity) continue;
     const type = typeof item.type === "number" ? activityTypes[item.type] : undefined;
     const name = safeText(item.name, 100);
     if (!type || !name) continue;
@@ -95,9 +101,9 @@ export function normaliseDiscordPresence(
   return discordPresenceEvent.parse({
     eventId,
     discordUserId,
-    status,
-    activity: status === "offline" ? null : activity,
-    customStatus: status === "offline" ? null : customStatus,
+    status: showStatus ? status : null,
+    activity: status === "offline" || !showActivity ? null : activity,
+    customStatus: status === "offline" || !showCustomStatus ? null : customStatus,
     observedAt,
   });
 }
