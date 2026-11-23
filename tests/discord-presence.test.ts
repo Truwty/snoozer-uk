@@ -128,6 +128,33 @@ describe("live public presence updates", () => {
     }
   });
 
+  it("recovers from a temporary public lookup failure without a page reload", async () => {
+    vi.useFakeTimers();
+    const unavailable = vi.fn();
+    const changes: string[] = [];
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(response(503, { error: "Presence unavailable." }))
+      .mockResolvedValueOnce(response(200, projection("online")));
+    const poller = createDiscordPresencePoller({
+      username: "example",
+      fetcher: fetcher as unknown as typeof fetch,
+      onPresence: (value) => changes.push(value.status ?? "hidden"),
+      onUnavailable: unavailable,
+      onDisabled: vi.fn(),
+    });
+    try {
+      await poller.start();
+      expect(unavailable).toHaveBeenCalledOnce();
+      expect(changes).toEqual([]);
+      await vi.advanceTimersByTimeAsync(DISCORD_PRESENCE_POLL_INTERVAL_MS);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(changes).toEqual(["online"]);
+    } finally {
+      poller.stop();
+      vi.useRealTimers();
+    }
+  });
+
   it("stops polling and removes the badge when public consent is withdrawn", async () => {
     vi.useFakeTimers();
     const fetcher = vi.fn().mockResolvedValue(response(404, { error: "Presence is not enabled." }));
