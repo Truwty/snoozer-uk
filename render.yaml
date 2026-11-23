@@ -21,3 +21,7 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: DISCORD_PRESENCE_INGEST_SECRET
+        sync: false
+      - key: DISCORD_PRESENCE_INVITE_URL
+        sync: false
