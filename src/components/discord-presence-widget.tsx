@@ -73,7 +73,6 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
     data-tooltip={tooltip}
     role="img"
     aria-label={`Discord status: ${label}`}
-    title={`Discord status: ${label}`}
     tabIndex={0}
   >
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
