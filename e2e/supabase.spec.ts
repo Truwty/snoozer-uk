@@ -1096,7 +1096,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await publicPage.setViewportSize({ width, height: 850 });
       const measure = (card: Element) => ({
         width: card.getBoundingClientRect().width,
-        fontSize: getComputedStyle(card.querySelector(".profile-inner > :is(h1,h2)")!).fontSize,
+        fontSize: getComputedStyle(card.querySelector(".profile-identity .profile-name-heading")!).fontSize,
         gap: getComputedStyle(card.querySelector(".profile-inner")!).gap,
         radius: getComputedStyle(card).borderRadius,
         align: getComputedStyle(card).textAlign,
