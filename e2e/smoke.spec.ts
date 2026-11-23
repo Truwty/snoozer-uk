@@ -155,7 +155,7 @@ test("template search combines filters, preserves URL state and clears empty res
   await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(1);
   await page.reload();
   await expect(page.getByLabel("Search templates", { exact: true })).toHaveValue("notebook compact");
-  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveAttribute("href", "/studio?template=project-notebook-compact");
+  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveAttribute("href", "/studio/builder?template=project-notebook-compact");
   await page.getByLabel("Search templates", { exact: true }).fill("no such template");
   await page.getByRole("button", { name: "Find templates", exact: true }).click();
   await expect(page.getByRole("heading", { name: "No matching templates", exact: true })).toBeVisible();
