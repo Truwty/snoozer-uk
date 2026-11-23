@@ -161,7 +161,7 @@ textarea { resize: vertical; }
 .discord-presence-card[data-status="online"] .discord-presence-dot { background: #43b581; box-shadow: 0 0 0 .22rem rgb(67 181 129 / 15%); }
 .discord-presence-card[data-status="idle"] .discord-presence-dot { background: #faa61a; box-shadow: 0 0 0 .22rem rgb(250 166 26 / 15%); }
 .discord-presence-card[data-status="dnd"] .discord-presence-dot { background: #ed4245; box-shadow: 0 0 0 .22rem rgb(237 66 69 / 15%); }
-.discord-presence-card[data-status="offline"], .discord-presence-card[data-status="unavailable"] .discord-presence-dot { background: #8b929b; box-shadow: 0 0 0 .22rem rgb(139 146 155 / 15%); }
+.discord-presence-card[data-status="offline"] .discord-presence-dot, .discord-presence-card[data-status="unavailable"] .discord-presence-dot { background: #8b929b; box-shadow: 0 0 0 .22rem rgb(139 146 155 / 15%); }
 .discord-presence-activity { display: grid; gap: .12rem; padding: .7rem .8rem; border-radius: calc(var(--block-radius) * .75); background: color-mix(in srgb, var(--page) 62%, transparent); overflow-wrap: anywhere; }
 .discord-presence-activity-type { color: var(--detail); font-size: .64rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
 .discord-presence-activity strong { font-size: .94rem; line-height: 1.3; }
