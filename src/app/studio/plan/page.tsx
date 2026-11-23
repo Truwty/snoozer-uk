@@ -69,7 +69,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const linksUsed = draft?.links.length ?? 0;
 
   return <main className="shell">
-    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", selected)}>Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/builder", selected)}>Back to Page Builder</Link></header>
     <section className="stack plan-page">
       <h1>Plan and usage</h1>
       {showSandbox && sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
