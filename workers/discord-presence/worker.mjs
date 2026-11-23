@@ -191,31 +191,47 @@ export class DiscordPresenceWorker {
     if (!this.subscriptions.has(discordUserId)) return;
     try {
       await this.post({ type: "clear", eventId: randomUUID(), discordUserId });
+      this.logger.info("[discord-presence] Cleared stale presence because a subscribed account was not found in the shared guild.");
     } catch (error) {
       this.logger.error("[discord-presence] stale membership cleanup failed:", error?.message ?? error);
     }
   }
 
   async requestSnapshots(userIds) {
-    if (userIds.length === 0) return;
+    const requestedIds = [...new Set(userIds)].filter(id => this.subscriptions.has(id));
+    if (requestedIds.length === 0) return;
     if (this.snapshotRunning) {
-      for (const id of userIds) if (this.subscriptions.has(id)) this.pendingSnapshotIds.add(id);
+      for (const id of requestedIds) this.pendingSnapshotIds.add(id);
       return;
     }
-    if (!this.guildReady || this.socket?.readyState !== 1) return;
+    if (!this.guildReady || this.socket?.readyState !== 1) {
+      this.logger.warn("[discord-presence] Targeted snapshot was skipped because the configured guild is not ready.");
+      return;
+    }
     this.snapshotRunning = true;
+    this.logger.info(`[discord-presence] Requesting targeted presence snapshots for ${requestedIds.length} opted-in account(s).`);
     try {
-      for (const batch of chunks([...new Set(userIds)].filter(id => this.subscriptions.has(id)), MAX_USER_IDS_PER_REQUEST)) {
+      for (const batch of chunks(requestedIds, MAX_USER_IDS_PER_REQUEST)) {
         if (!this.guildReady || this.socket?.readyState !== 1) break;
         const nonce = randomUUID().replaceAll("-", "").slice(0, 32);
         const completed = new Promise(resolve => {
           const timer = setTimeout(() => {
-            this.pendingChunks.delete(nonce);
+            if (this.pendingChunks.delete(nonce)) {
+              this.logger.warn(`[discord-presence] Targeted presence snapshot timed out (requested=${batch.length}; no member chunk received).`);
+            }
             resolve();
           }, 15_000);
           this.pendingChunks.set(nonce, { ids: new Set(batch), resolve: () => { clearTimeout(timer); resolve(); } });
         });
-        this.send({ op: 8, d: { guild_id: this.config.guildId, user_ids: batch, presences: true, nonce } });
+        const sent = this.send({ op: 8, d: { guild_id: this.config.guildId, user_ids: batch, presences: true, nonce } });
+        if (!sent) {
+          const pending = this.pendingChunks.get(nonce);
+          if (pending) {
+            this.pendingChunks.delete(nonce);
+            pending.resolve();
+          }
+          this.logger.warn("[discord-presence] Targeted presence snapshot could not be sent because the Gateway socket closed.");
+        }
         await completed;
         await delay(1_200);
       }
@@ -233,17 +249,23 @@ export class DiscordPresenceWorker {
     const presences = new Map((Array.isArray(data.presences) ? data.presences : [])
       .filter(item => item?.user?.id)
       .map(item => [item.user.id, item]));
-    const found = new Set();
-    for (const member of Array.isArray(data.members) ? data.members : []) {
+    const members = Array.isArray(data.members) ? data.members : [];
+    let subscribedMembers = 0;
+    for (const member of members) {
       const id = member?.user?.id;
       if (!id || !pending.ids.has(id)) continue;
-      found.add(id);
+      subscribedMembers += 1;
       const presence = presences.get(id);
       await this.sendPresence(id, presence ?? { status: "offline", activities: [] });
     }
+    let notFound = 0;
     for (const id of Array.isArray(data.not_found) ? data.not_found : []) {
-      if (pending.ids.has(id)) await this.clearPresence(id);
+      if (pending.ids.has(id)) {
+        notFound += 1;
+        await this.clearPresence(id);
+      }
     }
+    this.logger.info(`[discord-presence] Targeted member chunk received (members=${members.length}; presences=${presences.size}; subscribed_matches=${subscribedMembers}; not_found=${notFound}; chunk=${(data.chunk_index ?? 0) + 1}/${data.chunk_count ?? 1}).`);
     if ((data.chunk_index ?? 0) + 1 >= (data.chunk_count ?? 1)) {
       this.pendingChunks.delete(data.nonce);
       pending.resolve();
@@ -274,10 +296,10 @@ export class DiscordPresenceWorker {
           this.guildKnown = true;
           this.guildReady = true;
           await this.heartbeat(true, true);
-          for (const presence of Array.isArray(data.presences) ? data.presences : []) {
-            const id = presence?.user?.id;
-            if (id && this.subscriptions.has(id)) await this.sendPresence(id, presence);
-          }
+          const initialPresences = Array.isArray(data.presences) ? data.presences : [];
+          const subscribedInitialPresences = initialPresences.filter(presence => presence?.user?.id && this.subscriptions.has(presence.user.id));
+          this.logger.info(`[discord-presence] Initial guild presence snapshot received (entries=${initialPresences.length}; opted_in_matches=${subscribedInitialPresences.length}).`);
+          for (const presence of subscribedInitialPresences) await this.sendPresence(presence.user.id, presence);
           void this.requestSnapshots([...this.subscriptions]);
         }
         break;
