@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import test from "node:test";
 import { normaliseGatewayPresence, signInternalRequest } from "../workers/discord-presence/worker.mjs";
 
-const discordUserId = "123456789012345678";
+const discordUserId = "111111111111111111";
 
 test("Gateway presence projection drops secrets and keeps only public activity fields", () => {
   const event = normaliseGatewayPresence(discordUserId, {
