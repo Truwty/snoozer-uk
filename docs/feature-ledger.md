@@ -103,7 +103,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 8.8 | Professional Business Card | Deferred |
 | 8.9 | Split Hero Layout | Deferred |
 | 8.10 | Masonry Gallery | Deferred |
-| 8.11 | Custom Sections | Text/callout/quote sections plus ten typed native profile block types are supported; custom block draft, public snapshot, hidden filtering and restore are covered by database tests |
+| 8.11 | Custom Sections | Text/callout/quote sections plus ten typed native profile block types, all individually addable from the Page Builder library, are supported; custom block draft, public snapshot, hidden filtering and restore are covered by database tests |
 | 8.12 | Safe Advanced Css Tokens Without Arbitrary Script | Named spacing, corner, layout and link accent values verified in disposable Supabase CI |
 | 8.13 | Fluid Typography | Partially implemented |
 | 8.14 | Font Pairing | Deferred |
