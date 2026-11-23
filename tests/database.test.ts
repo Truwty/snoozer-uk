@@ -73,11 +73,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   }
 
   async function result<T = unknown>(sql: string, args: unknown[] = []) {
-    try {
-      return (await db.query<{ value: T }>(sql, args)).rows[0]?.value;
-    } catch (error) {
-      throw new Error("Database query failed: " + sql, { cause: error });
-    }
+    return (await db.query<{ value: T }>(sql, args)).rows[0]?.value;
   }
 
   const claim = (name: string) => db.query("select public.claim_profile($1)", [name]);
