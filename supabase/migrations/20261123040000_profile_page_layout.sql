@@ -88,9 +88,9 @@ begin
   update snoozer.profiles set widgets=p_widgets,page_layout='{"version":1,"items":[]}'::jsonb
     where id=p_profile and owner_id=actor and revision=p_expected;
   if not found then raise exception 'Profile revision conflict' using errcode='40001'; end if;
-  saved := public.save_profile(
+  saved := public.save_profile_without_page_layout(
     p_profile,p_expected,p_name,p_bio,p_theme,p_indexable,p_links,p_publish,p_remove_avatar,
-    p_sections,p_appearance,p_seo
+    p_sections,p_appearance,p_seo,p_widgets
   );
   return saved;
 end $;
