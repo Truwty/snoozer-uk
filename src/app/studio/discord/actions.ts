@@ -12,6 +12,7 @@ const profileIdSchema = z.uuid();
 export async function connectDiscordPresence(formData: FormData) {
   const profileId = profileIdSchema.safeParse(formData.get("profileId"));
   if (!profileId.success) redirect("/studio/discord?error=profile");
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") redirect(studioHref("/studio/discord?error=disabled", profileId.data));
 
   const { client } = await requireAccount();
   const jar = await cookies();
@@ -35,6 +36,7 @@ export async function connectDiscordPresence(formData: FormData) {
 export async function saveDiscordPresenceSettings(formData: FormData) {
   const profileId = profileIdSchema.safeParse(formData.get("profileId"));
   if (!profileId.success) redirect("/studio/discord?error=profile");
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") redirect(studioHref("/studio/discord?error=disabled", profileId.data));
 
   const enabled = formData.get("enabled") === "on";
   const showStatus = formData.get("showStatus") === "on";
@@ -62,6 +64,7 @@ export async function saveDiscordPresenceSettings(formData: FormData) {
 export async function disconnectDiscordPresence(formData: FormData) {
   const profileId = profileIdSchema.safeParse(formData.get("profileId"));
   if (!profileId.success) redirect("/studio/discord?error=profile");
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") redirect(studioHref("/studio/discord?error=disabled", profileId.data));
   const { client } = await requireAccount();
   const { error } = await client.rpc("discord_presence_disconnect");
   redirect(studioHref(error ? "/studio/discord?error=disconnect" : "/studio/discord?disconnected=1", profileId.data));
