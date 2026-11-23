@@ -357,6 +357,12 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Claim address" }).click();
     const preview = page.getByRole("region", { name: "Page preview" });
     await expect(preview.getByText(`@${second}`, { exact: true })).toBeVisible();
+    const selectedProfile = new URL(page.url()).searchParams.get("profile");
+    expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
+    await page.getByRole("link", { name: "Customize", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("/studio/customize\\?profile=" + selectedProfile));
+    await page.getByRole("link", { name: "Page Builder", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
@@ -839,7 +845,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const profileHref = (await editProfile.getAttribute("href"))!;
     expect(profileHref).toMatch(/^\/studio\/builder\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
-    await expect(page.getByRole("link", { name: "Image gallery" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
+    await expect(page.getByRole("link", { name: "Gallery & Assets" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
     await page.getByRole("link", { name: "Premium & Usage" }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
