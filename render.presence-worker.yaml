@@ -1,0 +1,21 @@
+# Separate, always-on Render Background Worker for the Discord Gateway connection.
+# Create this service only after the Discord bot application and secrets are ready.
+# A paid always-on worker is required; the existing free web service can sleep.
+services:
+  - type: worker
+    name: snoozer-discord-presence
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    buildCommand: echo "No build step required"
+    startCommand: node workers/discord-presence/worker.mjs
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_PRESENCE_GUILD_ID
+        sync: false
+      - key: SNOOZER_PRESENCE_URL
+        value: https://snoozer.uk
+      - key: DISCORD_PRESENCE_INGEST_SECRET
+        sync: false
