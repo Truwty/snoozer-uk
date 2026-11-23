@@ -180,7 +180,7 @@ revoke execute on function snoozer.profile_draft(uuid), snoozer.profile_draft_wi
 
 alter function snoozer.profile_snapshot(uuid,integer,boolean) rename to profile_snapshot_without_page_layout;
 create function snoozer.profile_snapshot(p_profile uuid,p_revision integer,p_public boolean) returns jsonb
-language sql stable set search_path = '' as $
+language sql stable set search_path = '' as $$
   select snoozer.profile_snapshot_without_page_layout(p_profile,p_revision,p_public)
     || jsonb_build_object(
       'pageLayout',
@@ -215,7 +215,7 @@ language sql stable set search_path = '' as $
     )
   from snoozer.published_profiles v
   where v.profile_id=p_profile and v.revision=p_revision
-$;
+$$;
 revoke execute on function snoozer.profile_snapshot(uuid,integer,boolean),
   snoozer.profile_snapshot_without_page_layout(uuid,integer,boolean)
   from public, anon, authenticated, service_role;
