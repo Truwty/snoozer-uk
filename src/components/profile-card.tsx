@@ -106,7 +106,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      {!preview && discordPresence && <DiscordPresenceWidget username={profile.username} initialPresence={discordPresence} />}
+      {!preview && discordPresence && <DiscordPresenceWidget key={JSON.stringify(discordPresence)} username={profile.username} initialPresence={discordPresence} />}
       {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
         {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
         <ul className="profile-gallery-grid">
