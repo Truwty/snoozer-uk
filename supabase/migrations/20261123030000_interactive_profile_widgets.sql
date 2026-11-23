@@ -324,7 +324,7 @@ begin
 end $$;
 
 create function public.get_public_poll_results(p_username text,p_poll uuid,p_visitor_hash text) returns jsonb
-language sql stable security definer set search_path='' as $
+language sql stable security definer set search_path='' as $$
  select case when v.widgets->'poll'->>'enabled'='true'
    and v.widgets->'poll'->>'id'=p_poll::text
    and (
@@ -345,7 +345,7 @@ language sql stable security definer set search_path='' as $
      where profile_id=p.id and poll_id=p_poll group by option_id) counts
  ) t on true
  where p.username=p_username and p.published_revision is not null
-$;
+$$;
 
 create function public.submit_public_poll_vote(
  p_username text,p_poll uuid,p_option uuid,p_visitor_hash text
