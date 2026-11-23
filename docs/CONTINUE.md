@@ -1,6 +1,6 @@
 ## Feature #29 — Interactive Profile Widgets (completed 23 November 2026)
 
-<badge>Completed — merged and deployed to staging</badge>
+**Status: Complete — merged and deployed to staging.**
 
 **Release identifiers**
 - PR [#93](https://github.com/Truwty/snoozer-uk/pull/93), merged to `main`

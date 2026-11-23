@@ -1,6 +1,6 @@
 ## Feature #29 — Interactive Profile Widgets (23 November 2026)
 
-<badge>Completed — merged and deployed to staging</badge>
+**Status: Complete — merged and deployed to staging.**
 
 **Implementation:** PR [#93](https://github.com/Truwty/snoozer-uk/pull/93) merged to `main` as `ef83846a7fe8fc6d4b8ff00e114ac8b08ad454bf`. It adds creator-configurable FAQ (up to 10 entries), creator-curated Testimonials (up to 6), Polls (2–6 choices) and a moderated Guestbook. Studio controls enablement, content and display order. Configuration is draft-saved, captured in immutable publication revisions and restored with publication history. Basic widgets are available on Free, Plus, Pro and Studio.
 
