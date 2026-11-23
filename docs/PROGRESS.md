@@ -1,3 +1,9 @@
+## Feature #7 — Spotify embed visual redesign (23 Nov 2026)
+
+Owner-requested appearance refresh: the official Spotify iframe now renders automatically (lazy network load) inside a compact Snoozer theme-aware card with one understated Spotify action, replacing the old duplicate link button, privacy accordion and load/hide controls. Link analytics are retained on the Open link and Spotify iframe remains the official provider code. Updates to published and preview appearance, Studio guidance, privacy disclosures, E2E tests and documentation. Provider requests can occur without per-widget consent; legal/privacy review recommended for UK PECR before broad rollout. **Pending CI and Render sign-off**; do not claim live until verified.
+
+---
+
 ## Feature #7 — Spotify embeds only (23 Nov 2026)
 
 **Owner decision:** retain free, consent-first official Spotify links and embedded players; remove all Spotify OAuth and live Now Playing features. The existing Spotify parser/widget, Studio shortcut, CSP and embed E2E coverage remain. Removed account linking, callbacks, Web API polling, token storage, public listening status, OAuth tests and configuration. Added a forward Supabase migration to remove the unused table and RPCs; confirmed **0 connected Spotify accounts** before removal. Studio /spotify now explains how to add a free embed. Verify CI, production Render deployment and database migration before marking fully live. See `docs/spotify-integration.md`.

@@ -134,6 +134,13 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(discordComplete.data).toBe(true);
     const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
     const publicPage = await visitor.newPage();
+    let spotifyRequests = 0;
+    // Intercept automatically loaded Spotify iframes before first navigation:
+    // the test must never depend on Spotify's network or logged-in state.
+    await publicPage.route("https://open.spotify.com/embed/**", (route) => {
+      spotifyRequests++;
+      return route.abort();
+    });
     const events: string[] = [];
     publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
     await publicPage.goto("/" + name);
@@ -156,8 +163,12 @@ test("profile analytics requires consent, counts published link clicks and expor
     await publicPage.reload();
     await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
-    // No third-party frame or request before a separate, per-player opt-in.
-    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    // Spotify is a visible native iframe, while YouTube still waits for opt-in.
+    const spotify = publicPage.getByTitle("Spotify: Playlist");
+    await expect(spotify).toHaveCount(1);
+    await expect(publicPage.locator("iframe")).toHaveCount(1);
+    await expect(publicPage.getByRole("button", { name: /Load Spotify player|Hide Spotify player/ })).toHaveCount(0);
+    await expect(publicPage.getByText("Learn more about Spotify privacy")).toHaveCount(0);
     let embedRequests = 0;
     await publicPage.route("https://www.youtube-nocookie.com/**", (route) => { embedRequests++; return route.abort(); });
     await publicPage.getByRole("button", { name: "Load YouTube player" }).click();
@@ -165,27 +176,19 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect.poll(() => embedRequests).toBe(1);
     await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
     await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
-    await expect(publicPage.locator("iframe")).toHaveCount(0);
-    // Spotify requires no app credentials. Its iframe is opt-in, not an
-    // automatic tracking request or an analytics-consent side effect.
-    let spotifyRequests = 0;
-    await expect(publicPage.getByRole("button", { name: "Load Spotify player" })).toBeVisible();
-    expect(spotifyRequests).toBe(0);
-    await publicPage.route("https://open.spotify.com/embed/**", (route) => {
-      spotifyRequests++;
-      return route.abort();
-    });
-    await publicPage.getByRole("button", { name: "Load Spotify player" }).click();
-    const spotify = publicPage.getByTitle("Spotify: Playlist");
+    await expect(publicPage.locator("iframe")).toHaveCount(1);
+    // The compact themed card replaces the former duplicate link and the
+    // Spotify player renders automatically, independent of analytics consent.
     await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin");
+    await expect(spotify).toHaveAttribute("referrerpolicy", "no-referrer");
+    await expect(spotify).toHaveAttribute("height", "352");
+    await expect(publicPage.locator(".spotify-widget__brand")).toContainText("Spotify");
+    await expect(publicPage.locator(".spotify-widget__open")).toHaveAttribute("href",
+      "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
+    await expect(publicPage.locator(".spotify-link-slot > a")).toHaveCount(0);
     await spotify.scrollIntoViewIfNeeded();
-    await expect.poll(() => spotifyRequests).toBe(1);
-    await publicPage.getByRole("button", { name: "Hide Spotify player" }).click();
-    await expect(publicPage.locator("iframe")).toHaveCount(0);
-    await expect(publicPage.getByRole("link", { name: "Playlist · Spotify", exact: false }))
-      .toHaveAttribute("href", /open\.spotify\.com\/playlist\/37i9dQZF1DXcBWIGoYBM5M/);
-    expect(events).toHaveLength(2); // embed consent does not enable analytics
+    await expect.poll(() => spotifyRequests).toBeGreaterThan(0);
+    expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
 
     await page.goto("/sign-in");

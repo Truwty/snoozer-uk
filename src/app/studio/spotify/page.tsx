@@ -14,9 +14,9 @@ export default async function Page() {
       <ol className="stack">
         <li>In Spotify, open a song, album, playlist, artist, show or episode, then choose Share → Copy link.</li>
         <li>Open your Snoozer Studio editor. Choose <strong>Add Spotify music or playlist</strong>, or add the shared URL in your profile links.</li>
-        <li>Save and publish your profile. The Spotify link stays clickable, and visitors can choose <strong>Load Spotify player</strong> to load the official embed.</li>
+        <li>Save and publish your profile. The official Spotify player appears automatically on your published profile, with a compact link to open it on Spotify.</li>
       </ol>
-      <p className="muted">The embed loads only after each visitor opts in. Spotify controls playback and may require sign-in or limit playback in some regions. Hiding the player removes the iframe.</p>
+      <p className="muted">Spotify controls playback and may require sign-in or limit playback in some regions. The player is shown as soon as visitors reach it; Spotify receives a direct browser request when it loads.</p>
       <p><Link className="button primary" href="/studio">Open profile editor</Link></p>
     </section>
   </main>;

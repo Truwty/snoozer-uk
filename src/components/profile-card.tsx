@@ -88,11 +88,15 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           const channel = twitchChannel(url);
           const place = robloxPlace(url);
           const spotify = spotifyResource(url);
-          return <li key={`${url}-${index}`}><a href={url} rel="ugc nofollow noreferrer"
-            data-analytics-profile={preview ? undefined : profile.username}
-            data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"}{spotify && " · Spotify"} <span aria-hidden="true">↗</span></a>
+          return <li key={`${url}-${index}`} className={spotify ? "spotify-link-slot" : undefined}>
+            {spotify
+              ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
+                  analyticsUsername={preview ? undefined : profile.username}
+                  analyticsPosition={preview ? undefined : index + 1} />
+              : <a href={url} rel="ugc nofollow noreferrer"
+                  data-analytics-profile={preview ? undefined : profile.username}
+                  data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
             {video && <YouTubeWidget key={video} videoId={video} label={label} />}
-            {spotify && <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label} />}
             {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
               : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
             {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
