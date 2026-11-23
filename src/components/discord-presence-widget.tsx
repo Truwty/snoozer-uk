@@ -54,11 +54,10 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   }, [initialPresence, username]);
 
   if (!presence) return null;
-  const status = presence.status ?? "unavailable";
   const title = presence.state === "unavailable" ? "Presence unavailable"
     : presence.status ? labels[presence.status]
     : presence.activity || presence.customStatus ? "Active on Discord" : "No activity shared";
-  return <section className="discord-presence-card" aria-label="Discord presence" data-status={status} data-state={presence.state}>
+  return <section className="discord-presence-card" aria-label="Discord presence" data-status={presence.status ?? "hidden"} data-state={presence.state}>
     <header className="discord-presence-header">
       <span className="discord-presence-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -70,7 +69,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
         <span className="discord-presence-eyebrow">DISCORD PRESENCE</span>
         <strong>{title}</strong>
       </span>
-      <span className="discord-presence-dot" aria-hidden="true"/>
+      {presence.status && <span className="discord-presence-dot" aria-hidden="true"/>}
     </header>
     {presence.activity && presence.state === "live" && <div className="discord-presence-activity">
       <span className="discord-presence-activity-type">{presence.activity.type}</span>
