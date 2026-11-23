@@ -122,7 +122,7 @@ begin
   if entry_count <> unique_count then return false; end if;
   return true;
 exception when others then return false;
-end $;
+end $$;
 revoke execute on function snoozer.valid_profile_widgets(jsonb) from public,anon,authenticated,service_role;
 
 alter table snoozer.profiles add column widgets jsonb not null default
@@ -138,7 +138,7 @@ alter table snoozer.account_notifications add constraint account_notifications_k
   check(kind in ('restriction','reinstatement','premium_granted','premium_revoked','appeal_review','guestbook_message'));
 
 create function snoozer.copy_profile_widgets_to_publication() returns trigger
-language plpgsql security definer set search_path = '' as $
+language plpgsql security definer set search_path = '' as $$
 declare snapshot_widgets jsonb;
 begin
   select p.widgets into snapshot_widgets from snoozer.profiles p
@@ -146,7 +146,7 @@ begin
   if snapshot_widgets is null then raise exception 'Profile widget snapshot unavailable' using errcode = '23503'; end if;
   new.widgets := snapshot_widgets;
   return new;
-end $;
+end $$;
 revoke execute on function snoozer.copy_profile_widgets_to_publication() from public,anon,authenticated,service_role;
 create trigger published_profile_widgets_snapshot before insert on snoozer.published_profiles
 for each row execute function snoozer.copy_profile_widgets_to_publication();
