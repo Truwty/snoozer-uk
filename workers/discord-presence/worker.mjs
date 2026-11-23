@@ -254,7 +254,9 @@ export class DiscordPresenceWorker {
     const data = event.d ?? {};
     switch (event.t) {
       case "READY":
-        this.logger.info("[discord-presence] Discord Gateway READY received.");
+        const readyGuilds = Array.isArray(data.guilds) ? data.guilds : [];
+        const configuredGuildListed = readyGuilds.some(guild => guild?.id === this.config.guildId);
+        this.logger.info(`[discord-presence] Discord Gateway READY received (${readyGuilds.length} guild(s) listed; configured server listed=${configuredGuildListed}).`);
         this.sessionId = data.session_id ?? null;
         this.resumeUrl = data.resume_gateway_url ?? null;
         this.reconnectAttempt = 0;
@@ -265,6 +267,7 @@ export class DiscordPresenceWorker {
         await this.heartbeat(true, this.guildReady);
         break;
       case "GUILD_CREATE":
+        this.logger.info(`[discord-presence] Discord sent GUILD_CREATE (configured server match=${data.id === this.config.guildId}).`);
         if (data.id === this.config.guildId) {
           this.logger.info("[discord-presence] Connected to the configured shared Discord server.");
           this.connected = true;
@@ -280,6 +283,7 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_DELETE":
         if (data.id === this.config.guildId) {
+          this.logger.warn("[discord-presence] Bot was removed from or lost access to the configured shared server.");
           this.guildKnown = false;
           this.guildReady = false;
           if (!data.unavailable) {
