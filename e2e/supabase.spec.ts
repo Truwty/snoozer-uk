@@ -1564,7 +1564,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
 
   let release!: () => void;
   const gate = new Promise<void>((resolve) => { release = resolve; });
-  await stale.route("**/studio", async (route) => {
+  await stale.route("**/studio/builder", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
     await gate;
