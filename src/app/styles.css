@@ -1899,15 +1899,15 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .profile-stats-grid > div { min-width: 0; padding: .7rem; border: 1px solid var(--edge); border-radius: .55rem; background: color-mix(in srgb, var(--chip) 85%, transparent); }
 .profile-stats-grid dt { color: var(--muted); font-size: .7rem; }
 .profile-stats-grid dd { margin: .2rem 0 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -.035em; overflow-wrap: anywhere; }
-.profile-card .profile-layout:has(.profile-content-block[data-width="half"]) { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
-.profile-card .profile-layout:has(.profile-content-block[data-width="third"]) { grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; }
-.profile-card .profile-layout-block:has(> .profile-content-block[data-width="full"]),
-.profile-card .profile-layout-block:not(:has(> .profile-content-block)) { grid-column: 1 / -1; }
-.profile-card .profile-layout-block:has(> .profile-content-block[data-width="half"]),
-.profile-card .profile-layout-block:has(> .profile-content-block[data-width="third"]) { grid-column: span 1; }
+/* Six tracks allow full, half and third-width blocks to coexist without
+   changing one another's width when creators mix block sizes. */
+.profile-card .profile-layout { grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; }
+.profile-card .profile-layout-block { grid-column: 1 / -1; }
+.profile-card .profile-layout-block:has(> .profile-content-block[data-width="half"]) { grid-column: span 3; }
+.profile-card .profile-layout-block:has(> .profile-content-block[data-width="third"]) { grid-column: span 2; }
 @container (max-width: 31rem) {
-  .profile-card .profile-layout:has(.profile-content-block[data-width="half"]),
-  .profile-card .profile-layout:has(.profile-content-block[data-width="third"]) { grid-template-columns: minmax(0,1fr); }
+  .profile-card .profile-layout { grid-template-columns: minmax(0, 1fr); }
+  .profile-card .profile-layout-block,
   .profile-card .profile-layout-block:has(> .profile-content-block[data-width="half"]),
   .profile-card .profile-layout-block:has(> .profile-content-block[data-width="third"]) { grid-column: 1; }
 }
