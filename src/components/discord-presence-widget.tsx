@@ -18,7 +18,6 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
   const [presence, setPresence] = useState(initialPresence);
 
   useEffect(() => {
-    setPresence(initialPresence);
     if (!initialPresence) return;
     let active = true;
     let timer: number | undefined;
