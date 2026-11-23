@@ -6,7 +6,7 @@ export const metadata = { title: "Spotify embeds · Studio", robots: { index: fa
 export default async function Page() {
   await requireAccount();
   return <main className="shell">
-    <nav className="nav studio-subnav"><Link className="button small" href="/studio">Back to Studio</Link></nav>
+    <nav className="nav studio-subnav"><Link className="button small" href="/studio/builder">Back to Page Builder</Link></nav>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / INTEGRATIONS</p>
       <h1>Spotify embeds</h1>
