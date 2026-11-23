@@ -53,11 +53,11 @@ create or replace function snoozer.save_profile_for_id(
 ) returns integer
 language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
-declare current snoozer.profiles;
-declare item jsonb;
-declare address text;
-declare hostname text;
-declare normalized_links jsonb;
+current snoozer.profiles;
+item jsonb;
+address text;
+hostname text;
+normalized_links jsonb;
 begin
   if p_expected is null or p_name is null or p_bio is null or p_theme is null
     or p_indexable is null or p_publish is null or p_remove_avatar is null
@@ -154,17 +154,17 @@ create or replace function public.save_profile(
 ) returns integer
 language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
-declare saved integer;
-declare section_count integer;
-declare has_widgets boolean;
-declare has_gallery boolean;
-declare layout_section_count integer;
-declare layout_links_count integer;
-declare layout_widgets_count integer;
-declare layout_gallery_count integer;
-declare expected_links_count integer;
-declare expected_widgets_count integer;
-declare expected_gallery_count integer;
+saved integer;
+section_count integer;
+has_widgets boolean;
+has_gallery boolean;
+layout_section_count integer;
+layout_links_count integer;
+layout_widgets_count integer;
+layout_gallery_count integer;
+expected_links_count integer;
+expected_widgets_count integer;
+expected_gallery_count integer;
 begin
   if not snoozer.valid_profile_page_layout(p_page_layout) then
     raise exception 'Invalid profile page layout' using errcode = '22023';
@@ -220,8 +220,8 @@ create or replace function snoozer.restore_publication_for_id(
 ) returns void
 language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
-declare current_revision integer;
-declare source snoozer.published_profiles;
+current_revision integer;
+source snoozer.published_profiles;
 begin
   select revision into current_revision from snoozer.profiles
     where id = p_profile and owner_id = actor for update;
@@ -253,8 +253,8 @@ $$;
 create or replace function snoozer.restore_publication(p_revision integer, p_expected integer)
 returns void language plpgsql security definer set search_path = '' as $$
 declare actor uuid := snoozer.verified_user();
-declare current_revision integer;
-declare source snoozer.published_profiles;
+current_revision integer;
+source snoozer.published_profiles;
 begin
   select revision into current_revision from snoozer.profiles where owner_id = actor for update;
   if not found or current_revision is distinct from p_expected then
