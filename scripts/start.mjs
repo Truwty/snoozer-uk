@@ -41,6 +41,7 @@ function launchWebServer() {
 }
 
 function launchPresenceWorker() {
+  console.info("[startup] Starting Discord Presence worker after web readiness.");
   const child = spawn(process.execPath, ["workers/discord-presence/worker.mjs"], {
     stdio: "inherit",
     env: process.env,
@@ -58,17 +59,39 @@ function launchPresenceWorker() {
   });
 }
 
+async function waitForWebReady() {
+  const port = Number(process.env.PORT || 10000);
+  const healthUrl = `http://127.0.0.1:${port}/health/live`;
+  const deadline = Date.now() + 90_000;
+  while (!shuttingDown && Date.now() < deadline) {
+    try {
+      const response = await fetch(healthUrl, { signal: AbortSignal.timeout(3_000), cache: "no-store" });
+      if (response.ok) {
+        console.info("[startup] Web service health check passed.");
+        return true;
+      }
+    } catch {
+      // The web server is still starting; retry below.
+    }
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+  }
+  console.error("[startup] Web service did not become healthy within 90 seconds; Presence worker will not start.");
+  return false;
+}
+
 process.on("SIGTERM", () => stop(0));
 process.on("SIGINT", () => stop(0));
+
+launchWebServer();
 
 if (process.env.DISCORD_PRESENCE_ENABLED === "true") {
   const required = ["DISCORD_BOT_TOKEN", "DISCORD_PRESENCE_GUILD_ID", "SNOOZER_PRESENCE_URL", "DISCORD_PRESENCE_INGEST_SECRET"];
   const missing = required.filter(key => !process.env[key]);
   if (missing.length) {
     console.error(`[startup] Discord Presence is enabled but configuration is missing: ${missing.join(", ")}. Website will start without the worker.`);
-  } else {
+  } else if (await waitForWebReady()) {
     launchPresenceWorker();
   }
+} else {
+  console.info("[startup] Discord Presence worker is disabled by DISCORD_PRESENCE_ENABLED.");
 }
-
-launchWebServer();
