@@ -75,9 +75,12 @@ begin
         or char_length(item->>'description') > 600
         or jsonb_typeof(item->'buttonLabel') is distinct from 'string'
         or char_length(btrim(item->>'buttonLabel')) not between 1 and 40
-        or target_url !~ '^https?://[a-z0-9.-]+(:[0-9]{1,5})?([/?#][^[:space:]\\\\]*)?$'
-        or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$'
-        or target_host ~ '\\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
+        or target_url !~ '^https?://[a-z0-9.-]+(:[0-9]{1,5})?([/?#].*)?$'
+        or target_url ~ '[[:space:]]'
+        or position(chr(92) in target_url) > 0
+        or coalesce(substring(target_url from '^https?://[a-z0-9.-]+:([0-9]+)')::integer, 0) > 65535
+        or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$'
+        or target_host ~ '\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
     elsif item_type = 'skills' then
       if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'heading'::text - 'items'::text <> '{}'::jsonb
         or jsonb_typeof(item->'heading') is distinct from 'string'
@@ -98,9 +101,12 @@ begin
         or char_length(item->>'body') > 600
         or jsonb_typeof(item->'label') is distinct from 'string'
         or char_length(btrim(item->>'label')) not between 1 and 40
-        or target_url !~ '^https?://[a-z0-9.-]+(:[0-9]{1,5})?([/?#][^[:space:]\\\\]*)?$'
-        or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$'
-        or target_host ~ '\\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
+        or target_url !~ '^https?://[a-z0-9.-]+(:[0-9]{1,5})?([/?#].*)?$'
+        or target_url ~ '[[:space:]]'
+        or position(chr(92) in target_url) > 0
+        or coalesce(substring(target_url from '^https?://[a-z0-9.-]+:([0-9]+)')::integer, 0) > 65535
+        or target_host !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$'
+        or target_host ~ '\.(local|localhost|internal|test|invalid|example|onion)$' then return false; end if;
     elsif item_type = 'divider' then
       if item - 'id'::text - 'hidden'::text - 'locked'::text - 'width'::text - 'align'::text - 'variant'::text - 'type'::text - 'style'::text <> '{}'
         or coalesce(item->>'style','line') not in ('line','space','dotted') then return false; end if;
@@ -109,7 +115,7 @@ begin
         or jsonb_typeof(item->'heading') is distinct from 'string'
         or char_length(btrim(item->>'heading')) not between 1 and 80
         or jsonb_typeof(item->'target') is distinct from 'string'
-        or item->>'target' !~ '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$' then return false; end if;
+        or item->>'target' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$' then return false; end if;
       begin
         target_time := (item->>'target')::timestamptz;
       exception when others then
