@@ -16,7 +16,7 @@ export function discordPresenceInviteUrl() {
   try {
     const url = new URL(value);
     const hostAllowed = ["discord.gg", "www.discord.gg", "discord.com", "www.discord.com"].includes(url.hostname.toLowerCase());
-    const pathAllowed = /^\/(?:invite\/)?[A-Za-z0-9-]{2,64}\/?$/.test(url.pathname);
+    const pathAllowed = /^\/(?:invite\/)?[A-Za-z0-9_-]{2,64}\/?$/.test(url.pathname);
     return url.protocol === "https:" && hostAllowed && pathAllowed && !url.search && !url.hash ? url.href : null;
   } catch {
     return null;
