@@ -2434,7 +2434,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([]);
     await act("authenticated", alice);
     const archive = await result("select public.discord_presence_export() as value");
-    expect(archive).toHaveProperty("discord_presence.discord_user_id", null);
+    expect(archive).toHaveProperty("discord_user_id", null);
   });
 
 
