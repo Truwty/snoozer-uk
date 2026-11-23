@@ -12,7 +12,8 @@ export function domainRoute(path: string, method: string, username: string) {
   if (!["GET", "HEAD"].includes(method)) return false;
   return path === "/" || path === "/.well-known/snoozer-domain" || path === "/icon.svg"
     || new RegExp("^/media/(?:avatar|gallery)/" + username + "/[0-9a-f-]{36}$").test(path)
-    || path === "/media/profile-card/" + username;
+    || path === "/media/profile-card/" + username
+    || path === "/api/v1/discord/presence";
 }
 
 export function publicIPv4(value: string) {
