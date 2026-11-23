@@ -23,6 +23,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       create schema auth;
       create table auth.users(id uuid primary key, email_confirmed_at timestamptz, created_at timestamptz default now(), raw_user_meta_data jsonb default '{}');
       create table auth.sessions(id uuid primary key, user_id uuid not null references auth.users(id), created_at timestamptz default now(), not_after timestamptz);
+      create table auth.identities(id uuid primary key, user_id uuid not null references auth.users(id), provider text not null, provider_id text not null, identity_data jsonb not null default '{}', created_at timestamptz default now());
       create function auth.uid() returns uuid language sql stable
         as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       create function auth.jwt() returns jsonb language sql stable
@@ -60,7 +61,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -2355,6 +2356,74 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.exec("update snoozer.entitlement_grants set expires_at=now()-interval '1 second' where source_ref='effects-plus'");
     await act("anon");
     expect(await result("select public.published_effect_tier($1) as value", ["effect-sql-check"])).toBe("free");
+  });
+
+
+  it("requires linked Discord identity and explicit per-profile consent, exposes only selected live fields and erases snapshots on disconnect", async () => {
+    const discordId = "123456789012345678";
+    const identityId = "00000000-0000-4000-8000-000000000101";
+    await act("authenticated", alice);
+    await claim("discord-presence-test");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    await save(0, "Discord presence test", [], true);
+
+    await db.exec("reset role");
+    await db.query("insert into auth.identities(id,user_id,provider,provider_id) values($1,$2,'discord',$3)", [identityId, alice, discordId]);
+    await act("authenticated", alice);
+    const initial = await result("select public.discord_presence_get_my_settings($1) as value", [id]);
+    expect(initial).toMatchObject({ connected: true, enabled: false, showStatus: true, showActivity: true, showCustomStatus: false });
+
+    const saved = await result("select public.discord_presence_save_settings($1,true,true,true,false) as value", [id]);
+    expect(saved).toMatchObject({ connected: true, enabled: true, showStatus: true, showActivity: true, showCustomStatus: false });
+
+    await act("service_role");
+    expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([discordId]);
+    const eventId = "00000000-0000-4000-8000-000000000201";
+    const activity = JSON.stringify({ type: "playing", name: "Minecraft", details: "Building", state: null });
+    expect(await result("select public.discord_presence_heartbeat(true,true) as value")).toBe(true);
+    expect(await result("select public.discord_presence_ingest($1,$2,'online',$3::jsonb,'Working on a build',$4::timestamptz) as value",
+      [eventId, discordId, activity, new Date().toISOString()])).toBe(true);
+    // Event IDs are idempotent: a replay cannot overwrite a newer status.
+    expect(await result("select public.discord_presence_ingest($1,$2,'offline',null,null,$3::timestamptz) as value",
+      [eventId, discordId, new Date().toISOString()])).toBe(true);
+
+    await act("anon");
+    const publicPresence = await result("select public.discord_presence_public('discord-presence-test') as value");
+    expect(publicPresence).toMatchObject({
+      version: 1, state: "live", status: "online",
+      activity: { type: "playing", name: "Minecraft", details: "Building", state: null },
+      customStatus: null,
+    });
+    await expect(db.query("select * from snoozer.discord_presence_cache")).rejects.toMatchObject({ code: "42501" });
+
+    await act("authenticated", bob);
+    await expect(db.query("select public.discord_presence_get_my_settings($1)", [id])).rejects.toMatchObject({ code: "42501" });
+
+    await act("authenticated", alice);
+    const withCustomStatus = await result("select public.discord_presence_save_settings($1,true,true,true,true) as value", [id]);
+    expect(withCustomStatus).toMatchObject({ showCustomStatus: true });
+    await act("anon");
+    expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toMatchObject({
+      customStatus: "Working on a build",
+    });
+
+    await db.exec("reset role; update snoozer.discord_presence_worker_state set heartbeat_at=now()-interval '2 minutes'");
+    await act("anon");
+    expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toMatchObject({
+      state: "unavailable", status: null, activity: null, customStatus: null,
+    });
+
+    await act("authenticated", alice);
+    await result("select public.discord_presence_disconnect() as value");
+    expect(await result("select public.discord_presence_get_my_settings($1) as value", [id])).toMatchObject({
+      connected: false, enabled: false,
+    });
+    await act("anon");
+    expect(await result("select public.discord_presence_public('discord-presence-test') as value")).toBeNull();
+    await act("service_role");
+    expect(await result("select public.discord_presence_subscriptions() as value")).toEqual([]);
+    const archive = await result("select public.my_extended_account_archive() as value");
+    expect(archive).toHaveProperty("discord_presence.discord_user_id", null);
   });
 
 
