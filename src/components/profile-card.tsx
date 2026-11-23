@@ -4,6 +4,7 @@ import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type Point
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
+import { socialMarkForUrl } from "@/lib/social-providers";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
@@ -22,24 +23,7 @@ import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 type SocialLink = { label: string; url: string; index: number; mark: string };
 
-function socialMark(url: string): string | null {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    if (host === "github.com" || host.endsWith(".github.com")) return "GH";
-    if (host === "discord.com" || host === "discord.gg") return "DC";
-    if (host === "instagram.com") return "IG";
-    if (host === "youtube.com" || host === "youtu.be") return "YT";
-    if (host === "tiktok.com") return "TT";
-    if (host === "x.com" || host === "twitter.com") return "X";
-    if (host === "twitch.tv") return "TW";
-    if (host === "roblox.com" || host.endsWith(".roblox.com")) return "RB";
-    if (host === "linkedin.com" || host.endsWith(".linkedin.com")) return "in";
-    if (host === "reddit.com" || host.endsWith(".reddit.com")) return "rd";
-    return null;
-  } catch {
-    return null;
-  }
-}
+const socialMark = socialMarkForUrl;
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -225,7 +209,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url }) => safeLink(url));
+      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+    if (valid.length === 0) return null;
     const hasProviderEmbed = (url: string) => Boolean(
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
     );

@@ -73,6 +73,7 @@ export const maximumProfileLinkLimit = 2000;
 export const link = z.object({
   label: z.string().trim().min(1, "Give each link a label.").max(80),
   url: z.string().trim().max(2048).refine(safeLink, "Enter an HTTP or HTTPS address with a public domain."),
+  hidden: z.boolean().default(false),
 });
 
 export const textSectionLimits = { count: 6, heading: 80, body: 800 };

@@ -1818,3 +1818,27 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (max-width: 36rem) {
   .studio-color-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+
+/* Provider picker and per-link visibility controls. */
+.studio-links-catalogue { padding: 1rem; border: 1px solid var(--edge); border-radius: .8rem; background: var(--ground); }
+.studio-links-catalogue-heading { display: flex; align-items: end; justify-content: space-between; gap: .8rem; }
+.studio-links-catalogue-heading h2 { margin-top: .2rem; font-size: 1.2rem; }
+.studio-links-catalogue-heading > span { color: var(--muted); font-size: .75rem; white-space: nowrap; }
+.studio-provider-categories { display: flex; flex-wrap: wrap; gap: .35rem; }
+.studio-provider-categories .button { min-height: 2.25rem; padding: .35rem .62rem; font-size: .74rem; }
+.studio-provider-categories .button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.studio-provider-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(8.6rem,1fr)); gap: .45rem; }
+.studio-provider-card { display: flex; align-items: center; gap: .55rem; min-width: 0; min-height: 3.1rem; padding: .48rem .55rem; border: 1px solid var(--edge); border-radius: .58rem; background: var(--surface); color: var(--ink); font-size: .76rem; font-weight: 650; text-align: start; }
+.studio-provider-card:hover:not(:disabled) { border-color: var(--accent); background: var(--ground); }
+.studio-provider-card:disabled { opacity: .5; cursor: not-allowed; }
+.studio-provider-mark { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; flex: 0 0 1.9rem; border: 1px solid var(--edge); border-radius: .55rem; background: var(--ground); color: var(--accent); font-size: .74rem; font-weight: 850; letter-spacing: -.03em; }
+.studio-provider-plus { margin-inline-start: auto; color: var(--muted); font-size: 1rem; }
+.studio-link-item-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.studio-link-item-heading > strong { margin-inline-end: auto; }
+.studio-link-item-heading .check { min-height: 2rem; gap: .35rem; font-size: .74rem; }
+.studio-link-item-heading .check input { width: 1rem; height: 1rem; }
+@media (max-width: 36rem) {
+  .studio-provider-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .studio-provider-card { font-size: .72rem; }
+}

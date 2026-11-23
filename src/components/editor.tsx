@@ -7,6 +7,7 @@ import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
+import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
 import { VisualSelect } from "./visual-select";
 import { CopyLink } from "./copy-link";
@@ -49,6 +50,8 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [providerQuery, setProviderQuery] = useState("");
+  const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
   const [dropActive, setDropActive] = useState(false);
   const draggedBlock = useRef<BuilderBlock | null>(null);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
@@ -114,6 +117,17 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     set("links", reordered);
     setAnnouncement(`Moved link to position ${to + 1} of ${reordered.length}.`);
     focusLink(to);
+  }
+
+  function addSocialProvider(provider: SocialProvider) {
+    if (content.links.length >= linkLimit) {
+      setAnnouncement("Your current plan's link limit has been reached.");
+      return;
+    }
+    const index = content.links.length;
+    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
+    setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
+    focusLink(index);
   }
 
   function addKofiLink() {
@@ -470,11 +484,41 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
+        <section className="studio-links-catalogue stack" aria-labelledby="social-catalogue-title">
+          <div className="studio-links-catalogue-heading">
+            <div><p className="eyebrow">ADD A LINK</p><h2 id="social-catalogue-title">Social profiles</h2></div>
+            <span>{content.links.length} / {linkLimit} links</span>
+          </div>
+          <label className="studio-provider-search">Search providers
+            <input type="search" value={providerQuery} placeholder="Search social, gaming, music…"
+              onChange={(event) => setProviderQuery(event.target.value)}/>
+          </label>
+          <div className="studio-provider-categories" role="group" aria-label="Provider categories">
+            {socialProviderCategories.map((category) => <button key={category} type="button"
+              className="button small" aria-pressed={providerCategory === category}
+              onClick={() => setProviderCategory(category)}>{category}</button>)}
+          </div>
+          <div className="studio-provider-grid">
+            {filterSocialProviders(providerQuery, providerCategory).map((provider) => <button type="button"
+              key={provider.id} className="studio-provider-card" disabled={content.links.length >= linkLimit}
+              onClick={() => addSocialProvider(provider)}>
+              <span className="studio-provider-mark" aria-hidden="true">{provider.mark}</span>
+              <span>{provider.label}</span><span className="studio-provider-plus" aria-hidden="true">+</span>
+            </button>)}
+          </div>
+          {filterSocialProviders(providerQuery, providerCategory).length === 0 && <p className="muted">No providers match that search.</p>}
+        </section>
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
         {content.links.length > linkLimit && <p>Remove links until you reach your current allowance before saving link edits or publishing.</p>}
         {content.links.map((item, index) => <div className="link-editor link-row" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
+          <div className="studio-link-item-heading">
+            <span className="studio-provider-mark" aria-hidden="true">{socialProviderForUrl(item.url)?.mark ?? "↗"}</span>
+            <strong>Link {index + 1}</strong>
+            <label className="check"><input type="checkbox" checked={!item.hidden} onChange={(event) =>
+              set("links", content.links.map((entry, i) => i === index ? { ...entry, hidden: !event.target.checked } : entry))}/> Visible on profile</label>
+          </div>
           {content.links.length > 1 && <span className="reorder-handle" aria-hidden="true" {...linkHandle}>Drag to move</span>}
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
             ref={(input) => { linkLabels.current[index] = input; }}
@@ -493,7 +537,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         </div>)}
         <button className="button" type="button" ref={addLink} disabled={content.links.length >= linkLimit}
           onClick={() => {
-            set("links", [...content.links, { label: "", url: "" }]);
+            set("links", [...content.links, { label: "", url: "", hidden: false }]);
             focusLink(content.links.length);
           }}>Add link</button>
         {content.links.length < linkLimit && <details>

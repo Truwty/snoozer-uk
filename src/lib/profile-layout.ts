@@ -42,7 +42,7 @@ function keyOf(item: ProfilePageLayoutItem): string {
 
 function defaultItems(content: ProfileLayoutContent): ProfilePageLayoutItem[] {
   const items: ProfilePageLayoutItem[] = content.sections.map((_, index) => ({ type: "section", index }));
-  if (content.links.length > 0) items.push({ type: "links" });
+  if ((content.links as readonly { hidden?: boolean }[]).some((link) => link.hidden !== true)) items.push({ type: "links" });
   const hasWidgets = (["guestbook", "testimonials", "poll", "faq"] as const)
     .some((kind) => content.widgets[kind].enabled);
   if (hasWidgets) items.push({ type: "widgets" });
