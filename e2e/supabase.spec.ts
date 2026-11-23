@@ -740,7 +740,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
 
     // Add a typed custom block, edit its content and verify the live preview.
-    await page.locator(".block-library-item").filter({ hasText: "Project" }).click();
+    await page.locator(".block-library-item").filter({ hasText: "Project" }).dragTo(page.locator(".preview-card"));
     await editorTab(page, "Blocks");
     await page.getByLabel("Project title", { exact: true }).fill("Studio portfolio project");
     await page.getByLabel("Description", { exact: true }).fill("A project created in the custom block editor.");
