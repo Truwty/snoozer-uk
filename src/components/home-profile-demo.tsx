@@ -27,6 +27,7 @@ export function HomeProfileDemo() {
       theme,
       indexable: false,
       avatar: null,
+      widgets: defaultProfileWidgets,
       appearance: { ...defaultAppearance, layout },
       gallery: [],
       links: [
