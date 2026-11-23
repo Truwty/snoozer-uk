@@ -683,6 +683,54 @@ test("portfolio projects persist, publish and restore with responsive public ren
   }
 });
 
+test("Studio block library adds blocks by click and drag across desktop and mobile layouts", async ({ page }) => {
+  test.setTimeout(90000);
+  const name = `builder-${randomUUID().slice(0, 8)}`;
+  const email = `${name}@example.com`;
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(account.error).toBeNull();
+  try {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
+    await page.getByLabel("Username", { exact: true }).fill(name);
+    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const workspace = page.locator(".studio-shell");
+    expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
+    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    await expect(page.locator(".block-library-item")).toHaveCount(8);
+
+    await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
+    await editorTab(page, "Sections");
+    await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
+
+    await page.locator(".block-library-item").filter({ hasText: "Callout" }).dragTo(page.locator(".preview-card"));
+    await editorTab(page, "Sections");
+    await expect(page.getByLabel("Section 2 type", { exact: true })).toHaveValue("callout");
+
+    await page.locator(".block-library-item").filter({ hasText: "FAQ" }).dragTo(page.locator(".preview-card"));
+    await editorTab(page, "Widgets");
+    await expect(page.getByLabel("Enable FAQ", { exact: true })).toBeChecked();
+
+    await page.locator(".block-library-item").filter({ hasText: "Guestbook" }).click();
+    await editorTab(page, "Widgets");
+    await expect(page.getByLabel("Enable Guestbook", { exact: true })).toBeChecked();
+
+    await page.setViewportSize({ width: 360, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
+  }
+});
+
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
