@@ -8,7 +8,7 @@ import { storageAdmin } from "@/lib/supabase";
 import { boundedBody } from "@/lib/bounded-request";
 
 export const dynamic = "force-dynamic";
-const paramsSchema = z.object({ username: usernameSchema, pollId: z.uuid() });
+const paramsSchema = z.object({ username: usernameSchema, pollId: z.uuid(), visitorToken: z.uuid().optional() });
 const voteSchema = z.strictObject({
   username: usernameSchema, pollId: z.uuid(), optionId: z.uuid(), visitorToken: z.uuid(),
 });
@@ -23,7 +23,7 @@ function tokenHash(token: string) { return createHash("sha256").update(token).di
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const parsed = paramsSchema.safeParse({ username: url.searchParams.get("username"), pollId: url.searchParams.get("pollId") });
+  const parsed = paramsSchema.safeParse({ username: url.searchParams.get("username"), pollId: url.searchParams.get("pollId"), visitorToken: url.searchParams.get("visitorToken") ?? undefined });
   if (!parsed.success) return reply({ error: "Invalid poll." }, 400);
   const { domain } = requestContext(request);
   if (domain && domain.username !== parsed.data.username) return reply({ error: "Poll unavailable." }, 404);
@@ -32,8 +32,10 @@ export async function GET(request: Request) {
     if (!profile?.widgets.poll.enabled || profile.widgets.poll.id !== parsed.data.pollId) return reply({ error: "Poll unavailable." }, 404);
     const { data, error } = await storageAdmin().rpc("get_public_poll_results", {
       p_username: parsed.data.username, p_poll: parsed.data.pollId,
+      p_visitor_hash: parsed.data.visitorToken ? tokenHash(parsed.data.visitorToken) : null,
     });
-    if (error || !data) return reply({ error: "Poll results unavailable." }, 503);
+    if (error) return reply({ error: "Poll results unavailable." }, 503);
+    if (!data) return reply({ error: "Vote before viewing results." }, 403);
     return reply(data);
   } catch { return reply({ error: "Poll results unavailable." }, 503); }
 }
