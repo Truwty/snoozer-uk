@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { username } from "@/lib/profile";
+import { domainUserHeader } from "@/lib/domain-context";
 import { spotifyConfigured, fetchCurrentSpotifyTrack, type SpotifyPrivateClaim } from "@/lib/spotify-oauth";
 import { safeCachedStatus } from "@/lib/spotify-now-playing";
 import { anonymousClient, storageAdmin } from "@/lib/supabase";
@@ -20,6 +21,9 @@ const claimSchema = z.object({
 export async function GET(request: NextRequest) {
   const name = request.nextUrl.searchParams.get("username") ?? "";
   if (!username.safeParse(name).success) return reply({ error: "Invalid username" }, 400);
+  // Custom domains may only look up their verified owner profile.
+  const bound = request.headers.get(domainUserHeader);
+  if (bound && bound !== name) return reply({ error: "Not permitted" }, 403);
   if (!spotifyConfigured()) return reply({ state: "unavailable" }, 503);
   try {
     const admin = storageAdmin();

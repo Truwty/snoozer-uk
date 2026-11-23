@@ -66,3 +66,5 @@ No `SPOTIFY_CLIENT_SECRET` is required by this PKCE flow. Do not use `NEXT_PUBLI
 - Provider flow: allowlisted Premium developer account, actual redirect and callback, encrypted storage, public disabled by default, enable/disable from Studio, real track shown, paused hidden, logout/session swap blocked, refresh rotation and reconnection, disconnect and GDPR deletion cascade.
 - Security: no token or raw account data in browser/network/logs, no Web API calls while disabled, no public access to private RPCs, 429 backoff and malformed-data tests.
 - Render deployment only after migration. End-to-end Spotify provider validation cannot be marked passed without real developer credentials and an authorised test account.
+
+Custom-domain profiles can request the read-only Spotify status endpoint through the verified public-domain proxy; the domain-bound username must match the query exactly and other account/Spotify API routes remain denied on custom hosts.
