@@ -35,7 +35,9 @@ export default async function Page({ params }: Props) {
   const background = profileBackgroundImage(profile);
   const [ownerResult, presenceResult] = await Promise.all([
     anonymousClient().rpc("is_owner_profile", { p_name: profile.username }),
-    anonymousClient().rpc("discord_presence_public", { p_username: profile.username }),
+    process.env.DISCORD_PRESENCE_ENABLED === "true"
+      ? anonymousClient().rpc("discord_presence_public", { p_username: profile.username })
+      : Promise.resolve({ data: null, error: null }),
   ]);
   const presence = !presenceResult.error ? discordPresencePublic.safeParse(presenceResult.data) : null;
   const pageStyle = background
