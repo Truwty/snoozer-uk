@@ -2023,6 +2023,45 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("section-visibility")).toMatchObject({ sections: [section] });
   });
 
+  it("reindexes ordered public sections after hidden sections are omitted", async () => {
+    const first = { heading: "First", body: "Visible first section." };
+    const hidden = { heading: "Private", body: "Hidden owner-only content.", hidden: true };
+    const last = { heading: "Last", body: "Visible final section." };
+    const write = (expected: number, sections: unknown) => result(
+      "select public.save_profile($1,'Alice','Bio','lagoon',false,'[]',true,false,$2) as value",
+      [expected, JSON.stringify(sections)],
+    );
+
+    await act("authenticated", alice);
+    await claim("layout-hidden");
+    await write(0, [first, hidden, last]);
+
+    await db.exec("reset role");
+    const profileId = await result<string>(
+      "select id::text as value from snoozer.profiles where owner_id=$1",
+      [alice],
+    );
+    expect(profileId).toBeTruthy();
+    await db.query(
+      "update snoozer.published_profiles set page_layout=$1::jsonb where profile_id=$2 and revision=1",
+      [JSON.stringify({
+        version: 1,
+        items: [{ type: "section", index: 2 }, { type: "section", index: 0 }],
+      }), profileId],
+    );
+
+    await act("anon");
+    const publicProfile = await published("layout-hidden") as {
+      sections: unknown[];
+      pageLayout: { version: number; items: unknown[] };
+    };
+    expect(publicProfile.sections).toEqual([first, last]);
+    expect(publicProfile.pageLayout).toEqual({
+      version: 1,
+      items: [{ type: "section", index: 1 }, { type: "section", index: 0 }],
+    });
+  });
+
   it("validates text sections and snapshots them only on publish", async () => {
     await act("authenticated", alice);
     await claim("sections-alice");
