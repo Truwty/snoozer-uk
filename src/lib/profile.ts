@@ -5,6 +5,7 @@ import { linkAccents } from "./link-accent";
 import { countdownTarget } from "./countdown";
 import { profileEffects } from "./profile-effects";
 import { defaultProfileWidgets, profileWidgets } from "./profile-widgets";
+import { profilePageLayout } from "./profile-layout";
 
 export const profileRevisionNumber = z.number().int().nonnegative().max(2147483646);
 export const profileRevision = z.coerce.number().pipe(profileRevisionNumber);
@@ -88,6 +89,7 @@ export const profileContent = z.object({
   links: z.array(link).max(maximumProfileLinkLimit),
   sections: textSections.default([]),
   widgets: profileWidgets.default(defaultProfileWidgets),
+  pageLayout: profilePageLayout.default({ version: 1, items: [] }),
 });
 
 export const publishedProfile = profileContent.extend({

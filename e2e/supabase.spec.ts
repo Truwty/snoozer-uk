@@ -683,6 +683,86 @@ test("portfolio projects persist, publish and restore with responsive public ren
   }
 });
 
+test("Studio builder adds, reorders, saves and publishes blocks across desktop and mobile layouts", async ({ page }) => {
+  test.setTimeout(120000);
+  const name = `builder-${randomUUID().slice(0, 8)}`;
+  const email = `${name}@example.com`;
+  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
+  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(account.error).toBeNull();
+  try {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
+    await page.getByLabel("Username", { exact: true }).fill(name);
+    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const workspace = page.locator("main.studio-shell");
+    expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
+    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    await expect(page.locator(".block-library-item")).toHaveCount(8);
+
+    await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
+    await editorTab(page, "Sections");
+    await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
+
+    await page.locator(".block-library-item").filter({ hasText: "Callout" }).dragTo(page.locator(".preview"));
+    await editorTab(page, "Sections");
+    await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
+
+    await page.locator(".block-library-item").filter({ hasText: "FAQ" }).dragTo(page.locator(".preview"));
+    await editorTab(page, "Widgets");
+    await expect(page.getByLabel("Enable FAQ", { exact: true })).toBeChecked();
+
+    await page.locator(".block-library-item").filter({ hasText: "Guestbook" }).click();
+    await editorTab(page, "Widgets");
+    await expect(page.getByLabel("Enable Guestbook", { exact: true })).toBeChecked();
+
+    const blocks = page.locator(".preview-card .profile-layout-block");
+    await expect(blocks).toHaveCount(3);
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
+    await expect(blocks.nth(2)).toHaveAttribute("data-layout-type", "widgets");
+    await blocks.nth(2).locator(".profile-layout-drag-handle").dragTo(blocks.nth(0));
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await blocks.nth(0).getByRole("button", { name: "Move Interactive widgets down" }).press("Enter");
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "widgets");
+    await blocks.nth(1).getByRole("button", { name: "Move Interactive widgets up" }).press("Enter");
+    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
+    await page.reload();
+    const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
+    await expect(reloadedBlocks).toHaveCount(3);
+    await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.getByRole("button", { name: "Publish page", exact: true }).click();
+    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    await page.goto("/" + name);
+    const publicBlocks = page.locator(".public-page .profile-layout-block");
+    await expect(publicBlocks).toHaveCount(3);
+    await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
+    await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+
+    await page.goto("/studio");
+    await page.setViewportSize({ width: 360, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
+  }
+});
+
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
   test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
@@ -991,7 +1071,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("background-color", "rgb(37, 52, 95)");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("color", "rgb(255, 255, 255)");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("text-align", "start");
-    await expect(publicPage.locator(".profile-inner")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
+    await expect(publicPage.locator(".profile-identity")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-density", "compact");
     await expect(publicPage.locator(".profile-card")).toHaveCSS("border-radius", "0px");
     await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
@@ -1016,7 +1096,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await publicPage.setViewportSize({ width, height: 850 });
       const measure = (card: Element) => ({
         width: card.getBoundingClientRect().width,
-        fontSize: getComputedStyle(card.querySelector(".profile-inner > :is(h1,h2)")!).fontSize,
+        fontSize: getComputedStyle(card.querySelector(".profile-identity .profile-name-heading")!).fontSize,
         gap: getComputedStyle(card.querySelector(".profile-inner")!).gap,
         radius: getComputedStyle(card).borderRadius,
         align: getComputedStyle(card).textAlign,

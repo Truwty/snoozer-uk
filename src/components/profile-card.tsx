@@ -1,8 +1,11 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { kofiProfileUrl } from "@/lib/kofi-link";
+import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
 import { youtubeVideoId } from "@/lib/youtube";
 import { YouTubeWidget } from "./youtube-widget";
@@ -17,7 +20,130 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl }: {
+type SocialLink = { label: string; url: string; index: number; mark: string };
+
+function socialMark(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "github.com" || host.endsWith(".github.com")) return "GH";
+    if (host === "discord.com" || host === "discord.gg") return "DC";
+    if (host === "instagram.com") return "IG";
+    if (host === "youtube.com" || host === "youtu.be") return "YT";
+    if (host === "tiktok.com") return "TT";
+    if (host === "x.com" || host === "twitter.com") return "X";
+    if (host === "twitch.tv") return "TW";
+    if (host === "roblox.com" || host.endsWith(".roblox.com")) return "RB";
+    if (host === "linkedin.com" || host.endsWith(".linkedin.com")) return "in";
+    if (host === "reddit.com" || host.endsWith(".reddit.com")) return "rd";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function LayoutBlock({
+  item, position, total, preview, onMove, onSelect, children,
+}: {
+  item: ProfilePageLayoutItem;
+  position: number;
+  total: number;
+  preview: boolean;
+  onMove?: (from: number, to: number) => void;
+  onSelect?: (item: ProfilePageLayoutItem) => void;
+  children: ReactNode;
+}) {
+  const label = item.type === "section" ? `Section ${item.index + 1}`
+    : item.type === "links" ? "Social links" : item.type === "widgets" ? "Interactive widgets" : "Gallery";
+  const touchDrag = useRef<{ pointerId: number; from: number; x: number; y: number; active: boolean } | null>(null);
+
+  function pointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (!preview || !onMove || event.pointerType === "mouse" || !event.isPrimary || touchDrag.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    touchDrag.current = { pointerId: event.pointerId, from: position, x: event.clientX, y: event.clientY, active: false };
+  }
+
+  function pointerMove(event: PointerEvent<HTMLButtonElement>) {
+    const active = touchDrag.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    if (!active.active && Math.hypot(event.clientX - active.x, event.clientY - active.y) < 7) return;
+    active.active = true;
+    document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+      .forEach((node) => delete node.dataset.dropTarget);
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".profile-layout-block");
+    if (target) target.dataset.dropTarget = "true";
+  }
+
+  function pointerFinish(event: PointerEvent<HTMLButtonElement>, commit: boolean) {
+    const active = touchDrag.current;
+    if (!active || active.pointerId !== event.pointerId) return;
+    touchDrag.current = null;
+    document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+      .forEach((node) => delete node.dataset.dropTarget);
+    if (!commit || !active.active || !onMove) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".profile-layout-block");
+    const destination = Number(target?.dataset.layoutPosition);
+    if (Number.isInteger(destination)) onMove(active.from, destination);
+  }
+
+  function onDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!preview || !onMove || !Array.from(event.dataTransfer.types).includes("application/x-snoozer-layout-item")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    event.currentTarget.dataset.dropTarget = "true";
+  }
+
+  function onDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    delete event.currentTarget.dataset.dropTarget;
+  }
+
+  function onDrop(event: DragEvent<HTMLDivElement>) {
+    const raw = event.dataTransfer.getData("application/x-snoozer-layout-item");
+    if (!raw || !onMove) return;
+    event.preventDefault();
+    event.stopPropagation();
+    delete event.currentTarget.dataset.dropTarget;
+    const from = Number(raw);
+    if (Number.isInteger(from)) onMove(from, position);
+  }
+
+  function onClick(event: MouseEvent<HTMLDivElement>) {
+    if (!preview || !onSelect) return;
+    if (event.target instanceof Element && event.target.closest("a,button,input,textarea,select,summary,label")) return;
+    onSelect(item);
+  }
+
+  return <div className="profile-layout-block" data-layout-type={item.type} data-layout-position={position}
+    data-section-index={item.type === "section" ? item.index : undefined}
+    onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={onClick}>
+    {preview && onMove && <div className="profile-layout-controls">
+      <button type="button" className="profile-layout-drag-handle" draggable
+        aria-label={`Drag ${label} to change its position`}
+        onPointerDown={pointerDown} onPointerMove={pointerMove}
+        onPointerUp={(event) => pointerFinish(event, true)}
+        onPointerCancel={(event) => pointerFinish(event, false)}
+        onLostPointerCapture={(event) => pointerFinish(event, false)}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("application/x-snoozer-layout-item", String(position));
+        }}
+        onDragEnd={() => {
+          document.querySelectorAll<HTMLElement>(".profile-layout-block[data-drop-target]")
+            .forEach((node) => delete node.dataset.dropTarget);
+        }}>
+        <span aria-hidden="true">⠿</span>
+      </button>
+      <button type="button" className="profile-layout-move-button" disabled={position === 0}
+        aria-label={`Move ${label} up`} onClick={() => onMove(position, position - 1)}>↑</button>
+      <button type="button" className="profile-layout-move-button" disabled={position === total - 1}
+        aria-label={`Move ${label} down`} onClick={() => onMove(position, position + 1)}>↓</button>
+    </div>}
+    {children}
+  </div>;
+}
+
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl, onMoveLayoutItem, onSelectLayoutItem }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
@@ -27,9 +153,11 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   discordPresence?: DiscordPresencePublic | null;
   discordPresenceRetry?: boolean;
   reportBaseUrl?: string;
+  onMoveLayoutItem?: (from: number, to: number) => void;
+  onSelectLayoutItem?: (item: ProfilePageLayoutItem) => void;
 }) {
   const effects = profile.appearance.effects ?? defaultEffects;
-  const visibleSections = profile.sections.filter(({ heading, hidden }) => !hidden && heading.trim());
+  const layout = normalizeProfilePageLayout(profile.pageLayout, profile);
   const linkColours = linkAccentColours(profile.appearance.accent);
   const linkStyle = linkColours ? {
     "--link-background": linkColours.background,
@@ -46,52 +174,57 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;
 
-  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
-    data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
-    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
-    data-effect-border={effects.enabled ? effects.border : "none"}
-    data-effect-links={effects.enabled ? effects.links : "none"}
-    data-effect-text={effects.enabled ? effects.text : "none"}
-    data-effect-interaction={effects.enabled ? effects.interaction : "none"}
-    data-effect-speed={effects.speed}>
-    <ProfileEffectsLayer effects={effects} />
-    {effects.enabled && <label className="profile-effects-toggle">
-      <input type="checkbox" aria-label="Disable profile effects" />
-      <span className="effects-disable-text">Disable effects</span>
-      <span className="effects-enable-text">Enable effects</span>
-    </label>}
-    <div className="profile-decoration" aria-hidden="true" />
-    <div className="profile-inner">
-      {avatarSrc
-        // The server route serves an already resized raster.
-        // eslint-disable-next-line @next/next/no-img-element
-        ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
-        : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
-      <p className="profile-handle">@{profile.username}</p>
-      {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
-      {profile.bio && <p className="profile-bio">{profile.bio}</p>}
-      {visibleSections.length > 0 && <div className="profile-sections">
-        {visibleSections.map((section, index) => {
-          const target = section.kind === "countdown" ? countdownTarget(section.target ?? "") : null;
-          if (section.kind === "quote") return <figure className="profile-text-section profile-quote" key={index}>
-            <blockquote><p>{section.body}</p></blockquote>
-            <figcaption>{section.heading}</figcaption>
-          </figure>;
-          return <section className={"profile-text-section" + (section.kind === "callout" ? " profile-callout" : section.kind === "project" ? " profile-project" : "")} key={index}>
-            {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
-            <p>{section.body}</p>
-            {section.kind === "project" && section.target && safeLink(section.target) && <a className="project-link" href={section.target} rel="ugc nofollow noreferrer">Explore {section.heading} <span aria-hidden="true">↗</span></a>}
-            {section.kind === "countdown" && <div className="countdown">
-              {target ? <>
-                <p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p>
-                <Countdown key={section.target} target={target.valueOf()} />
-              </> : <p>Choose a target time to preview the countdown.</p>}
-            </div>}
-          </section>;
-        })}
+  const identity = <>
+    {avatarSrc
+      // The server route serves an already resized raster.
+      // eslint-disable-next-line @next/next/no-img-element
+      ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
+      : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
+    <p className="profile-handle">@{profile.username}</p>
+    {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
+    {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+  </>;
+
+  function renderSection(index: number) {
+    const section = profile.sections[index];
+    if (!section || section.hidden || !section.heading.trim()) return null;
+    const target = section.kind === "countdown" ? countdownTarget(section.target ?? "") : null;
+    if (section.kind === "quote") return <figure className="profile-text-section profile-quote">
+      <blockquote><p>{section.body}</p></blockquote>
+      <figcaption>{section.heading}</figcaption>
+    </figure>;
+    return <section className={"profile-text-section" + (section.kind === "callout" ? " profile-callout" : section.kind === "project" ? " profile-project" : "")}>
+      {preview ? <h3>{section.heading}</h3> : <h2>{section.heading}</h2>}
+      <p>{section.body}</p>
+      {section.kind === "project" && section.target && safeLink(section.target) && <a className="project-link" href={section.target} rel="ugc nofollow noreferrer">Explore {section.heading} <span aria-hidden="true">↗</span></a>}
+      {section.kind === "countdown" && <div className="countdown">
+        {target ? <><p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p><Countdown key={section.target} target={target.valueOf()} /></> : <p>Choose a target time to preview the countdown.</p>}
       </div>}
-      {profile.links.length > 0 && <ul className="profile-links" style={linkStyle}>
-        {profile.links.filter(({ url }) => safeLink(url)).map(({ label, url }, index) => {
+    </section>;
+  }
+
+  function renderLinks() {
+    const valid = profile.links.map((item, index) => ({ ...item, index }))
+      .filter(({ url }) => safeLink(url));
+    const hasProviderEmbed = (url: string) => Boolean(
+      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
+    );
+    const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
+      const mark = socialMark(url);
+      return mark && !hasProviderEmbed(url) ? [{ label, url, index, mark }] : [];
+    });
+    const regular = valid.filter(({ url }) => !socialMark(url) || hasProviderEmbed(url));
+    return <>
+      {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
+        {social.map(({ label, url, index, mark }) => <a key={url + index} className="profile-social-link" href={url}
+          rel="ugc nofollow noreferrer" title={label} aria-label={`${mark} ${label}`}
+          data-analytics-profile={preview ? undefined : profile.username}
+          data-analytics-position={preview ? undefined : index + 1}>
+          <span aria-hidden="true" className="profile-social-mark">{mark}</span>
+        </a>)}
+      </nav>}
+      {regular.length > 0 && <ul className="profile-links" style={linkStyle}>
+        {regular.map(({ label, url, index }) => {
           const video = youtubeVideoId(url);
           const metadata = metadataWidget(url);
           const channel = twitchChannel(url);
@@ -112,17 +245,61 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           </li>;
         })}
       </ul>}
-      <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />
-      {galleryBase && profile.gallery.length > 0 && <section className="profile-gallery">
-        {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
-        <ul className="profile-gallery-grid">
-          {profile.gallery.filter((item) => item.id !== (backgroundImage ? background?.id : undefined)).map((item) => <li key={item.id}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
-              width={item.width} height={item.height} loading="lazy" />
-          </li>)}
-        </ul>
-      </section>}
+    </>;
+  }
+
+  function renderWidgets() {
+    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />;
+  }
+
+  function renderGallery() {
+    if (!galleryBase || profile.gallery.length === 0) return null;
+    const visible = profile.gallery.filter((item) => item.id !== (backgroundImage ? background?.id : undefined));
+    if (visible.length === 0) return null;
+    return <section className="profile-gallery">
+      {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
+      <ul className="profile-gallery-grid">
+        {visible.map((item) => <li key={item.id}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
+            width={item.width} height={item.height} loading="lazy" />
+        </li>)}
+      </ul>
+    </section>;
+  }
+
+  function renderItem(item: ProfilePageLayoutItem, position: number) {
+    let child: ReactNode;
+    if (item.type === "section") child = renderSection(item.index);
+    else if (item.type === "links") child = renderLinks();
+    else if (item.type === "widgets") child = renderWidgets();
+    else child = renderGallery();
+    if (!child) return null;
+    return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type}
+      item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
+      onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
+  }
+
+  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
+    data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
+    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
+    data-effect-border={effects.enabled ? effects.border : "none"}
+    data-effect-links={effects.enabled ? effects.links : "none"}
+    data-effect-text={effects.enabled ? effects.text : "none"}
+    data-effect-interaction={effects.enabled ? effects.interaction : "none"}
+    data-effect-speed={effects.speed}>
+    <ProfileEffectsLayer effects={effects} />
+    {effects.enabled && <label className="profile-effects-toggle">
+      <input type="checkbox" aria-label="Disable profile effects" />
+      <span className="effects-disable-text">Disable effects</span>
+      <span className="effects-enable-text">Enable effects</span>
+    </label>}
+    <div className="profile-decoration" aria-hidden="true" />
+    <div className="profile-inner">
+      <header className="profile-identity">{identity}</header>
+      <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
+        {layout.items.map((item, index) => renderItem(item, index))}
+      </div>
     </div>
   </section>;
 }

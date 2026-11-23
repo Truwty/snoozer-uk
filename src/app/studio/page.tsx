@@ -32,7 +32,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Stu
   const schedule = publicationScheduleStatus.safeParse(scheduleResponse?.data);
   const plan = accountPlan.safeParse(response?.data);
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
-  return <main className="shell">
+  return <main className="shell studio-shell">
     {logout === "failed" && <p role="alert">Couldn’t sign out. Try again.</p>}
     {deleted === "1" && <p role="status">Your profile was deleted. Its images are queued for removal.</p>}
     {!draft ? <section className="panel claim-panel stack">

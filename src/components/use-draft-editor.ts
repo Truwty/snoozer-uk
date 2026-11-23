@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { loadSavedDraft, save } from "@/app/studio/actions";
 import { initialState, type ActionState } from "@/lib/actions";
 import { profileContent, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { normalizeProfilePageLayout } from "@/lib/profile-layout";
 
 type Edits = { revision: number; content: ProfileContent; removeAvatar: boolean };
 type EditorState = {
@@ -67,7 +68,12 @@ export function useDraftEditor(draft: DraftProfile) {
   const commit = useCallback(async (intent: "draft" | "publish") => {
     if (busy.current || conflict) return;
     const snapshot = edits ?? { revision: saved.revision, content: saved, removeAvatar: false };
-    const content = profileContent.safeParse(snapshot.content);
+    const content = profileContent.safeParse({
+      ...snapshot.content,
+      pageLayout: normalizeProfilePageLayout(snapshot.content.pageLayout, {
+        ...snapshot.content, gallery: saved.gallery,
+      }),
+    });
     if (!content.success) {
       setMessage({ status: "error", message: content.error.issues[0].message });
       return;
