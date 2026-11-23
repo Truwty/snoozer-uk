@@ -2360,7 +2360,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
 
   it("requires linked Discord identity and explicit per-profile consent, exposes only selected live fields and erases snapshots on disconnect", async () => {
-    const discordId = "123456789012345678";
+    const discordId = "111111111111111111";
     const identityId = "00000000-0000-4000-8000-000000000101";
     await act("authenticated", alice);
     await claim("discord-presence-test");
