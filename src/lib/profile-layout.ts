@@ -17,7 +17,8 @@ export const profilePageLayout = z.strictObject({
   version: z.literal(1),
   items: z.array(layoutItem).max(41),
 }).superRefine((value, context) => {
-  const keys = value.items.map((item) => item.type === "section" ? `section:${item.index}` : item.type);
+  const keys = value.items.map((item) => item.type === "section" ? `section:${item.index}`
+    : item.type === "block" ? `block:${item.id}` : item.type);
   if (new Set(keys).size !== keys.length) {
     context.addIssue({ code: "custom", path: ["items"], message: "Page elements must have unique positions." });
   }
