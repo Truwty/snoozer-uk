@@ -33,12 +33,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
     ? await client.rpc("discord_presence_get_my_settings", { p_profile: draft.profile_id })
     : null;
   const settings = response && !response.error ? discordPresenceSettings.safeParse(response.data) : null;
-  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") return <main className="shell"><nav className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link></nav><section className="panel stack discord-settings-panel"><p className="eyebrow">STUDIO / INTEGRATIONS</p><h1>Discord Presence</h1><p className="muted">This integration is paused. Public display and Gateway ingestion are disabled.</p><div className="discord-service-status"><span className="discord-service-indicator" aria-hidden="true"/><span>Activation is pending Discord policy clearance, bot credentials, a shared server and an always-on worker.</span></div>{draft && settings?.success && settings.data.connected && <form action={disconnectDiscordPresence}><input type="hidden" name="profileId" value={draft.profile_id}/><button className="button" type="submit">Disconnect Discord</button></form>}</section></main>;
+  if (process.env.DISCORD_PRESENCE_ENABLED !== "true") return <main className="shell"><nav className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/builder", draft?.profile_id)}>Back to Page Builder</Link></nav><section className="panel stack discord-settings-panel"><p className="eyebrow">STUDIO / INTEGRATIONS</p><h1>Discord Presence</h1><p className="muted">This integration is paused. Public display and Gateway ingestion are disabled.</p><div className="discord-service-status"><span className="discord-service-indicator" aria-hidden="true"/><span>Activation is pending Discord policy clearance, bot credentials, a shared server and an always-on worker.</span></div>{draft && settings?.success && settings.data.connected && <form action={disconnectDiscordPresence}><input type="hidden" name="profileId" value={draft.profile_id}/><button className="button" type="submit">Disconnect Discord</button></form>}</section></main>;
   const invite = discordPresenceInviteUrl();
 
   return <main className="shell">
     <nav className="nav studio-subnav">
-      <Link className="button small" href={studioHref("/studio", draft?.profile_id)}>Back to Studio</Link>
+      <Link className="button small" href={studioHref("/studio/builder", draft?.profile_id)}>Back to Page Builder</Link>
     </nav>
     <section className="panel stack discord-settings-panel">
       <p className="eyebrow">STUDIO / INTEGRATIONS</p>
