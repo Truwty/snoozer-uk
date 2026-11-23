@@ -855,7 +855,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .spotify-now-playing .actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 .spotify-now-playing a { text-decoration: underline; text-underline-offset: .2em; }
 .spotify-now-playing p { overflow-wrap: anywhere; }
-.profile-card[data-effect-interaction="float"] .spotify-now-playing { transition: transform 250ms ease; }
+.profile-card[data-effect-interaction="tilt"] .spotify-now-playing { transition: transform 250ms ease; }
 @media (prefers-reduced-motion: no-preference) {
-  .profile-card[data-effect-interaction="float"] .spotify-now-playing:hover { transform: translateY(-2px); }
+  .profile-card[data-effect-interaction="tilt"] .spotify-now-playing:hover { transform: translateY(-2px); }
 }

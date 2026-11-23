@@ -33,16 +33,20 @@ export async function GET(){
 
   // The database RPC independently checks auth.uid() and verifies the active
   // Supabase Auth session, including for otherwise restricted users.
-  const {data,error}=await client.rpc("my_extended_account_archive");
+  const [{data,error},spotifyResult]=await Promise.all([client.rpc("my_extended_account_archive"),client.rpc("spotify_my_connection")]);
   const result=archive.safeParse(data);
   if(error||!result.success)return unavailable(503);
 
+  // Export only the authenticated owner's connection metadata, never OAuth tokens.
+  const spotifySchema=z.object({spotify_user_id:z.string(),public_enabled:z.boolean(),connected_at:z.string()});
+  const spotify=spotifyResult.error?null:spotifySchema.nullable().safeParse(spotifyResult.data);
   const payload={
    generated_at:new Date().toISOString(),
    account:{id:identity.user.id,email:identity.user.email??null,
     created_at:identity.user.created_at,
     email_confirmed_at:identity.user.email_confirmed_at},
    ...result.data,
+   spotify_connection:spotify && spotify.success?spotify.data:null,
    limitations:[
     "This is a first-party app record archive, not a complete statutory data export.",
     "Private Storage file bytes, historical analytics, billing processor records, and third-party processor data are not included.",

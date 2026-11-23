@@ -68,3 +68,5 @@ No `SPOTIFY_CLIENT_SECRET` is required by this PKCE flow. Do not use `NEXT_PUBLI
 - Render deployment only after migration. End-to-end Spotify provider validation cannot be marked passed without real developer credentials and an authorised test account.
 
 Custom-domain profiles can request the read-only Spotify status endpoint through the verified public-domain proxy; the domain-bound username must match the query exactly and other account/Spotify API routes remain denied on custom hosts.
+
+The first-party account archive includes the account owner's Spotify user ID, public-listening flag and connection timestamp (when available), but never exports encrypted tokens, access tokens or refresh tokens. Disconnect deletes the private row; Auth erasure cascades removal.
