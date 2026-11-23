@@ -8,8 +8,8 @@ const entrySchema = z.array(z.strictObject({
   id: z.uuid(), displayName: z.string(), message: z.string(), createdAt: z.iso.datetime({ offset: true }),
 }));
 
-export function GuestbookWidget({ username, heading, description, maxEntries, submissionsOpen }: {
-  username: string; heading: string; description: string; maxEntries: number; submissionsOpen: boolean;
+export function GuestbookWidget({ username, heading, description, maxEntries, submissionsOpen, reportBaseUrl }: {
+  username: string; heading: string; description: string; maxEntries: number; submissionsOpen: boolean; reportBaseUrl?: string;
 }) {
   const [entries, setEntries] = useState<z.infer<typeof entrySchema>>([]);
   const [name, setName] = useState("");
@@ -68,9 +68,15 @@ export function GuestbookWidget({ username, heading, description, maxEntries, su
     {description && <p className="profile-widget-description">{description}</p>}
     {loading ? <p className="muted" role="status">Loading messages…</p> : entries.length === 0
       ? <p className="muted">No approved messages yet.</p>
-      : <ol className="guestbook-entries">{entries.slice(0, maxEntries).map((entry) => <li key={entry.id}>
-        <p>{entry.message}</p><footer><strong>{entry.displayName}</strong><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleDateString("en-GB")}</time></footer>
-      </li>)}</ol>}
+      : <ol className="guestbook-entries">{entries.slice(0, maxEntries).map((entry) => {
+        const reportPath = "/report/" + encodeURIComponent(username) + "?entry=" + encodeURIComponent(entry.id);
+        const reportHref = reportBaseUrl ? new URL(reportPath, reportBaseUrl).href : reportPath;
+        return <li key={entry.id}>
+          <p>{entry.message}</p>
+          <footer><strong>{entry.displayName}</strong><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleDateString("en-GB")}</time></footer>
+          <a className="guestbook-report" href={reportHref}>Report message</a>
+        </li>;
+      })}</ol>}
     {submissionsOpen ? <form className="guestbook-form stack" onSubmit={submit}>
       <label>Your name<input required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label className="widget-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
