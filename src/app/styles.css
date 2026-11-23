@@ -1779,3 +1779,42 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (prefers-reduced-motion: reduce) {
   .studio-progress-track span { transition: none; }
 }
+
+
+/* Persisted profile styling controls shared by the live preview and public renderer. */
+.profile-card {
+  background: color-mix(in srgb, var(--page) var(--profile-opacity, 100%), transparent);
+  backdrop-filter: blur(var(--profile-blur, 0px));
+  font-family: var(--profile-font, system-ui, sans-serif);
+}
+.profile-card[data-gradient-enabled="true"] .profile-decoration {
+  background: linear-gradient(135deg, var(--profile-gradient-start), var(--profile-gradient-end));
+  opacity: .42;
+}
+.profile-social-mark { color: var(--profile-icon-color, var(--text)); }
+.profile-card[data-monochrome-icons="true"] .profile-social-link { filter: grayscale(1); }
+.profile-card[data-username-glow="true"] .profile-name-heading {
+  text-shadow: 0 0 1.1rem color-mix(in srgb, var(--detail) 48%, transparent);
+}
+.profile-card[data-social-glow="true"] .profile-social-link {
+  box-shadow: 0 0 .9rem color-mix(in srgb, var(--detail) 38%, transparent);
+}
+.profile-card[data-badge-glow="true"] .profile-owner-badge {
+  filter: drop-shadow(0 0 .4rem color-mix(in srgb, var(--detail) 60%, transparent));
+}
+@keyframes snoozer-title-glow {
+  0%, 100% { text-shadow: 0 0 .25rem color-mix(in srgb, var(--detail) 25%, transparent); }
+  50% { text-shadow: 0 0 1.2rem color-mix(in srgb, var(--detail) 68%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .profile-card[data-animated-title="true"] .profile-name-heading { animation: snoozer-title-glow 5s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-card[data-animated-title="true"] .profile-name-heading { animation: none; }
+}
+.studio-customize-panel { padding: 1rem !important; border: 1px solid var(--edge) !important; border-radius: .75rem; background: var(--ground) !important; }
+.studio-color-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(8.5rem,1fr)); gap: .8rem; }
+.studio-color-grid input[type="color"] { display: block; width: 100%; min-height: 3rem; height: 3rem; padding: .2rem; border: 1px solid var(--edge); border-radius: .55rem; background: var(--surface); cursor: pointer; }
+@media (max-width: 36rem) {
+  .studio-color-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

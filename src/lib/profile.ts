@@ -15,7 +15,21 @@ export const profileDensities = ["compact", "balanced", "airy"] as const;
 export const profileCorners = ["square", "soft", "round"] as const;
 export const profileEntrances = ["none", "fade", "rise"] as const;
 export const profileLayouts = ["centred", "editorial", "portfolio"] as const;
-export const defaultAppearance = { density: "balanced", corners: "soft", layout: "centred", accent: "theme", entrance: "none" } as const;
+const profileHexColour = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hexadecimal colour.");
+const profileCustomColours = z.strictObject({
+  background: profileHexColour.optional(),
+  text: profileHexColour.optional(),
+  accent: profileHexColour.optional(),
+  icon: profileHexColour.optional(),
+  effect: profileHexColour.optional(),
+  gradientStart: profileHexColour.optional(),
+  gradientEnd: profileHexColour.optional(),
+});
+export const defaultAppearance = {
+  density: "balanced", corners: "soft", layout: "centred", accent: "theme", entrance: "none",
+  font: "system", gradientEnabled: false, opacity: 100, blur: 0,
+  monochromeIcons: false, animatedTitle: false, usernameGlow: false, socialGlow: false, badgeGlow: false,
+} as const;
 export const profileAppearance = z.strictObject({
   density: z.enum(profileDensities),
   corners: z.enum(profileCorners),
@@ -24,6 +38,16 @@ export const profileAppearance = z.strictObject({
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
   backgroundImage: z.uuid().optional(),
   effects: profileEffects.optional(),
+  colors: profileCustomColours.optional(),
+  font: z.enum(["system", "sans", "serif", "mono"]).default(defaultAppearance.font),
+  gradientEnabled: z.boolean().default(defaultAppearance.gradientEnabled),
+  opacity: z.number().int().min(40).max(100).default(defaultAppearance.opacity),
+  blur: z.number().int().min(0).max(24).default(defaultAppearance.blur),
+  monochromeIcons: z.boolean().default(defaultAppearance.monochromeIcons),
+  animatedTitle: z.boolean().default(defaultAppearance.animatedTitle),
+  usernameGlow: z.boolean().default(defaultAppearance.usernameGlow),
+  socialGlow: z.boolean().default(defaultAppearance.socialGlow),
+  badgeGlow: z.boolean().default(defaultAppearance.badgeGlow),
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 

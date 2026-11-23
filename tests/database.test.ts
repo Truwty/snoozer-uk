@@ -1928,6 +1928,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.query("select public.restore_publication(2,4)");
     expect(await draft()).toMatchObject({ revision: 5, appearance: compact });
     expect(await published("appearance-alice")).not.toHaveProperty("appearance");
+
+    const custom = {
+      ...compact,
+      colors: {
+        background: "#121827", text: "#f8fafc", accent: "#8b5cf6", icon: "#e2e8f0",
+        effect: "#22d3ee", gradientStart: "#111827", gradientEnd: "#4c1d95",
+      },
+      font: "mono", gradientEnabled: true, opacity: 65, blur: 14,
+      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true,
+    };
+    await write(5, false, custom);
+    expect(await draft()).toMatchObject({ appearance: custom });
+    await write(6, true, custom);
+    expect(await published("appearance-alice")).toMatchObject({ appearance: custom });
+    await expect(write(7, false, { ...custom, colors: { background: "red" } })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(7, false, { ...custom, blur: 25 })).rejects.toMatchObject({ code: "22023" });
   });
 
   it("publishes a selected gallery background and restores it with its gallery image", async () => {

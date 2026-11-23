@@ -168,8 +168,28 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     ? `url("${galleryBase}/${encodeURIComponent(background.id)}")`
     : undefined;
   const backgroundStyle = backgroundImage
-    ? { "--profile-background-image": backgroundImage } as CSSProperties
-    : undefined;
+    ? { "--profile-background-image": backgroundImage }
+    : {};
+  const colors = profile.appearance.colors;
+  const fontFamilies = {
+    system: "system-ui, sans-serif",
+    sans: "Arial, Helvetica, sans-serif",
+    serif: "Georgia, serif",
+    mono: "ui-monospace, SFMono-Regular, monospace",
+  } as const;
+  const appearanceStyle = {
+    ...backgroundStyle,
+    ...(colors?.background ? { "--page": colors.background } : {}),
+    ...(colors?.text ? { "--text": colors.text } : {}),
+    ...(colors?.accent ? { "--detail": colors.accent } : {}),
+    ...(colors?.effect ? { "--wash": colors.effect } : {}),
+    "--profile-icon-color": colors?.icon ?? "var(--text)",
+    "--profile-opacity": profile.appearance.opacity + "%",
+    "--profile-blur": profile.appearance.blur + "px",
+    "--profile-font": fontFamilies[profile.appearance.font],
+    "--profile-gradient-start": colors?.gradientStart ?? "#493c96",
+    "--profile-gradient-end": colors?.gradientEnd ?? "#137f83",
+  } as CSSProperties;
   const discordBadge = !preview && (discordPresence !== null || discordPresenceRetry)
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;
@@ -282,7 +302,14 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
-    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
+    data-background-image={backgroundImage ? "true" : undefined}
+    data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
+    data-monochrome-icons={profile.appearance.monochromeIcons ? "true" : undefined}
+    data-animated-title={profile.appearance.animatedTitle ? "true" : undefined}
+    data-username-glow={profile.appearance.usernameGlow ? "true" : undefined}
+    data-social-glow={profile.appearance.socialGlow ? "true" : undefined}
+    data-badge-glow={profile.appearance.badgeGlow ? "true" : undefined}
+    style={appearanceStyle}
     data-effect-border={effects.enabled ? effects.border : "none"}
     data-effect-links={effects.enabled ? effects.links : "none"}
     data-effect-text={effects.enabled ? effects.text : "none"}

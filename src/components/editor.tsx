@@ -56,6 +56,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
+  const customColours = content.appearance.colors ?? {};
   const galleryWarning = galleryMemoryWarning(saved.gallery);
   const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
@@ -381,6 +382,61 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           {linkColours ? "Link text contrast " + (Math.floor(linkColours.ratio * 10) / 10).toFixed(1) + " to 1."
             : "Links use your theme colours."}
         </p>
+      </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Custom colours</legend>
+        <p className="muted">Set exact profile colours. Leave each value at its theme default until you choose a custom shade.</p>
+        <div className="studio-color-grid">
+          <label>Background<input type="color" value={customColours.background ?? "#171923"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, background: event.target.value } })}/></label>
+          <label>Text<input type="color" value={customColours.text ?? "#f5f6fa"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, text: event.target.value } })}/></label>
+          <label>Accent<input type="color" value={customColours.accent ?? "#9b8cff"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, accent: event.target.value } })}/></label>
+          <label>Icons<input type="color" value={customColours.icon ?? "#e4e7f0"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, icon: event.target.value } })}/></label>
+          <label>Effect colour<input type="color" value={customColours.effect ?? "#7c72d8"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, effect: event.target.value } })}/></label>
+          <label>Gradient start<input type="color" value={customColours.gradientStart ?? "#493c96"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientStart: event.target.value } })}/></label>
+          <label>Gradient end<input type="color" value={customColours.gradientEnd ?? "#137f83"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientEnd: event.target.value } })}/></label>
+        </div>
+        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled}
+          onChange={(event) => set("appearance", { ...content.appearance, gradientEnabled: event.target.checked })}/> Enable profile gradient</label>
+      </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Surface and typography</legend>
+        <label>Profile opacity: {content.appearance.opacity}%
+          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity}
+            onChange={(event) => set("appearance", { ...content.appearance, opacity: Number(event.target.value) })}/>
+        </label>
+        <label>Background blur: {content.appearance.blur}px
+          <input type="range" min={0} max={24} step={1} value={content.appearance.blur}
+            onChange={(event) => set("appearance", { ...content.appearance, blur: Number(event.target.value) })}/>
+        </label>
+        <label>Typography
+          <select value={content.appearance.font} onChange={(event) => {
+            const font = ["system", "sans", "serif", "mono"].find((value) => value === event.target.value);
+            if (font) set("appearance", { ...content.appearance, font: font as typeof content.appearance.font });
+          }}>
+            <option value="system">System</option><option value="sans">Sans serif</option>
+            <option value="serif">Serif</option><option value="mono">Monospace</option>
+          </select>
+        </label>
+      </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Profile details and effects</legend>
+        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons}
+          onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle}
+          onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow}
+          onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow}
+          onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow}
+          onChange={(event) => set("appearance", { ...content.appearance, badgeGlow: event.target.checked })}/> Badge glow</label>
       </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
       <fieldset className="stack">

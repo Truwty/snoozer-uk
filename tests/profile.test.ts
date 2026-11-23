@@ -8,6 +8,28 @@ describe("profile validation", () => {
     expect(profileAppearance.safeParse({ ...defaultAppearance, duration: 999999 }).success).toBe(false);
   });
 
+  it("accepts bounded custom colour, surface, typography and glow settings", () => {
+    const appearance = profileAppearance.parse({
+      ...defaultAppearance,
+      colors: {
+        background: "#121827", text: "#f8fafc", accent: "#8b5cf6", icon: "#e2e8f0",
+        effect: "#22d3ee", gradientStart: "#111827", gradientEnd: "#4c1d95",
+      },
+      font: "mono", gradientEnabled: true, opacity: 65, blur: 14,
+      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true,
+    });
+    expect(appearance.opacity).toBe(65);
+    expect(appearance.blur).toBe(14);
+    expect(appearance.colors?.gradientEnd).toBe("#4c1d95");
+    expect(appearance.font).toBe("mono");
+    for (const colors of [{ background: "red" }, { text: "#fff" }, { customCss: "url(https://example.com)" }]) {
+      expect(profileAppearance.safeParse({ ...defaultAppearance, colors }).success).toBe(false);
+    }
+    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 39 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 25 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, font: "url(https://example.com)" }).success).toBe(false);
+  });
+
   it("allows a gallery image as the profile background only when that image is in the profile gallery", () => {
     const id = "00000000-0000-4000-8000-000000000011";
     const appearance = profileAppearance.parse({ ...defaultAppearance, backgroundImage: id });
