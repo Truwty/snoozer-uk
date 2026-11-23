@@ -11,14 +11,6 @@ const labels: Record<string, string> = {
   unavailable: "Unavailable",
 };
 
-function updatedLabel(value: string | null) {
-  if (!value) return "";
-  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
-  if (elapsed < 60) return "Updated just now";
-  if (elapsed < 3600) return `Updated ${Math.floor(elapsed / 60)}m ago`;
-  return `Updated ${Math.floor(elapsed / 3600)}h ago`;
-}
-
 export function DiscordPresenceWidget({ username, initialPresence }: {
   username: string;
   initialPresence: DiscordPresencePublic | null;
@@ -57,7 +49,9 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
 
   if (!presence) return null;
   const status = presence.status ?? "unavailable";
-  const title = presence.state === "unavailable" ? "Presence unavailable" : labels[status];
+  const title = presence.state === "unavailable" ? "Presence unavailable"
+    : presence.status ? labels[presence.status]
+    : presence.activity || presence.customStatus ? "Active on Discord" : "Discord presence";
   return <section className="discord-presence-card" aria-label="Discord presence" data-status={status} data-state={presence.state}>
     <header className="discord-presence-header">
       <span className="discord-presence-icon" aria-hidden="true">
@@ -80,7 +74,7 @@ export function DiscordPresenceWidget({ username, initialPresence }: {
     </div>}
     {presence.customStatus && presence.state === "live" && <p className="discord-presence-custom">{presence.customStatus}</p>}
     <footer className="discord-presence-footer">
-      <span>{presence.state === "live" ? updatedLabel(presence.observedAt) : "Waiting for a fresh Discord update"}</span>
+      <span>{presence.state === "live" ? "Live status from Discord" : "Waiting for a fresh Discord update"}</span>
       <span>Discord</span>
     </footer>
   </section>;
