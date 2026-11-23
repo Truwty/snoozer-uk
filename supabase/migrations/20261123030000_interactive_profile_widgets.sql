@@ -417,4 +417,69 @@ grant execute on function public.owner_guestbook_queue(uuid,integer),
  public.moderate_guestbook_entry(uuid,uuid,text),public.delete_guestbook_entry(uuid,uuid)
  to authenticated;
 
+
+-- Guestbook reports join the existing moderation queue and rate limits.
+alter table snoozer.moderation_reports
+  add column guestbook_entry_id uuid references snoozer.guestbook_entries(id) on delete set null;
+create index moderation_guestbook_entry_reports
+  on snoozer.moderation_reports(guestbook_entry_id,created_at desc)
+  where guestbook_entry_id is not null;
+
+create function public.submit_guestbook_entry_report(
+ p_name text,p_entry uuid,p_category text,p_reason text
+) returns uuid language plpgsql security definer set search_path='' as $$
+declare actor uuid := snoozer.verified_user();
+declare target uuid;
+declare report_id uuid;
+begin
+ if p_category not in ('spam','phishing','impersonation','harassment','malware','copyright','other')
+   or length(coalesce(p_reason,'')) not between 15 and 1000 then
+   raise exception 'Invalid report' using errcode='22023';
+ end if;
+
+ select p.id into target
+ from snoozer.profiles p
+ join snoozer.published_profiles v on v.profile_id=p.id and v.revision=p.published_revision
+ join snoozer.guestbook_entries e on e.profile_id=p.id and e.id=p_entry and e.status='approved'
+ where p.username=p_name and p.published_revision is not null
+   and v.widgets->'guestbook'->>'enabled'='true';
+ if target is null then raise exception 'Guestbook entry not found' using errcode='22023'; end if;
+ if exists(select 1 from snoozer.profiles where id=target and owner_id=actor) then
+   raise exception 'Cannot report own Guestbook entry' using errcode='42501';
+ end if;
+
+ perform pg_advisory_xact_lock(hashtextextended(actor::text,527));
+ if (select count(*) from snoozer.moderation_reports
+     where reporter_id=actor and created_at>now()-interval '24 hours')>=3
+   or exists(select 1 from snoozer.moderation_reports
+     where reporter_id=actor and guestbook_entry_id=p_entry
+       and created_at>now()-interval '24 hours') then
+   raise exception 'Reporting limit reached' using errcode='42901';
+ end if;
+
+ insert into snoozer.moderation_reports(
+   reporter_id,profile_id,category,reason,guestbook_entry_id
+ ) values(actor,target,p_category,p_reason,p_entry)
+ returning id into report_id;
+ return report_id;
+end $$;
+
+create or replace function public.owner_reports(p_limit integer default 50) returns jsonb
+language plpgsql stable security definer set search_path='' as $$
+declare actor uuid:=snoozer.admin_actor();
+begin
+ return coalesce((select jsonb_agg(to_jsonb(r)) from
+  (select r.id,r.reporter_id,r.profile_id,p.username,r.category,r.reason,r.case_id,
+    r.guestbook_entry_id,r.created_at
+   from snoozer.moderation_reports r
+   join snoozer.profiles p on p.id=r.profile_id
+   order by r.created_at desc,r.id desc
+   limit least(greatest(coalesce(p_limit,50),1),100)) r),'[]'::jsonb);
+end $$;
+
+revoke execute on function public.submit_guestbook_entry_report(text,uuid,text,text)
+ from public,anon,authenticated,service_role;
+grant execute on function public.submit_guestbook_entry_report(text,uuid,text,text)
+ to authenticated;
+
 commit;
