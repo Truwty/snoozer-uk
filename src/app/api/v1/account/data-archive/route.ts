@@ -34,9 +34,15 @@ export async function GET(){
 
   // The database RPC independently checks auth.uid() and verifies the active
   // Supabase Auth session, including for otherwise restricted users.
-  const {data,error}=await client.rpc("my_extended_account_archive");
-  const result=archive.safeParse(data);
-  if(error||!result.success)return unavailable(503);
+  const [{data,error},{data:discordPresence,error:presenceError}]=await Promise.all([
+   client.rpc("my_extended_account_archive"),
+   client.rpc("discord_presence_export"),
+  ]);
+  const combined=data&&typeof data==="object"&&!Array.isArray(data)
+   ? {...(data as Record<string,unknown>),discord_presence:discordPresence}
+   : data;
+  const result=archive.safeParse(combined);
+  if(error||presenceError||!result.success)return unavailable(503);
 
   const payload={
    generated_at:new Date().toISOString(),
