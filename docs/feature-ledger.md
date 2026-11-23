@@ -4,7 +4,7 @@
 
 # Feature ledger
 
-> **Product roadmap Feature #8 — Discord Presence:** Core implementation, minimal inline status badge, eight-second automatic refresh, Terms/Privacy disclosures and native non-clipped tooltip are merged and deployed. The Gateway is connected to the configured guild, but the one opted-in account currently has no cached presence; PR #86 is adding targeted-snapshot diagnostics. Real-account transition/privacy acceptance and written Discord confirmation for API Data use inside Snoozer's wider SaaS remain launch blockers. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
+> **Product roadmap Feature #8 — Discord Presence:** Core implementation, minimal inline status badge, eight-second automatic refresh, Terms/Privacy disclosures and native tooltip are merged and deployed. PR #87 fixes the targeted snapshot Map-key bug and is live; the worker has ingested a member chunk for the opted-in account and Supabase now stores the offline fallback. Real-account Online/Idle/DND/Offline transitions and privacy acceptance, scheduled wake-up execution, and written Discord confirmation for API Data use inside Snoozer's wider SaaS remain open. See `docs/discord-presence.md` and `docs/PROGRESS.md`.
 
 > **Current model:** only Snoozer Premium is offered; creator sales code has been retired. Historical implementation details remain in Git history.
 
