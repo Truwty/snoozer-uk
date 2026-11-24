@@ -58,7 +58,7 @@ export default async function StudioDiscoveryPage({ searchParams }: { searchPara
         <label className="discovery-toggle-row"><input type="checkbox" name="recommendations_enabled" defaultChecked={recommendationsEnabled}/><span><strong>Include my profile in related creators</strong><small>Only public discovery profiles with this option enabled can be recommended beside similar creators.</small></span></label>
         <label className="discovery-toggle-row"><input type="checkbox" name="leaderboard_enabled" defaultChecked={leaderboardEnabled}/><span><strong>Show my profile on the Views Leaderboard</strong><small>Independent of search-engine indexing. Existing preferences are preserved until you change this setting.</small></span></label>
       </section>
-      <div className="actions"><button className="button primary" type="submit">Save discovery settings</button></div>
+      <div className="actions"><button className="button primary" type="submit" disabled={Boolean(result.error || !result.data)}>Save discovery settings</button></div>
     </form>
   </main>;
 }

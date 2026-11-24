@@ -9,12 +9,14 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return { title: "Creator collection · Snoozer Discover", alternates: { canonical: "/discover/collections/" + slug } };
+  return slug.length <= 48 && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)
+    ? { title: "Creator collection · Snoozer Discover", alternates: { canonical: "/discover/collections/" + slug } }
+    : { robots: { index: false, follow: false } };
 }
 
 export default async function DiscoveryCollectionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) notFound();
+  if (slug.length > 48 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) notFound();
   try {
     const fingerprint = await discoveryRequestFingerprint();
     const client = await discoveryServerClient();
