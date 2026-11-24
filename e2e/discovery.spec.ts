@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 for (const width of [320, 375, 768, 1440]) {
-  test(\`Discover and category pages work at \${width}px\`, async ({ page }) => {
+  test("Discover and category pages work at " + width + "px", async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -15,7 +15,7 @@ for (const width of [320, 375, 768, 1440]) {
     );
 
     await page.getByRole("link", { name: "Developers", exact: true }).click();
-    await expect(page).toHaveURL(/\/discover\/category\/developers$/);
+    await expect(page).toHaveURL(/\\/discover\\/category\\/developers$/);
     await expect(page.getByRole("heading", { level: 1, name: "Developers" })).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Search creators" })).toBeVisible();
     await page.getByRole("searchbox", { name: "Search creators" }).fill("no-such-creator-query");
