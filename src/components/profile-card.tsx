@@ -578,7 +578,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       </div>
     </div>
     </section>
-    {entryExperience && entered && hasNativeAudio && <div className="profile-volume-control" aria-label="Music volume control">
+    {entryExperience && hasNativeAudio && <div className="profile-volume-control" aria-label="Music volume control">
       <button type="button" className="profile-volume-mute" aria-label={musicMuted ? "Unmute music" : "Mute music"}
         onClick={() => setMusicMuted((value) => !value)}>
         {musicMuted || musicVolume === 0
