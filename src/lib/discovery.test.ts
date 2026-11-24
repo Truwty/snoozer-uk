@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { z } from "zod";
 import {
   decodeDiscoveryCursor, discoveryCategories, discoveryCollection, discoveryProfile,
   discoveryTags, discoveryCategoryLabel, discoveryProfiles, encodeDiscoveryCursor, firstSearchValue,
@@ -9,7 +10,7 @@ const creator = {
   bio: "Building interesting projects", avatar: null,
   category: "developers", tags: ["software", "roblox"],
   has_verified_domain: false, joined_at: "2026-11-24T09:00:00.000Z", rank_score: 700,
-};
+} satisfies z.infer<typeof discoveryProfile>;
 
 describe("public creator discovery data", () => {
   it("keeps public categories and interests allow-listed", () => {
