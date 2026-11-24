@@ -8,6 +8,8 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     const response = await page.goto("/");
     const csp = response?.headers()["content-security-policy"] ?? "";
     expect(csp).toContain("script-src 'self' 'nonce-");
+    expect(csp).toContain("script-src-elem 'self' 'nonce-");
+    expect(csp).toContain("script-src-attr 'none'");
     expect(csp.split(";").find((directive) => directive.trimStart().startsWith("script-src ")) ?? "")
       .not.toContain("'unsafe-inline'");
     expect(csp).toContain("media-src 'self' https: blob:");
