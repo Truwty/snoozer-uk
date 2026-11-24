@@ -525,7 +525,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
     <ProfileEffectsLayer effects={effects} />
-    {effects.enabled && <label className="profile-effects-toggle">
+    {effects.enabled && !entryExperience && <label className="profile-effects-toggle">
       <input type="checkbox" aria-label="Disable profile effects" />
       <span className="effects-disable-text">Disable effects</span>
       <span className="effects-enable-text">Enable effects</span>
