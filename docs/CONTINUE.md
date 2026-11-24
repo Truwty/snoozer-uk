@@ -2,6 +2,10 @@
 
 **Status: Implementation in progress on `feature/public-creator-discovery`.** This entry will be updated with the final PR/CI outcome and merge details after verification.
 
+**Branch/PR:** [#101 — Feature #30: Public Creator Discovery](https://github.com/Truwty/snoozer-uk/pull/101)  
+**Current implementation head:** `b9dd249ee0bc1ed3a4589ff1d6507815187b24da`  
+**CI status:** The first workflow attempt ended before a GitHub-hosted runner was assigned (no steps/logs). A retry showed the same startup failure; no code tests ran in those attempts. The latest head requires a fresh full CI run.
+
 The approved scope is an opt-in public creator directory with safe search, category pages, collections, related creators, creator discovery controls, Owner curation, privacy/legal disclosures and database-level abuse prevention. The implementation uses published profile snapshots, the existing moderation/quarantine system and Owner AAL2 audit gates. It does not add a marketplace, paid placements, follower graph or view-based search ranking.
 
 Implementation checklist:

@@ -51,7 +51,8 @@ Migrations:
 - \`20261124095000_public_creator_discovery.sql\`
 - \`20261124095001_public_discovery_query_fixes.sql\`
 - \`20261124095002_discovery_rate_limits_and_preferences.sql\`
-- \`20261124095003_discovery_tag_search.sql\`
+- \`20261124095003_discovery_tag_search.sql
+- `20261124095004_discovery_slug_bounds.sql`\`
 
 Private tables live in the \`snoozer\` schema, have RLS enabled and direct privileges revoked. Public metadata is returned only through bounded SECURITY DEFINER readers with fixed empty search paths. Creator settings writes verify the authenticated owner inside the database. Collection writes call \`snoozer.admin_actor(true)\`, requiring a registered platform owner and AAL2 MFA, and write an audit event.
 
