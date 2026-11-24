@@ -267,6 +267,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 }) {
   const [entered, setEntered] = useState(!entryExperience);
   const [entryOverlayVisible, setEntryOverlayVisible] = useState(entryExperience);
+  const [entryReady, setEntryReady] = useState(!entryExperience);
+  useEffect(() => {
+    if (!entryExperience) return;
+    const ready = window.setTimeout(() => setEntryReady(true), 0);
+    return () => window.clearTimeout(ready);
+  }, [entryExperience]);
   const [musicVolume, setMusicVolume] = useState(0.72);
   const [musicMuted, setMusicMuted] = useState(false);
   const profileAudioRef = useRef<HTMLAudioElement>(null);
@@ -338,7 +344,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
   }
 
-  function renderLinkList(links: { label: string; url: string; index: number }[]) {
+  function renderLinkList(links: { label: string; url: string; index: number }[], socialIconsAlreadyVisible = false) {
     if (links.length === 0) return null;
     return <ul className="profile-links" style={linkStyle}>
       {links.map(({ label, url, index }) => {
@@ -347,12 +353,14 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         const channel = twitchChannel(url);
         const place = robloxPlace(url);
         const spotify = spotifyResource(url);
+        const provider = socialProviderForUrl(url);
+        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify";
         return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
           {spotify
             ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
                 analyticsUsername={preview ? undefined : profile.username}
                 analyticsPosition={preview ? undefined : index + 1} />
-            : <a href={url} rel="ugc nofollow noreferrer"
+            : iconAlreadyLinksToProvider ? null : <a href={url} rel="ugc nofollow noreferrer"
                 data-analytics-profile={preview ? undefined : profile.username}
                 data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
           {video && <YouTubeWidget key={video} videoId={video} label={label} />}
@@ -444,7 +452,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       && (!audioLink || link.index !== audioLink.index)
       && (!spotifyTrack || link.index !== spotifyTrack.index)
     );
-    const additionalLinks = renderLinkList(extras);
+    const additionalLinks = renderLinkList(extras, true);
     const additionalItems = layout.items.map((item, index) => item.type === "links"
       ? null
       : renderItem(item, index)).filter(Boolean);
@@ -548,7 +556,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   return <>
-    {entryExperience && entryOverlayVisible && <button type="button"
+    {entryExperience && entryOverlayVisible && <button type="button" disabled={!entryReady}
       className={"profile-entry-overlay" + (entered ? " is-entered" : "")}
       onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
       <span>click to enter...</span>
