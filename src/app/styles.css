@@ -2825,3 +2825,22 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
   gap: .45rem;
 }
+
+
+/* Keep the public bio stack centred even when the saved Studio layout is editorial. */
+.public-page .profile-card--bio-experience .profile-inner {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+.public-page .profile-card--bio-experience .profile-identity .avatar,
+.public-page .profile-card--bio-experience .profile-identity .profile-handle {
+  grid-area: auto;
+  grid-column: auto;
+  align-self: auto;
+  justify-self: center;
+}
+.public-page .profile-card--bio-experience .profile-identity .profile-bio {
+  grid-area: auto;
+  grid-column: auto;
+  justify-self: center;
+}
