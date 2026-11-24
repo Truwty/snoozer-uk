@@ -206,7 +206,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(page.getByRole("checkbox", { name: /Show Discord Presence on this profile/ })).not.toBeChecked();
     await expect(page.getByRole("checkbox", { name: /Custom status/ })).toBeDisabled();
     await expect(page.getByRole("checkbox", { name: /I meet Discord’s minimum age requirement/ })).not.toBeChecked();
-    await page.getByRole("link", { name: "Back to Studio" }).click();
+    await page.getByRole("link", { name: "Back to Page Builder" }).click();
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
     await page.getByText("Daily activity table", { exact: true }).click();
     await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
@@ -343,7 +343,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await page.getByRole("link", { name: "Premium & Usage" }).click();
     await expect(page.getByText("Claim another profile", { exact: true })).toHaveCount(0);
     const gift = await admin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -357,11 +357,21 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Claim address" }).click();
     const preview = page.getByRole("region", { name: "Page preview" });
     await expect(preview.getByText(`@${second}`, { exact: true })).toBeVisible();
+    const selectedProfile = new URL(page.url()).searchParams.get("profile");
+    expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
+    await page.getByRole("link", { name: "Customize", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("/studio/customize\\?profile=" + selectedProfile));
+    await page.getByRole("link", { name: "Page Builder", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
+    await page.getByRole("link", { name: "Templates", exact: true }).click();
+    await expect(page.getByRole("link", { name: "Use this template", exact: true }).first())
+      .toHaveAttribute("href", new RegExp("^/studio/builder\\?template=.*&profile=" + selectedProfile));
+    await page.goto("/studio/builder?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
     expect((await request.get(`/${second}`)).status()).toBe(200);
-    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await page.getByRole("link", { name: "Premium & Usage" }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
     await expect(preview.getByText(`@${name}`, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
@@ -391,13 +401,13 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await editorTab(page, "Settings");
     await expect(page.getByLabel("Domain hostname", { exact: true })).toBeDisabled();
-    await page.getByRole("link", { name: "Plan and usage", exact: true }).click();
+    await page.getByRole("link", { name: "Premium & Usage", exact: true }).click();
     const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now()+3600000).toISOString() }).single<{ code: string }>();
     expect(gift.error).toBeNull();
     await page.getByText("Redeem a plan gift", { exact: true }).click();
     await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
     await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
-    await page.getByRole("link", { name: "Back to Studio", exact: true }).click();
+    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
     await page.getByLabel("Display name", { exact: true }).fill("Isolated creator-domain fixture");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -494,6 +504,7 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
     await page.getByText("Withdraw or prevent referral attribution", { exact: true }).click();
     await page.getByRole("button", { name: "Withdraw referral attribution", exact: true }).click();
     await expect(page.getByText("Attribution withdrawn. This account cannot be attributed again.", { exact: true })).toBeVisible();
+    await expect(page).toHaveTitle(/Growth/);
     expect((await owner.rpc("get_my_growth")).data.verified).toBe(0);
     await page.setViewportSize({ width: 360, height: 850 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
@@ -554,14 +565,14 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
-    await page.getByRole("link", { name: "Plan and usage", exact: true }).click();
+    await page.getByRole("link", { name: "Premium & Usage", exact: true }).click();
     const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
     expect(gift.error).toBeNull();
     await page.getByText("Redeem a plan gift", { exact: true }).click();
     await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
     await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
     await expect(page.getByText("Plus", { exact: true }).first()).toBeVisible();
-    await page.getByRole("link", { name: "Back to Studio", exact: true }).click();
+    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
     await page.getByLabel("Display name").fill("Portfolio SEO publication");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -634,7 +645,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Publish history", exact: true }).click();
+    await page.getByRole("link", { name: "Publish History", exact: true }).click();
     await page.getByRole("listitem").filter({ hasText: "Portfolio first publication" }).getByRole("link", { name: /Preview version/ }).click();
     await page.getByRole("button", { name: "Restore to draft", exact: true }).click();
     await editorTab(page, "Sections");
@@ -698,19 +709,27 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
+    await page.goto("/studio/builder");
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
 
-    await page.setViewportSize({ width: 1440, height: 900 });
     const workspace = page.locator("main.studio-shell");
-    expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
+    for (const width of [1280, 1366, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(900);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `Studio at ${width}px`).toBeLessThanOrEqual(width);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    await expect(page.locator(".block-library-item")).toHaveCount(8);
+    await expect(page.locator(".block-library-item")).toHaveCount(18);
+    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled native callout" })).toBeVisible();
+    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled quotation" })).toBeVisible();
 
     await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
     await editorTab(page, "Sections");
     await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
 
-    await page.locator(".block-library-item").filter({ hasText: "Callout" }).dragTo(page.locator(".preview"));
+    await page.locator(".block-library-item").filter({ hasText: "Highlight an update" }).dragTo(page.locator(".preview"));
     await editorTab(page, "Sections");
     await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
 
@@ -737,26 +756,70 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
 
+    // Add a typed custom block, edit its content and verify the live preview.
+    await page.locator(".block-library-item").filter({ hasText: "Project" }).dragTo(page.locator(".preview-card"));
+    await editorTab(page, "Blocks");
+    await page.getByLabel("Project title", { exact: true }).fill("Studio portfolio project");
+    await page.getByLabel("Description", { exact: true }).fill("A project created in the custom block editor.");
+    await page.getByLabel("Project URL", { exact: true }).fill("https://portfolio.example.org/work");
+    const firstProjectEditor = page.locator(".studio-block-editor").first();
+    await firstProjectEditor.getByLabel("Locked").check();
+    await expect(firstProjectEditor.getByLabel("Width")).toBeDisabled();
+    await expect(firstProjectEditor.getByLabel("Project title")).toBeDisabled();
+    await firstProjectEditor.getByLabel("Locked").uncheck();
+    await expect(firstProjectEditor.getByLabel("Width")).toBeEnabled();
+    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
+    await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
+    await page.getByRole("button", { name: "Duplicate block 1" }).click();
+    await expect(page.locator(".studio-block-editor")).toHaveCount(2);
+    await expect(page.locator(".preview-card .profile-block-project")).toHaveCount(2);
+
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
     await page.reload();
     const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
-    await expect(reloadedBlocks).toHaveCount(3);
+    await expect(reloadedBlocks).toHaveCount(5);
     await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
 
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.goto("/" + name);
     const publicBlocks = page.locator(".public-page .profile-layout-block");
-    await expect(publicBlocks).toHaveCount(3);
+    await expect(publicBlocks).toHaveCount(5);
     await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+    await expect(page.locator(".public-page .profile-block-project")).toHaveCount(2);
+    await expect(page.locator(".public-page .profile-block-project").first()).toContainText("Studio portfolio project");
+    await expect(page.locator(".public-page .profile-block-project a").first()).toHaveAttribute("href", "https://portfolio.example.org/work");
 
     await page.goto("/studio");
+    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 360, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+
+    const mobileNavigationButton = page.getByRole("button", { name: "Open navigation", exact: true });
+    const mobileNavigationBounds = await mobileNavigationButton.boundingBox();
+    expect(mobileNavigationBounds?.width).toBeGreaterThanOrEqual(44);
+    expect(mobileNavigationBounds?.height).toBeGreaterThanOrEqual(44);
+    await mobileNavigationButton.click();
+    await expect(page.getByRole("link", { name: "Page Builder", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.getByRole("button", { name: "Close navigation", exact: true }).click();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+    await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await expect(page.locator(".preview-card")).toBeVisible();
+
+    await page.goto("/studio/customize");
+    await expect(page.getByRole("heading", { name: "Customize", exact: true })).toBeVisible();
+    await expect(page.locator(".editor-grid.panel-only")).toBeVisible();
+    await expect(page.locator(".editor-grid.panel-only .editor-sidebar")).toBeHidden();
+    await expect(page.locator(".preview-card")).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
@@ -783,7 +846,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("unavailable");
     await page.getByLabel("Username").fill(name.toUpperCase());
     await page.getByRole("button", { name: "Claim address" }).click();
-    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
     const profileTab = page.getByRole("tab", { name: "Profile", exact: true });
     await profileTab.focus();
     await profileTab.press("ArrowRight");
@@ -794,17 +857,17 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 1280, height: 720 });
     await checkLighthouse(page, "/studio");
-    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await page.getByRole("link", { name: "Premium & Usage" }).click();
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
     await expect(page.getByText(`@${name} · Draft`, { exact: true })).toBeVisible();
     const editProfile = page.getByRole("link", { name: `Edit @${name}` });
     const profileHref = (await editProfile.getAttribute("href"))!;
-    expect(profileHref).toMatch(/^\/studio\?profile=[a-f0-9-]{36}$/);
+    expect(profileHref).toMatch(/^\/studio\/builder\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
-    await expect(page.getByRole("link", { name: "Image gallery" })).toHaveAttribute("href", profileHref.replace("/studio?", "/studio/gallery?"));
-    await page.getByRole("link", { name: "Plan and usage" }).click();
+    await expect(page.getByRole("link", { name: "Gallery & Assets" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
+    await page.getByRole("link", { name: "Premium & Usage" }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -816,7 +879,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByText("Gift redeemed.")).toBeVisible();
     await expect(page.getByText("Plus", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 100", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Back to Studio" }).click();
+    await page.getByRole("link", { name: "Back to Page Builder" }).click();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();
     const stageOwner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
@@ -838,7 +901,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     } finally {
       staffSql("delete from snoozer.staff_roles where owner_id = '" + billingStaff + "'");
     }
-    await page.goto("/studio");
+    await page.goto("/studio/builder");
+    await editorTab(page, "Profile");
     const stageAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const { data: abandonedStage, error: stageError } = await stageAdmin.rpc("prepare_avatar_upload", {
       p_owner: stageLogin.data.user!.id, p_expected: 0, p_open: true,
@@ -863,7 +927,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");
     await page.goto("/templates");
-    await page.locator('a[href="/studio?template=project-notebook"]').click();
+    await page.locator('a[href="/studio/builder?template=project-notebook"]').click();
     await expect(page.getByLabel("Preview a template")).toHaveValue("project-notebook");
     await editorTab(page, "Design");
     await page.getByLabel("Preview a template").selectOption("");
@@ -1062,8 +1126,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗", "Support my projects · Ko-fi ↗"]);
-    await expect(publicPage.getByRole("link", { name: "Support my projects · Ko-fi" })).toHaveAttribute("href", "https://ko-fi.com/creator");
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
+    const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
+    await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
+
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
@@ -1134,7 +1200,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
-    await page.getByRole("link", { name: "Publish history" }).click();
+    await page.getByRole("link", { name: "Publish History", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
     const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
     const historyPreviewHref = (await firstVersion.getByRole("link", { name: /Preview version/ }).getAttribute("href"))!;
@@ -1167,7 +1233,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const responsivePage = await page.context().newPage();
     try {
       await responsivePage.setViewportSize({ width: 360, height: 812 });
-      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
+      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio/builder?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
         const response = await responsivePage.goto(path);
         expect(response?.status()).toBe(path === "/studio/billing-diagnostics" ? 404 : 200);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(360);
@@ -1200,7 +1266,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/studio$/);
+    await page.goto("/studio/builder");
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
@@ -1234,7 +1302,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("alert").filter({ hasText: "exact username" })).toBeVisible();
     await page.getByLabel(`Type ${name} to confirm`).fill(name);
     await page.getByRole("button", { name: "Permanently delete profile" }).click();
+    await expect(page).toHaveURL(/\/studio\?deleted=1$/);
     await expect(page.getByRole("status")).toContainText("Your profile was deleted");
+    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     expect((await publicPage.goto(`/${name}`))?.status()).toBe(404);
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
     expect((await ownerClient.rpc("claim_profile", { p_name: name })).error?.code).toBe("23505");
@@ -1242,7 +1312,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const replacement = `new-${name}`;
     await page.getByLabel("Username").fill(replacement);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await expect(page.getByRole("heading", { name: "Studio", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
     const { data: newDraft } = await ownerClient.rpc("get_draft");
     const { data: newScope } = await ownerClient.rpc("draft_media_scope", { p_expected: newDraft.revision });
     expect(newScope).not.toBe(oldScope);
@@ -1306,7 +1376,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Image gallery" }).click();
+  await page.getByRole("link", { name: "Gallery & Assets" }).click();
   await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
@@ -1359,7 +1429,7 @@ test("gallery images upload to private Storage and follow publication visibility
 
   await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
   await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
-  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("link", { name: "Back to Page Builder" }).click();
   await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toContainText("12.5 MiB");
   await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
   await editorTab(page, "Design");
@@ -1428,7 +1498,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   expect((await request.get(publicPath)).status()).toBe(200);
-  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("link", { name: "Back to Page Builder" }).click();
   await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toHaveCount(0);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
@@ -1442,7 +1512,7 @@ test("gallery images upload to private Storage and follow publication visibility
   expect((await request.get(publicPath)).status()).toBe(404);
   await page.getByRole("link", { name: "Back to image gallery" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  await page.getByRole("link", { name: "Back to Studio" }).click();
+  await page.getByRole("link", { name: "Back to Page Builder" }).click();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
   expect(await (await request.get("/" + name)).text()).toContain('data-background-image="true"');
@@ -1480,7 +1550,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
   const stale = await page.context().newPage();
-  await stale.goto("/studio");
+  await stale.goto("/studio/builder");
   await expect(stale.getByLabel("Display name")).toHaveValue(name);
 
   await editorTab(page, "Profile");
@@ -1514,7 +1584,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
 
   let release!: () => void;
   const gate = new Promise<void>((resolve) => { release = resolve; });
-  await stale.route("**/studio", async (route) => {
+  await stale.route("**/studio/builder", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     const response = await route.fetch();
     await gate;

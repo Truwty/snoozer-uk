@@ -28,6 +28,34 @@ The hosted migration registry includes `20261123215130_profile_page_layout`. Ren
 A live authenticated Studio session and a real phone/tablet drag gesture have not been independently inspected from this execution environment. The staging hostname could not be opened by the external browser check, so do not claim a separate public-browser visual smoke test. This does not block the merged code or green CI; it is the final owner-side visual/gesture check. No further database migration or deployment is pending for this release.
 ---
 
+## Snoozer Studio v2 — PR #95 (24 November 2026)
+
+**Status:** Implementation committed on `feature/studio-platform-redesign-v2`; PR #95 remains open and is not deployed. This extends the PR #94 full-width Studio/editor baseline already merged to `main`; it does not replace unrelated working Snoozer features.
+
+### Delivered in the PR branch
+
+- Account overview plus dedicated Page Builder, Customize, Links, Widgets and Profile Settings routes.
+- Selected-profile context retained through workspace navigation and template application.
+- Ten typed native blocks with bounded fields: Heading, About, Callout, Quote, Project, Skills, Call to action, Divider, Countdown and Statistics.
+- Duplicate-with-fresh-ID, visibility, lock/unlock, mixed widths, alignment and presentation variants.
+- Revision-safe draft persistence, immutable published snapshots, hidden-block filtering and publication restoration.
+- Legacy 14-argument `save_profile` compatibility.
+- Responsive builder and focused editing destinations, drag/drop, keyboard alternatives and existing autosave/undo/redo behaviour.
+
+### Verification evidence
+
+- Secret scan, npm audit, lint and TypeScript passed on the latest completed run before the final two browser fixes.
+- Unit/database suite: **330 tests passed**.
+- Disposable Supabase startup/migration replay and production build passed.
+- The last completed Chromium Playwright run (#45298553729) failed two journeys: the nested preview-card drop target and password-reset sign-in timing. Both have been corrected on the current code head; a new full CI run is required before release.
+- Do not describe this head as fully verified until that run passes.
+
+### Release boundary
+
+No PR #95 migration has been applied to hosted Supabase and no PR #95 deployment has been made to Render. The pending migrations are `20261123221000_studio_appearance_controls.sql`, `20261123223000_social_link_visibility.sql` and `20261123224000_profile_blocks.sql`. After latest-head CI passes and PR #95 merges, apply them in order, verify the hosted migration registry and legacy/new save RPC signatures/grants, then manually deploy the merged commit to the existing staging service (auto-deploy remains disabled). Test an authenticated draft save, publication, restore and public rendering.
+
+---
+
 ## Feature #29 — Interactive Profile Widgets (23 November 2026)
 
 **Status: Complete — merged and deployed to staging.**

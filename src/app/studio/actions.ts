@@ -17,7 +17,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
   if (error?.code === "23505") return { status: "error", message: "That address is unavailable. If you already claimed a page, reload Studio." };
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours. Try again later." };
   if (error) return { status: "error", message: "Couldn’t claim your address. Try again." };
-  redirect("/studio");
+  redirect("/studio/builder");
 }
 
 export async function claimAdditional(_: ActionState, form: FormData): Promise<ActionState> {
@@ -30,7 +30,7 @@ export async function claimAdditional(_: ActionState, form: FormData): Promise<A
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours." };
   const profile = z.uuid().safeParse(data);
   if (error || !profile.success) return { status: "error", message: "Couldn’t claim your address. Try again." };
-  redirect(studioHref("/studio", profile.data));
+  redirect(studioHref("/studio/builder", profile.data));
 }
 
 const saveRequest = z.object({
@@ -58,7 +58,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     ...(backgroundImage && { backgroundImage }),
     ...(effects && { effects }),
   };
-  const links = content.links.map(({ label, url }) => ({ label, url: new URL(url).href }));
+  const links = content.links.map(({ label, url, hidden }) => ({ label, url: new URL(url).href, hidden: hidden ?? false }));
   const { client } = await requireAccount();
   const planResult = await client.rpc("get_my_plan");
   const plan = accountPlan.safeParse(planResult.data);
@@ -79,6 +79,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     p_remove_avatar: removeAvatar,
     p_widgets: content.widgets,
     p_page_layout: content.pageLayout,
+    p_blocks: content.blocks,
   });
   if (error?.code === "P1010") return { status: "error", message: "These effects require a higher plan or exceed your plan’s limits." };
   if (error?.code === "P1004") return { status: "error", message: "Remove links until the draft fits your current allowance." };

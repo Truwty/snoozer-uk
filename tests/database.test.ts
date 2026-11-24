@@ -1455,7 +1455,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(save(2, "Cross-user overwrite", [], true)).rejects.toMatchObject({ code: "40001" });
     await act("anon");
     expect(await published("alice")).toEqual({
-      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null, indexable: false, links, sections: [], gallery: [], seo: { title: "", description: "" },
+      username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null,
+      indexable: false, blocks: [], links: links.map((link) => ({ ...link, hidden: false })),
+      sections: [], gallery: [], seo: { title: "", description: "" },
       widgets: defaultProfileWidgets, pageLayout: { version: 1, items: [] },
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
@@ -1928,6 +1930,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.query("select public.restore_publication(2,4)");
     expect(await draft()).toMatchObject({ revision: 5, appearance: compact });
     expect(await published("appearance-alice")).not.toHaveProperty("appearance");
+
+    const custom = {
+      ...compact,
+      colors: {
+        background: "#121827", text: "#f8fafc", accent: "#8b5cf6", icon: "#e2e8f0",
+        effect: "#22d3ee", gradientStart: "#111827", gradientEnd: "#4c1d95",
+      },
+      font: "mono", gradientEnabled: true, opacity: 65, blur: 14,
+      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true,
+    };
+    await write(5, false, custom);
+    expect(await draft()).toMatchObject({ appearance: custom });
+    await write(6, true, custom);
+    expect(await published("appearance-alice")).toMatchObject({ appearance: custom });
+    await expect(write(7, false, { ...custom, colors: { background: "red" } })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(7, false, { ...custom, blur: 25 })).rejects.toMatchObject({ code: "22023" });
   });
 
   it("publishes a selected gallery background and restores it with its gallery image", async () => {
@@ -1951,6 +1969,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("background-image")).toMatchObject({ appearance, gallery: [{ id: image.id }] });
     await db.query("select public.restore_publication($1,2,3)", [profileId]);
     expect(await draft()).toMatchObject({ revision: 4, appearance, gallery: [{ id: image.id, alt: "Blue shoreline" }] });
+  });
+
+  it("keeps hidden links in drafts, omits them publicly and restores their visibility", async () => {
+    await act("authenticated", alice);
+    await claim("link-visibility");
+    const visible = { label: "GitHub", url: "https://github.com/example", hidden: false };
+    const hidden = { label: "Private", url: "https://example.net/private", hidden: true };
+    await save(0, "Link visibility", [visible, hidden], true);
+
+    expect(await draft()).toMatchObject({ links: [visible, hidden] });
+    expect(await published("link-visibility")).toMatchObject({ links: [visible] });
+
+    const profileId = (await draft() as { profile_id: string }).profile_id;
+    await db.query("select public.restore_publication($1,1,1)", [profileId]);
+    expect(await draft()).toMatchObject({ revision: 2, links: [visible, hidden] });
   });
 
   it("lists only live, indexable profiles in the public sitemap", async () => {
@@ -2132,6 +2165,62 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await write(4, [project]);
     await act("anon");
     expect(await published("portfolio-alice")).toMatchObject({ sections: [project] });
+  });
+
+  it("saves, publishes, filters, and restores typed profile blocks without breaking legacy save callers", async () => {
+    await act("authenticated", alice);
+    await claim("custom-blocks");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const headingId = "00000000-0000-4000-8000-000000000031";
+    const hiddenId = "00000000-0000-4000-8000-000000000032";
+    const heading = {
+      id: headingId, type: "heading", text: "Featured work", level: "h2",
+      hidden: false, locked: false, width: "full", align: "start", variant: "surface",
+    };
+    const hidden = {
+      id: hiddenId, type: "about", heading: "Private note", body: "Keep this out of the public page.",
+      hidden: true, locked: false, width: "half", align: "center", variant: "outline",
+    };
+    const blocks = [heading, hidden];
+    const layout = { version: 1, items: [{ type: "block", id: headingId }] };
+    const widgets = JSON.stringify(defaultProfileWidgets);
+    const write = (expected: number, publish: boolean, nextBlocks: unknown, nextLayout = layout) =>
+      result(
+        "select public.save_profile($1,$2,'Alice','Bio','lagoon',false,'[]'::jsonb,$3,false,'[]'::jsonb,'{\"density\":\"balanced\",\"corners\":\"soft\"}'::jsonb,'{\"title\":\"\",\"description\":\"\"}'::jsonb,$4::jsonb,$5::jsonb,$6::jsonb) as value",
+        [id, expected, publish, widgets, JSON.stringify(nextLayout), JSON.stringify(nextBlocks)],
+      );
+
+    await expect(write(0, true, [{ ...heading, hidden: "false" }])).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, blocks, { version: 1, items: [{ type: "block", id: hiddenId }] })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(0, true, blocks, { version: 1, items: [{ type: "block", id: "00000000-0000-4000-8000-000000000099" }] })).rejects.toMatchObject({ code: "22023" });
+    expect(await write(0, false, blocks)).toBe(1);
+    expect(await draft()).toMatchObject({ revision: 1, blocks, pageLayout: layout });
+    expect(await published("custom-blocks")).toBeNull();
+
+    await write(1, true, blocks);
+    expect(await result("select public.get_publication(2) as value")).toMatchObject({ blocks });
+    await act("anon");
+    expect(await published("custom-blocks")).toMatchObject({ blocks: [heading], pageLayout: layout });
+    await expect(db.query("select public.get_publication(2)")).rejects.toMatchObject({ code: "42501" });
+
+    await act("authenticated", alice);
+    const changed = [{ ...heading, text: "Draft-only heading" }, hidden];
+    await write(2, false, changed);
+    expect(await draft()).toMatchObject({ revision: 3, blocks: changed });
+    expect(await published("custom-blocks")).toMatchObject({ blocks: [heading] });
+
+    // The older 14-argument contract has no blocks parameter and must preserve
+    // existing blocks rather than silently deleting a user's content.
+    await result(
+      "select public.save_profile($1,3,'Legacy save','Bio','lagoon',false,'[]'::jsonb,false,false,'[]'::jsonb,'{\"density\":\"balanced\",\"corners\":\"soft\"}'::jsonb,'{\"title\":\"\",\"description\":\"\"}'::jsonb,$2::jsonb,$3::jsonb) as value",
+      [id, widgets, JSON.stringify(layout)],
+    );
+    expect(await draft()).toMatchObject({ revision: 4, blocks: changed });
+
+    await db.query("select public.restore_publication($1,2,4)", [id]);
+    expect(await draft()).toMatchObject({ revision: 5, blocks, pageLayout: layout });
+    await act("anon");
+    expect(await published("custom-blocks")).toMatchObject({ blocks: [heading], pageLayout: layout });
   });
 
   it("gates custom metadata at publication, preserves drafts and snapshots, and closes legacy bypasses", async () => {

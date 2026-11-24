@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
+import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
 import { VisualSelect } from "./visual-select";
 import { CopyLink } from "./copy-link";
@@ -19,12 +21,14 @@ import { ProfileCard } from "./profile-card";
 import { EffectsEditor } from "./effects-editor";
 import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
+import { ProfileBlocksEditor } from "./profile-blocks-editor";
 import { ProfileWidgetsEditor } from "./profile-widgets-editor";
 import { useDraftEditor } from "./use-draft-editor";
 import { usePointerReorder } from "./use-pointer-reorder";
 import { moveProfilePageElement, normalizeProfilePageLayout, remapProfileSectionPositions, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 
-type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq";
+type BuilderBlock = "text" | "callout" | "quote" | "link" | "guestbook" | "testimonials" | "poll" | "faq"
+  | ProfileBlock["type"] | "block-callout" | "block-quote";
 
 const blockLibrary: { id: BuilderBlock; label: string; description: string; symbol: string }[] = [
   { id: "text", label: "Text", description: "A heading and paragraph", symbol: "Aa" },
@@ -35,12 +39,22 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "testimonials", label: "Testimonials", description: "Show trusted feedback", symbol: "★" },
   { id: "poll", label: "Poll", description: "Ask visitors a question", symbol: "◉" },
   { id: "faq", label: "FAQ", description: "Answer common questions", symbol: "?" },
+  { id: "heading", label: "Heading", description: "Add a page title", symbol: "H" },
+  { id: "about", label: "About", description: "Tell your story", symbol: "Aa" },
+  { id: "project", label: "Project", description: "Feature your work", symbol: "↗" },
+  { id: "skills", label: "Skills", description: "Show your toolkit", symbol: "✳" },
+  { id: "cta", label: "Call to action", description: "Add a prominent button", symbol: "→" },
+  { id: "divider", label: "Divider", description: "Separate page content", symbol: "—" },
+  { id: "countdown", label: "Countdown", description: "Count down to a date", symbol: "◷" },
+  { id: "stats", label: "Statistics", description: "Show key numbers", symbol: "#" },
+  { id: "block-callout", label: "Callout block", description: "Add a styled native callout", symbol: "!" },
+  { id: "block-quote", label: "Quote block", description: "Add a styled quotation", symbol: "“" },
 ];
 
-export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string }) {
+export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
-  const tabs = ["Profile", "Design", "Links", "Sections", "Widgets", "Settings"] as const;
-  const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : "Profile");
+  const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
+  const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
@@ -49,13 +63,17 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [providerQuery, setProviderQuery] = useState("");
+  const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
   const [dropActive, setDropActive] = useState(false);
-  const draggedBlock = useRef<BuilderBlock | null>(null);
+  const pointerBlockDrag = useRef<{ pointerId: number; kind: BuilderBlock; x: number; y: number; active: boolean } | null>(null);
+  const suppressBlockClick = useRef(false);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
   const linkColours = linkAccentColours(content.appearance.accent);
+  const customColours = content.appearance.colors ?? {};
   const galleryWarning = galleryMemoryWarning(saved.gallery);
   const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
@@ -115,6 +133,17 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     focusLink(to);
   }
 
+  function addSocialProvider(provider: SocialProvider) {
+    if (content.links.length >= linkLimit) {
+      setAnnouncement("Your current plan's link limit has been reached.");
+      return;
+    }
+    const index = content.links.length;
+    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
+    setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
+    focusLink(index);
+  }
+
   function addKofiLink() {
     if (content.links.length >= linkLimit) return;
     const url = kofiProfileUrl(kofiUrl);
@@ -147,6 +176,23 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   }
 
   function addBlock(kind: BuilderBlock) {
+    const nativeType: ProfileBlock["type"] | null = kind === "block-callout" ? "callout"
+      : kind === "block-quote" ? "quote"
+      : ["heading", "about", "project", "skills", "cta", "divider", "countdown", "stats"].includes(kind)
+        ? kind as ProfileBlock["type"] : null;
+    if (nativeType) {
+      if (content.blocks.length >= 32) {
+        setTab("Blocks");
+        setAnnouncement("Your page already has the maximum of 32 custom blocks.");
+        return;
+      }
+      const block = makeProfileBlock(nativeType);
+      set("blocks", [...content.blocks, block]);
+      setTab("Blocks");
+      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added. Edit it in the Blocks panel.");
+      return;
+    }
+
     if (kind === "text" || kind === "callout" || kind === "quote") {
       if (content.sections.length >= 6) {
         setTab("Sections");
@@ -177,6 +223,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       return;
     }
 
+    if (kind !== "guestbook" && kind !== "testimonials" && kind !== "poll" && kind !== "faq") return;
     const widgets = { ...content.widgets };
     if (widgets[kind].enabled) {
       setTab("Widgets");
@@ -213,37 +260,43 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     setAnnouncement((kind === "faq" ? "FAQ" : kind[0].toUpperCase() + kind.slice(1)) + " added to your page. You can customise it in the Widgets panel.");
   }
 
-  function startBlockDrag(event: DragEvent<HTMLButtonElement>, kind: BuilderBlock) {
-    draggedBlock.current = kind;
-    event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData("application/x-snoozer-block", kind);
-    event.dataTransfer.setData("text/plain", kind);
+  function startBlockPointerDrag(event: ReactPointerEvent<HTMLButtonElement>, kind: BuilderBlock) {
+    if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+    pointerBlockDrag.current = {
+      pointerId: event.pointerId, kind, x: event.clientX, y: event.clientY, active: false,
+    };
   }
 
-  function allowBlockDrop(event: DragEvent<HTMLElement>) {
-    const types = Array.from(event.dataTransfer.types);
-    if (draggedBlock.current || types.includes("application/x-snoozer-block") || types.includes("text/plain")) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-      setDropActive(true);
-    }
+  function trackBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = pointerBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag.active && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8) return;
+    drag.active = true;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    setDropActive(Boolean(target?.closest(".preview-card, .preview")));
   }
 
-  function dropBlock(event: DragEvent<HTMLElement>) {
+  function finishBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = pointerBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const shouldAdd = drag.active && Boolean(target?.closest(".preview-card, .preview"));
+    pointerBlockDrag.current = null;
+    setDropActive(false);
+    if (!shouldAdd) return;
     event.preventDefault();
-    setDropActive(false);
-    const candidate = draggedBlock.current || event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
-    draggedBlock.current = null;
-    const block = blockLibrary.find(({ id }) => id === candidate);
-    if (block) addBlock(block.id);
+    suppressBlockClick.current = true;
+    addBlock(drag.kind);
+    window.setTimeout(() => { suppressBlockClick.current = false; }, 0);
   }
 
-  function endBlockDrag() {
-    draggedBlock.current = null;
+  function cancelBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (pointerBlockDrag.current?.pointerId !== event.pointerId) return;
+    pointerBlockDrag.current = null;
     setDropActive(false);
   }
 
-  return <div className="studio-workspace">
+  return <div className="studio-workspace" onPointerMove={trackBlockPointerDrag} onPointerUp={finishBlockPointerDrag} onPointerCancel={cancelBlockPointerDrag}>
     <header className="editor-topbar">
       <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p></div>
       <div className="actions">
@@ -256,7 +309,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <button form="profile-editor" className="button primary" disabled={pending || conflict} name="intent" value="publish">Publish page</button>
       </div>
     </header>
-    <div className="editor-grid">
+    <div className={"editor-grid" + (panelOnly ? " panel-only" : "")}>
       <aside className="editor-sidebar" aria-label="Studio tools">
         <section className="editor-navigation">
           <div className="editor-sidebar-heading">
@@ -276,13 +329,17 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <section className="block-library" aria-labelledby="block-library-title">
           <div className="block-library-heading">
             <div><p className="eyebrow">BUILDER</p><h2 id="block-library-title">Add to page</h2></div>
-            <span className="block-library-count">8 blocks</span>
+            <span className="block-library-count">{blockLibrary.length} blocks</span>
           </div>
           <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
           <div className="block-library-grid">
             {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item"
-              aria-describedby={`block-description-${block.id}`} draggable
-              onDragStart={(event) => startBlockDrag(event, block.id)} onDragEnd={endBlockDrag} onClick={() => addBlock(block.id)}>
+              aria-describedby={`block-description-${block.id}`}
+              onPointerDown={(event) => startBlockPointerDrag(event, block.id)}
+              onClick={() => {
+                if (suppressBlockClick.current) { suppressBlockClick.current = false; return; }
+                addBlock(block.id);
+              }}>
               <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
               <span className="block-library-copy"><strong>{block.label}</strong><small id={`block-description-${block.id}`}>{block.description}</small></span>
               <span className="block-library-add" aria-hidden="true">+</span>
@@ -344,7 +401,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           {!saved.gallery.length && <p className="muted">Upload an image in your gallery to use it here.</p>}
           <div className="background-image-options" role="group" aria-label="Profile background image">
             <button type="button" className="background-image-option background-image-none"
-              aria-label="Use no background image" aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
+              aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
               onClick={() => setBackgroundImage()}>
               <span aria-hidden="true">Aa</span><span>No image</span>
             </button>
@@ -382,6 +439,61 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             : "Links use your theme colours."}
         </p>
       </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Custom colours</legend>
+        <p className="muted">Set exact profile colours. Leave each value at its theme default until you choose a custom shade.</p>
+        <div className="studio-color-grid">
+          <label>Background<input type="color" value={customColours.background ?? "#171923"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, background: event.target.value } })}/></label>
+          <label>Text<input type="color" value={customColours.text ?? "#f5f6fa"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, text: event.target.value } })}/></label>
+          <label>Accent<input type="color" value={customColours.accent ?? "#9b8cff"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, accent: event.target.value } })}/></label>
+          <label>Icons<input type="color" value={customColours.icon ?? "#e4e7f0"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, icon: event.target.value } })}/></label>
+          <label>Effect colour<input type="color" value={customColours.effect ?? "#7c72d8"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, effect: event.target.value } })}/></label>
+          <label>Gradient start<input type="color" value={customColours.gradientStart ?? "#493c96"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientStart: event.target.value } })}/></label>
+          <label>Gradient end<input type="color" value={customColours.gradientEnd ?? "#137f83"}
+            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientEnd: event.target.value } })}/></label>
+        </div>
+        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, gradientEnabled: event.target.checked })}/> Enable profile gradient</label>
+      </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Surface and typography</legend>
+        <label>Profile opacity: {content.appearance.opacity ?? 100}%
+          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity ?? 100}
+            onChange={(event) => set("appearance", { ...content.appearance, opacity: Number(event.target.value) })}/>
+        </label>
+        <label>Background blur: {content.appearance.blur ?? 0}px
+          <input type="range" min={0} max={24} step={1} value={content.appearance.blur ?? 0}
+            onChange={(event) => set("appearance", { ...content.appearance, blur: Number(event.target.value) })}/>
+        </label>
+        <label>Typography
+          <select value={content.appearance.font ?? "system"} onChange={(event) => {
+            const font = ["system", "sans", "serif", "mono"].find((value) => value === event.target.value);
+            if (font) set("appearance", { ...content.appearance, font: font as typeof content.appearance.font });
+          }}>
+            <option value="system">System</option><option value="sans">Sans serif</option>
+            <option value="serif">Serif</option><option value="mono">Monospace</option>
+          </select>
+        </label>
+      </fieldset>
+      <fieldset className="stack studio-customize-panel">
+        <legend className="section-title">Profile details and effects</legend>
+        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, badgeGlow: event.target.checked })}/> Badge glow</label>
+      </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
       <fieldset className="stack">
         <legend className="section-title">Studio templates</legend>
@@ -409,16 +521,49 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
         <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
       </section>
+      <section role="tabpanel" aria-labelledby="editor-tab-Blocks" id="editor-panel-Blocks" data-editor-panel="Blocks" hidden={tab !== "Blocks"} className="editor-panel stack">
+        <ProfileBlocksEditor blocks={content.blocks} onChange={(blocks) => set("blocks", blocks)} />
+      </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Widgets" id="editor-panel-Widgets" data-editor-panel="Widgets" hidden={tab !== "Widgets"} className="editor-panel stack">
         <ProfileWidgetsEditor value={content.widgets} onChange={(widgets) => set("widgets", widgets)} />
         <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
+        <section className="studio-links-catalogue stack" aria-labelledby="social-catalogue-title">
+          <div className="studio-links-catalogue-heading">
+            <div><p className="eyebrow">ADD A LINK</p><h2 id="social-catalogue-title">Social profiles</h2></div>
+            <span>{content.links.length} / {linkLimit} links</span>
+          </div>
+          <label className="studio-provider-search">Search providers
+            <input type="search" value={providerQuery} placeholder="Search social, gaming, music…"
+              onChange={(event) => setProviderQuery(event.target.value)}/>
+          </label>
+          <div className="studio-provider-categories" role="group" aria-label="Provider categories">
+            {socialProviderCategories.map((category) => <button key={category} type="button"
+              className="button small" aria-pressed={providerCategory === category}
+              onClick={() => setProviderCategory(category)}>{category}</button>)}
+          </div>
+          <div className="studio-provider-grid">
+            {filterSocialProviders(providerQuery, providerCategory).map((provider) => <button type="button"
+              key={provider.id} className="studio-provider-card" disabled={content.links.length >= linkLimit}
+              onClick={() => addSocialProvider(provider)}>
+              <span className="studio-provider-mark" aria-hidden="true">{provider.mark}</span>
+              <span>{provider.label}</span><span className="studio-provider-plus" aria-hidden="true">+</span>
+            </button>)}
+          </div>
+          {filterSocialProviders(providerQuery, providerCategory).length === 0 && <p className="muted">No providers match that search.</p>}
+        </section>
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
         {content.links.length > linkLimit && <p>Remove links until you reach your current allowance before saving link edits or publishing.</p>}
         {content.links.map((item, index) => <div className="link-editor link-row" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
+          <div className="studio-link-item-heading">
+            <span className="studio-provider-mark" aria-hidden="true">{socialProviderForUrl(item.url)?.mark ?? "↗"}</span>
+            <strong>Link {index + 1}</strong>
+            <label className="check"><input type="checkbox" checked={!item.hidden} onChange={(event) =>
+              set("links", content.links.map((entry, i) => i === index ? { ...entry, hidden: !event.target.checked } : entry))}/> Visible on profile</label>
+          </div>
           {content.links.length > 1 && <span className="reorder-handle" aria-hidden="true" {...linkHandle}>Drag to move</span>}
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
             ref={(input) => { linkLabels.current[index] = input; }}
@@ -437,7 +582,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         </div>)}
         <button className="button" type="button" ref={addLink} disabled={content.links.length >= linkLimit}
           onClick={() => {
-            set("links", [...content.links, { label: "", url: "" }]);
+            set("links", [...content.links, { label: "", url: "", hidden: false }]);
             focusLink(content.links.length);
           }}>Add link</button>
         {content.links.length < linkLimit && <details>
@@ -510,7 +655,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </section>
     </div>
     <aside className={"preview stack" + (dropActive ? " is-drop-active" : "")}
-      onDragOver={allowBlockDrop} onDrop={dropBlock} data-drop-active={dropActive || undefined}>
+      data-drop-active={dropActive || undefined}>
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
         <label>Preview width
@@ -535,6 +680,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           onMoveLayoutItem={(from, to) => set("pageLayout", moveProfilePageElement(pageLayout, from, to, { ...content, gallery: saved.gallery }))}
           onSelectLayoutItem={(item: ProfilePageLayoutItem) => {
             if (item.type === "section") setTab("Sections");
+            else if (item.type === "block") setTab("Blocks");
             else if (item.type === "links") setTab("Links");
             else if (item.type === "widgets") setTab("Widgets");
             else window.location.assign(galleryHref);

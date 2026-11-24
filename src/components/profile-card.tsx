@@ -4,6 +4,7 @@ import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type Point
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
+import { socialMarkForUrl } from "@/lib/social-providers";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
@@ -22,24 +23,7 @@ import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 type SocialLink = { label: string; url: string; index: number; mark: string };
 
-function socialMark(url: string): string | null {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    if (host === "github.com" || host.endsWith(".github.com")) return "GH";
-    if (host === "discord.com" || host === "discord.gg") return "DC";
-    if (host === "instagram.com") return "IG";
-    if (host === "youtube.com" || host === "youtu.be") return "YT";
-    if (host === "tiktok.com") return "TT";
-    if (host === "x.com" || host === "twitter.com") return "X";
-    if (host === "twitch.tv") return "TW";
-    if (host === "roblox.com" || host.endsWith(".roblox.com")) return "RB";
-    if (host === "linkedin.com" || host.endsWith(".linkedin.com")) return "in";
-    if (host === "reddit.com" || host.endsWith(".reddit.com")) return "rd";
-    return null;
-  } catch {
-    return null;
-  }
-}
+const socialMark = socialMarkForUrl;
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -53,6 +37,7 @@ function LayoutBlock({
   children: ReactNode;
 }) {
   const label = item.type === "section" ? `Section ${item.index + 1}`
+    : item.type === "block" ? "Content block"
     : item.type === "links" ? "Social links" : item.type === "widgets" ? "Interactive widgets" : "Gallery";
   const touchDrag = useRef<{ pointerId: number; from: number; x: number; y: number; active: boolean } | null>(null);
 
@@ -116,6 +101,7 @@ function LayoutBlock({
 
   return <div className="profile-layout-block" data-layout-type={item.type} data-layout-position={position}
     data-section-index={item.type === "section" ? item.index : undefined}
+    data-block-id={item.type === "block" ? item.id : undefined}
     onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={onClick}>
     {preview && onMove && <div className="profile-layout-controls">
       <button type="button" className="profile-layout-drag-handle" draggable
@@ -168,8 +154,28 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     ? `url("${galleryBase}/${encodeURIComponent(background.id)}")`
     : undefined;
   const backgroundStyle = backgroundImage
-    ? { "--profile-background-image": backgroundImage } as CSSProperties
-    : undefined;
+    ? { "--profile-background-image": backgroundImage }
+    : {};
+  const colors = profile.appearance.colors;
+  const fontFamilies = {
+    system: "system-ui, sans-serif",
+    sans: "Arial, Helvetica, sans-serif",
+    serif: "Georgia, serif",
+    mono: "ui-monospace, SFMono-Regular, monospace",
+  } as const;
+  const appearanceStyle = {
+    ...backgroundStyle,
+    ...(colors?.background ? { "--page": colors.background } : {}),
+    ...(colors?.text ? { "--text": colors.text } : {}),
+    ...(colors?.accent ? { "--detail": colors.accent } : {}),
+    ...(colors?.effect ? { "--wash": colors.effect } : {}),
+    "--profile-icon-color": colors?.icon ?? "var(--text)",
+    "--profile-opacity": (profile.appearance.opacity ?? 100) + "%",
+    "--profile-blur": (profile.appearance.blur ?? 0) + "px",
+    "--profile-font": fontFamilies[profile.appearance.font ?? "system"],
+    "--profile-gradient-start": colors?.gradientStart ?? "#493c96",
+    "--profile-gradient-end": colors?.gradientEnd ?? "#137f83",
+  } as unknown as CSSProperties;
   const discordBadge = !preview && (discordPresence !== null || discordPresenceRetry)
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;
@@ -205,7 +211,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url }) => safeLink(url));
+      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+    if (valid.length === 0) return null;
     const hasProviderEmbed = (url: string) => Boolean(
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
     );
@@ -248,6 +255,53 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </>;
   }
 
+  function renderBlock(id: string) {
+    const block = profile.blocks.find((item) => item.id === id && !item.hidden);
+    if (!block) return null;
+    const className = "profile-content-block profile-block-" + block.type;
+    const common = { className, "data-width": block.width, "data-align": block.align, "data-variant": block.variant };
+
+    if (block.type === "heading") return <section {...common}>
+      {block.level === "h3" ? <h3>{block.text}</h3> : <h2>{block.text}</h2>}
+    </section>;
+    if (block.type === "about") return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <p>{block.body}</p>
+    </section>;
+    if (block.type === "callout") return <section {...common} data-tone={block.tone}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <p>{block.body}</p>
+    </section>;
+    if (block.type === "quote") return <figure {...common}>
+      <blockquote><p>{block.quote}</p></blockquote>
+      {block.attribution && <figcaption>{block.attribution}</figcaption>}
+    </figure>;
+    if (block.type === "project") return <article {...common}>
+      <h3>{block.title}</h3><p>{block.description}</p>
+      {safeLink(block.url) && <a className="profile-block-action" href={block.url} rel="ugc nofollow noreferrer">{block.buttonLabel} <span aria-hidden="true">↗</span></a>}
+    </article>;
+    if (block.type === "skills") return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <ul className="profile-skill-list">{block.items.map((skill, index) => <li key={index}>{skill}</li>)}</ul>
+    </section>;
+    if (block.type === "cta") return <section {...common}>
+      <h3>{block.heading}</h3><p>{block.body}</p>
+      {safeLink(block.url) && <a className="profile-block-action" href={block.url} rel="ugc nofollow noreferrer">{block.label} <span aria-hidden="true">↗</span></a>}
+    </section>;
+    if (block.type === "divider") return <div {...common} aria-hidden="true"><hr data-divider-style={block.style}/></div>;
+    if (block.type === "countdown") {
+      const target = countdownTarget(block.target);
+      return <section {...common}>
+        <h3>{block.heading}</h3>
+        {target && <><p><time dateTime={target.toISOString()}>{countdownDate(target)}</time></p><Countdown key={block.target} target={target.valueOf()}/></>}
+      </section>;
+    }
+    return <section {...common}>
+      {preview ? <h3>{block.heading}</h3> : <h2>{block.heading}</h2>}
+      <dl className="profile-stats-grid">{block.items.map((item, index) => <div key={index}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl>
+    </section>;
+  }
+
   function renderWidgets() {
     return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />;
   }
@@ -271,18 +325,26 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   function renderItem(item: ProfilePageLayoutItem, position: number) {
     let child: ReactNode;
     if (item.type === "section") child = renderSection(item.index);
+    else if (item.type === "block") child = renderBlock(item.id);
     else if (item.type === "links") child = renderLinks();
     else if (item.type === "widgets") child = renderWidgets();
     else child = renderGallery();
     if (!child) return null;
-    return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type}
+    return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type === "block" ? "block-" + item.id : item.type}
       item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
   return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
-    data-background-image={backgroundImage ? "true" : undefined} style={backgroundStyle}
+    data-background-image={backgroundImage ? "true" : undefined}
+    data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
+    data-monochrome-icons={profile.appearance.monochromeIcons ? "true" : undefined}
+    data-animated-title={profile.appearance.animatedTitle ? "true" : undefined}
+    data-username-glow={profile.appearance.usernameGlow ? "true" : undefined}
+    data-social-glow={profile.appearance.socialGlow ? "true" : undefined}
+    data-badge-glow={profile.appearance.badgeGlow ? "true" : undefined}
+    style={appearanceStyle}
     data-effect-border={effects.enabled ? effects.border : "none"}
     data-effect-links={effects.enabled ? effects.links : "none"}
     data-effect-text={effects.enabled ? effects.text : "none"}

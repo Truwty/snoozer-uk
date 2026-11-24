@@ -71,6 +71,26 @@ describe("profile page layout", () => {
     ]);
   });
 
+  it("preserves multiple distinct custom block references and ignores hidden blocks", () => {
+    const first = "00000000-0000-4000-8000-000000000021";
+    const second = "00000000-0000-4000-8000-000000000022";
+    const blocks = [{ id: first }, { id: second }, { id: "00000000-0000-4000-8000-000000000023", hidden: true }];
+    const normalized = normalizeProfilePageLayout({ version: 1, items: [] }, content({ blocks }));
+    expect(normalized.items).toEqual([
+      { type: "section", index: 0 },
+      { type: "section", index: 1 },
+      { type: "block", id: first },
+      { type: "block", id: second },
+      { type: "links" },
+      { type: "widgets" },
+      { type: "gallery" },
+    ]);
+    expect(profilePageLayout.safeParse(normalized).success).toBe(true);
+    expect(profilePageLayout.safeParse({
+      version: 1, items: [{ type: "block", id: first }, { type: "block", id: first }],
+    }).success).toBe(false);
+  });
+
   it("rejects duplicate, unknown and out-of-range layout references", () => {
     expect(profilePageLayout.safeParse({
       version: 1,

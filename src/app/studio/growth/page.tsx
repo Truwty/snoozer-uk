@@ -11,7 +11,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
   const report = growthReport.safeParse(response.data);
   const unconfirmed = (await searchParams).referral === "unconfirmed";
   return <main className="shell stack">
-    <header className="nav studio-subnav"><Link className="button small" href="/studio">Back to Studio</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href="/studio">Back to Overview</Link></header>
     <section className="panel stack"><p className="eyebrow">STUDIO / GROWTH</p><h1>Growth</h1>
       <p>Share an optional referral link. No rewards or billing benefits are granted. These counts represent verified accounts, not unique people or proven incremental growth.</p>
       {unconfirmed && <p role="alert">Your email was verified. Referral credit could not be confirmed. Check your status and retry below if eligible.</p>}

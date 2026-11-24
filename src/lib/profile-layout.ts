@@ -4,8 +4,10 @@ const sectionItem = z.strictObject({
   type: z.literal("section"),
   index: z.number().int().min(0).max(5),
 });
+const blockItem = z.strictObject({ type: z.literal("block"), id: z.uuid() });
 const layoutItem = z.discriminatedUnion("type", [
   sectionItem,
+  blockItem,
   z.strictObject({ type: z.literal("links") }),
   z.strictObject({ type: z.literal("widgets") }),
   z.strictObject({ type: z.literal("gallery") }),
@@ -13,9 +15,10 @@ const layoutItem = z.discriminatedUnion("type", [
 
 export const profilePageLayout = z.strictObject({
   version: z.literal(1),
-  items: z.array(layoutItem).max(9),
+  items: z.array(layoutItem).max(41),
 }).superRefine((value, context) => {
-  const keys = value.items.map((item) => item.type === "section" ? `section:${item.index}` : item.type);
+  const keys = value.items.map((item) => item.type === "section" ? `section:${item.index}`
+    : item.type === "block" ? `block:${item.id}` : item.type);
   if (new Set(keys).size !== keys.length) {
     context.addIssue({ code: "custom", path: ["items"], message: "Page elements must have unique positions." });
   }
@@ -34,15 +37,17 @@ export type ProfileLayoutContent = {
     faq: { enabled: boolean };
   };
   gallery?: readonly unknown[];
+  blocks?: readonly { id: string; hidden?: boolean }[];
 };
 
 function keyOf(item: ProfilePageLayoutItem): string {
-  return item.type === "section" ? `section:${item.index}` : item.type;
+  return item.type === "section" ? `section:${item.index}` : item.type === "block" ? `block:${item.id}` : item.type;
 }
 
 function defaultItems(content: ProfileLayoutContent): ProfilePageLayoutItem[] {
   const items: ProfilePageLayoutItem[] = content.sections.map((_, index) => ({ type: "section", index }));
-  if (content.links.length > 0) items.push({ type: "links" });
+  for (const block of content.blocks ?? []) if (!block.hidden) items.push({ type: "block", id: block.id });
+  if ((content.links as readonly { hidden?: boolean }[]).some((link) => link.hidden !== true)) items.push({ type: "links" });
   const hasWidgets = (["guestbook", "testimonials", "poll", "faq"] as const)
     .some((kind) => content.widgets[kind].enabled);
   if (hasWidgets) items.push({ type: "widgets" });
@@ -65,6 +70,7 @@ export function normalizeProfilePageLayout(
     const key = keyOf(item);
     if (!allowed.has(key) || seen.has(key)) continue;
     if (item.type === "section" && item.index >= content.sections.length) continue;
+    if (item.type === "block" && !(content.blocks ?? []).some((block) => block.id === item.id && !block.hidden)) continue;
     items.push(item);
     seen.add(key);
   }

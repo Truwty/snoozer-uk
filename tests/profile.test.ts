@@ -1,11 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, link, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
   it("accepts only bounded built-in motion presets without executable appearance settings", () => {
     for (const entrance of ["none", "fade", "rise"]) expect(profileAppearance.parse({ ...defaultAppearance, entrance }).entrance).toBe(entrance);
     for (const entrance of ["loop", "bounce", "url(https://example.com)", null]) expect(profileAppearance.safeParse({ ...defaultAppearance, entrance }).success).toBe(false);
     expect(profileAppearance.safeParse({ ...defaultAppearance, duration: 999999 }).success).toBe(false);
+  });
+
+  it("accepts bounded custom colour, surface, typography and glow settings", () => {
+    const appearance = profileAppearance.parse({
+      ...defaultAppearance,
+      colors: {
+        background: "#121827", text: "#f8fafc", accent: "#8b5cf6", icon: "#e2e8f0",
+        effect: "#22d3ee", gradientStart: "#111827", gradientEnd: "#4c1d95",
+      },
+      font: "mono", gradientEnabled: true, opacity: 65, blur: 14,
+      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true,
+    });
+    expect(appearance.opacity).toBe(65);
+    expect(appearance.blur).toBe(14);
+    expect(appearance.colors?.gradientEnd).toBe("#4c1d95");
+    expect(appearance.font).toBe("mono");
+    for (const colors of [{ background: "red" }, { text: "#fff" }, { customCss: "url(https://example.com)" }]) {
+      expect(profileAppearance.safeParse({ ...defaultAppearance, colors }).success).toBe(false);
+    }
+    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 39 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 25 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, font: "url(https://example.com)" }).success).toBe(false);
   });
 
   it("allows a gallery image as the profile background only when that image is in the profile gallery", () => {
@@ -15,6 +37,12 @@ describe("profile validation", () => {
     expect(profileBackgroundImage({ appearance, gallery })).toEqual(gallery[0]);
     expect(profileBackgroundImage({ appearance, gallery: [] })).toBeNull();
     expect(profileAppearance.safeParse({ ...defaultAppearance, backgroundImage: "not-an-id" }).success).toBe(false);
+  });
+
+  it("defaults new profile links to visible and validates visibility as a boolean", () => {
+    expect(link.parse({ label: "GitHub", url: "https://github.com/example" }).hidden).toBeUndefined();
+    expect(link.parse({ label: "Private", url: "https://example.com/private", hidden: true }).hidden).toBe(true);
+    expect(link.safeParse({ label: "Bad visibility", url: "https://example.com", hidden: "yes" }).success).toBe(false);
   });
 
   it("canonicalises ASCII usernames and rejects confusables", () => {

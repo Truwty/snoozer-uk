@@ -20,5 +20,5 @@ export async function restorePublication(_: ActionState, form: FormData): Promis
   if (error) return { status: "error", message: error.code === "40001"
     ? "The draft changed in another tab. Reload this preview before restoring."
     : "Couldn’t restore this version. It may no longer be in your publish history." };
-  redirect(studioHref("/studio?restored=1", profile.data));
+  redirect(studioHref("/studio/builder?restored=1", profile.data));
 }
