@@ -276,12 +276,19 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   }
 
   function dropBlock(event: DragEvent<HTMLElement>) {
-    event.preventDefault();
-    setDropActive(false);
-    const candidate = draggedBlock.current || event.dataTransfer.getData("application/x-snoozer-block") || event.dataTransfer.getData("text/plain");
-    draggedBlock.current = null;
+    const types = Array.from(event.dataTransfer.types);
+    const candidate = draggedBlock.current
+      || (types.includes("application/x-snoozer-block") ? event.dataTransfer.getData("application/x-snoozer-block") : "")
+      || (types.includes("text/plain") ? event.dataTransfer.getData("text/plain") : "");
     const block = blockLibrary.find(({ id }) => id === candidate);
-    if (block) addBlock(block.id);
+    if (!block) return;
+
+    // Handle library drops before ProfileCard's nested layout-reorder handlers.
+    event.preventDefault();
+    event.stopPropagation();
+    draggedBlock.current = null;
+    setDropActive(false);
+    addBlock(block.id);
   }
 
   function endBlockDrag() {
@@ -661,7 +668,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
       <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}
-        onDragOver={allowBlockDrop}>
+        onDragOver={allowBlockDrop} onDropCapture={dropBlock}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
