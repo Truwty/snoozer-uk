@@ -1252,6 +1252,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
