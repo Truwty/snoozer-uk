@@ -1,3 +1,33 @@
+## Studio workspace redesign — release status (24 November 2026)
+
+**Code status: Complete — merged to `main` and deployed live to the Render staging service. Owner-side visual acceptance on a real signed-in session remains the final manual check.**
+
+**Release identifiers**
+- PR [#94](https://github.com/Truwty/snoozer-uk/pull/94), merged 23 November 2026
+- Merge commit [`370a5d9`](https://github.com/Truwty/snoozer-uk/commit/370a5d9492fc546a9d3c4971464dce7d74d0d0d9)
+- PR CI run [#754](https://github.com/Truwty/snoozer-uk/actions/runs/45224886552): success on tested PR head `632a03a47b032e5e57b53c4553b201c4d20197be`
+- Supabase project `edgptbiwswcdmmxzwhxv`: migration `profile_page_layout` is applied as version `20261123215130`
+- Render staging service `srv-dbts6jon74is73en2rjg`: deployment `dep-dc2c8388v5cc73cgru10`, status `live`, commit `370a5d9`
+
+**Delivered**
+- Rebuilt the Studio editor as a full-width workspace with a compact tool rail, eight-item block library, editing panels and live profile preview.
+- Added Text, Callout, Quote, Link, Guestbook, Testimonials, Poll and FAQ through click-to-add or drag-and-drop onto the preview.
+- Added one cross-category profile canvas order for text sections, links, interactive widgets and gallery.
+- Reused the public `ProfileCard` renderer for Studio preview and published profiles; editor drag handles are preview-only.
+- Added accessible Move up / Move down controls, pointer-based touch reordering, visible drag/drop feedback and keyboard announcements.
+- Preserved draft autosave, undo/redo, revision-conflict protection, save/publish actions and publication restore.
+- Applied responsive workspace widths across Studio routes, with tablet/mobile breakpoints and reduced-motion handling.
+
+**Automated validation**
+The successful CI job completed secret scanning, dependency audit, lint, TypeScript, `npm test`, disposable Supabase startup, production build and Chromium Playwright E2E. The new browser journey verifies the wide desktop workspace, all eight block choices, click-to-add, drag-to-preview, cross-category reorder, keyboard activation of Move up/Down, draft save/reload, publish, public-page order, a 360px mobile viewport without horizontal overflow and zero Axe violations.
+
+**Hosted verification**
+The hosted migration registry includes `20261123215130_profile_page_layout`. Render reports the deployment live and its build/deploy succeeded. A warning/error log query covering the post-deploy period returned no entries. Render auto-deploy remains disabled; this release was manually deployed.
+
+**Remaining manual acceptance**
+A live authenticated Studio session and a real phone/tablet drag gesture have not been independently inspected from this execution environment. The staging hostname could not be opened by the external browser check, so do not claim a separate public-browser visual smoke test. This does not block the merged code or green CI; it is the final owner-side visual/gesture check. No further database migration or deployment is pending for this release.
+---
+
 ## Feature #29 — Interactive Profile Widgets (23 November 2026)
 
 **Status: Complete — merged and deployed to staging.**
