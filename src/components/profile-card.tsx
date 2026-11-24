@@ -378,6 +378,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
       const audioSource = audioLink ? directAudioSource(audioLink.url) : null;
       const audioInfo = audioLink ? audioMetadata(audioLink.label, profile.display_name) : null;
+      const spotifyTrackResource = spotifyTrack ? spotifyResource(spotifyTrack.url) : null;
       const cover = profile.gallery[0] && galleryBase
         ? galleryBase + "/" + profile.gallery[0].id
         : avatarSrc;
@@ -394,9 +395,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         {audioLink && audioSource && audioInfo
           ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
               cover={cover} volume={musicMuted ? 0 : musicVolume} />
-          : spotifyTrack
-            ? <SpotifyWidget key={spotifyResource(spotifyTrack.url)?.kind + spotifyResource(spotifyTrack.url)?.id}
-                resource={spotifyResource(spotifyTrack.url)!} label={spotifyTrack.label} compact
+          : spotifyTrack && spotifyTrackResource
+            ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
+                resource={spotifyTrackResource} label={spotifyTrack.label} compact
                 analyticsUsername={profile.username} analyticsPosition={spotifyTrack.index + 1} />
             : null}
       </>;
