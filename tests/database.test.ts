@@ -2408,10 +2408,15 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await claim("board-alice");
     await db.query("select public.save_profile(0,'Alice live','Bio','lagoon',true,'[]'::jsonb,true,false)");
     const aliceId = (await draft() as { profile_id: string }).profile_id;
+    await result(
+      "select public.set_profile_discovery_settings($1,false,true,false,'other',array[]::text[]) as value",
+      [aliceId],
+    );
 
     await act("authenticated", bob);
     await claim("board-bob");
     await db.query("select public.save_profile(0,'Bob hidden','Bio','lagoon',false,'[]'::jsonb,true,false)");
+    const bobId = (await draft() as { profile_id: string }).profile_id;
 
     await act("service_role");
     const record = (name: string, actor: string | null = null) =>
@@ -2441,9 +2446,18 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("anon");
     expect((await ranking("all")).rows.map((row) => String(row.views))).toEqual(["5"]);
 
-    // Opting into discoverability makes another active published profile visible.
+    // Search-engine indexing must not silently opt a new profile into the leaderboard.
     await db.exec("reset role");
     await db.exec("update snoozer.published_profiles set indexable=true where display_name='Bob hidden'");
+    await act("anon");
+    expect((await ranking("all")).rows.map((row) => row.username)).toEqual(["board-alice"]);
+
+    // A separate explicit leaderboard choice makes Bob visible without coupling it to Discover.
+    await act("authenticated", bob);
+    await result(
+      "select public.set_profile_discovery_settings($1,false,true,false,'other',array[]::text[]) as value",
+      [bobId],
+    );
     await act("anon");
     expect((await ranking("all")).rows.map((row) => row.username)).toEqual(["board-alice", "board-bob"]);
 
@@ -2813,12 +2827,17 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
     await db.exec("reset role");
     await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
+    const ownerSession = "00000000-0000-4000-8000-000000000099";
+    await db.query(
+      "insert into auth.sessions(id,user_id,not_after) values($1,$2,now()+interval '1 hour') on conflict(id) do update set user_id=excluded.user_id,not_after=excluded.not_after",
+      [ownerSession, alice],
+    );
     await act("authenticated", alice);
-    await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal1"}']);
+    await db.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ aal: "aal1", session_id: ownerSession })]);
     await expect(db.query(
       "select public.owner_upsert_discovery_collection('developer-picks','featured','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully')",
     )).rejects.toMatchObject({ code: "42501" });
-    await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal2"}']);
+    await db.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ aal: "aal2", session_id: ownerSession })]);
     expect(await result(
       "select public.owner_upsert_discovery_collection('developer-picks','featured','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully') as value",
     )).toBe(true);
