@@ -2727,6 +2727,22 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select * from snoozer.profile_discovery_settings"))
       .rejects.toMatchObject({ code: "42501" });
 
+    const legacyReaderPrivileges = await db.query<{
+      directory: boolean; related: boolean; collections: boolean; collection: boolean;
+      protectedCollectionReader: boolean;
+    }>(`
+      select
+        has_function_privilege('anon','public.get_profile_directory(text,text,text[],text,integer,timestamptz,text,integer)','EXECUTE') as directory,
+        has_function_privilege('anon','public.get_related_creators(text,integer)','EXECUTE') as related,
+        has_function_privilege('anon','public.get_public_discovery_collections(integer)','EXECUTE') as collections,
+        has_function_privilege('anon','public.get_public_discovery_collection(text)','EXECUTE') as collection,
+        has_function_privilege('anon','public.get_public_discovery_collection(text,text)','EXECUTE') as "protectedCollectionReader"
+    `);
+    expect(legacyReaderPrivileges.rows[0]).toEqual({
+      directory: false, related: false, collections: false, collection: false,
+      protectedCollectionReader: false,
+    });
+
     await act("service_role");
     const tagSearch = await db.query<{ username: string; rank_score: number }>(
       "select username,rank_score from public.get_profile_directory($1,null,array[]::text[],'relevance',null,null,null,25,$2)",
