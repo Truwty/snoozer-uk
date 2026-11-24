@@ -332,6 +332,32 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
   }
 
+  function renderLinkList(links: { label: string; url: string; index: number }[]) {
+    if (links.length === 0) return null;
+    return <ul className="profile-links" style={linkStyle}>
+      {links.map(({ label, url, index }) => {
+        const video = youtubeVideoId(url);
+        const metadata = metadataWidget(url);
+        const channel = twitchChannel(url);
+        const place = robloxPlace(url);
+        const spotify = spotifyResource(url);
+        return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
+          {spotify
+            ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
+                analyticsUsername={preview ? undefined : profile.username}
+                analyticsPosition={preview ? undefined : index + 1} />
+            : <a href={url} rel="ugc nofollow noreferrer"
+                data-analytics-profile={preview ? undefined : profile.username}
+                data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
+          {video && <YouTubeWidget key={video} videoId={video} label={label} />}
+          {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
+            : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
+          {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
+        </li>;
+      })}
+    </ul>;
+  }
+
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
@@ -344,7 +370,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     if (entryExperience) {
       const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
         const provider = socialProviderForUrl(url);
-        return provider && provider.id !== "spotify"
+        return provider && provider.id !== "spotify" && !hasProviderEmbed(url)
           ? [{ label, url, index, providerId: provider.id }]
           : [];
       });
@@ -390,29 +416,39 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
         </a>)}
       </nav>}
-      {regular.length > 0 && <ul className="profile-links" style={linkStyle}>
-        {regular.map(({ label, url, index }) => {
-          const video = youtubeVideoId(url);
-          const metadata = metadataWidget(url);
-          const channel = twitchChannel(url);
-          const place = robloxPlace(url);
-          const spotify = spotifyResource(url);
-          return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
-            {spotify
-              ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
-                  analyticsUsername={preview ? undefined : profile.username}
-                  analyticsPosition={preview ? undefined : index + 1} />
-              : <a href={url} rel="ugc nofollow noreferrer"
-                  data-analytics-profile={preview ? undefined : profile.username}
-                  data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
-            {video && <YouTubeWidget key={video} videoId={video} label={label} />}
-            {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
-              : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
-            {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
-          </li>;
-        })}
-      </ul>}
+      {renderLinkList(regular)}
     </>;
+  }
+
+  function renderMoreContent() {
+    const valid = profile.links.map((item, index) => ({ ...item, index }))
+      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+    const hasProviderEmbed = (url: string) => Boolean(
+      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
+    );
+    const social = valid.filter(({ url }) => {
+      const provider = socialProviderForUrl(url);
+      return provider && !hasProviderEmbed(url) && provider.id !== "spotify";
+    });
+    const audioLink = valid.find(({ url }) => directAudioSource(url));
+    const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
+    const extras = valid.filter((link) =>
+      !social.some((item) => item.index === link.index)
+      && (!audioLink || link.index !== audioLink.index)
+      && (!spotifyTrack || link.index !== spotifyTrack.index)
+    );
+    const additionalLinks = renderLinkList(extras);
+    const additionalItems = layout.items.map((item, index) => item.type === "links"
+      ? null
+      : renderItem(item, index)).filter(Boolean);
+
+    if (!additionalLinks && additionalItems.length === 0) return null;
+
+    return <details className="profile-more-content">
+      <summary>More</summary>
+      {additionalLinks}
+      {additionalItems}
+    </details>;
   }
 
   function renderBlock(id: string) {
@@ -463,7 +499,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   function renderWidgets() {
-    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />;
+    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience} />;
   }
 
   function renderGallery() {
@@ -534,7 +570,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {entryExperience ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience ? <>{renderLinks()}{renderMoreContent()}</> : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
     </section>
