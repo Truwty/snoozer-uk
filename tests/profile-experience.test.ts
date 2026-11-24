@@ -46,7 +46,8 @@ describe("compact public bio experience", () => {
     expect(html).toContain("Midnight Drive");
     expect(html).toContain("Demo Artist");
     expect(html).toContain('aria-label="Profile music volume"');
-    expect(html).not.toContain("This section is hidden in the compact bio experience.");
+    expect(html).toContain("profile-more-content");
+    expect(html).toContain("This section is hidden in the compact bio experience.");
     expect(html).not.toContain("guestbook-form");
     expect(html).not.toContain("profile-widgets");
   });
