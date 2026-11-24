@@ -2794,6 +2794,10 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     );
     expect(secondPage.rows).toHaveLength(1);
     expect(secondPage.rows[0].username).not.toBe(first.username);
+    await expect(db.query(
+      "select username from public.get_profile_directory('',null,array[]::text[],'relevance',1001,$1,$2,25,$3)",
+      [first.joined_at, first.username, fingerprint],
+    )).rejects.toMatchObject({ code: "22023" });
 
     const related = await db.query<{ username: string }>(
       "select username from public.get_related_creators('discover-alice',6,$1)",
