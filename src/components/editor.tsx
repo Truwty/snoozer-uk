@@ -391,7 +391,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           {!saved.gallery.length && <p className="muted">Upload an image in your gallery to use it here.</p>}
           <div className="background-image-options" role="group" aria-label="Profile background image">
             <button type="button" className="background-image-option background-image-none"
-              aria-label="Use no background image" aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
+              aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
               onClick={() => setBackgroundImage()}>
               <span aria-hidden="true">Aa</span><span>No image</span>
             </button>
