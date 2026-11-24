@@ -19,7 +19,7 @@ export function SocialProviderIcon({ providerId, className }: {
       aria-hidden="true"
       focusable="false"
     >
-      {paths.map((path, index) => <path key={index} d={path} />)}
+      {paths.map((path, index) => <path key={path} d={path} />)}
     </svg>
   );
 }
