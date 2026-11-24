@@ -12,13 +12,21 @@ describe("social brand icons", () => {
     }
   });
 
-  it("does not use the old two-letter initials as icon artwork", () => {
-    expect(socialBrandPaths.instagram).toBeDefined();
-    expect(socialBrandPaths.tiktok).toBeDefined();
-    expect(socialBrandPaths.youtube).toBeDefined();
-    expect(socialBrandPaths.discord).toBeDefined();
-    for (const providerId of ["instagram", "tiktok", "youtube", "discord"] as const) {
-      expect(socialBrandPaths[providerId]?.[0]).not.toMatch(/^(IG|TT|YT|DC)$/);
+  it("renders recognisable provider marks as SVG paths, not text initials", async () => {
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { SocialProviderIcon } = await import("../src/components/social-provider-icon");
+
+    for (const [providerId, initials] of [
+      ["instagram", "IG"],
+      ["tiktok", "TT"],
+      ["youtube", "YT"],
+      ["discord", "DC"],
+    ] as const) {
+      const markup = renderToStaticMarkup(createElement(SocialProviderIcon, { providerId }));
+      expect(markup).toContain("<svg");
+      expect(markup).toContain("<path");
+      expect(markup).not.toContain(`>${initials}<`);
     }
   });
 });
