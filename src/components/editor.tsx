@@ -651,7 +651,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </section>
     </div>
     <aside className={"preview stack" + (dropActive ? " is-drop-active" : "")}
-      onDragOver={allowBlockDrop} onDrop={dropBlock} data-drop-active={dropActive || undefined}>
+      onDragOverCapture={allowBlockDrop} onDropCapture={dropBlock} data-drop-active={dropActive || undefined}>
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
         <label>Preview width
@@ -667,8 +667,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
         <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
       </section>}
-      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}
-        onDragOver={allowBlockDrop} onDropCapture={dropBlock}>
+      <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
