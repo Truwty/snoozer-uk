@@ -267,12 +267,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 }) {
   const [entered, setEntered] = useState(!entryExperience);
   const [entryOverlayVisible, setEntryOverlayVisible] = useState(entryExperience);
-  const [entryReady, setEntryReady] = useState(!entryExperience);
-  useEffect(() => {
-    if (!entryExperience) return;
-    const ready = window.setTimeout(() => setEntryReady(true), 0);
-    return () => window.clearTimeout(ready);
-  }, [entryExperience]);
   const [musicVolume, setMusicVolume] = useState(0.72);
   const [musicMuted, setMusicMuted] = useState(false);
   const profileAudioRef = useRef<HTMLAudioElement>(null);
@@ -556,7 +550,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   return <>
-    {entryExperience && entryOverlayVisible && <button type="button" disabled={!entryReady}
+    {entryExperience && entryOverlayVisible && <button type="button"
       className={"profile-entry-overlay" + (entered ? " is-entered" : "")}
       onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
       <span>click to enter...</span>
