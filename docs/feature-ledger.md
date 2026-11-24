@@ -70,13 +70,13 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 7.1 | Drag-And-Drop Blocks | Studio section/link reordering and native typed block drag-to-add/reorder covered by the Studio browser journey; this redesign PR adds explicit drag-to-add persistence coverage |
-| 7.2 | Keyboard-Accessible Reorder | Move-up/move-down alternatives for page content remain available alongside pointer/touch drag controls |
+| 7.1 | Drag-And-Drop Blocks | PR #94 baseline provides click/drag addition for the eight section/widget components and a shared reorderable canvas; PR #95 extends this with ten typed native blocks, duplicate/visibility/lock controls and mixed widths. Latest-head browser verification for native Project drop is still required |
+| 7.2 | Keyboard-Accessible Reorder | Accessible Move up/Move down controls accompany pointer/touch drag; keyboard activation is covered in the PR #94 browser journey |
 | 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
 | 7.5 | Draft Versus Published State | Tested locally |
 | 7.6 | Version History | Tested in disposable CI for owner preview, restore-to-draft and republish of retained versions |
-| 7.7 | Live Responsive Preview | Tested in disposable CI for live preview, with matching Studio and public card measurements at 320 and 375 px |
+| 7.7 | Live Responsive Preview | PR #94 browser coverage verifies the full-width workspace and 360 px mobile layout without horizontal overflow; PR #95 adds wide/phone/narrow-phone previews and mixed-width native blocks. Latest-head CI remains the release gate |
 | 7.8 | Snap-To-Grid Where Applicable | Deferred |
 | 7.9 | Global Design Tokens | Partially implemented |
 | 7.10 | Per-Block Overrides | Typed profile blocks support bounded width, alignment and presentation variants; arbitrary per-block CSS remains intentionally unsupported |
