@@ -42,10 +42,14 @@ function audioMetadata(label: string, fallbackArtist: string) {
     : { title: label.trim() || "Untitled track", artist: fallbackArtist };
 }
 
-function TypewriterBio({ value }: { value: string }) {
-  const [visible, setVisible] = useState(value);
+function TypewriterBio({ value, active }: { value: string; active: boolean }) {
+  const [visible, setVisible] = useState("");
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!active) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const complete = window.setTimeout(() => setVisible(value), 0);
+      return () => window.clearTimeout(complete);
+    }
     let cursor = 0;
     const reset = window.setTimeout(() => setVisible(""), 0);
     const timer = window.setInterval(() => {
@@ -57,7 +61,7 @@ function TypewriterBio({ value }: { value: string }) {
       window.clearTimeout(reset);
       window.clearInterval(timer);
     };
-  }, [value]);
+  }, [value, active]);
 
   return <p className="profile-bio profile-bio--typewriter" aria-live="off">
     <span>{visible}</span>
@@ -312,7 +316,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
     <p className="profile-handle">@{profile.username}</p>
     {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
-    {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} /> : <p className="profile-bio">{profile.bio}</p>)}
+    {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
 
   function renderSection(index: number) {
