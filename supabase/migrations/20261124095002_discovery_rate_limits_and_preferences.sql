@@ -221,7 +221,8 @@ create or replace function public.get_public_discovery_collection(
 returns jsonb language plpgsql security definer set search_path = '' as $$
 begin
   perform snoozer.consume_discovery_request(p_request_fingerprint);
-  if p_slug is null or length(p_slug)>48 or p_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*
+  if p_slug is null or length(p_slug)>48 or p_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
+    raise exception 'Invalid collection slug' using errcode='22023';
   end if;
   return (
     select item from jsonb_array_elements(public.get_public_discovery_collections(20,p_request_fingerprint)) item
