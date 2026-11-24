@@ -15,10 +15,17 @@ export async function discoveryRequestFingerprint() {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) throw new Error("Discovery service is not configured.");
 
+  const forwarded = (requestHeaders.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => isIP(value));
+  // Forwarded-for values are ordered from the client through trusted proxies.
+  // Use the right-most hop if a platform omits a dedicated real-IP header;
+  // the left-most entry is caller-controlled and must not be trusted.
   const candidates = [
     requestHeaders.get("x-real-ip"),
     requestHeaders.get("cf-connecting-ip"),
-    ...(requestHeaders.get("x-forwarded-for") ?? "").split(","),
+    forwarded[forwarded.length - 1],
   ];
   const address = candidates
     .map((value) => value?.trim() ?? "")
