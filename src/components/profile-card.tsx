@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -72,14 +72,14 @@ function formatAudioTime(value: number) {
   return minutes + ":" + String(seconds).padStart(2, "0");
 }
 
-function ProfileAudioPlayer({ src, title, artist, cover, volume }: {
+function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
   src: string;
   title: string;
   artist: string;
   cover?: string;
   volume: number;
+  audioRef: RefObject<HTMLAudioElement | null>;
 }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -265,6 +265,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const [entryOverlayVisible, setEntryOverlayVisible] = useState(entryExperience);
   const [musicVolume, setMusicVolume] = useState(0.72);
   const [musicMuted, setMusicMuted] = useState(false);
+  const profileAudioRef = useRef<HTMLAudioElement>(null);
   const effects = profile.appearance.effects ?? defaultEffects;
   const layout = normalizeProfilePageLayout(profile.pageLayout, profile);
   const linkColours = linkAccentColours(profile.appearance.accent);
@@ -394,7 +395,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         </nav>}
         {audioLink && audioSource && audioInfo
           ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
-              cover={cover} volume={musicMuted ? 0 : musicVolume} />
+              cover={cover} volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
           : spotifyTrack && spotifyTrackResource
             ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
                 resource={spotifyTrackResource} label={spotifyTrack.label} compact
@@ -536,6 +537,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   function enterProfile() {
     setEntered(true);
+    const audio = profileAudioRef.current;
+    if (audio) void audio.play().catch(() => undefined);
     window.setTimeout(() => setEntryOverlayVisible(false), 380);
   }
 
