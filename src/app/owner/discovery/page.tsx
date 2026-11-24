@@ -15,7 +15,7 @@ const collectionsSchema = z.array(z.object({
 function dateInput(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0,16) : "";
+  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0,16) : "";
 }
 
 export default async function OwnerDiscoveryPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -38,14 +38,14 @@ export default async function OwnerDiscoveryPage({ searchParams }: { searchParam
         {parsed.data.map((collection) => <details className="owner-discovery-item" key={collection.slug}>
           <summary><strong>{collection.title}</strong><span className="muted">/{collection.slug} · {collection.collection_type} · {collection.published ? "Published" : "Draft"} · {collection.profiles.length} profiles</span></summary>
           <form action={saveDiscoveryCollection} className="owner-discovery-form">
-            <label>URL slug<input name="slug" required minLength={2} maxLength={48} defaultValue={collection.slug}/></label>
+            <label>URL slug (fixed after creation)<input name="slug" required minLength={2} maxLength={48} defaultValue={collection.slug} readOnly/></label>
             <label>Collection type<select name="collection_type" defaultValue={collection.collection_type}><option value="featured">Featured creators</option><option value="spotlight">Community spotlight</option><option value="collection">Standard collection</option></select></label>
             <label>Title<input name="title" required minLength={2} maxLength={72} defaultValue={collection.title}/></label>
             <label>Description<textarea name="description" maxLength={280} defaultValue={collection.description}/></label>
             <label>Profile usernames (up to 20, comma or line separated)<textarea name="profiles" rows={3} defaultValue={collection.profiles.join("\n")}/></label>
             <label>Display order<input name="sort_order" type="number" min={0} max={10000} defaultValue={collection.sort_order}/></label>
-            <label>Start date/time<input name="starts_at" type="datetime-local" defaultValue={dateInput(collection.starts_at)}/></label>
-            <label>Expiry date/time<input name="expires_at" type="datetime-local" defaultValue={dateInput(collection.expires_at)}/></label>
+            <label>Start date/time (UTC)<input name="starts_at" type="datetime-local" defaultValue={dateInput(collection.starts_at)}/></label>
+            <label>Expiry date/time (UTC)<input name="expires_at" type="datetime-local" defaultValue={dateInput(collection.expires_at)}/></label>
             <label className="discovery-toggle-row"><input type="checkbox" name="published" defaultChecked={collection.published}/><span>Publish collection</span></label>
             <label>Reason for audit log<input name="reason" required minLength={8} maxLength={500} placeholder="Explain this curation change"/></label>
             <button className="button primary" type="submit">Save collection</button>
@@ -66,8 +66,8 @@ export default async function OwnerDiscoveryPage({ searchParams }: { searchParam
         <label>Description<textarea name="description" maxLength={280} placeholder="A short introduction to this collection."/></label>
         <label>Profile usernames (up to 20, comma or line separated)<textarea name="profiles" rows={3} placeholder={"creator-one\ncreator-two"}/></label>
         <label>Display order<input name="sort_order" type="number" min={0} max={10000} defaultValue={0}/></label>
-        <label>Start date/time<input name="starts_at" type="datetime-local"/></label>
-        <label>Expiry date/time<input name="expires_at" type="datetime-local"/></label>
+        <label>Start date/time (UTC)<input name="starts_at" type="datetime-local"/></label>
+        <label>Expiry date/time (UTC)<input name="expires_at" type="datetime-local"/></label>
         <label className="discovery-toggle-row"><input type="checkbox" name="published"/><span>Publish immediately</span></label>
         <label>Reason for audit log<input name="reason" required minLength={8} maxLength={500} placeholder="Explain why this collection is being created"/></label>
         <button className="button primary" type="submit">Create collection</button>
