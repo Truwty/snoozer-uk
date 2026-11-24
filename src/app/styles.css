@@ -2180,6 +2180,13 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   font-weight: 700;
   text-decoration: none;
 }
+.studio-help-card a {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 2.5rem;
+  padding-block: .25rem;
+}
 .studio-sidebar-site-link {
   display: inline-flex;
   align-items: center;
