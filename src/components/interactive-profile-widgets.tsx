@@ -2,10 +2,10 @@ import type { ProfileWidgets, ProfileWidgetKind } from "@/lib/profile-widgets";
 import { GuestbookWidget } from "./guestbook-widget";
 import { PollWidget } from "./poll-widget";
 
-export function InteractiveProfileWidgets({ widgets, username, preview = false, reportBaseUrl }: {
-  widgets: ProfileWidgets; username: string; preview?: boolean; reportBaseUrl?: string;
+export function InteractiveProfileWidgets({ widgets, username, preview = false, reportBaseUrl, hideGuestbook = false }: {
+  widgets: ProfileWidgets; username: string; preview?: boolean; reportBaseUrl?: string; hideGuestbook?: boolean;
 }) {
-  const active = widgets.order.filter((kind) => widgets[kind].enabled);
+  const active = widgets.order.filter((kind) => widgets[kind].enabled && !(hideGuestbook && kind === "guestbook"));
   if (active.length === 0) return null;
   return <div className="profile-widgets" aria-label="Interactive profile widgets">
     {active.map((kind: ProfileWidgetKind) => {

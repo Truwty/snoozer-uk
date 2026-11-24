@@ -589,9 +589,15 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             focusLink(content.links.length);
           }}>Add link</button>
         {content.links.length < linkLimit && <details>
+          <summary>Add a hosted audio track</summary>
+          <div className="stack">
+            <p className="muted">For the compact public bio player, add a public HTTPS audio-file URL ending in .mp3, .m4a, .ogg, .wav, .aac or .flac as a normal link. Set its label to “Track title — Artist”. The first gallery image is used as artwork, falling back to your avatar. Host the audio file yourself; direct audio uploads are not currently supported.</p>
+          </div>
+        </details>}
+        {content.links.length < linkLimit && <details>
           <summary>Add Spotify music or playlist</summary>
           <div className="stack">
-            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. No Spotify account connection is required. The player appears automatically on the published profile.</p>
+            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. A track appears in the compact bio player; albums, playlists, artists and podcasts stay under More. No Spotify account connection is required. Spotify controls its embedded playback and volume.</p>
             <label>Spotify share URL<input type="url" maxLength={2048} value={spotifyUrl}
               placeholder="https://open.spotify.com/playlist/…"
               aria-invalid={spotifyError} aria-describedby={spotifyError ? "spotify-url-error" : undefined}

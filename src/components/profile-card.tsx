@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -22,7 +22,130 @@ import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 import { SocialProviderIcon } from "./social-provider-icon";
 
-type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId };
+type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
+
+const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
+
+function directAudioSource(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && audioFilePattern.test(url.pathname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function audioMetadata(label: string, fallbackArtist: string) {
+  const match = label.trim().match(/^(.+?)\s+[—–-]\s+(.+)$/);
+  return match
+    ? { title: match[1].trim(), artist: match[2].trim() }
+    : { title: label.trim() || "Untitled track", artist: fallbackArtist };
+}
+
+function TypewriterBio({ value, active }: { value: string; active: boolean }) {
+  const [visible, setVisible] = useState("");
+  useEffect(() => {
+    if (!active) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const complete = window.setTimeout(() => setVisible(value), 0);
+      return () => window.clearTimeout(complete);
+    }
+    let cursor = 0;
+    const reset = window.setTimeout(() => setVisible(""), 0);
+    const timer = window.setInterval(() => {
+      cursor = Math.min(cursor + 1, value.length);
+      setVisible(value.slice(0, cursor));
+      if (cursor >= value.length) window.clearInterval(timer);
+    }, 24);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(timer);
+    };
+  }, [value, active]);
+
+  return <p className="profile-bio profile-bio--typewriter" aria-live="off">
+    <span>{visible}</span>
+    <span className="profile-typewriter-caret" aria-hidden="true" />
+  </p>;
+}
+
+function formatAudioTime(value: number) {
+  if (!Number.isFinite(value) || value < 0) return "0:00";
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  return minutes + ":" + String(seconds).padStart(2, "0");
+}
+
+function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
+  src: string;
+  title: string;
+  artist: string;
+  cover?: string;
+  volume: number;
+  audioRef: RefObject<HTMLAudioElement | null>;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
+  async function togglePlayback() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      try {
+        await audio.play();
+      } catch {
+        setPlaying(false);
+      }
+    } else {
+      audio.pause();
+    }
+  }
+
+  return <section className="profile-audio-player" aria-label="Profile music player">
+    <audio ref={audioRef} src={src} preload="metadata"
+      onPlay={() => setPlaying(true)}
+      onPause={() => setPlaying(false)}
+      onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
+      onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+      onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+      onEnded={() => { setPlaying(false); setPosition(0); }} />
+    {cover
+      // The selected image is already a same-origin, resized profile asset.
+      // eslint-disable-next-line @next/next/no-img-element
+      ? <img className="profile-audio-cover" src={cover} alt="" width={48} height={48} />
+      : <span className="profile-audio-cover profile-audio-cover--fallback" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+          </svg>
+        </span>}
+    <div className="profile-audio-details">
+      <strong title={title}>{title}</strong>
+      <span title={artist}>{artist}</span>
+      <input className="profile-audio-progress" type="range" min={0} max={Math.max(duration, 1)}
+        step={0.1} value={Math.min(position, duration || 0)} disabled={!duration}
+        aria-label="Track progress"
+        onChange={(event) => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = Number(event.currentTarget.value);
+            setPosition(audioRef.current.currentTime);
+          }
+        }} />
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)}</span>
+    </div>
+    <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
+      aria-label={playing ? "Pause music" : "Play music"}>
+      {playing
+        ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
+        : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
+    </button>
+  </section>;
+}
+
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -128,7 +251,7 @@ function LayoutBlock({
   </div>;
 }
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl, onMoveLayoutItem, onSelectLayoutItem }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl, onMoveLayoutItem, onSelectLayoutItem, entryExperience = false }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
@@ -140,7 +263,18 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   reportBaseUrl?: string;
   onMoveLayoutItem?: (from: number, to: number) => void;
   onSelectLayoutItem?: (item: ProfilePageLayoutItem) => void;
+  entryExperience?: boolean;
 }) {
+  const [entered, setEntered] = useState(!entryExperience);
+  const entryDetailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    // A native <details> disclosure can open before React hydrates. Sync the
+    // typewriter state after hydration so an early click is never discarded.
+    if (entryExperience && entryDetailsRef.current?.open) setEntered(true);
+  }, [entryExperience]);
+  const [musicVolume, setMusicVolume] = useState(0.72);
+  const [musicMuted, setMusicMuted] = useState(false);
+  const profileAudioRef = useRef<HTMLAudioElement>(null);
   const effects = profile.appearance.effects ?? defaultEffects;
   const layout = normalizeProfilePageLayout(profile.pageLayout, profile);
   const linkColours = linkAccentColours(profile.appearance.accent);
@@ -185,9 +319,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       // eslint-disable-next-line @next/next/no-img-element
       ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
       : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
-    <p className="profile-handle">@{profile.username}</p>
+    {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
-    {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+    {entryExperience && <p className="profile-handle">@{profile.username}</p>}
+    {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
 
   function renderSection(index: number) {
@@ -208,50 +343,128 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
   }
 
+  function renderLinkList(links: { label: string; url: string; index: number }[], socialIconsAlreadyVisible = false) {
+    if (links.length === 0) return null;
+    return <ul className="profile-links" style={linkStyle}>
+      {links.map(({ label, url, index }) => {
+        const video = youtubeVideoId(url);
+        const metadata = metadataWidget(url);
+        const channel = twitchChannel(url);
+        const place = robloxPlace(url);
+        const spotify = spotifyResource(url);
+        const provider = socialProviderForUrl(url);
+        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify" && !place;
+        return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
+          {spotify
+            ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
+                analyticsUsername={preview ? undefined : profile.username}
+                analyticsPosition={preview ? undefined : index + 1} />
+            : iconAlreadyLinksToProvider ? null : <a href={url} rel="ugc nofollow noreferrer"
+                data-analytics-profile={preview ? undefined : profile.username}
+                data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
+          {video && <YouTubeWidget key={video} videoId={video} label={label} />}
+          {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
+            : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
+          {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
+        </li>;
+      })}
+    </ul>;
+  }
+
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
     if (valid.length === 0) return null;
+
     const hasProviderEmbed = (url: string) => Boolean(
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
     );
+
+    if (entryExperience) {
+      const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
+        const provider = socialProviderForUrl(url);
+        // Game/place links stay as descriptive links in More instead of
+        // being hidden behind a generic Roblox social icon.
+        return provider && provider.id !== "spotify" && !robloxPlace(url)
+          ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
+          : [];
+      });
+      const audioLink = valid.find(({ url }) => directAudioSource(url));
+      const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
+      const audioSource = audioLink ? directAudioSource(audioLink.url) : null;
+      const audioInfo = audioLink ? audioMetadata(audioLink.label, profile.display_name) : null;
+      const spotifyTrackResource = spotifyTrack ? spotifyResource(spotifyTrack.url) : null;
+      const cover = profile.gallery[0] && galleryBase
+        ? galleryBase + "/" + profile.gallery[0].id
+        : avatarSrc;
+
+      return <>
+        {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
+          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={label} aria-label={label}
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>
+            <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
+          </a>)}
+        </nav>}
+        {audioLink && audioSource && audioInfo
+          ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
+              cover={cover} volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
+          : spotifyTrack && spotifyTrackResource
+            ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
+                resource={spotifyTrackResource} label={spotifyTrack.label} compact
+                analyticsUsername={profile.username} analyticsPosition={spotifyTrack.index + 1} />
+            : null}
+      </>;
+    }
+
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
       const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id }] : [];
+      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }] : [];
     });
     const regular = valid.filter(({ url }) => !socialProviderForUrl(url) || hasProviderEmbed(url));
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-        {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
-          rel="ugc nofollow noreferrer" title={label} aria-label={label}
+        {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
+          rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
           data-analytics-profile={preview ? undefined : profile.username}
           data-analytics-position={preview ? undefined : index + 1}>
           <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
         </a>)}
       </nav>}
-      {regular.length > 0 && <ul className="profile-links" style={linkStyle}>
-        {regular.map(({ label, url, index }) => {
-          const video = youtubeVideoId(url);
-          const metadata = metadataWidget(url);
-          const channel = twitchChannel(url);
-          const place = robloxPlace(url);
-          const spotify = spotifyResource(url);
-          return <li key={`${url}-${index}`} className={spotify ? "spotify-link-slot" : undefined}>
-            {spotify
-              ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
-                  analyticsUsername={preview ? undefined : profile.username}
-                  analyticsPosition={preview ? undefined : index + 1} />
-              : <a href={url} rel="ugc nofollow noreferrer"
-                  data-analytics-profile={preview ? undefined : profile.username}
-                  data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
-            {video && <YouTubeWidget key={video} videoId={video} label={label} />}
-            {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
-              : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
-            {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
-          </li>;
-        })}
-      </ul>}
+      {renderLinkList(regular)}
     </>;
+  }
+
+  function renderMoreContent() {
+    const valid = profile.links.map((item, index) => ({ ...item, index }))
+      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+    const hasProviderEmbed = (url: string) => Boolean(
+      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
+    );
+    const social = valid.filter(({ url }) => {
+      const provider = socialProviderForUrl(url);
+      return provider && !hasProviderEmbed(url) && provider.id !== "spotify";
+    });
+    const audioLink = valid.find(({ url }) => directAudioSource(url));
+    const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
+    const extras = valid.filter((link) =>
+      !social.some((item) => item.index === link.index)
+      && (!audioLink || link.index !== audioLink.index)
+      && (!spotifyTrack || link.index !== spotifyTrack.index)
+    );
+    const additionalLinks = renderLinkList(extras, true);
+    const additionalItems = layout.items.map((item, index) => item.type === "links"
+      ? null
+      : renderItem(item, index)).filter(Boolean);
+
+    if (!additionalLinks && additionalItems.length === 0) return null;
+
+    return <details className="profile-more-content">
+      <summary>More</summary>
+      {additionalLinks}
+      {additionalItems}
+    </details>;
   }
 
   function renderBlock(id: string) {
@@ -302,7 +515,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   function renderWidgets() {
-    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} />;
+    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience} />;
   }
 
   function renderGallery() {
@@ -334,7 +547,21 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
-  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
+  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
+
+  function enterProfile() {
+    // Reveal the profile immediately in the same click that opens the native
+    // disclosure. The hydration effect below covers clicks before React loads.
+    setEntered(true);
+    const audio = profileAudioRef.current;
+    if (audio) void audio.play().catch(() => undefined);
+  }
+
+  function handleEntryToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+    if (event.currentTarget.open) setEntered(true);
+  }
+
+  const profileCard = <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
@@ -350,7 +577,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
     <ProfileEffectsLayer effects={effects} />
-    {effects.enabled && <label className="profile-effects-toggle">
+    {effects.enabled && !entryExperience && <label className="profile-effects-toggle">
       <input type="checkbox" aria-label="Disable profile effects" />
       <span className="effects-disable-text">Disable effects</span>
       <span className="effects-enable-text">Enable effects</span>
@@ -359,8 +586,30 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience ? <>{renderLinks()}{renderMoreContent()}</> : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
-  </section>;
+    </section>;
+
+  return <>
+    {entryExperience ? <details ref={entryDetailsRef} className="profile-entry-shell" onToggle={handleEntryToggle}>
+      <summary className="profile-entry-overlay" role="button"
+        onClick={enterProfile} aria-label={"click to enter... @" + profile.username}>
+        <span>click to enter...</span>
+        <small>@{profile.username}</small>
+      </summary>
+      {profileCard}
+    </details> : profileCard}
+    {entryExperience && hasNativeAudio && <div className="profile-volume-control" role="group" aria-label="Music volume control">
+      <button type="button" className="profile-volume-mute" aria-label={musicMuted ? "Unmute music" : "Mute music"}
+        onClick={() => setMusicMuted((value) => !value)}>
+        {musicMuted || musicVolume === 0
+          ? <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6" /></svg>
+          : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></svg>}
+      </button>
+      <input type="range" min="0" max="1" step="0.01" value={musicMuted ? 0 : musicVolume}
+        aria-label="Profile music volume"
+        onChange={(event) => { setMusicVolume(Number(event.currentTarget.value)); setMusicMuted(false); }} />
+    </div>}
+  </>;
 }
