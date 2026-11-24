@@ -82,7 +82,7 @@ export async function DiscoveryBrowser({
       </label>
       <label><span className="sr-only">Sort creators</span>
         <select name="sort" defaultValue={sort}>
-          <option value="relevance">Most relevant</option><option value="recent">Recently joined</option><option value="name">Name A–Z</option>
+          <option value="relevance">Most relevant</option><option value="recent">Recently published</option><option value="name">Username A–Z</option>
         </select>
       </label>
       <button className="button primary" type="submit">Search</button>
