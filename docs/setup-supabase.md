@@ -17,7 +17,7 @@ For real provider browser tests, export all four values into the shell environme
 ## Discord sign-in (hosted)
 
 1. In Discord Developer Portal, OAuth2, register the exact redirect URI
-   `https://edgptbiwswcdmmxzwhxv.supabase.co/auth/v1/callback` (use the callback shown in your own Supabase project if different).
+   `https://[project ref].supabase.co/auth/v1/callback` (use the callback shown in your own Supabase project if different).
    Scopes: `identify` and `email` only. The URL Generator is not the URL the Snoozer app uses.
 2. In Supabase Authentication > Sign In / Providers > Discord, enable the provider and enter the Discord Application ID and Client Secret. Do not commit either secret or add them to the client bundle.
 3. In Supabase Authentication > URL Configuration, set Site URL to `https://snoozer.uk` and add exact Redirect URL `https://snoozer.uk/auth/callback`. Retain the existing email verification and password reset redirect URLs. Only add trusted staging/local callback URLs when intentionally testing.
