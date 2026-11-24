@@ -10,14 +10,14 @@ The existing private account-notification inbox remains the source of truth. The
 - `ZOHO_MAIL_ACCOUNT_ID`: the numeric Zoho Mail account ID from the authenticated Get All User Accounts API; this is not the SMTP username or Zoho User ID.
 - `ZOHO_OAUTH_CLIENT_ID` and `ZOHO_OAUTH_CLIENT_SECRET`: a confidential client registered in the Zoho Developer/API Console.
 - `ZOHO_OAUTH_REFRESH_TOKEN`: an offline refresh token granted by the mailbox owner with the narrow `ZohoMail.messages.CREATE` scope, using the matching region's Zoho OAuth server. Never commit or paste it into the site/chat.
-- `SNOOZER_NOTIFICATION_FROM`: the sending mailbox address, e.g. `snoozersupport@snoozer.uk`.
+- `SNOOZER_NOTIFICATION_FROM`: the sending mailbox address, e.g. `[configured email address]`.
 
 **Alternative on an SMTP-capable paid hosting plan:**
 
-- `ZOHO_SMTP_USER`: your Zoho mailbox login, normally `snoozersupport@snoozer.uk`.
+- `ZOHO_SMTP_USER`: your Zoho mailbox login, normally `[configured email address]`.
 - `ZOHO_SMTP_PASSWORD`: the mailbox-specific Zoho SMTP/app password, kept private in Render.
 - `ZOHO_SMTP_OUTBOUND_ENABLED=true`: enable only after confirming that the hosting plan permits outgoing SMTP and connectivity works.
-- `SNOOZER_NOTIFICATION_FROM`: `snoozersupport@snoozer.uk`, matching the verified SMTP mailbox.
+- `SNOOZER_NOTIFICATION_FROM`: `[configured email address]`, matching the verified SMTP mailbox.
 - `OWNER_EMAIL_DISPATCH_TOKEN`: independent, randomly generated secret with at least 32 characters, never exposed in browser env values or Git.
 
 Never use `NEXT_PUBLIC_` for these keys. The route `POST /api/internal/owner-notices/dispatch` returns 404 without the bearer token. Do not copy the token into GitHub issues, logs or client code. An Owner with AAL2 can also run a small batch from `/owner/system`.
@@ -30,7 +30,7 @@ On `/owner/system`, use **Send test email to my verified Owner address** once th
 
 ## Scheduled delivery
 
-The 22 November manual scheduler smoke exposed an HTTP 307 on the public custom domain. The workflow therefore calls the **fixed, verified Render service hostname** `https://snoozer-uk-staging.onrender.com/api/internal/owner-notices/dispatch` directly (the app explicitly allows `/api/` at that host). The bearer token must not follow redirects.\n\nA five-minute, non-overlapping GitHub Actions dispatcher is provided at `.github/workflows/owner-notice-dispatch.yml`. It is **disabled until explicitly enabled**. To activate, set GitHub Actions repository secret `OWNER_EMAIL_DISPATCH_TOKEN` to the **exact same value** as the server-only Render environment variable, then set GitHub Actions repository variable `OWNER_EMAIL_SCHEDULE_ENABLED=true`. Do not substitute an OAuth/Zoho token or create a different dispatch token: the app endpoint will reject it. Configure at GitHub repo Settings → Secrets and variables → Actions, and only enable after a real test message reaches a controlled inbox. The job checks the API's status and delivery failure count, and creates/closes a GitHub issue for actionable failures; it does not log recipient addresses or credentials. GitHub Actions scheduled tasks may be delayed and are not a hard real-time delivery SLA. Use workflow_dispatch to smoke-test after enabling. Avoid additional concurrent cron workers because the queue already uses leases, but send operations are at-least-once, not exactly-once.
+The 22 November manual scheduler smoke exposed an HTTP 307 on the public custom domain. The workflow therefore calls the **fixed, verified Render service hostname** `[Render service URL]/api/internal/owner-notices/dispatch` directly (the app explicitly allows `/api/` at that host). The bearer token must not follow redirects.\n\nA five-minute, non-overlapping GitHub Actions dispatcher is provided at `.github/workflows/owner-notice-dispatch.yml`. It is **disabled until explicitly enabled**. To activate, set GitHub Actions repository secret `OWNER_EMAIL_DISPATCH_TOKEN` to the **exact same value** as the server-only Render environment variable, then set GitHub Actions repository variable `OWNER_EMAIL_SCHEDULE_ENABLED=true`. Do not substitute an OAuth/Zoho token or create a different dispatch token: the app endpoint will reject it. Configure at GitHub repo Settings → Secrets and variables → Actions, and only enable after a real test message reaches a controlled inbox. The job checks the API's status and delivery failure count, and creates/closes a GitHub issue for actionable failures; it does not log recipient addresses or credentials. GitHub Actions scheduled tasks may be delayed and are not a hard real-time delivery SLA. Use workflow_dispatch to smoke-test after enabling. Avoid additional concurrent cron workers because the queue already uses leases, but send operations are at-least-once, not exactly-once.
 
 Alternative: run an independently authenticated Render cron or Supabase pg_cron/net job with the same endpoint and token stored securely (e.g. Supabase Vault); never put the token in plain SQL or source control.
 

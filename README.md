@@ -3,158 +3,85 @@
 # Snoozer.uk
 
 **Own your corner of the internet.**  
-*A privacy-first, open-source identity and publishing platform built to replace bloated, proprietary link-in-bio tools.*
+*A privacy-first identity and profile publishing platform.*
 
-[![Next.js](https://shields.io)](https://nextjs.org)
-[![TypeScript](https://shields.io)](https://typescriptlang.org)
-[![Supabase](https://shields.io)](https://supabase.com)
-[![Testing](https://shields.io)](https://playwright.dev)
-[![Docker](https://shields.io)](Dockerfile)
-[![License](https://shields.io)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Database-Supabase-3ecf8e)](https://supabase.com)
+[![Tests](https://img.shields.io/badge/Tests-Vitest%20%26%20Playwright-brightgreen)](https://playwright.dev)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-[**Roadmap**](PROGRESS.md) · [**Architecture & Docs**](docs/) · [**Contributing**](CONTRIBUTING.md) · [**Security Policy**](SECURITY.md)
+[**Project status**](docs/PROGRESS.md) · [**Documentation**](docs/) · [**Contributing**](CONTRIBUTING.md) · [**Security policy**](SECURITY.md)
 
 </div>
 
-<br />
+## Overview
 
-> **Development Status:** Active Pre-v1.0. Core identity flows, Studio draft/publish workflows, and RLS-backed database migrations are implemented and verified via automated CI/CD, unit tests, and Playwright E2E suites.
+Snoozer is a self-hostable profile and publishing platform built with Next.js, TypeScript and Supabase. It separates authenticated editing from public profile delivery and uses PostgreSQL Row-Level Security to protect private creator data.
 
----
+## Features
 
-## Premium-only commercial model
+- Public profile pages with configurable links, appearance and publishing controls.
+- Studio editing with draft and published states.
+- Analytics and privacy-conscious visitor measurement.
+- Profile widgets and media galleries.
+- Account security, moderation and owner administration.
+- Custom-domain support and search-engine metadata controls.
 
-Only Snoozer sells its own **Plus, Pro and Studio subscriptions**. There is **no creator marketplace, no external seller onboarding, no creator storefront, and no Stripe Connect Checkout**. Historical database migration files and financial records remain for audit, not for activation. LIVE Stripe products are configured; prices and real payments require merchant approval. See [the Premium launch guide](docs/premium-live-launch.md).
+Feature availability may vary by release. The project status and individual guides describe what is implemented; open pull requests and feature branches are not production releases.
 
-## 🎯 Why Snoozer.uk?
+## Technology
 
-Most link-in-bio platforms lock basic customization behind subscriptions, inject third-party ad pixels, and harvest visitor analytics. **Snoozer.uk** provides a fast, auditable, self-hostable alternative that puts creators in complete control of their data.
+- Next.js App Router, React and TypeScript.
+- Supabase Auth, PostgreSQL, Row-Level Security and Storage.
+- Vitest for unit and database integration tests.
+- Playwright for browser end-to-end tests.
+- GitHub Actions for continuous integration.
 
-| Feature | Proprietary Link-in-Bio | Snoozer.uk |
-| :--- | :--- | :--- |
-| **Data Ownership** | Locked in vendor silos | Self-hostable with portable Postgres schemas |
-| **Visitor Privacy** | Ad pixels & tracking scripts | Zero telemetry or third-party trackers |
-| **Publishing Flow** | Direct-to-live edits | Isolated Studio drafting with atomic publishing |
-| **Extensibility** | Closed-source | Modular Next.js App Router & TypeScript codebase |
+## Local development
 
----
+### Requirements
 
-## 🏗 System Architecture
+Use the Node.js version pinned in `.node-version`, npm, and Docker for the local Supabase test stack.
 
-Snoozer.uk enforces a strict boundary between **authenticated creator mutations** (Studio) and **unauthenticated public reads** (Visitor profiles).
+### Install
 
-```mermaid
-flowchart LR
-    Creator[Creator Browser] -->|Auth & Mutations| Studio[Next.js Studio UI]
-    Visitor[Public Visitor] -->|Read-Only SSR| Public[Public Profile Route]
-    
-    subgraph Supabase Local / Cloud Stack
-        Studio --> Auth[Supabase Auth]
-        Studio --> Storage[Object Storage]
-        Studio --> DB[(PostgreSQL + RLS)]
-        Public --> DB
-        Public --> Storage
-    end
-```
-
-### Core Stack
-* **Frontend & Routing:** Next.js (App Router), React, TypeScript (`strict: true`)
-* **Backend & Persistence:** Supabase (PostgreSQL with Row-Level Security, Auth, Storage)
-* **Quality Assurance:** Vitest (unit & integration), Playwright (full browser E2E), ESLint
-* **Infrastructure:** Docker, Render Blueprint (`render.yaml`), GitHub Actions
-
----
-
-## 🚀 Quick Start (Zero-Config Local Stack)
-
-Snoozer.uk runs against a completely disposable local Supabase environment—no cloud account required to develop or run tests.
-
-### Prerequisites
-* **Node.js 24 LTS** & `npm`
-* **Docker** (running locally for Supabase containers)
-
-### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com
+git clone https://github.com/Truwty/snoozer-uk.git
 cd snoozer-uk
 npm ci
+cp .env.example .env.local
 ```
 
-### 2. Boot Local Supabase Services
+Populate `.env.local` only with disposable local credentials. Never copy production keys into a developer workstation, issue, pull request or commit.
+
+### Start the local database
+
 ```bash
 npx --yes supabase@3.1.0 start
 ```
-*Spins up local PostgreSQL, GoTrue Auth, Storage buckets, and a local Inbucket email catcher.*
 
-### 3. Configure Environment Variables
-```bash
-cp .env.example .env.local
-npx --yes supabase@3.1.0 status
-```
-Copy the local `API URL`, `anon key`, and `service_role key` from the status output into `.env.local` *(never commit service credentials)*.
+Follow the local setup guide in [docs/setup-supabase.md](docs/setup-supabase.md). Run automated tests only against this disposable environment.
 
-### 4. Start the Application
-```bash
-npm run dev
-```
-1. Visit `http://localhost:3000` and register an account.
-2. Open the local email catcher (URL printed in `supabase status`) to verify your email.
-3. Claim a handle in **Studio**, add links, sections, or media, and hit **Publish**.
-4. Open your public handle in an incognito window to verify visitor access.
-
-> **Clean Database Reset:** Run `npx --yes supabase@3.1.0 db reset` at any time to rebuild the database cleanly from declarative migrations in `supabase/`.
-
----
-
-## 🧪 Verification & Quality Gates
-
-Every pull request must pass static analysis, security audits, unit tests, and headless browser E2E verification:
+### Validate changes
 
 ```bash
-# 1. Static Analysis & Dependency Audit
 npm run lint
 npm run typecheck
-npm audit
-
-# 2. Unit Tests & Production Build
+npm run audit
 npm test
 npm run build
-
-# 3. Playwright End-to-End Smoke Suite
-npx playwright install chromium
 npm run test:e2e
 ```
 
-*To run provider-level E2E tests against your local stack, export the local Supabase variables and set `SNOOZER_TEST_LOCAL_SUPABASE=1` prior to building.*
+## Documentation
 
----
+The `docs/` directory contains feature guides, architecture notes, development instructions and operational safety guidance. Production credentials, customer records and private deployment identifiers must never be stored there.
 
-## 📂 Repository Map
+## Contributing
 
-```text
-snoozer-uk/
-├── .github/          # CI/CD pipelines and issue/PR templates
-├── docs/             # Architecture Decision Records (ADRs), threat model & guides
-├── e2e/              # Playwright end-to-end browser specifications
-├── scripts/          # Developer automation and environment helpers
-├── src/              # Next.js App Router, Studio editor, and server actions
-├── supabase/         # Declarative SQL migrations, seeds, and local config
-├── tests/            # Vitest unit and integration test suites
-├── Dockerfile        # Multi-stage production container image
-└── render.yaml       # Infrastructure-as-Code deployment specification
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md). Keep changes focused, add tests for new behaviour and ensure all required checks pass before requesting review.
 
----
+## Security
 
-## 🗺 Roadmap & Documentation
-
-* **Project Roadmap:** Track v1.0 milestones and completed features in [`PROGRESS.md`](PROGRESS.md).
-* **Architecture & Threat Model:** Review security boundaries and design decisions in [`docs/`](docs/).
-* **Contributing:** See [`CONTRIBUTING.md`](CONTRIBUTING.md) for local workflow rules and PR standards.
-* **Security Policy:** Report vulnerabilities responsibly via [`SECURITY.md`](SECURITY.md).
-
----
-
-<div align="center">
-<sub>Maintained in the open by <a href="https://github.com">@Truwty</a> · Contributions and feedback welcome.</sub>
-</div>
+Read [SECURITY.md](SECURITY.md) before reporting a vulnerability. Never publish credentials or personally identifying user data in issues or pull requests.

@@ -1,14 +1,14 @@
 # Snoozer Premium — only paid product
 
-**Updated 22 November 2026:** Six live GBP prices are verified on the correct Stripe merchant, and the restricted LIVE key passed authenticated read-only checks on Render. Stripe webhook `we_1UeKYyBYH85ysT1BSqAlpvsk` is now **ENABLED** with all 14 expected event types. **Real Checkout is still OFF. Signed LIVE webhook delivery was verified on 22 November via a no-charge, immediately-cancelled trial and two processed live Stripe receipts. Genuine paid Checkout, renewal/failure/dispute acceptance and seller disclosures remain outstanding. See [Premium live acceptance](premium-live-acceptance.md) for the current matrix.
+**Updated 22 November 2026:** Six live GBP prices are verified on the correct Stripe merchant, and the restricted LIVE key passed authenticated read-only checks on Render. Stripe webhook `[redacted Stripe webhook id]` is now **ENABLED** with all 14 expected event types. **Real Checkout is still OFF. Signed LIVE webhook delivery was verified on 22 November via a no-charge, immediately-cancelled trial and two processed live Stripe receipts. Genuine paid Checkout, renewal/failure/dispute acceptance and seller disclosures remain outstanding. See [Premium live acceptance](premium-live-acceptance.md) for the current matrix.
 
 ## Approved GBP subscription prices
 
 | Plan | LIVE Product ID | Monthly | Monthly LIVE Price ID | Annual | Annual LIVE Price ID |
 | --- | --- | ---: | --- | ---: | --- |
-| Snoozer Plus | `prod_VfgMlUsOz4GELl` | £3.00 | `price_1UeLyLBYH85ysT1BICf5EPJr` | £30.00 | `price_1UeLyYBYH85ysT1BEz7ehZP4` |
-| Snoozer Pro | `prod_VfgMPjnzui1zGl` | £6.00 | `price_1UeLycBYH85ysT1BqE6guCme` | £60.00 | `price_1UeLyfBYH85ysT1BABUEkalJ` |
-| Snoozer Studio | `prod_VfgMvCX05yAJSj` | £12.00 | `price_1UeLyjBYH85ysT1Bg7JnkUTg` | £100.00 | `price_1UeLypBYH85ysT1BnlVlQOVH` |
+| Snoozer Plus | `[redacted Stripe product id]` | £3.00 | `[redacted Stripe price id]` | £30.00 | `[redacted Stripe price id]` |
+| Snoozer Pro | `[redacted Stripe product id]` | £6.00 | `[redacted Stripe price id]` | £60.00 | `[redacted Stripe price id]` |
+| Snoozer Studio | `[redacted Stripe product id]` | £12.00 | `[redacted Stripe price id]` | £100.00 | `[redacted Stripe price id]` |
 
 All prices are recurring `gbp`, quantity 1, `usage_type=licensed`, `interval_count=1`, live mode, active and mapped to their existing Product IDs. Pricing was explicitly supplied by the owner; the former £3.99 sandbox Plus fixture is NOT used. Stripe Tax was intentionally deferred and current Prices use `tax_behavior=unspecified`; Checkout uses `automatic_tax.enabled=false`. Do not represent this as a legal VAT/tax determination.
 
@@ -18,9 +18,8 @@ The product limits follow `snoozer.plan_versions`, version 1: Plus has 3 profile
 
 ## Existing production billing infrastructure
 
-- Stripe main live merchant: `acct_1UdI9LBYH85ysT1B`; charges and payouts verified enabled.
 - LIVE Billing Portal `bpc_1UeKY2BYH85ysT1BioyXeK9C`: active for invoices, payment method changes and cancellation at current period end; plan upgrades/downgrades await a defined switching/proration policy.
-- LIVE platform-only webhook `we_1UeKYyBYH85ysT1BSqAlpvsk`: subscribed to 14 relevant events and **ENABLED; genuine signed LIVE delivery verified on 22 November (two processed receipts, no charge)**. Its signing secret was saved server-side in Render. Destination: `https://snoozer-uk-staging.onrender.com/api/v1/billing/stripe/live-webhook`.
+- LIVE platform-only webhook `[redacted Stripe webhook id]`: subscribed to 14 relevant events and **ENABLED; genuine signed LIVE delivery verified on 22 November (two processed receipts, no charge)**. Its signing secret was saved server-side in Render. Destination: `[Render service URL]/api/v1/billing/stripe/live-webhook`.
 - Live Checkout and webhook handler: `src/lib/premium-live-service.ts`, `src/lib/premium-live-webhook.ts` and `src/lib/premium-live-reconciliation.ts`. Live-only entitlement grants require provider-verified invoices, subscription states, charge and risk checks. Signed webhook and replay/sweep logic are present but have not passed true live payment acceptance.
 - Hosted database `snoozer.premium_live_prices` has all six source-of-truth IDs. `snoozer.premium_live_policy.checkout_enabled=false` and `legal_reviewed=false`; no live customers, checkout sessions, subscriptions or grants as verified. The historical `tax_reviewed=false` field remains informational; it no longer gates Checkout.
 - Render environment includes pinned Stripe account ID and Billing Portal ID. Live webhook signing secret was saved. **`STRIPE_PREMIUM_LIVE_API_KEY` passed read-only live account, price and Billing Portal authentication on 22 November**; `SNOOZER_PREMIUM_LIVE_ENABLED=false` and `SNOOZER_PREMIUM_LEGAL_CONFIRMED=false` keep charging off.
@@ -36,7 +35,7 @@ The product limits follow `snoozer.plan_versions`, version 1: Plus has 3 profile
 
 ## Marketplace closure
 
-[PR #29](https://github.com/Truwty/snoozer-uk/pull/29) passed CI, was merged into main, and was deployed on Render at commit [`55b9564`](https://github.com/Truwty/snoozer-uk/commit/55b9564533a6192d985c6dbda3a65e46704112fa). Marketplace routes, sellers, creator Checkout, creator membership offers, Ko-fi donation selling and supporting code were removed, and legacy functions locked down. Old migrations and one paid **sandbox test** order remain for audit.
+[PR #29](https://github.com/Truwty/snoozer-uk/pull/29) passed CI, was merged into main, and was deployed on Render at commit [`55b9564`](https://github.com/Truwty/snoozer-uk/commit/[redacted commit hash]). Marketplace routes, sellers, creator Checkout, creator membership offers, Ko-fi donation selling and supporting code were removed, and legacy functions locked down. Old migrations and one paid **sandbox test** order remain for audit.
 
 Official references: https://docs.stripe.com/billing/subscriptions/overview · https://docs.stripe.com/keys · https://docs.stripe.com/webhooks
 

@@ -4,20 +4,16 @@
 
 ## 0. Seller preferences confirmed by operator (22 November 2026)
 
-- **Trading name:** Snoozer. **Declared structure:** UK sole trader. This is a trading name, **not a verified legal personal name**.
-- **Public billing/support email:** `snoozersupport@snoozer.uk`.
-- **UK VAT:** Operator states not VAT registered, reporting under £90,000 VAT-taxable turnover in any rolling 12-month period. **Self-declaration only**; this does not establish overseas VAT exemptions or tax compliance.
+- **Public billing/support email:** `[configured email address]`.
 - **Intended buyer territory:** Worldwide. UK VAT registration threshold does not remove potentially applicable EU consumer digital-services VAT or other local sales taxes. Cross-border country obligations, registration and price/tax model **NOT REVIEWED OR APPROVED**. Stripe Tax remains disabled.
 - **Refund preference:** No voluntary refunds, but **all legally required refunds, remedies and cancellation rights preserved** in Terms, Studio and Help. A blanket claim of "non-refundable under every circumstance" would be inaccurate.
 - **Owner cannot perform a LIVE card purchase/refund**. Do not mark production paid entitlement, cancellation, failed-renewal or dispute scenarios as validated based on sandbox-only provider tests.
-- **Still missing before approving seller disclosures:** The sole trader's legally identifying name and suitable business/geographical contact address (to be provided securely and displayed where required, not sent in chat). Do not invent or publish private address details.
 - **2027 UK subscription updates:** UK subscription rules are scheduled to change on 1 January 2027; verify applicable commencement and prepare the renewal/cancellation/cooling-off processes before then.
 
 Supporting official guidance: [GOV.UK online/distance selling](https://www.gov.uk/online-and-distance-selling-for-businesses/online-selling), [GOV.UK digital-services VAT](https://www.gov.uk/guidance/the-vat-rules-if-you-supply-digital-services-to-private-consumers), [EU non-Union One Stop Shop](https://vat-one-stop-shop.ec.europa.eu/one-stop-shop/register-oss_en), and [draft UK subscription rules commencement](https://www.legislation.gov.uk/ukdsi/2026/9780348287912/body).
 
 ## 1. Signed LIVE Stripe webhook — PASS
 
-- Intended LIVE Stripe merchant: `acct_1UdI9LBYH85ysT1B`; enabled destination `we_1UeKYyBYH85ysT1BSqAlpvsk` listens for 14 required event types at `https://snoozer-uk-staging.onrender.com/api/v1/billing/stripe/live-webhook`.
 - Created temporary **LIVE** Stripe customer `cus_Vfk94ILOLAjK7o` with **no payment method** and a 30-day trial subscription `sub_1UeOfaBYH85ysT1BwO3HVEVG`. Cancelled this trial **immediately**. No charge can recur on this cancelled trial.
 - Stripe emitted real LIVE `customer.subscription.created` event `evt_1UeOfbBYH85ysT1BDd0IbVBv` and `customer.subscription.deleted` event `evt_1UeOffBYH85ysT1BZ9TTm1Wx`.
 - Checked both events directly in Stripe: `livemode=true`, `pending_webhooks=0`.
@@ -32,13 +28,13 @@ All resources below used **the same Snoozer Stripe account in TEST mode**, not t
 
 | Scenario | Result and proof |
 | --- | --- |
-| Test price/product | Created monthly £3 fixture `price_1UeOhBBYH85ysT1B67Q4Krys` on `prod_VfkBSlv24UWw3c`; both verified `livemode=false` and **archived/inactivated** after testing |
+| Test price/product | Created monthly £3 fixture `[redacted Stripe price id]` on `[redacted Stripe product id]`; both verified `livemode=false` and **archived/inactivated** after testing |
 | Paid initial subscription | PASS. `sub_1UeOi7BYH85ysT1BCHEFiCif` was `active` after a successful test-token card charge with `payment_behavior=allow_incomplete`. Initial invoice `in_1UeOi7BYH85ysT1BrjSLQ88i`: `paid`, `amount_paid=300` pence, `billing_reason=subscription_create`; PaymentIntent `pi_3UeOi7BYH85ysT1B02dxLn9u` paid |
 | Scheduled cancellation | PASS. Stripe accepted `cancel_at_period_end=true` and kept the sandbox subscription `active` with `cancel_at=current_period_end` |
 | Immediate cancellation | PASS. The paid sandbox subscription is finally **`canceled`** and the earlier incomplete fixture `sub_1UeOhMBYH85ysT1B1F4zffZk` ended **`incomplete_expired`** |
 | Refund | PASS. Test-only refund `re_3UeOi7BYH85ysT1B0eKyzGgx` was `succeeded`, `amount=300` pence, targeting the paid test PaymentIntent |
 | Declined test card | PARTIAL. Stripe rejected `tok_chargeDeclined` at customer **source attachment** with `card_declined/generic_decline`. That proves provider decline handling, **not** a failed subscription renewal invoice |
-| Provider-hosted Checkout | PARTIAL. Stripe created `cs_test_a0LGBtwccqhIYFW4eWu9huS9aAVQ6RA2mgdXfdWuDpNfG091ZN6DnEHS1D` with `mode=subscription`, `livemode=false`, amount £3. It was **open/unpaid** when checked; nobody completed the hosted payment form. The session has a short expiry and the test price was deactivated |
+| Provider-hosted Checkout | PARTIAL. Stripe created `[redacted Checkout session id]` with `mode=subscription`, `livemode=false`, amount £3. It was **open/unpaid** when checked; nobody completed the hosted payment form. The session has a short expiry and the test price was deactivated |
 | Recurring renewal invoice | NOT PROVEN. A manual `billing_cycle_anchor=now` update did **not** produce a new invoice. Do not call this a real renewal. A test-clock advance or equivalent is still required |
 | Failed renewal, dispute, 3DS | NOT PROVEN via real Stripe invoice/provider events in this session. Stripe API operations exposed here did not include test-clock advancement or automatic dispute creation; no real card was used |
 | Production paid entitlement/revocation | NOT PROVEN. Prior [PR #35 CI](https://github.com/Truwty/snoozer-uk/actions/runs/44965938535) passed provider-mocked entitlement/replay/risk tests, but no actual paid Studio Checkout-to-Supabase journey happened |

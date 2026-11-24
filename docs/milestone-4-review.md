@@ -36,4 +36,4 @@ All shipped metrics, campaigns (up to 20 per profile) and consent-scoped widgets
 
 No new provider accounts, paid workers, paid databases, Redis or paid cron service are needed for this milestone. Production billing, SMTP, domain cutover, moderation and production security/recovery gates remain separate milestones.
 
-Final layout verification: d165408 is Live on dep-dbugbkgm7kps73caqesg. Test-only 4169bc6 passed CI 44219930318, including 375 px dashboard overflow/axe and desktop report column fit. See analytics-api.md for the shipped route contracts. No additional migrations or secrets were needed.
+Final layout verification: d165408 is Live on [redacted deployment id]. Test-only 4169bc6 passed CI 44219930318, including 375 px dashboard overflow/axe and desktop report column fit. See analytics-api.md for the shipped route contracts. No additional migrations or secrets were needed.
