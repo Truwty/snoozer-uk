@@ -2058,28 +2058,14 @@ test("interactive profile widgets publish, accept visitor interactions and enfor
     await expect(page.getByText("Your vote has been recorded.", { exact: true })).toBeVisible();
     await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
     await page.reload();
+    await enterPublicBio(page);
     await page.getByRole("button", { name: "I already voted — show results", exact: true }).click();
     await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
 
-    await page.getByLabel("Your name").fill("Visitor");
-    await page.getByLabel("Message").fill("First visitor note");
-    await page.getByRole("button", { name: "Sign guestbook", exact: true }).click();
-    await expect(page.getByText("Message submitted. It will appear if the creator approves it.", { exact: true })).toBeVisible();
-    await expect(page.getByText("First visitor note", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Guestbook" })).toHaveCount(0);
+    await expect(page.locator(".profile-guestbook")).toHaveCount(0);
+    await expect(page.getByLabel("Your name")).toHaveCount(0);
 
-    const queue = await owner.rpc("owner_guestbook_queue", { p_profile: profileId, p_limit: 10 });
-    expect(queue.error).toBeNull();
-    expect(queue.data).toMatchObject([{ displayName: "Visitor", message: "First visitor note", status: "pending" }]);
-    const entryId = queue.data[0].id;
-    const approved = await owner.rpc("moderate_guestbook_entry", {
-      p_profile: profileId, p_entry: entryId, p_status: "approved",
-    });
-    expect(approved.error).toBeNull();
-    expect(approved.data).toBe(true);
-    await page.reload();
-    await expect(page.getByText("First visitor note", { exact: true })).toBeVisible();
-    const reportLink = page.getByRole("link", { name: "Report message", exact: true });
-    await expect(reportLink).toHaveAttribute("href", new RegExp("entry=" + entryId));
   } finally {
     await visitor.close();
     if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
