@@ -2297,3 +2297,36 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   margin-block: .15rem 0;
   accent-color: var(--accent);
 }
+
+
+/* Accessible live announcements stay available to assistive technology without
+   taking up visual space in the component library. */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.studio-provider-search {
+  display: grid;
+  gap: .38rem;
+  color: var(--muted);
+  font-size: .73rem;
+  font-weight: 700;
+}
+.studio-provider-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.55rem;
+  padding: .55rem .7rem;
+  border: 1px solid var(--edge);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: .82rem;
+}
