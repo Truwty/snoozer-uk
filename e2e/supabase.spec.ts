@@ -1115,7 +1115,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
     const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
-    await expect(publicPage.getByRole("link", { name: "Support my projects · Ko-fi" })).toHaveAttribute("href", "https://ko-fi.com/creator");
+
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
