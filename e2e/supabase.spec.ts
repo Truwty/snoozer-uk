@@ -28,6 +28,13 @@ async function enterPublicBio(page: Page, openMore = true) {
   await expect(page.locator(".profile-card")).not.toHaveAttribute("aria-hidden", "true");
   await expect(entrance).toBeHidden();
   if (openMore) {
+    // Consent is tested separately. For profile-content flows that do not
+    // exercise consent, explicitly retain only necessary storage before
+    // opening the More disclosure so the consent panel cannot cover it.
+    const consent = page.locator(".consent-banner");
+    if (await consent.isVisible()) {
+      await consent.getByRole("button", { name: "Only necessary", exact: true }).click();
+    }
     const more = page.locator(".profile-more-content > summary");
     if (await more.count()) await more.click();
   }
