@@ -2488,18 +2488,27 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 }
 .profile-card--bio-experience .profile-layout.profile-sections {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
   justify-items: stretch;
   width: 100%;
   min-width: 0;
   gap: .9rem;
   margin: 0;
 }
+/* The centred presentation is a single full-width stack. Portfolio keeps
+   its saved two-column layout at desktop widths. */
+.profile-card--bio-experience[data-layout="centred"] .profile-layout.profile-sections {
+  grid-template-columns: minmax(0, 1fr);
+}
 .profile-card--bio-experience .profile-layout-block,
 .profile-card--bio-experience .profile-more-content {
   width: 100%;
   min-width: 0;
   justify-self: stretch;
+}
+.profile-card--bio-experience .profile-more-content,
+.profile-card--bio-experience .profile-social-links,
+.profile-card--bio-experience .profile-audio-player {
+  grid-column: 1 / -1;
 }
 .profile-card--bio-experience .profile-social-links {
   display: flex;
