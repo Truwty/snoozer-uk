@@ -2627,6 +2627,13 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   outline: 2px solid #fff;
   outline-offset: 3px;
 }
+.profile-entry-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
 .profile-entry-overlay {
   position: fixed;
   inset: 0;
@@ -2642,11 +2649,18 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   border: 0;
   background: rgb(5 7 12 / 43%);
   color: #fff;
+  list-style: none;
   -webkit-backdrop-filter: blur(20px) saturate(120%);
   backdrop-filter: blur(20px) saturate(120%);
   cursor: pointer;
   opacity: 1;
-  transition: opacity .38s ease, backdrop-filter .38s ease;
+  transition: opacity .38s ease, backdrop-filter .38s ease, visibility 0s linear .38s;
+}
+.profile-entry-overlay::-webkit-details-marker { display: none; }
+.profile-entry-shell[open] > .profile-entry-overlay {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 .profile-entry-overlay > span {
   color: rgb(255 255 255 / 92%);
@@ -2659,10 +2673,6 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .profile-entry-overlay > small {
   color: rgb(255 255 255 / 54%);
   font-size: .72rem;
-}
-.profile-entry-overlay.is-entered {
-  opacity: 0;
-  pointer-events: none;
 }
 .profile-volume-control {
   position: fixed;
