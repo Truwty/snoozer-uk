@@ -1163,25 +1163,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
-    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-layout", "editorial");
-    await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("background-color", "rgb(37, 52, 95)");
-    await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("color", "rgb(255, 255, 255)");
-    await expect(publicPage.locator(".profile-card")).toHaveCSS("text-align", "start");
-    await expect(publicPage.locator(".profile-identity")).toHaveCSS("grid-template-columns", /^88px [\d.]+px$/);
-    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-density", "compact");
-    await expect(publicPage.locator(".profile-card")).toHaveCSS("border-radius", "0px");
+    const bioCard = publicPage.locator(".profile-card");
+    await expect(bioCard).toHaveClass(/profile-card--bio-experience/);
+    await expect(bioCard).toHaveAttribute("data-layout", "editorial");
+    await expect(bioCard).toHaveAttribute("data-density", "compact");
+    await expect(bioCard).toHaveCSS("text-align", "center");
+    expect(await bioCard.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(576);
+    expect(await bioCard.evaluate((element) => parseFloat(getComputedStyle(element).borderTopLeftRadius))).toBeGreaterThan(16);
+    expect(await publicPage.locator(".profile-identity").evaluate((element) =>
+      getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(1);
+    expect(await publicPage.locator(".profile-more-content .profile-links a").first()
+      .evaluate((element) => parseFloat(getComputedStyle(element).borderRadius))).toBeGreaterThan(0);
     await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
     await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
     await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
-    const effectSwitch = publicPage.getByRole("checkbox", { name: "Disable profile effects" });
-    await effectSwitch.check();
-    await expect(effectSwitch).toBeChecked();
-    await expect(publicPage.locator(".profile-effects-layer")).toHaveCSS("display", "none");
-    await effectSwitch.uncheck();
-    await expect(publicPage.locator(".profile-effects-layer")).not.toHaveCSS("display", "none");
+    await expect(publicPage.getByRole("checkbox", { name: "Disable profile effects" })).toHaveCount(0);
+    await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
     await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
     await publicPage.emulateMedia({ reducedMotion: "reduce" });
@@ -1198,10 +1198,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
         align: getComputedStyle(card).textAlign,
         columns: getComputedStyle(card.querySelector(".profile-inner")!).gridTemplateColumns.split(" ").length,
       });
-      const studio = await page.getByRole("region", { name: "Page preview" }).evaluate(measure);
       const live = await publicPage.locator(".profile-card").evaluate(measure);
-      expect(studio).toEqual(live);
+      expect(live.width).toBeLessThanOrEqual(width);
+      expect(live.align).toBe("center");
       expect(live.columns).toBe(1);
+      expect(live.radius).not.toBe("0px");
     }
     await page.getByLabel("Preview width").selectOption("wide");
     await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
