@@ -70,6 +70,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   async function act(role: "anon" | "authenticated" | "service_role", id = "") {
     await db.exec(`set role ${role};`);
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id]);
+    // Do not leak a previous simulated JWT's AAL/session claims into the next
+    // test identity. Tests that need claims set them explicitly after act().
+    await db.query("select set_config('request.jwt.claims', '{}', false)");
   }
 
   async function result<T = unknown>(sql: string, args: unknown[] = []) {
