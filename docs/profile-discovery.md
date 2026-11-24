@@ -62,7 +62,7 @@ Migrations:
 
 Private tables live in the \`snoozer\` schema, have RLS enabled and direct privileges revoked. Public metadata is returned only through bounded SECURITY DEFINER readers with fixed empty search paths. Creator settings writes verify the authenticated owner inside the database. Collection writes call \`snoozer.admin_actor(true)\`, requiring a registered platform owner and AAL2 MFA, and write an audit event.
 
-Directory and collection reads are called from server-only code using the service role; public callers cannot invoke the discovery listing RPCs directly with the Supabase anon key. Each server request supplies a keyed HMAC derived from the ingress network address. The private database counter permits at most 180 reads per minute per fingerprint and removes old window records after two hours. The raw network address is not written to that table. This abuse-control fingerprint is not used for analytics, advertising or ranking.
+Directory and collection reads are called from server-only code using the service role; public callers cannot invoke the discovery listing RPCs directly with the Supabase anon key. Each server request supplies a keyed HMAC derived from the ingress network address. The private database counter permits at most 180 reads per minute per fingerprint. Counters older than two hours are swept during subsequent Discover requests. The raw network address is not written to that table. This abuse-control fingerprint is not used for analytics, advertising or ranking.
 
 ## Privacy, legal and help content
 
