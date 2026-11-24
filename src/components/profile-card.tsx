@@ -43,20 +43,20 @@ function audioMetadata(label: string, fallbackArtist: string) {
 }
 
 function TypewriterBio({ value }: { value: string }) {
-  const [visible, setVisible] = useState("");
+  const [visible, setVisible] = useState(value);
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(value);
-      return;
-    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let cursor = 0;
-    setVisible("");
+    const reset = window.setTimeout(() => setVisible(""), 0);
     const timer = window.setInterval(() => {
       cursor = Math.min(cursor + 1, value.length);
       setVisible(value.slice(0, cursor));
       if (cursor >= value.length) window.clearInterval(timer);
     }, 24);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(timer);
+    };
   }, [value]);
 
   return <p className="profile-bio profile-bio--typewriter" aria-label={value}>
@@ -545,7 +545,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       <span>click to enter...</span>
       <small>@{profile.username}</small>
     </button>}
-    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-hidden={entryExperience && !entered ? true : undefined} inert={entryExperience && !entered}
+    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined} aria-hidden={entryExperience && !entered ? true : undefined} inert={entryExperience && !entered}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
