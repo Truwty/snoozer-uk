@@ -1,29 +1,42 @@
 ## Feature #30 — Public Creator Discovery (24 November 2026)
 
-**Status: Implementation in progress on `feature/public-creator-discovery`.** This entry will be updated with the final PR/CI outcome and merge details after verification.
+**Implementation and automated validation: complete. PR #101 remains open and unmerged.** The branch is ready for owner review and the separately controlled release steps.
 
 **Branch/PR:** [#101 — Feature #30: Public Creator Discovery](https://github.com/Truwty/snoozer-uk/pull/101)  
-**Current implementation head:** 186708bd8c63c20ebf1234f9456b8d7a5ba6526d  
-**Base:** main at 3bbf0c8b6b5532396aa9bea7d53233a10c5fb649  
-**Diff:** 12 commits ahead, 0 behind; 43 changed files at last comparison.  
-**PR status:** Open; no merge has occurred.
+**Validated head:** `ca6b9c9b7800deaf0c5a1fce42a05248ad721df8`  
+**Base:** `main` at `3bbf0c8b6b5532396aa9bea7d53233a10c5fb649`  
+**Comparison:** 44 commits ahead, 0 behind; 45 changed files.  
+**PR state:** Open, mergeable, not merged.
 
-**CI status (24 November 2026):** Latest run [#45380481055](https://github.com/Truwty/snoozer-uk/actions/runs/45380481055) failed before a GitHub-hosted runner was assigned. The prepare job has runner_id=0 and an empty steps list; validate also failed, and Security/Quality and Browser jobs were skipped. The same condition has repeated across multiple heads and after retry/reopen. No ESLint, TypeScript, Vitest, SQL migration replay, production build or Playwright test has actually run. This is a CI runner/startup blocker, not a code-test result.
+**Full CI:** [Run #956 — success](https://github.com/Truwty/snoozer-uk/actions/runs/45512619108), completed against the exact validated head above.
 
-**Database validation option:** No Supabase test branch exists. Supabase quoted US$0.01344 per hour for a development branch in this project. Creating it requires the owner’s explicit cost approval. No migration has been applied to the hosted project.
+**Verified checks**
+- Secret scan, dependency/policy audit, ESLint and TypeScript: **passed**.
+- Unit and embedded-PostgreSQL database suite: **337/337 tests passed across 46 test files**. The database suite replayed the migration chain and exercised the Feature #30 opt-in, privacy, Owner MFA, rate-limit, collection and leaderboard paths.
+- Production Next.js build: **passed**.
+- Chromium Playwright: **all 5 shards passed; 72 tests passed and 1 test skipped**.
+- Aggregate `validate` job: **passed**.
 
-The approved scope is implemented on the feature branch: opt-in directory, category/tag/profile-text search, related creators, Featured/Spotlight/standard collections, Studio controls and preview, Owner AAL2 curation, moderation filtering, request throttling, legal/help disclosures and tests. It reuses published snapshots and the existing moderation system. It does not add a marketplace, paid placements, follower graph or view-based ranking.
+**Corrections made during validation**
+- Removed duplicated and invalid SQL left after repeated `COMMIT` statements in the discovery rate-limit migration.
+- Added direct collection-by-slug lookup so a collection remains reachable even when it is outside the 20-item public shelf; rechecked publication, opt-in and moderation eligibility and restricted the reader to the service role.
+- Tightened relevance cursor bounds and response-schema limits; corrected Owner schedule parsing and the Studio preview.
+- Added regression coverage for the collection shelf limit, public RPC privileges, leaderboard independence and active Owner MFA session enforcement.
+- Added Discover and category routes to the accessibility checks and reconciled the sitemap, Terms and Privacy disclosures.
+
+**Feature scope delivered:** default-off per-profile Discover listing; allow-listed category and interest filters; bounded search and stable pagination; related creators with separate opt-in; Featured, Community Spotlight and standard Owner-curated collections; Studio settings and preview; Owner AAL2 curation and audit; live moderation/opt-out filtering; independent Views Leaderboard preference; Privacy, Terms, Help Centre, sitemap and feature documentation. No marketplace, paid placement, follower graph or popularity ranking was added.
+
+**Release boundary — not performed:** No migration has been applied to hosted Supabase, no production data has been changed, no Render deployment has been triggered, and Render auto-deploy remains disabled. PR #101 still needs the owner’s merge. After merge, apply the ten Feature #30 migrations in timestamp order, verify the hosted migration registry and RPC grants, manually deploy the merged commit to Render, and complete authenticated staging acceptance for Studio opt-in/opt-out, search, recommendations, collections, moderation exclusion and leaderboard independence. Do not mark the feature live until those separate release checks pass.
 
 Implementation checklist:
-- [x] Create dedicated branch from the verified latest main commit.
-- [x] Add private discovery settings, public readers, creator settings writer and Owner curation RPCs.
-- [x] Add Discover/category/collection routes, Studio controls and listing preview, Owner curation UI, related creators and global navigation.
-- [x] Add default-off profile trigger, legacy leaderboard preference preservation and indexed search.
-- [x] Add Privacy, Terms, Help Centre, feature ledger and implementation documentation.
-- [x] Add unit, database integration and responsive browser tests.
-- [ ] Run and pass latest-head migrations, ESLint, TypeScript, unit tests, production build and Playwright.
-- [ ] Merge PR #101 after required checks pass.
-- [ ] Hosted migration and Render deployment remain separate release steps; neither has been performed.
+- [x] Implement approved Feature #30 scope and documentation.
+- [x] Pass latest-head secret scan, dependency/policy audit, ESLint and TypeScript.
+- [x] Pass 337 unit/database tests and all migration replay checks.
+- [x] Pass production build and all five Playwright shards.
+- [x] Pass aggregate CI validation on the exact PR head.
+- [ ] Owner merges PR #101.
+- [ ] Apply and verify hosted Supabase migrations.
+- [ ] Manually deploy Render and complete staging acceptance.
 
 # Snoozer.uk — current development progress (21 November 2026)
 
