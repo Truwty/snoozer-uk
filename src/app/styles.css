@@ -2488,10 +2488,17 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 }
 .profile-card--bio-experience .profile-layout.profile-sections {
   display: grid;
-  justify-items: center;
+  justify-items: stretch;
   width: 100%;
+  min-width: 0;
   gap: .9rem;
   margin: 0;
+}
+.profile-card--bio-experience .profile-layout-block,
+.profile-card--bio-experience .profile-more-content {
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
 }
 .profile-card--bio-experience .profile-social-links {
   display: flex;
