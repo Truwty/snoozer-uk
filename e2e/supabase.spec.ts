@@ -764,7 +764,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(firstProjectEditor.getByLabel("Project title")).toBeDisabled();
     await firstProjectEditor.getByLabel("Locked").uncheck();
     await expect(firstProjectEditor.getByLabel("Width")).toBeEnabled();
-    await expect(page.locator(".preview-card .profile-block-project")).toContainText("Studio portfolio project");
+    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
     await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
     await page.getByRole("button", { name: "Duplicate block 1" }).click();
     await expect(page.locator(".studio-block-editor")).toHaveCount(2);
@@ -887,7 +887,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     } finally {
       staffSql("delete from snoozer.staff_roles where owner_id = '" + billingStaff + "'");
     }
-    await page.goto("/studio");
+    await page.goto("/studio/builder");
+    await editorTab(page, "Profile");
     const stageAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const { data: abandonedStage, error: stageError } = await stageAdmin.rpc("prepare_avatar_upload", {
       p_owner: stageLogin.data.user!.id, p_expected: 0, p_open: true,
