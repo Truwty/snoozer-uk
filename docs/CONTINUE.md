@@ -1,30 +1,70 @@
-## Snoozer Studio workspace and visual builder redesign — continue PR #95
+## Studio workspace redesign — release status (24 November 2026)
 
-**Current branch:** `feature/studio-platform-redesign-v2`  
+**Code status: Complete — merged to `main` and deployed live to the Render staging service. Owner-side visual acceptance on a real signed-in session remains the final manual check.**
+
+**Release identifiers**
+- PR [#94](https://github.com/Truwty/snoozer-uk/pull/94), merged 23 November 2026
+- Merge commit [`370a5d9`](https://github.com/Truwty/snoozer-uk/commit/370a5d9492fc546a9d3c4971464dce7d74d0d0d9)
+- PR CI run [#754](https://github.com/Truwty/snoozer-uk/actions/runs/45224886552): success on tested PR head `632a03a47b032e5e57b53c4553b201c4d20197be`
+- Supabase project `edgptbiwswcdmmxzwhxv`: migration `profile_page_layout` is applied as version `20261123215130`
+- Render staging service `srv-dbts6jon74is73en2rjg`: deployment `dep-dc2c8388v5cc73cgru10`, status `live`, commit `370a5d9`
+
+**Delivered**
+- Rebuilt the Studio editor as a full-width workspace with a compact tool rail, eight-item block library, editing panels and live profile preview.
+- Added Text, Callout, Quote, Link, Guestbook, Testimonials, Poll and FAQ through click-to-add or drag-and-drop onto the preview.
+- Added one cross-category profile canvas order for text sections, links, interactive widgets and gallery.
+- Reused the public `ProfileCard` renderer for Studio preview and published profiles; editor drag handles are preview-only.
+- Added accessible Move up / Move down controls, pointer-based touch reordering, visible drag/drop feedback and keyboard announcements.
+- Preserved draft autosave, undo/redo, revision-conflict protection, save/publish actions and publication restore.
+- Applied responsive workspace widths across Studio routes, with tablet/mobile breakpoints and reduced-motion handling.
+
+**Automated validation**
+The successful CI job completed secret scanning, dependency audit, lint, TypeScript, `npm test`, disposable Supabase startup, production build and Chromium Playwright E2E. The new browser journey verifies the wide desktop workspace, all eight block choices, click-to-add, drag-to-preview, cross-category reorder, keyboard activation of Move up/Down, draft save/reload, publish, public-page order, a 360px mobile viewport without horizontal overflow and zero Axe violations.
+
+**Hosted verification**
+The hosted migration registry includes `20261123215130_profile_page_layout`. Render reports the deployment live and its build/deploy succeeded. A warning/error log query covering the post-deploy period returned no entries. Render auto-deploy remains disabled; this release was manually deployed.
+
+**Remaining manual acceptance**
+A live authenticated Studio session and a real phone/tablet drag gesture have not been independently inspected from this execution environment. The staging hostname could not be opened by the external browser check, so do not claim a separate public-browser visual smoke test. This does not block the merged code or green CI; it is the final owner-side visual/gesture check. No further database migration or deployment is pending for this release.
+---
+
+## Snoozer Studio v2 — native profile blocks and focused editing routes (PR #95)
+
+**Branch:** `feature/studio-platform-redesign-v2`  
 **Pull request:** https://github.com/Truwty/snoozer-uk/pull/95  
-**Latest recorded head:** `136d609cf7b2a917ccbf15fce900c5e8b2c9fc8c`  
-**Release state:** Open PR, not merged; no hosted migration or Render deploy performed.
+**Current head before documentation reconciliation:** `f978e70f14ea191152e2d95d7fcd4a4f250675c4`  
+**Status:** Open, not merged. The latest code changes address the two failures in the previous Playwright run; a new latest-head CI run is required. No PR #95 hosted migrations or deployment have been made.
 
-### Current implementation
+### Delivered in PR #95
 
-The PR contains the full-width Studio shell and navigation, account overview, dedicated builder/customize/links/widgets/settings routes, responsive three-panel editor and focused two-panel routes. It also adds ten native, validated profile content block types with drag-to-add, drag/touch/keyboard ordering, edit/visibility/locking controls, duplication, mixed widths and database-backed draft/publication history.
+- Extends the PR #94 full-width workspace, account overview and dedicated Page Builder, Customize, Links, Widgets and Profile Settings destinations.
+- Adds ten typed native profile blocks: Heading, About, Callout, Quote, Project, Skills, Call to action, Divider, Countdown and Statistics.
+- Separates native Callout/Quote blocks from the older section-based versions.
+- Adds bounded content, duplicate-with-fresh-ID, visibility, locking, full/half/third widths, alignment and presentation variants.
+- Persists blocks through revision-checked saves, immutable publication snapshots and publication restoration. Public reads omit hidden blocks and corresponding layout entries.
+- Preserves the legacy 14-argument `save_profile` function for clients that do not send typed blocks.
+- Carries selected-profile context across editor destinations and template selection; preserves existing autosave, undo/redo and publication history.
 
-### Verified so far
+### Verification and fixes
 
-An earlier CI revision passed secret scanning, npm audit, lint, TypeScript and the 330-test unit/database suite. That suite includes database coverage for block creation/editing, hidden-block exclusion, immutable publication snapshot, restoration and the legacy 14-argument save function. Do not treat the earlier green result as the final gate: duplication, lock enforcement, mixed-width CSS and updated Playwright checks were added afterwards.
+- Earlier CI revisions passed 330 unit/database tests, security scan, dependency audit, lint, TypeScript, disposable Supabase migration replay and production build.
+- The last completed Playwright run (#45298553729) had two failures: the nested preview-card Project drop and password-reset sign-in timing.
+- The current code head accepts drag-over on the preview card and waits for the sign-in redirect before opening Page Builder. The next full CI run is the release gate.
+- The feature branch is being reconciled with the documentation-only update that landed on `main`; PR #94 and PR #95 are separate releases.
 
-### Required next steps
+### Release boundary
 
-1. Check the latest-head GitHub Actions run for `136d609cf7b2a917ccbf15fce900c5e8b2c9fc8c`. Require secret scan, audit, lint, typecheck, unit/database tests, disposable Supabase, production build and Chromium Playwright to pass.
-2. Fix any build/browser regressions on the same branch and re-run latest-head CI. The new Studio E2E flow must cover overview vs builder routes, responsive widths, drag-to-add, block editing, duplication, save/reload and public publication.
-3. Review PR #95 and ensure mergeability. Do not merge a failing or unverified revision.
-4. After green CI and merge, apply migration `20261123224000_profile_blocks.sql` through the normal hosted Supabase release process together with the earlier PR migrations, verify the migration registry and the RPC compatibility grants, then manually deploy the merged commit to the intended Render staging service (auto-deploy is intentionally disabled).
-5. Check service readiness and test an authenticated Studio session, save/publish/restore of a test profile and its public URL. Do not run destructive actions against customer accounts.
-6. Update this file, `docs/PROGRESS.md` and `docs/feature-ledger.md` with the real run, merge, migration and deployment identifiers only after each step is verified.
+The PR #95 migrations remain unapplied to hosted Supabase:
+`20261123221000_studio_appearance_controls.sql`,
+`20261123223000_social_link_visibility.sql`, and
+`20261123224000_profile_blocks.sql`.
 
-### Intentionally not marked complete
+Render staging remains manually deployed from `main` with auto-deploy disabled. Do not merge, apply migrations or deploy until latest-head CI—including Chromium Playwright—passes. After merge, apply the three migrations in order, verify the migration registry and save-profile RPC compatibility/grants, manually deploy to the existing staging service, and test an authenticated save, publish, restore and public rendering.
 
-This redesign does not implement arbitrary HTML/CSS/JavaScript, unrestricted per-element code, snap-to-grid, bulk-edit tooling, template asset-attribution import, or every deferred layout/effect in the wider product feature ledger. Keep those statuses explicit rather than treating them as part of the new block editor.
+### Not included
+
+Snap-to-grid, bulk editing, arbitrary HTML/CSS/JavaScript, unrestricted per-element scripts, template asset-attribution import and deferred layout/effect features remain out of scope.
+
 ---
 
 ## Feature #29 — Interactive Profile Widgets (completed 23 November 2026)
