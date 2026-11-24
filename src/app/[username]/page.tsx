@@ -5,6 +5,7 @@ import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import { ProfileAnalyticsConsent } from "@/components/profile-analytics-consent";
 import { ProfileCard } from "@/components/profile-card";
+import { RelatedCreators } from "@/components/related-creators";
 import { discordPresencePublic } from "@/lib/discord-presence";
 import { profileBackgroundImage } from "@/lib/profile";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
@@ -45,9 +46,12 @@ export default async function Page({ params }: Props) {
   const pageStyle = background
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
-  return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
+  return <>
+  <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
     <ProfileCard entryExperience profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} discordPresenceRetry={presenceNeedsRefresh} reportBaseUrl={siteUrl().origin} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
     <Link className="public-report-link" href={new URL("/report/" + profile.username, siteUrl()).href}>Report profile</Link>
-  </main>;
+  </main>
+  <RelatedCreators username={profile.username}/>
+  </>;
 }

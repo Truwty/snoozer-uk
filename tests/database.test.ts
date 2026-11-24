@@ -62,7 +62,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
+    await db.exec("reset role; truncate snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -2660,4 +2660,140 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(db.query("select * from snoozer.poll_votes")).rejects.toMatchObject({ code: "42501" });
   });
 
+
+  it("keeps creator discovery opt-in, isolated, curated and independent from SEO", async () => {
+    await act("authenticated", alice);
+    await claim("discover-alice");
+    const aliceProfile = (await draft() as { profile_id: string }).profile_id;
+    await save(0, "Alice Developer", [], true);
+
+    await act("authenticated", bob);
+    await claim("discover-bob");
+    const bobProfile = (await draft() as { profile_id: string }).profile_id;
+    await save(0, "Bob Developer", [], true);
+
+    const fingerprint = "d".repeat(64);
+    await act("service_role");
+    const initiallyHidden = await db.query(
+      "select username from public.get_profile_directory('',null,array[]::text[],'relevance',null,null,null,25,$1)",
+      [fingerprint],
+    );
+    expect(initiallyHidden.rows).toEqual([]);
+
+    await act("authenticated", alice);
+    const defaults = await result<Record<string, unknown>>(
+      "select public.get_my_discovery_settings($1) as value", [aliceProfile],
+    );
+    expect(defaults).toMatchObject({
+      directory_enabled: false, recommendations_enabled: false,
+      leaderboard_enabled: false, category: "other", tags: [],
+    });
+    await result("select public.set_profile_discovery_settings($1,true,true,true,'developers',array['roblox','software']::text[]) as value", [aliceProfile]);
+
+    await act("authenticated", bob);
+    await result("select public.set_profile_discovery_settings($1,true,true,true,'developers',array['roblox','gaming']::text[]) as value", [bobProfile]);
+
+    await expect(db.query(
+      "select public.set_profile_discovery_settings($1,false,false,false,'other',array[]::text[])",
+      [aliceProfile],
+    )).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query(
+      "select public.set_profile_discovery_settings($1,true,false,false,'developers',array['not-approved']::text[])",
+      [bobProfile],
+    )).rejects.toMatchObject({ code: "22023" });
+
+    await act("anon");
+    await expect(db.query(
+      "select * from public.get_profile_directory('',null,array[]::text[],'relevance',null,null,null,25,'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')",
+    )).rejects.toMatchObject({ code: "42501" });
+    await expect(db.query("select * from snoozer.profile_discovery_settings"))
+      .rejects.toMatchObject({ code: "42501" });
+
+    await act("service_role");
+    const tagSearch = await db.query<{ username: string; rank_score: number }>(
+      "select username,rank_score from public.get_profile_directory($1,null,array[]::text[],'relevance',null,null,null,25,$2)",
+      ["roblox", fingerprint],
+    );
+    expect(tagSearch.rows.map((row) => row.username).sort()).toEqual(["discover-alice", "discover-bob"]);
+    expect(tagSearch.rows.every((row) => row.rank_score === 450)).toBe(true);
+
+    const firstPage = await db.query<{ username: string; rank_score: number; joined_at: string }>(
+      "select username,rank_score,joined_at from public.get_profile_directory('',null,array[]::text[],'relevance',null,null,null,1,$1)",
+      [fingerprint],
+    );
+    expect(firstPage.rows).toHaveLength(1);
+    const first = firstPage.rows[0];
+    const secondPage = await db.query<{ username: string }>(
+      "select username from public.get_profile_directory('',null,array[]::text[],'relevance',$1,$2,$3,25,$4)",
+      [first.rank_score, first.joined_at, first.username, fingerprint],
+    );
+    expect(secondPage.rows).toHaveLength(1);
+    expect(secondPage.rows[0].username).not.toBe(first.username);
+
+    const related = await db.query<{ username: string }>(
+      "select username from public.get_related_creators('discover-alice',6,$1)",
+      [fingerprint],
+    );
+    expect(related.rows).toMatchObject([{ username: "discover-bob" }]);
+
+    await db.exec("reset role");
+    await db.query(
+      "insert into snoozer.profile_view_leaderboard(profile_id,total_views,month_start,month_views) values($1,15,date_trunc('month',now())::date,4)",
+      [aliceProfile],
+    );
+    await act("anon");
+    const leaderboard = await db.query<{ username: string }>(
+      "select username from public.get_views_leaderboard('all')",
+    );
+    expect(leaderboard.rows).toMatchObject([{ username: "discover-alice" }]);
+
+    await db.exec("reset role");
+    await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
+    await act("authenticated", alice);
+    await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal1"}']);
+    await expect(db.query(
+      "select public.owner_upsert_discovery_collection('developer-picks','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully')",
+    )).rejects.toMatchObject({ code: "42501" });
+    await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal2"}']);
+    expect(await result(
+      "select public.owner_upsert_discovery_collection('developer-picks','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully') as value",
+    )).toBe(true);
+
+    await act("service_role");
+    const collection = await result<Record<string, unknown>>(
+      "select public.get_public_discovery_collection('developer-picks',$1) as value", [fingerprint],
+    );
+    expect(collection).toMatchObject({
+      slug: "developer-picks",
+      profiles: [{ username: "discover-alice" }, { username: "discover-bob" }],
+    });
+
+    await act("authenticated", bob);
+    await result("select public.set_profile_discovery_settings($1,false,true,true,'developers',array['roblox','gaming']::text[]) as value", [bobProfile]);
+    await act("service_role");
+    const filteredCollection = await result<{ profiles: Array<{ username: string }> }>(
+      "select public.get_public_discovery_collection('developer-picks',$1) as value", [fingerprint],
+    );
+    expect(filteredCollection?.profiles.map((profile) => profile.username)).toEqual(["discover-alice"]);
+
+    await db.exec("reset role");
+    const caseRow = await result<string>(
+      "insert into snoozer.moderation_cases(target_id,profile_id,category,reason,opened_by) values($1,$2,'spam','Test moderation case for visibility.',$1) returning id as value",
+      [alice, aliceProfile],
+    );
+    await db.query(
+      "insert into snoozer.moderated_profiles(profile_id,case_id,reason,blocked_by) values($1,$2,'Active moderation quarantine',$3)",
+      [aliceProfile, caseRow, alice],
+    );
+    await act("service_role");
+    const hiddenAfterModeration = await db.query<{ username: string }>(
+      "select username from public.get_profile_directory('',null,array[]::text[],'relevance',null,null,null,25,$1)",
+      [fingerprint],
+    );
+    expect(hiddenAfterModeration.rows).toEqual([]);
+    const removedCollection = await result(
+      "select public.get_public_discovery_collection('developer-picks',$1) as value", [fingerprint],
+    );
+    expect(removedCollection).toBeNull();
+  });
 });

@@ -1,3 +1,18 @@
+## Feature #30 — Public Creator Discovery (24 November 2026)
+
+**Status: Implementation in progress on `feature/public-creator-discovery`.** This entry will be updated with the final PR/CI outcome and merge details after verification.
+
+The approved scope is an opt-in public creator directory with safe search, category pages, collections, related creators, creator discovery controls, Owner curation, privacy/legal disclosures and database-level abuse prevention. The implementation uses published profile snapshots, the existing moderation/quarantine system and Owner AAL2 audit gates. It does not add a marketplace, paid placements, follower graph or view-based search ranking.
+
+Implementation checklist:
+- [x] Create dedicated branch from the verified latest `main` commit.
+- [x] Draft private discovery settings, directory/category/collection readers, creator settings writer and Owner collection writer.
+- [x] Add Discover routes, Studio controls, Owner curation UI, related creators and global navigation.
+- [x] Add legal/privacy/Help Centre disclosures and feature documentation.
+- [ ] Complete database/unit/browser tests and latest-head GitHub CI.
+- [ ] Review final diff and merge once all checks pass.
+- [ ] Hosted migration and Render deployment are deliberately outside this branch implementation.
+
 ## Studio workspace redesign — release status (24 November 2026)
 
 **Code status: Complete — merged to `main` and deployed live to the Render staging service. Owner-side visual acceptance on a real signed-in session remains the final manual check.**

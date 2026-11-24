@@ -7,6 +7,7 @@ export const studioNavigationGroups = [
   { label: "Profile", items: [
     { label: "Links", href: "/studio/links", icon: "↗", keywords: "social platforms providers" },
     { label: "Widgets", href: "/studio/widgets", icon: "◈", keywords: "guestbook poll faq testimonials" },
+    { label: "Discovery", href: "/studio/discovery", icon: "◎", keywords: "directory category tags public creator listing leaderboard" },
     { label: "Gallery & Assets", href: "/studio/gallery", icon: "▧", keywords: "images media folders uploads" },
     { label: "Templates", href: "/templates", icon: "▤", keywords: "browse favourites recent" },
   ]},

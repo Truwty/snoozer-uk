@@ -47,6 +47,7 @@ export async function SiteHeader() {
       <nav className="snoozer-header-links" aria-label="Primary navigation">
         <Link href="/help">Help Center</Link>
         <Link href="/templates">Templates</Link>
+        <Link href="/discover">Discover</Link>
         <Link href="/leaderboard">Leaderboard</Link>
         <Link href="/pricing">Pricing</Link>
       </nav>

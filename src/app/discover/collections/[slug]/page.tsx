@@ -1,0 +1,41 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { SiteHeader } from "@/components/site-header";
+import { DiscoveryProfileCard } from "@/components/discovery-profile-card";
+import { discoveryCollection } from "@/lib/discovery";
+import { discoveryRequestFingerprint, discoveryServerClient } from "@/lib/discovery-server";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return { title: "Creator collection · Snoozer Discover", alternates: { canonical: "/discover/collections/" + slug } };
+}
+
+export default async function DiscoveryCollectionPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) notFound();
+  try {
+    const fingerprint = await discoveryRequestFingerprint();
+    const client = await discoveryServerClient();
+    const response = await client.rpc("get_public_discovery_collection", {
+      p_slug: slug, p_request_fingerprint: fingerprint,
+    });
+    const collection = discoveryCollection.safeParse(response.data);
+    if (response.error || !collection.success) notFound();
+    return <main className="shell discovery-page">
+      <SiteHeader/>
+      <header className="discovery-category-hero">
+        <p className="eyebrow">SNOOZER CURATED COLLECTION</p><h1>{collection.data.title}</h1>
+        <p>{collection.data.description}</p><Link className="text-link" href="/discover">← Back to Discover</Link>
+      </header>
+      {collection.data.profiles.length === 0
+        ? <div className="discovery-empty">This collection has no currently discoverable profiles.</div>
+        : <div className="discovery-profile-grid">
+            {collection.data.profiles.map((profile) => <DiscoveryProfileCard key={profile.username} profile={{ ...profile, joined_at: "", rank_score: 0 }}/>)}
+          </div>}
+    </main>;
+  } catch {
+    notFound();
+  }
+}

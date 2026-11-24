@@ -29,6 +29,10 @@ export default function Home() {
       <article><div className="step-visual swatch-options" aria-hidden="true"><span className="demo-swatch" data-theme="midnight" /><span className="demo-swatch" data-theme="lagoon" /><span className="demo-swatch" data-theme="daybreak" /></div><p className="eyebrow">02 / CREATE</p><h2>Make it personal.</h2><p>Add a photo, a short bio and links. Try a theme in the live preview.</p></article>
       <article><div className="step-visual"><span>snoozer.uk</span><CopyLink path="/" /></div><p className="eyebrow">03 / SHARE</p><h2>Take it live.</h2><p>Publish when you’re ready and use the same link wherever you show up.</p></article>
     </section>
+    <section className="home-section leaderboard-teaser" aria-labelledby="community-discover-title">
+      <div className="stack"><p className="eyebrow">MEET THE COMMUNITY</p><h2 id="community-discover-title">Discover creators.</h2><p className="muted">Explore public profiles from people who have chosen to be listed in Snoozer Discover.</p></div>
+      <Link href="/discover" className="button">Explore creators</Link>
+    </section>
     <section className="home-section leaderboard-teaser" aria-labelledby="community-leaderboard-title">
       <div className="stack">
         <p className="eyebrow">THE COMMUNITY</p>
