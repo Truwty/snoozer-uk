@@ -1302,7 +1302,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("alert").filter({ hasText: "exact username" })).toBeVisible();
     await page.getByLabel(`Type ${name} to confirm`).fill(name);
     await page.getByRole("button", { name: "Permanently delete profile" }).click();
+    await expect(page).toHaveURL(/\/studio\?deleted=1$/);
     await expect(page.getByRole("status")).toContainText("Your profile was deleted");
+    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     expect((await publicPage.goto(`/${name}`))?.status()).toBe(404);
     expect((await visitor.request.get(avatarPath!)).status()).toBe(404);
     expect((await ownerClient.rpc("claim_profile", { p_name: name })).error?.code).toBe("23505");
