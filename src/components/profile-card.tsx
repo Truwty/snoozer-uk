@@ -548,8 +548,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
 
   function enterProfile() {
-    // Playback is attempted in the click gesture when hydration has completed.
-    // The native disclosure itself also works before JavaScript is ready.
+    // Reveal the profile immediately in the same click that opens the native
+    // disclosure. The hydration effect below covers clicks before React loads.
+    setEntered(true);
     const audio = profileAudioRef.current;
     if (audio) void audio.play().catch(() => undefined);
   }
