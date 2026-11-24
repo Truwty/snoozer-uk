@@ -2742,6 +2742,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(usernamePrefixSearch.rows.map((row) => row.username).sort()).toEqual(["discover-alice", "discover-bob"]);
     expect(usernamePrefixSearch.rows.every((row) => row.rank_score === 900)).toBe(true);
 
+    const categorySearch = await db.query<{ username: string; rank_score: number }>(
+      "select username,rank_score from public.get_profile_directory($1,null,array[]::text[],'relevance',null,null,null,25,$2)",
+      ["developer", fingerprint],
+    );
+    expect(categorySearch.rows.map((row) => row.username).sort()).toEqual(["discover-alice", "discover-bob"]);
+    expect(categorySearch.rows.every((row) => row.rank_score === 430)).toBe(true);
+
     let rateLimited = false;
     for (let requestNumber = 0; requestNumber < 181; requestNumber += 1) {
       try {

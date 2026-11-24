@@ -36,7 +36,7 @@ Search is capped at 80 characters and a maximum of 24 displayed profiles per pag
 - Recently published: activation timestamp and username.
 - Name: username.
 
-Relevance uses exact username, username prefix, exact display name, display-name prefix, username/display-name substring, biography and selected interest text. Category and interest filters are allow-listed. There is no ranking by views, clicks, analytics, follower counts, Premium status or paid placement. Pagination is bounded and cursors are validated before reaching SQL.
+Relevance uses exact username, username prefix, exact display name, display-name prefix, category text, selected interests and full-text matches in the published biography/display name. Category and interest filters are allow-listed. There is no ranking by views, clicks, analytics, follower counts, Premium status or paid placement. Pagination is bounded and cursors are validated before reaching SQL.
 
 ## Collections and moderation
 
@@ -55,7 +55,8 @@ Migrations:
 - `20261124095004_discovery_slug_bounds.sql`
 - `20261124095005_discovery_new_profile_defaults.sql`
 - `20261124095006_discovery_prefix_search_indexes.sql`
-- `20261124095007_discovery_collection_activation.sql`\`
+- `20261124095007_discovery_collection_activation.sql`
+- `20261124095008_discovery_category_search.sql`\`
 
 Private tables live in the \`snoozer\` schema, have RLS enabled and direct privileges revoked. Public metadata is returned only through bounded SECURITY DEFINER readers with fixed empty search paths. Creator settings writes verify the authenticated owner inside the database. Collection writes call \`snoozer.admin_actor(true)\`, requiring a registered platform owner and AAL2 MFA, and write an audit event.
 
