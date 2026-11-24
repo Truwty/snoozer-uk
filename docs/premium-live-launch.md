@@ -18,7 +18,6 @@ The product limits follow `snoozer.plan_versions`, version 1: Plus has 3 profile
 
 ## Existing production billing infrastructure
 
-- Stripe main live merchant: `[redacted Stripe account id]`; charges and payouts verified enabled.
 - LIVE Billing Portal `bpc_1UeKY2BYH85ysT1BioyXeK9C`: active for invoices, payment method changes and cancellation at current period end; plan upgrades/downgrades await a defined switching/proration policy.
 - LIVE platform-only webhook `[redacted Stripe webhook id]`: subscribed to 14 relevant events and **ENABLED; genuine signed LIVE delivery verified on 22 November (two processed receipts, no charge)**. Its signing secret was saved server-side in Render. Destination: `[Render service URL]/api/v1/billing/stripe/live-webhook`.
 - Live Checkout and webhook handler: `src/lib/premium-live-service.ts`, `src/lib/premium-live-webhook.ts` and `src/lib/premium-live-reconciliation.ts`. Live-only entitlement grants require provider-verified invoices, subscription states, charge and risk checks. Signed webhook and replay/sweep logic are present but have not passed true live payment acceptance.
