@@ -82,7 +82,7 @@ jobs:
             set +e
             npx --yes supabase@3.1.0 start --exclude studio,edge-runtime,logflare,vector,supavisor,postgres-meta
             result=$?
-            printf "%s\\n" "$result" > "$RUNNER_TEMP/supabase-start.exit"
+            printf "%s\n" "$result" > "$RUNNER_TEMP/supabase-start.exit"
             exit "$result"
           ' >"$log" 2>&1 </dev/null &
 
