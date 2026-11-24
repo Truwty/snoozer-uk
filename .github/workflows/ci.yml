@@ -35,7 +35,7 @@ jobs:
           if [[ "$EVENT_NAME" == "push" ]]; then
             associated_prs="$(gh api -H "Accept: application/vnd.github+json" \
               "/repos/$REPOSITORY/commits/$COMMIT_SHA/pulls")"
-            if jq -e 'length > 0' <<<"$associated_prs" >/dev/null; then
+            if jq -e 'any(.[]; .merged_at != null)' <<<"$associated_prs" >/dev/null; then
               run_full=false
               echo "This main-branch commit belongs to a pull request whose CI ran before merge."
               echo "Skipping the duplicate full test suite on the merge push."
