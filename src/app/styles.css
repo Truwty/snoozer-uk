@@ -2488,6 +2488,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 }
 .profile-card--bio-experience .profile-layout.profile-sections {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: stretch;
   width: 100%;
   min-width: 0;
