@@ -495,7 +495,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
-  const hasNativeAudio = entryExperience && profile.links.some((item) => Boolean(directAudioSource(item.url)));
+  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
 
   function enterProfile() {
     setEntered(true);
@@ -509,7 +509,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       <span>click to enter...</span>
       <small>@{profile.username}</small>
     </button>}
-    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined}
+    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-hidden={entryExperience && !entered ? true : undefined} inert={entryExperience && !entered}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
