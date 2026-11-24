@@ -595,7 +595,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {entryExperience ? <details ref={entryDetailsRef} className="profile-entry-shell" onToggle={handleEntryToggle}>
       <summary className="profile-entry-overlay" role="button"
         onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
-        <span>Click to enter...</span>
+        <span>click to enter...</span>
         <small>@{profile.username}</small>
       </summary>
       {profileCard}
