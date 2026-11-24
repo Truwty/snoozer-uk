@@ -42,9 +42,7 @@ export async function proxy(request: NextRequest) {
   const storage = supabaseUrl ? new URL(supabaseUrl).origin : "";
   const csp = [
     "default-src 'self'", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'",
-    "form-action 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
-    // Next.js route chunks are loaded as script elements; keep them same-origin and nonce-protected.
-    `script-src-elem 'self' 'nonce-${nonce}'`,
+    "form-action 'self'", `script-src 'self' 'nonce-${nonce}'${development ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "font-src 'self'", "media-src 'self' https: blob:",
     "frame-src https://www.youtube-nocookie.com https://player.twitch.tv https://open.spotify.com",
     `connect-src 'self' ${storage}`, ...(siteUrl().protocol === "https:" ? ["upgrade-insecure-requests"] : []),
