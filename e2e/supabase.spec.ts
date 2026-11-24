@@ -21,7 +21,7 @@ async function enterPublicBio(page: Page, openMore = true) {
   const entrance = page.locator(".profile-entry-shell > summary.profile-entry-overlay");
   const disclosure = page.locator(".profile-entry-shell");
   await expect(entrance).toBeVisible();
-  await expect(entrance).toHaveAttribute("aria-label", /^Click to enter/);
+  await expect(entrance).toHaveAttribute("aria-label", /^click to enter/i);
   await entrance.click();
   await expect(disclosure).toHaveJSProperty("open", true);
   await expect(page.locator(".profile-card")).toBeVisible();
