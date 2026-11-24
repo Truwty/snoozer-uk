@@ -6,12 +6,13 @@ import { spotifyEmbedUrl, spotifyLink, type SpotifyResource } from "@/lib/spotif
  * No Web API, OAuth or client-side state is required.
  */
 export function SpotifyWidget({
-  resource, label, analyticsUsername, analyticsPosition,
+  resource, label, analyticsUsername, analyticsPosition, compact = false,
 }: {
   resource: SpotifyResource;
   label: string;
   analyticsUsername?: string;
   analyticsPosition?: number;
+  compact?: boolean;
 }) {
   const source = spotifyEmbedUrl(resource);
   const link = spotifyLink(resource);
@@ -20,8 +21,8 @@ export function SpotifyWidget({
   const kind = resource.kind === "show" ? "podcast" : resource.kind;
   const isCompact = resource.kind === "track" || resource.kind === "episode";
 
-  return <section className="spotify-widget" aria-label={`Spotify ${kind} player`}>
-    <div className="spotify-widget__header">
+  return <section className={"spotify-widget" + (compact ? " spotify-widget--compact" : "")} aria-label={`Spotify ${kind} player`}>
+    {!compact && <div className="spotify-widget__header">
       <span className="spotify-widget__brand">
         <svg className="spotify-widget__brand-icon" viewBox="0 0 24 24" role="img" aria-label="Spotify" focusable="false">
           <circle cx="12" cy="12" r="11" fill="currentColor" />
@@ -39,7 +40,7 @@ export function SpotifyWidget({
           <path d="M4 12 12 4M5 4h7v7" />
         </svg>
       </a>
-    </div>
+    </div>}
     <div className="spotify-widget__player">
       <iframe
         className="spotify-widget__iframe"
