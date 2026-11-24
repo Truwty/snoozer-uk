@@ -18,7 +18,10 @@ const localEnabled = process.env.SNOOZER_TEST_LOCAL_SUPABASE === "1";
 async function enterPublicBio(page: Page, openMore = true) {
   const entrance = page.getByRole("button", { name: /Click to enter/ });
   await expect(entrance).toBeVisible();
+  await expect(entrance).toBeEnabled();
   await entrance.click();
+  await expect(page.locator(".profile-card")).not.toHaveAttribute("aria-hidden", "true");
+  await expect(entrance).toBeHidden();
   if (openMore) {
     const more = page.locator(".profile-more-content > summary");
     if (await more.count()) await more.click();
