@@ -777,7 +777,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(reloadedBlocks).toHaveCount(5);
     await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
     await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".preview-card .profile-block-project")).toContainText("Studio portfolio project");
+    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
 
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -1112,7 +1112,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     await publicPage.goto(`/${name}`);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗", "Support my projects · Ko-fi ↗"]);
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
+    const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
+    await expect(kofiLink).toHaveAttribute("href", "https://www.ko-fi.com/creator/");
     await expect(publicPage.getByRole("link", { name: "Support my projects · Ko-fi" })).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
