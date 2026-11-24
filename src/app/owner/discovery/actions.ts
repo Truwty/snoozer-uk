@@ -16,7 +16,8 @@ function parseDate(value: FormDataEntryValue | null) {
   // datetime-local inputs contain no timezone. The Owner UI labels these
   // values as UTC, so parse them explicitly rather than using the server's
   // local timezone.
-  const date = new Date(value.endsWith("Z") ? value : value + "Z");
+  const hasTimezone = /(?:[zZ]|[+-]\\d{2}:\\d{2})$/.test(value);
+  const date = new Date(hasTimezone ? value : value + "Z");
   return Number.isFinite(date.getTime()) ? date.toISOString() : "invalid";
 }
 
