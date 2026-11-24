@@ -21,6 +21,8 @@ foreach ($tool in @("git", "gh", "git-filter-repo", "gitleaks")) {
 }
 & gh auth status --hostname github.com
 if ($LASTEXITCODE -ne 0) { throw "Authenticate GitHub CLI first with: gh auth login" }
+& gh auth setup-git
+if ($LASTEXITCODE -ne 0) { throw "Could not configure Git to use GitHub CLI credentials." }
 
 $visibility = & gh api "repos/$Repository" --jq ".visibility"
 if ($LASTEXITCODE -ne 0) { throw "Could not read repository metadata." }
@@ -79,7 +81,8 @@ $replaceRules = @(
     'literal:edgptbiwswcdmmxzwhxv==>[redacted Supabase project ref]',
     'literal:snoozer-uk-staging.onrender.com==>[redacted staging host]',
     'literal:profile-qa.snoozer.uk==>[redacted test subdomain]',
-    'regex:\bShae Smith\b==>the repository owner'
+    'regex:\bShae Smith\b==>the repository owner',
+    'regex:(?mi)^[^\r\n]*(?:sole trader|not VAT registered|VAT[- ]taxable turnover|taxable turnover|below £90,000|under £90,000)[^\r\n]*$==>[redacted private operator tax information]'
 )
 Set-Content -LiteralPath $replacePath -Value $replaceRules -Encoding utf8
 Set-Content -LiteralPath $messagePath -Value $replaceRules -Encoding utf8
