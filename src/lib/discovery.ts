@@ -74,7 +74,8 @@ export function decodeDiscoveryCursor(value: string | undefined, sort: "relevanc
       return { score: null, timestamp, username: parts[2] };
     }
     if (sort === "relevance" && parts.length === 4 && parts[0] === "s" &&
-      /^\d{1,4}$/.test(parts[1]) && /^[a-z][a-z0-9-]{1,28}[a-z0-9]$/.test(parts[3])) {
+      /^\d{1,4}$/.test(parts[1]) && Number(parts[1]) <= 1000 &&
+      /^[a-z][a-z0-9-]{1,28}[a-z0-9]$/.test(parts[3])) {
       const timestamp = decodeURIComponent(parts[2]);
       if (!Number.isFinite(Date.parse(timestamp))) return null;
       return { score: Number(parts[1]), timestamp, username: parts[3] };
