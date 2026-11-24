@@ -46,8 +46,8 @@ export default async function Page({ params }: Props) {
     ? { "--profile-background-image": `url("/media/gallery/${encodeURIComponent(profile.username)}/${encodeURIComponent(background.id)}")` } as CSSProperties
     : undefined;
   return <main className="public-page" data-background-image={background ? "true" : undefined} style={pageStyle}>
-    <ProfileCard profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} discordPresenceRetry={presenceNeedsRefresh} reportBaseUrl={siteUrl().origin} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
+    <ProfileCard entryExperience profile={profile} ownerBadge={!ownerResult.error && ownerResult.data === true} discordPresence={presence?.success ? presence.data : null} discordPresenceRetry={presenceNeedsRefresh} reportBaseUrl={siteUrl().origin} galleryBase={"/media/gallery/" + profile.username} avatarSrc={avatarPath(profile.username, profile.avatar)} />
     <ProfileAnalyticsConsent key={profile.username} username={profile.username} />
-    <div className="stack" style={{ alignItems: "center", marginTop: ".75rem" }}><Link href={new URL("/report/" + profile.username, siteUrl()).href} className="muted">Report profile</Link><Link className="public-credit" href={siteUrl().href}>Made with Snoozer</Link></div>
+    <Link className="public-report-link" href={new URL("/report/" + profile.username, siteUrl()).href}>Report profile</Link>
   </main>;
 }
