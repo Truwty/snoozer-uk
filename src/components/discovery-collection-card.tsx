@@ -14,7 +14,7 @@ export function DiscoveryCollectionCard({ collection }: { collection: Collection
     </header>
     <div className="discovery-collection-profiles">
       {collection.profiles.slice(0, 3).map((profile) =>
-        <DiscoveryProfileCard key={profile.username} profile={{ ...profile, joined_at: "", rank_score: 0 }}/>)}
+        <DiscoveryProfileCard key={profile.username} profile={profile}/>)}
     </div>
     <Link className="text-link" href={"/discover/collections/" + collection.slug}>Explore collection ↗</Link>
   </article>;
