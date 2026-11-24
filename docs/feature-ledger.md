@@ -70,13 +70,13 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 7.1 | Drag-And-Drop Blocks | Studio section and link reordering verified with mouse and emulated touch in disposable Supabase CI. Other block groups remain open |
-| 7.2 | Keyboard-Accessible Reorder | Partially implemented |
+| 7.1 | Drag-And-Drop Blocks | Eight block types support click-to-add and drag-to-preview; shared canvas reorders sections, links, widgets and gallery. Playwright covers block addition, canvas reorder, save/reload/publish and responsive layout; real-device touch gesture remains a manual owner check |
+| 7.2 | Keyboard-Accessible Reorder | Accessible Move up/Move down controls are keyboard-operable and exercised with Enter in Playwright; click/tap controls remain available as a drag alternative |
 | 7.3 | Undo And Redo | Tested in disposable CI for profile fields and link order within the current Studio session |
 | 7.4 | Autosave With Revision Numbers | Tested in disposable CI for persistence, overlapping edits and stale-tab recovery |
 | 7.5 | Draft Versus Published State | Tested locally |
 | 7.6 | Version History | Tested in disposable CI for owner preview, restore-to-draft and republish of retained versions |
-| 7.7 | Live Responsive Preview | Tested in disposable CI for live preview, with matching Studio and public card measurements at 320 and 375 px |
+| 7.7 | Live Responsive Preview | Playwright verifies the full-width desktop workspace and 360 px mobile layout without horizontal overflow; Axe reports zero violations. Earlier 320/375 px preview measurement checks remain in place |
 | 7.8 | Snap-To-Grid Where Applicable | Deferred |
 | 7.9 | Global Design Tokens | Partially implemented |
 | 7.10 | Per-Block Overrides | Deferred |
