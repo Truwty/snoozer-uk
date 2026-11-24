@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAccount, readStudioDraft, type StudioProfileQuery } from "@/lib/profiles-server";
 import { discoveryCategories, discoveryTags } from "@/lib/discovery";
 import { saveDiscoverySettings } from "./actions";
+import { DiscoveryProfileCard } from "@/components/discovery-profile-card";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Profile discovery settings", robots: { index: false, follow: false } };
@@ -30,6 +31,22 @@ export default async function StudioDiscoveryPage({ searchParams }: { searchPara
     {params.status === "failed" && <p className="message error" role="alert">Could not save discovery settings. Your profile may have changed or the request was rejected.</p>}
     {params.status === "invalid" && <p className="message error" role="alert">Check your category and choose no more than five interests.</p>}
     {result.error && <p className="message error" role="alert">Discovery settings are temporarily unavailable. Reload to try again.</p>}
+    <section className="studio-dashboard-panel stack" aria-labelledby="discovery-preview-title">
+      <p className="eyebrow">PUBLIC LISTING PREVIEW</p>
+      <h2 id="discovery-preview-title">How your creator card will look</h2>
+      <p className="muted">This preview uses your current published profile details and the category/interests below. It will appear in Discover only when your profile is published and you opt in.</p>
+      <div className="discovery-preview-card">
+        <DiscoveryProfileCard profile={{
+          username: draft.username,
+          display_name: draft.display_name,
+          bio: draft.bio,
+          avatar: draft.avatar,
+          category: typeof settings.category === "string" ? settings.category : "other",
+          tags: tags.slice(0, 5),
+          has_verified_domain: Boolean(draft.custom_domain),
+        }}/>
+      </div>
+    </section>
     <form action={saveDiscoverySettings} className="discovery-settings-form">
       <input type="hidden" name="profile" value={draft.profile_id}/>
       <input type="hidden" name="username" value={draft.username}/>

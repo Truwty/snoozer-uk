@@ -3003,3 +3003,5 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   .owner-discovery-form { grid-template-columns:minmax(0,1fr); }
   .owner-discovery-form label:nth-child(4),.owner-discovery-form label:nth-child(5),.owner-discovery-form label:nth-child(10) { grid-column:auto; }
 }
+
+.discovery-preview-card { width: 100%; max-width: 420px; }
