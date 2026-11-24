@@ -46,7 +46,7 @@ export default async function DiscoveryCollectionPage({ params }: { params: Prom
     {collection.data.profiles.length === 0
       ? <div className="discovery-empty">This collection has no currently discoverable profiles.</div>
       : <div className="discovery-profile-grid">
-          {collection.data.profiles.map((profile) => <DiscoveryProfileCard key={profile.username} profile={{ ...profile, joined_at: "", rank_score: 0 }}/>)}
+          {collection.data.profiles.map((profile) => <DiscoveryProfileCard key={profile.username} profile={profile}/>)}
         </div>}
   </main>;
 }
