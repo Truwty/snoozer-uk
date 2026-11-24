@@ -794,6 +794,16 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 360, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+
+    const mobileNavigationButton = page.getByRole("button", { name: "Open navigation", exact: true });
+    const mobileNavigationBounds = await mobileNavigationButton.boundingBox();
+    expect(mobileNavigationBounds?.width).toBeGreaterThanOrEqual(44);
+    expect(mobileNavigationBounds?.height).toBeGreaterThanOrEqual(44);
+    await mobileNavigationButton.click();
+    await expect(page.getByRole("link", { name: "Page Builder", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.getByRole("button", { name: "Close navigation", exact: true }).click();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.goto("/studio/builder");
