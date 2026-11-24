@@ -134,7 +134,7 @@ export const helpArticles: HelpArticle[] = [
       ] },
       { heading: "Recommendations and curated collections", paragraphs: [
         "Turn on Include my profile in related creators to allow your public profile to appear beside similar creators who have also enabled recommendations. Suggestions use public categories and interests, not private visitor histories or analytics.",
-        "Snoozer may curate public collections. Collections cannot override your Discover opt-out, an unpublished profile or an active moderation restriction. Featured placement is editorial, not a paid placement or identity endorsement.",
+        "Snoozer may curate Featured creator shelves, Community spotlight shelves and standard public collections. These are editorial surfaces, not paid placements or identity endorsements. Collections cannot override your Discover opt-out, an unpublished profile or an active moderation restriction.",
       ] },
       { heading: "Turn Discover off or report a profile", paragraphs: [
         "Turn off Allow my profile to appear in Discover and save. Snoozer removes the listing from directory search, category pages, recommendations and curated collections without requiring another publication. Your profile URL remains public until you unpublish it.",

@@ -43,6 +43,7 @@ export const discoveryProfiles = z.array(discoveryProfile).max(25);
 
 export const discoveryCollection = z.object({
   slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+  collection_type: z.enum(["featured", "spotlight", "collection"]),
   title: z.string().min(2).max(72),
   description: z.string().max(280),
   sort_order: z.number().int(),

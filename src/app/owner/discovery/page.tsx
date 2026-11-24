@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Discovery management", robots: { index: false, follow: false } };
 
 const collectionsSchema = z.array(z.object({
-  slug: z.string(), title: z.string(), description: z.string(),
-  published: z.boolean(), sort_order: z.number().int(),
+  slug: z.string(), collection_type: z.enum(["featured", "spotlight", "collection"]),
+  title: z.string(), description: z.string(), published: z.boolean(), sort_order: z.number().int(),
   starts_at: z.string().nullable(), expires_at: z.string().nullable(),
   profiles: z.array(z.string()).max(20),
 })).max(100);
@@ -36,9 +36,10 @@ export default async function OwnerDiscoveryPage({ searchParams }: { searchParam
         <h2>Existing collections</h2>
         {parsed.data.length === 0 && <p className="muted">No collections have been created yet.</p>}
         {parsed.data.map((collection) => <details className="owner-discovery-item" key={collection.slug}>
-          <summary><strong>{collection.title}</strong><span className="muted">/{collection.slug} · {collection.published ? "Published" : "Draft"} · {collection.profiles.length} profiles</span></summary>
+          <summary><strong>{collection.title}</strong><span className="muted">/{collection.slug} · {collection.collection_type} · {collection.published ? "Published" : "Draft"} · {collection.profiles.length} profiles</span></summary>
           <form action={saveDiscoveryCollection} className="owner-discovery-form">
             <label>URL slug<input name="slug" required minLength={2} maxLength={48} defaultValue={collection.slug}/></label>
+            <label>Collection type<select name="collection_type" defaultValue={collection.collection_type}><option value="featured">Featured creators</option><option value="spotlight">Community spotlight</option><option value="collection">Standard collection</option></select></label>
             <label>Title<input name="title" required minLength={2} maxLength={72} defaultValue={collection.title}/></label>
             <label>Description<textarea name="description" maxLength={280} defaultValue={collection.description}/></label>
             <label>Profile usernames (up to 20, comma or line separated)<textarea name="profiles" rows={3} defaultValue={collection.profiles.join("\n")}/></label>
@@ -60,6 +61,7 @@ export default async function OwnerDiscoveryPage({ searchParams }: { searchParam
       <h2>Create a collection</h2>
       <form action={saveDiscoveryCollection} className="owner-discovery-form">
         <label>URL slug<input name="slug" required minLength={2} maxLength={48} placeholder="featured-creators"/></label>
+        <label>Collection type<select name="collection_type" defaultValue="collection"><option value="featured">Featured creators</option><option value="spotlight">Community spotlight</option><option value="collection">Standard collection</option></select></label>
         <label>Title<input name="title" required minLength={2} maxLength={72} placeholder="Featured creators"/></label>
         <label>Description<textarea name="description" maxLength={280} placeholder="A short introduction to this collection."/></label>
         <label>Profile usernames (up to 20, comma or line separated)<textarea name="profiles" rows={3} placeholder={"creator-one\ncreator-two"}/></label>

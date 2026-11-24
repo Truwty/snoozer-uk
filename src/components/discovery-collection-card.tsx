@@ -8,7 +8,7 @@ type Collection = z.infer<typeof discoveryCollection>;
 export function DiscoveryCollectionCard({ collection }: { collection: Collection }) {
   return <article className="discovery-collection-card">
     <header>
-      <p className="eyebrow">SNOOZER COLLECTION</p>
+      <p className="eyebrow">{collection.collection_type === "featured" ? "FEATURED CREATORS" : collection.collection_type === "spotlight" ? "SNOOZER SPOTLIGHT" : "SNOOZER COLLECTION"}</p>
       <h3>{collection.title}</h3>
       {collection.description && <p>{collection.description}</p>}
     </header>

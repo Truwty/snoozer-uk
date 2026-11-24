@@ -28,7 +28,7 @@ export default async function DiscoveryCollectionPage({ params }: { params: Prom
     return <main className="shell discovery-page">
       <SiteHeader/>
       <header className="discovery-category-hero">
-        <p className="eyebrow">SNOOZER CURATED COLLECTION</p><h1>{collection.data.title}</h1>
+        <p className="eyebrow">{collection.data.collection_type === "featured" ? "FEATURED CREATORS" : collection.data.collection_type === "spotlight" ? "SNOOZER SPOTLIGHT" : "SNOOZER CURATED COLLECTION"}</p><h1>{collection.data.title}</h1>
         <p>{collection.data.description}</p><Link className="text-link" href="/discover">← Back to Discover</Link>
       </header>
       {collection.data.profiles.length === 0

@@ -2796,11 +2796,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated", alice);
     await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal1"}']);
     await expect(db.query(
-      "select public.owner_upsert_discovery_collection('developer-picks','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully')",
+      "select public.owner_upsert_discovery_collection('developer-picks','featured','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully')",
     )).rejects.toMatchObject({ code: "42501" });
     await db.query("select set_config('request.jwt.claims',$1,false)", ['{"aal":"aal2"}']);
     expect(await result(
-      "select public.owner_upsert_discovery_collection('developer-picks','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully') as value",
+      "select public.owner_upsert_discovery_collection('developer-picks','featured','Developer picks','An editorial collection.',true,1,null,null,array['discover-alice','discover-bob']::text[],'Curate these profiles carefully') as value",
     )).toBe(true);
 
     await act("service_role");
@@ -2808,7 +2808,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       "select public.get_public_discovery_collection('developer-picks',$1) as value", [fingerprint],
     );
     expect(collection).toMatchObject({
-      slug: "developer-picks",
+      slug: "developer-picks", collection_type: "featured",
       profiles: [{ username: "discover-alice" }, { username: "discover-bob" }],
     });
 

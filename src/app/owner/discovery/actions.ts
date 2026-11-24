@@ -7,6 +7,7 @@ import { requireOwner } from "@/lib/owner/auth";
 
 const slug = z.string().trim().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).min(2).max(48);
 const title = z.string().trim().min(2).max(72);
+const collectionType = z.enum(["featured", "spotlight", "collection"]);
 const description = z.string().max(280);
 const reason = z.string().trim().min(8).max(500);
 
@@ -19,6 +20,7 @@ function parseDate(value: FormDataEntryValue | null) {
 export async function saveDiscoveryCollection(form: FormData) {
   const checkedSlug = slug.safeParse(form.get("slug"));
   const checkedTitle = title.safeParse(form.get("title"));
+  const checkedType = collectionType.safeParse(form.get("collection_type"));
   const checkedDescription = description.safeParse(form.get("description") ?? "");
   const checkedReason = reason.safeParse(form.get("reason"));
   const profiles = z.array(z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/)).max(20)
@@ -26,7 +28,7 @@ export async function saveDiscoveryCollection(form: FormData) {
   const sortOrder = z.coerce.number().int().min(0).max(10000).safeParse(form.get("sort_order") ?? "0");
   const startsAt = parseDate(form.get("starts_at"));
   const expiresAt = parseDate(form.get("expires_at"));
-  if (!checkedSlug.success || !checkedTitle.success || !checkedDescription.success || !checkedReason.success ||
+  if (!checkedSlug.success || !checkedTitle.success || !checkedType.success || !checkedDescription.success || !checkedReason.success ||
     !profiles.success || !sortOrder.success || startsAt === "invalid" || expiresAt === "invalid" ||
     new Set(profiles.data).size !== profiles.data.length ||
     (startsAt && expiresAt && Date.parse(expiresAt) <= Date.parse(startsAt))) {
@@ -35,6 +37,7 @@ export async function saveDiscoveryCollection(form: FormData) {
   const { client } = await requireOwner();
   const { error } = await client.rpc("owner_upsert_discovery_collection", {
     p_slug: checkedSlug.data,
+    p_collection_type: checkedType.data,
     p_title: checkedTitle.data,
     p_description: checkedDescription.data,
     p_published: form.get("published") === "on",

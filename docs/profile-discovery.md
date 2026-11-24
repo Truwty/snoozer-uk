@@ -40,7 +40,7 @@ Relevance uses exact username, username prefix, exact display name, display-name
 
 ## Collections and moderation
 
-The Owner Control Centre provides MFA-gated collection creation, editing, scheduling, publishing and deletion. A collection has a public slug, title, bounded description, sort order, optional start/expiry times and at most 20 explicitly ordered usernames. Every chosen member must be published, activated, opted in and unrestricted when the collection is saved.
+The Owner Control Centre provides MFA-gated collection creation, editing, scheduling, publishing and deletion. Owners choose Featured creators, Community spotlight or a standard collection. Each type has a public slug, title, bounded description, sort order, optional start/expiry times and at most 20 explicitly ordered usernames. Every chosen member must be published, activated, opted in and unrestricted when the collection is saved.
 
 The public collection reader rechecks eligibility on every request. A stale membership cannot bypass a creator's opt-out, unpublication or a current moderation/account restriction. Reports use the existing verified-account profile report route and moderation queue; discovery does not create a second reporting or quarantine system.
 
@@ -48,15 +48,17 @@ The public collection reader rechecks eligibility on every request. A stale memb
 
 Migrations:
 
-- \`20261124095000_public_creator_discovery.sql\`
-- \`20261124095001_public_discovery_query_fixes.sql\`
-- \`20261124095002_discovery_rate_limits_and_preferences.sql\`
-- \`20261124095003_discovery_tag_search.sql
+- `20261124095000_public_creator_discovery.sql`
+- `20261124095001_public_discovery_query_fixes.sql`
+- `20261124095002_discovery_rate_limits_and_preferences.sql`
+- `20261124095003_discovery_tag_search.sql`
 - `20261124095004_discovery_slug_bounds.sql`
 - `20261124095005_discovery_new_profile_defaults.sql`
 - `20261124095006_discovery_prefix_search_indexes.sql`
 - `20261124095007_discovery_collection_activation.sql`
-- `20261124095008_discovery_category_search.sql`\`
+- `20261124095008_discovery_category_search.sql`
+- `20261124095009_discovery_collection_types.sql`
+
 
 Private tables live in the \`snoozer\` schema, have RLS enabled and direct privileges revoked. Public metadata is returned only through bounded SECURITY DEFINER readers with fixed empty search paths. Creator settings writes verify the authenticated owner inside the database. Collection writes call \`snoozer.admin_actor(true)\`, requiring a registered platform owner and AAL2 MFA, and write an audit event.
 

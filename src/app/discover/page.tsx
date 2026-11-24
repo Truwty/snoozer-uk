@@ -2,7 +2,8 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { DiscoveryBrowser } from "@/components/discovery-browser";
 import { DiscoveryCollectionCard } from "@/components/discovery-collection-card";
-import { discoveryCollections, discoveryCategories } from "@/lib/discovery";
+import { discoveryCollections, discoveryCollection, discoveryCategories } from "@/lib/discovery";
+import type { z } from "zod";
 import { discoveryRequestFingerprint, discoveryServerClient } from "@/lib/discovery-server";
 import type { DiscoverySearchParams } from "@/components/discovery-browser";
 
@@ -13,6 +14,27 @@ export const metadata = {
   alternates: { canonical: "/discover" },
 };
 
+type Collection = z.infer<typeof discoveryCollection>;
+
+function CollectionShelf({
+  id, eyebrow, title, entries,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  entries: Collection[];
+}) {
+  if (entries.length === 0) return null;
+  return <section className="discovery-featured" aria-labelledby={id}>
+    <div className="discovery-section-heading">
+      <div><p className="eyebrow">{eyebrow}</p><h2 id={id}>{title}</h2></div>
+    </div>
+    <div className="discovery-collections-grid">
+      {entries.map((collection) => <DiscoveryCollectionCard key={collection.slug} collection={collection}/>)}
+    </div>
+  </section>;
+}
+
 export default async function DiscoverPage({ searchParams }: { searchParams: Promise<DiscoverySearchParams> }) {
   const params = await searchParams;
   let response: { data: unknown; error: unknown } | null = null;
@@ -20,12 +42,17 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
     const fingerprint = await discoveryRequestFingerprint();
     const client = await discoveryServerClient();
     response = await client.rpc("get_public_discovery_collections", {
-      p_limit: 8, p_request_fingerprint: fingerprint,
+      p_limit: 20, p_request_fingerprint: fingerprint,
     });
   } catch {
     response = null;
   }
-  const collections = discoveryCollections.safeParse(response?.data);
+  const parsed = discoveryCollections.safeParse(response?.data);
+  const entries = parsed.success ? parsed.data : [];
+  const featured = entries.filter((collection) => collection.collection_type === "featured");
+  const spotlight = entries.filter((collection) => collection.collection_type === "spotlight");
+  const regular = entries.filter((collection) => collection.collection_type === "collection");
+
   return <main className="shell discovery-page">
     <SiteHeader/>
     <header className="discovery-hero">
@@ -36,10 +63,9 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
         {discoveryCategories.map((item) => <Link key={item.value} href={"/discover/category/" + item.value}>{item.label}</Link>)}
       </div>
     </header>
-    {collections.success && collections.data.length > 0 && <section className="discovery-featured" aria-labelledby="discovery-featured-title">
-      <div className="discovery-section-heading"><div><p className="eyebrow">HAND-PICKED</p><h2 id="discovery-featured-title">Featured collections</h2></div></div>
-      <div className="discovery-collections-grid">{collections.data.map((collection) => <DiscoveryCollectionCard key={collection.slug} collection={collection}/>)}</div>
-    </section>}
+    <CollectionShelf id="discovery-featured-title" eyebrow="HAND-PICKED" title="Featured creators" entries={featured}/>
+    <CollectionShelf id="discovery-spotlight-title" eyebrow="IN THE SPOTLIGHT" title="Community spotlight" entries={spotlight}/>
+    <CollectionShelf id="discovery-collections-title" eyebrow="EXPLORE MORE" title="Creator collections" entries={regular}/>
     <DiscoveryBrowser searchParams={params}/>
   </main>;
 }

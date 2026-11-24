@@ -48,7 +48,7 @@ describe("public creator discovery data", () => {
 
   it("validates curated collection cards and caps membership", () => {
     const collection = {
-      slug: "developer-spotlight", title: "Developer spotlight",
+      slug: "developer-spotlight", collection_type: "featured", title: "Developer spotlight",
       description: "A few people building things.", sort_order: 1,
       created_at: creator.joined_at,
       profiles: [{
@@ -57,6 +57,7 @@ describe("public creator discovery data", () => {
       }],
     };
     expect(discoveryCollection.safeParse(collection).success).toBe(true);
+    expect(discoveryCollection.safeParse({ ...collection, collection_type: "unknown" }).success).toBe(false);
     expect(discoveryCollection.safeParse({ ...collection, profiles: Array.from({ length: 21 }, (_, i) => ({
       ...collection.profiles[0], username: "creator-" + i,
     })) }).success).toBe(false);
