@@ -50,6 +50,9 @@ export async function proxy(request: NextRequest) {
     `connect-src 'self' ${storage}`, ...(siteUrl().protocol === "https:" ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
   const headers = new Headers(request.headers);
+  // Next.js reads the request nonce when emitting framework and route scripts.
+  // Keep it on the internal request only; do not expose the nonce as a response header.
+  headers.set("x-nonce", nonce);
   headers.set("Content-Security-Policy", csp);
   headers.delete(domainHostHeader); headers.delete(domainUserHeader);
   if (!isMaintenanceExempt(request.nextUrl.pathname, request.method) && supabaseUrl && supabaseKey) {
