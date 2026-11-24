@@ -15,6 +15,16 @@ const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const localEnabled = process.env.SNOOZER_TEST_LOCAL_SUPABASE === "1";
 
+async function enterPublicBio(page: Page, openMore = true) {
+  const entrance = page.getByRole("button", { name: /Click to enter/ });
+  await expect(entrance).toBeVisible();
+  await entrance.click();
+  if (openMore) {
+    const more = page.locator(".profile-more-content > summary");
+    if (await more.count()) await more.click();
+  }
+}
+
 test.skip(!localEnabled, "Requires the disposable local Supabase CLI stack and mail catcher.");
 
 async function mailLink(request: APIRequestContext, email: string, subject: string, path: string) {
