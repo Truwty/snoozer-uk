@@ -353,7 +353,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         const place = robloxPlace(url);
         const spotify = spotifyResource(url);
         const provider = socialProviderForUrl(url);
-        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify";
+        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify" && !place;
         return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
           {spotify
             ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
@@ -383,7 +383,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     if (entryExperience) {
       const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
         const provider = socialProviderForUrl(url);
-        return provider && provider.id !== "spotify"
+        // Game/place links stay as descriptive links in More instead of
+        // being hidden behind a generic Roblox social icon.
+        return provider && provider.id !== "spotify" && !robloxPlace(url)
           ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
           : [];
       });
