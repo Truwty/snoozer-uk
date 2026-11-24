@@ -29,7 +29,8 @@ begin
     or p_limit is null or p_limit not between 1 and 25
     or (p_after_username is not null and p_after_username !~ '^[a-z][a-z0-9-]{1,28}[a-z0-9]$')
     or (p_after_username is not null and p_sort='relevance' and (p_after_score is null or p_after_timestamp is null))
-    or (p_after_username is not null and p_sort='recent' and p_after_timestamp is null) then
+    or (p_after_username is not null and p_sort='recent' and p_after_timestamp is null)
+    or (p_after_username is not null and p_sort='relevance' and p_after_score not between 0 and 1000) then
     raise exception 'Invalid discovery query' using errcode='22023';
   end if;
 
