@@ -253,7 +253,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect((await visitor.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id)).status()).toBe(401);
     // A signed-in creator who opts in still must not count their own page.
     await page.goto("/" + name);
-    await enterPublicBio(page, false);
+    await enterPublicBio(page);
     await page.getByText("Analytics preferences", { exact: true }).click();
     const selfView = page.waitForResponse((r) => r.url().endsWith("/api/v1/analytics/view"));
     await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
@@ -811,7 +811,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.goto("/" + name);
-    await enterPublicBio(page, false);
+    await enterPublicBio(page);
     const publicBlocks = page.locator(".public-page .profile-layout-block");
     await expect(publicBlocks).toHaveCount(5);
     await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
@@ -1147,7 +1147,6 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     const publicPage = await visitor.newPage();
     const unavailable = await publicPage.goto(`/${name}`);
-    await enterPublicBio(publicPage);
     expect(unavailable?.status()).toBe(404);
     await expect(publicPage.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
@@ -1489,7 +1488,7 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
-    await enterPublicBio(page, false);
+    await enterPublicBio(page);
   const fullPageBackground = page.locator("main.public-page");
   await expect(fullPageBackground).toHaveAttribute("data-background-image", "true");
   await expect(fullPageBackground).toHaveCSS("background-size", "cover, cover");
@@ -1553,7 +1552,7 @@ test("gallery images upload to private Storage and follow publication visibility
 
   // The Studio preview also contains this image, but uses the owner-only URL.
   await page.goto("/" + name);
-    await enterPublicBio(page, false);
+    await enterPublicBio(page);
   const openWater = page.getByRole("img", { name: "Open water" });
   await expect(openWater).toHaveAttribute("src", /^\/media\/gallery\//);
   const openWaterPath = (await openWater.getAttribute("src"))!;
@@ -2042,7 +2041,7 @@ test("interactive profile widgets publish, accept visitor interactions and enfor
     });
     const page = await visitor.newPage();
     await page.goto("/" + name);
-    await enterPublicBio(page, false);
+    await enterPublicBio(page);
     await expect(page.getByRole("heading", { name: "Kind words" })).toBeVisible();
     await expect(page.getByText("A lovely project.", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
