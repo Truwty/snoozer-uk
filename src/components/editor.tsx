@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
@@ -66,7 +66,8 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [providerQuery, setProviderQuery] = useState("");
   const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
   const [dropActive, setDropActive] = useState(false);
-  const draggedBlock = useRef<BuilderBlock | null>(null);
+  const pointerBlockDrag = useRef<{ pointerId: number; kind: BuilderBlock; x: number; y: number; active: boolean } | null>(null);
+  const suppressBlockClick = useRef(false);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
@@ -259,44 +260,43 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     setAnnouncement((kind === "faq" ? "FAQ" : kind[0].toUpperCase() + kind.slice(1)) + " added to your page. You can customise it in the Widgets panel.");
   }
 
-  function startBlockDrag(event: DragEvent<HTMLButtonElement>, kind: BuilderBlock) {
-    draggedBlock.current = kind;
-    event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData("application/x-snoozer-block", kind);
-    event.dataTransfer.setData("text/plain", kind);
+  function startBlockPointerDrag(event: ReactPointerEvent<HTMLButtonElement>, kind: BuilderBlock) {
+    if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+    pointerBlockDrag.current = {
+      pointerId: event.pointerId, kind, x: event.clientX, y: event.clientY, active: false,
+    };
   }
 
-  function allowBlockDrop(event: DragEvent<HTMLElement>) {
-    const types = Array.from(event.dataTransfer.types);
-    if (draggedBlock.current || types.includes("application/x-snoozer-block") || types.includes("text/plain")) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-      setDropActive(true);
-    }
+  function trackBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = pointerBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag.active && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8) return;
+    drag.active = true;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    setDropActive(Boolean(target?.closest(".preview-card, .preview")));
   }
 
-  function dropBlock(event: DragEvent<HTMLElement>) {
-    const types = Array.from(event.dataTransfer.types);
-    const candidate = draggedBlock.current
-      || (types.includes("application/x-snoozer-block") ? event.dataTransfer.getData("application/x-snoozer-block") : "")
-      || (types.includes("text/plain") ? event.dataTransfer.getData("text/plain") : "");
-    const block = blockLibrary.find(({ id }) => id === candidate);
-    if (!block) return;
-
-    // Handle library drops before ProfileCard's nested layout-reorder handlers.
+  function finishBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = pointerBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const shouldAdd = drag.active && Boolean(target?.closest(".preview-card, .preview"));
+    pointerBlockDrag.current = null;
+    setDropActive(false);
+    if (!shouldAdd) return;
     event.preventDefault();
-    event.stopPropagation();
-    draggedBlock.current = null;
-    setDropActive(false);
-    addBlock(block.id);
+    suppressBlockClick.current = true;
+    addBlock(drag.kind);
+    window.setTimeout(() => { suppressBlockClick.current = false; }, 0);
   }
 
-  function endBlockDrag() {
-    draggedBlock.current = null;
+  function cancelBlockPointerDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (pointerBlockDrag.current?.pointerId !== event.pointerId) return;
+    pointerBlockDrag.current = null;
     setDropActive(false);
   }
 
-  return <div className="studio-workspace">
+  return <div className="studio-workspace" onPointerMove={trackBlockPointerDrag} onPointerUp={finishBlockPointerDrag} onPointerCancel={cancelBlockPointerDrag}>
     <header className="editor-topbar">
       <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p></div>
       <div className="actions">
@@ -334,8 +334,12 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           <p className="muted block-library-intro">Drag a block onto the preview, or select it to add it instantly.</p>
           <div className="block-library-grid">
             {blockLibrary.map((block) => <button key={block.id} type="button" className="block-library-item"
-              aria-describedby={`block-description-${block.id}`} draggable
-              onDragStart={(event) => startBlockDrag(event, block.id)} onDragEnd={endBlockDrag} onClick={() => addBlock(block.id)}>
+              aria-describedby={`block-description-${block.id}`}
+              onPointerDown={(event) => startBlockPointerDrag(event, block.id)}
+              onClick={() => {
+                if (suppressBlockClick.current) { suppressBlockClick.current = false; return; }
+                addBlock(block.id);
+              }}>
               <span className="block-library-symbol" aria-hidden="true">{block.symbol}</span>
               <span className="block-library-copy"><strong>{block.label}</strong><small id={`block-description-${block.id}`}>{block.description}</small></span>
               <span className="block-library-add" aria-hidden="true">+</span>
@@ -651,7 +655,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </section>
     </div>
     <aside className={"preview stack" + (dropActive ? " is-drop-active" : "")}
-      onDragOverCapture={allowBlockDrop} onDropCapture={dropBlock} data-drop-active={dropActive || undefined}>
+      data-drop-active={dropActive || undefined}>
       <div className="actions preview-controls">
         <p className="eyebrow">{template ? "TEMPLATE PREVIEW" : "LIVE PREVIEW"}</p>
         <label>Preview width
