@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -23,6 +23,125 @@ import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 import { SocialProviderIcon } from "./social-provider-icon";
 
 type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId };
+
+const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
+
+function directAudioSource(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && audioFilePattern.test(url.pathname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function audioMetadata(label: string, fallbackArtist: string) {
+  const match = label.trim().match(/^(.+?)\s+[—–-]\s+(.+)$/);
+  return match
+    ? { title: match[1].trim(), artist: match[2].trim() }
+    : { title: label.trim() || "Untitled track", artist: fallbackArtist };
+}
+
+function TypewriterBio({ value }: { value: string }) {
+  const [visible, setVisible] = useState("");
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisible(value);
+      return;
+    }
+    let cursor = 0;
+    setVisible("");
+    const timer = window.setInterval(() => {
+      cursor = Math.min(cursor + 1, value.length);
+      setVisible(value.slice(0, cursor));
+      if (cursor >= value.length) window.clearInterval(timer);
+    }, 24);
+    return () => window.clearInterval(timer);
+  }, [value]);
+
+  return <p className="profile-bio profile-bio--typewriter" aria-label={value}>
+    <span aria-hidden="true">{visible}</span>
+    <span className="profile-typewriter-caret" aria-hidden="true" />
+  </p>;
+}
+
+function formatAudioTime(value: number) {
+  if (!Number.isFinite(value) || value < 0) return "0:00";
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  return minutes + ":" + String(seconds).padStart(2, "0");
+}
+
+function ProfileAudioPlayer({ src, title, artist, cover, volume }: {
+  src: string;
+  title: string;
+  artist: string;
+  cover?: string;
+  volume: number;
+}) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
+  async function togglePlayback() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      try {
+        await audio.play();
+      } catch {
+        setPlaying(false);
+      }
+    } else {
+      audio.pause();
+    }
+  }
+
+  return <section className="profile-audio-player" aria-label="Profile music player">
+    <audio ref={audioRef} src={src} preload="metadata"
+      onPlay={() => setPlaying(true)}
+      onPause={() => setPlaying(false)}
+      onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
+      onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+      onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+      onEnded={() => { setPlaying(false); setPosition(0); }} />
+    {cover
+      // The selected image is already a same-origin, resized profile asset.
+      // eslint-disable-next-line @next/next/no-img-element
+      ? <img className="profile-audio-cover" src={cover} alt="" width={48} height={48} />
+      : <span className="profile-audio-cover profile-audio-cover--fallback" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+          </svg>
+        </span>}
+    <div className="profile-audio-details">
+      <strong title={title}>{title}</strong>
+      <span title={artist}>{artist}</span>
+      <input className="profile-audio-progress" type="range" min={0} max={Math.max(duration, 1)}
+        step={0.1} value={Math.min(position, duration || 0)} disabled={!duration}
+        aria-label="Track progress"
+        onChange={(event) => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = Number(event.currentTarget.value);
+            setPosition(audioRef.current.currentTime);
+          }
+        }} />
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)}</span>
+    </div>
+    <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
+      aria-label={playing ? "Pause music" : "Play music"}>
+      {playing
+        ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
+        : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
+    </button>
+  </section>;
+}
+
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -128,7 +247,7 @@ function LayoutBlock({
   </div>;
 }
 
-export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl, onMoveLayoutItem, onSelectLayoutItem }: {
+export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, previewLabel = "Page preview", ownerBadge = false, discordPresence = null, discordPresenceRetry = false, reportBaseUrl, onMoveLayoutItem, onSelectLayoutItem, entryExperience = false }: {
   profile: PublishedProfile;
   avatarSrc?: string;
   galleryBase?: string;
@@ -140,7 +259,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   reportBaseUrl?: string;
   onMoveLayoutItem?: (from: number, to: number) => void;
   onSelectLayoutItem?: (item: ProfilePageLayoutItem) => void;
+  entryExperience?: boolean;
 }) {
+  const [entered, setEntered] = useState(!entryExperience);
+  const [entryOverlayVisible, setEntryOverlayVisible] = useState(entryExperience);
+  const [musicVolume, setMusicVolume] = useState(0.72);
+  const [musicMuted, setMusicMuted] = useState(false);
   const effects = profile.appearance.effects ?? defaultEffects;
   const layout = normalizeProfilePageLayout(profile.pageLayout, profile);
   const linkColours = linkAccentColours(profile.appearance.accent);
@@ -187,7 +311,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
     <p className="profile-handle">@{profile.username}</p>
     {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
-    {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+    {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
 
   function renderSection(index: number) {
@@ -212,9 +336,46 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
     if (valid.length === 0) return null;
+
     const hasProviderEmbed = (url: string) => Boolean(
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
     );
+
+    if (entryExperience) {
+      const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
+        const provider = socialProviderForUrl(url);
+        return provider && provider.id !== "spotify"
+          ? [{ label, url, index, providerId: provider.id }]
+          : [];
+      });
+      const audioLink = valid.find(({ url }) => directAudioSource(url));
+      const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
+      const audioSource = audioLink ? directAudioSource(audioLink.url) : null;
+      const audioInfo = audioLink ? audioMetadata(audioLink.label, profile.display_name) : null;
+      const cover = profile.gallery[0] && galleryBase
+        ? galleryBase + "/" + profile.gallery[0].id
+        : avatarSrc;
+
+      return <>
+        {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
+          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={label} aria-label={label}
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>
+            <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
+          </a>)}
+        </nav>}
+        {audioLink && audioSource && audioInfo
+          ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
+              cover={cover} volume={musicMuted ? 0 : musicVolume} />
+          : spotifyTrack
+            ? <SpotifyWidget key={spotifyResource(spotifyTrack.url)?.kind + spotifyResource(spotifyTrack.url)?.id}
+                resource={spotifyResource(spotifyTrack.url)!} label={spotifyTrack.label} compact
+                analyticsUsername={profile.username} analyticsPosition={spotifyTrack.index + 1} />
+            : null}
+      </>;
+    }
+
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
       const provider = socialProviderForUrl(url);
       return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id }] : [];
@@ -236,7 +397,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           const channel = twitchChannel(url);
           const place = robloxPlace(url);
           const spotify = spotifyResource(url);
-          return <li key={`${url}-${index}`} className={spotify ? "spotify-link-slot" : undefined}>
+          return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
             {spotify
               ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
                   analyticsUsername={preview ? undefined : profile.username}
@@ -334,7 +495,21 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
-  return <section className={`profile-card theme-${profile.theme}`} aria-label={preview ? previewLabel : undefined}
+  const hasNativeAudio = entryExperience && profile.links.some((item) => Boolean(directAudioSource(item.url)));
+
+  function enterProfile() {
+    setEntered(true);
+    window.setTimeout(() => setEntryOverlayVisible(false), 380);
+  }
+
+  return <>
+    {entryExperience && entryOverlayVisible && <button type="button"
+      className={"profile-entry-overlay" + (entered ? " is-entered" : "")}
+      onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
+      <span>click to enter...</span>
+      <small>@{profile.username}</small>
+    </button>}
+    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
@@ -359,8 +534,20 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
-  </section>;
+    </section>
+    {entryExperience && entered && hasNativeAudio && <div className="profile-volume-control" aria-label="Music volume control">
+      <button type="button" className="profile-volume-mute" aria-label={musicMuted ? "Unmute music" : "Mute music"}
+        onClick={() => setMusicMuted((value) => !value)}>
+        {musicMuted || musicVolume === 0
+          ? <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6" /></svg>
+          : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></svg>}
+      </button>
+      <input type="range" min="0" max="1" step="0.01" value={musicMuted ? 0 : musicVolume}
+        aria-label="Profile music volume"
+        onChange={(event) => { setMusicVolume(Number(event.currentTarget.value)); setMusicMuted(false); }} />
+    </div>}
+  </>;
 }
