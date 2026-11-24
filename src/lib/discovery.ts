@@ -60,7 +60,7 @@ export function encodeDiscoveryCursor(profile: z.infer<typeof discoveryProfile>,
 }
 
 export function decodeDiscoveryCursor(value: string | undefined, sort: "relevance" | "recent" | "name") {
-  if (!value) return null;
+  if (!value || value.length > 128) return null;
   const parts = value.split("|");
   try {
     if (sort === "name" && parts.length === 2 && parts[0] === "n" &&
