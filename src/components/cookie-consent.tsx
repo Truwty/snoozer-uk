@@ -12,7 +12,7 @@ function privacySignal() {
 }
 
 export function CookieConsent() {
-  const [choice, setChoice] = useState<boolean | null>(null);
+  const [choice, setChoice] = useState<boolean | null>(false);
   const [open, setOpen] = useState(false);
   const [signal, setSignal] = useState(false);
   const [error, setError] = useState("");
