@@ -1441,7 +1441,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   margin-inline: auto;
   padding: 1rem 0 3rem;
 }
-@media (min-width: 76.01rem) {
+@media (min-width: 86.01rem) {
   .studio-workspace .editor-grid {
     grid-template-columns: minmax(15rem, 16rem) minmax(27rem, 1.25fr) minmax(22rem, .9fr);
     grid-template-areas: "sidebar canvas inspector";
@@ -1464,7 +1464,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
     overflow: auto;
   }
 }
-@media (min-width: 54.01rem) and (max-width: 76rem) {
+@media (min-width: 54.01rem) and (max-width: 86rem) {
   .studio-root > main.studio-shell { width: min(calc(100% - 1.5rem), 100%); }
   .studio-workspace .editor-grid {
     grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
