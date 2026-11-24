@@ -2114,6 +2114,11 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   gap: 1.1rem;
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-block-end: .5rem;
 }
 .studio-sidebar-group { display: grid; gap: .2rem; min-width: 0; }
 .studio-sidebar-group-label {
@@ -2163,7 +2168,17 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   color: var(--muted);
   font-size: .78rem;
 }
-.studio-sidebar-footer { display: grid; gap: .8rem; margin-top: auto; }
+.studio-sidebar-footer {
+  display: grid;
+  flex: 0 0 auto;
+  gap: .8rem;
+  margin-top: auto;
+  padding-top: .75rem;
+  border-top: 1px solid var(--edge);
+  background: var(--surface);
+  position: relative;
+  z-index: 2;
+}
 .studio-help-card {
   display: grid;
   gap: .45rem;
@@ -2188,10 +2203,11 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   padding-block: .25rem;
 }
 .studio-sidebar-site-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 2.4rem;
-  padding-inline: .55rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .45rem .55rem;
   color: var(--muted);
 }
 .studio-sidebar-site-link:hover,
