@@ -36,18 +36,18 @@ export const discoveryProfile = z.object({
   tags: z.array(z.enum(discoveryTags)).max(5),
   has_verified_domain: z.boolean(),
   joined_at: z.string().min(1).max(64),
-  rank_score: z.number().int().nonnegative(),
+  rank_score: z.number().int().min(0).max(1000),
 });
 
 export const discoveryProfiles = z.array(discoveryProfile).max(25);
 
 export const discoveryCollection = z.object({
-  slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+  slug: z.string().min(2).max(48).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
   collection_type: z.enum(["featured", "spotlight", "collection"]),
   title: z.string().min(2).max(72),
   description: z.string().max(280),
-  sort_order: z.number().int(),
-  created_at: z.string(),
+  sort_order: z.number().int().min(0).max(10000),
+  created_at: z.string().min(1).max(64),
   profiles: z.array(discoveryProfile.omit({ joined_at: true, rank_score: true })).max(20),
 });
 
