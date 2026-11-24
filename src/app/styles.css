@@ -2867,3 +2867,21 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   max-width: 42ch;
   margin-block-start: 0;
 }
+
+
+/* A selected photo remains visible beneath the glass bio card. */
+.public-page[data-background-image="true"] {
+  background-size: cover, cover;
+  background-position: center, center;
+}
+.public-page .profile-card--bio-experience[data-background-image="true"] {
+  background-image:
+    linear-gradient(160deg, rgb(12 15 23 / 48%), rgb(12 15 23 / 64%)),
+    var(--profile-background-image);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat;
+}
+.profile-entry-overlay:disabled {
+  cursor: default;
+}
