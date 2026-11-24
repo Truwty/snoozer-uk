@@ -20,6 +20,7 @@ describe("public creator discovery data", () => {
     expect(discoveryProfile.safeParse({ ...creator, tags: ["custom-tag"] }).success).toBe(false);
     expect(discoveryProfile.safeParse({ ...creator, tags: ["software","roblox","gaming","music","writing","fitness"] }).success).toBe(false);
     expect(discoveryProfile.safeParse({ ...creator, username: "Admin" }).success).toBe(false);
+    expect(discoveryProfile.safeParse({ ...creator, rank_score: 1001 }).success).toBe(false);
   });
 
   it("validates the exact public directory response shape", () => {
@@ -59,6 +60,7 @@ describe("public creator discovery data", () => {
     };
     expect(discoveryCollection.safeParse(collection).success).toBe(true);
     expect(discoveryCollection.safeParse({ ...collection, collection_type: "unknown" }).success).toBe(false);
+    expect(discoveryCollection.safeParse({ ...collection, sort_order: 10001 }).success).toBe(false);
     expect(discoveryCollection.safeParse({ ...collection, profiles: Array.from({ length: 21 }, (_, i) => ({
       ...collection.profiles[0], username: "creator-" + i,
     })) }).success).toBe(false);
