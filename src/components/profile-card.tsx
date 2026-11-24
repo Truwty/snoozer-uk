@@ -22,7 +22,7 @@ import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 import { SocialProviderIcon } from "./social-provider-icon";
 
-type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId };
+type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
 
 const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
 
@@ -384,7 +384,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
         const provider = socialProviderForUrl(url);
         return provider && provider.id !== "spotify"
-          ? [{ label, url, index, providerId: provider.id }]
+          ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
           : [];
       });
       const audioLink = valid.find(({ url }) => directAudioSource(url));
@@ -398,8 +398,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
       return <>
         {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
-            rel="ugc nofollow noreferrer" title={label} aria-label={label}
+          {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
             data-analytics-profile={preview ? undefined : profile.username}
             data-analytics-position={preview ? undefined : index + 1}>
             <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
@@ -418,13 +418,13 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
       const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id }] : [];
+      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }] : [];
     });
     const regular = valid.filter(({ url }) => !socialProviderForUrl(url) || hasProviderEmbed(url));
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-        {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
-          rel="ugc nofollow noreferrer" title={label} aria-label={label}
+        {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
+          rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
           data-analytics-profile={preview ? undefined : profile.username}
           data-analytics-position={preview ? undefined : index + 1}>
           <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
