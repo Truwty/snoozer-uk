@@ -154,4 +154,65 @@ grant execute on function public.owner_upsert_discovery_collection(
   text,text,text,text,boolean,integer,timestamptz,timestamptz,text[],text
 ) to authenticated;
 
+
+-- Fetch a single collection directly. The public shelf is intentionally capped
+-- at 20 entries, but a valid collection must remain reachable by its own URL.
+create or replace function public.get_public_discovery_collection(
+  p_slug text,p_request_fingerprint text default null
+)
+returns jsonb language plpgsql security definer set search_path = '' as $
+begin
+  perform snoozer.consume_discovery_request(p_request_fingerprint);
+  if p_slug is null or length(p_slug)>48 or p_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*
+ then
+    raise exception 'Invalid collection slug' using errcode='22023';
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'slug',c.slug,
+      'collection_type',c.collection_type,
+      'title',c.title,
+      'description',c.description,
+      'sort_order',c.sort_order,
+      'created_at',c.created_at,
+      'profiles',coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'username',p.username,
+          'display_name',v.display_name,
+          'bio',v.bio,
+          'avatar',v.avatar,
+          'category',d.category,
+          'tags',d.tags,
+          'has_verified_domain',snoozer.ready_profile_domain(p.id) is not null
+        ) order by cp.position)
+        from snoozer.discovery_collection_profiles cp
+        join snoozer.profiles p on p.id=cp.profile_id
+        join snoozer.published_profiles v
+          on v.profile_id=p.id and v.revision=p.published_revision and v.activated_at is not null
+        join snoozer.profile_discovery_settings d
+          on d.profile_id=p.id and d.directory_enabled
+        where cp.collection_id=c.id and p.published_revision is not null
+          and not snoozer.public_profile_blocked(p.id,p.owner_id)
+      ),'[]'::jsonb)
+    )
+    from snoozer.discovery_collections c
+    where c.slug=p_slug and c.published
+      and (c.starts_at is null or c.starts_at<=now())
+      and (c.expires_at is null or c.expires_at>now())
+      and exists (
+        select 1
+        from snoozer.discovery_collection_profiles cp
+        join snoozer.profiles p on p.id=cp.profile_id
+        join snoozer.published_profiles v
+          on v.profile_id=p.id and v.revision=p.published_revision and v.activated_at is not null
+        join snoozer.profile_discovery_settings d
+          on d.profile_id=p.id and d.directory_enabled
+        where cp.collection_id=c.id and p.published_revision is not null
+          and not snoozer.public_profile_blocked(p.id,p.owner_id)
+      )
+  );
+end
+$;
+
 commit;
