@@ -42,6 +42,7 @@ describe("public creator discovery data", () => {
     expect(decodeDiscoveryCursor("r|not-a-date|sample-creator", "recent")).toBeNull();
     expect(decodeDiscoveryCursor("n|sample-creator", "recent")).toBeNull();
     expect(decodeDiscoveryCursor("s|99999|2026-11-24T09%3A00%3A00.000Z|sample-creator", "relevance")).toBeNull();
+    expect(decodeDiscoveryCursor("s|1001|2026-11-24T09%3A00%3A00.000Z|sample-creator", "relevance")).toBeNull();
     expect(decodeDiscoveryCursor("n|UPPERCASE", "name")).toBeNull();
     expect(decodeDiscoveryCursor("s|10|2026-11-24T09%3A00%3A00.000Z|sample-creator|extra", "relevance")).toBeNull();
   });
