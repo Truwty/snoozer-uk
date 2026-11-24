@@ -160,11 +160,10 @@ grant execute on function public.owner_upsert_discovery_collection(
 create or replace function public.get_public_discovery_collection(
   p_slug text,p_request_fingerprint text default null
 )
-returns jsonb language plpgsql security definer set search_path = '' as $
+returns jsonb language plpgsql security definer set search_path = '' as $$
 begin
   perform snoozer.consume_discovery_request(p_request_fingerprint);
-  if p_slug is null or length(p_slug)>48 or p_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*
- then
+  if p_slug is null or length(p_slug)>48 or p_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
     raise exception 'Invalid collection slug' using errcode='22023';
   end if;
 
@@ -213,6 +212,12 @@ begin
       )
   );
 end
-$;
+$$;
+
+-- This SECURITY DEFINER reader must only be reachable through the trusted
+-- server client, which supplies the HMAC generated from the ingress address.
+revoke all on function public.get_public_discovery_collection(text,text)
+  from public,anon,authenticated,service_role;
+grant execute on function public.get_public_discovery_collection(text,text) to service_role;
 
 commit;
