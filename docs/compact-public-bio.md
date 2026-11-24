@@ -17,7 +17,7 @@ The compact public page supports one selected audio source:
 1. A visible normal profile link to a public HTTPS audio file ending in `.mp3`, `.m4a`, `.ogg`, `.wav`, `.aac` or `.flac` takes priority.
 2. Set that link's label to `Track title — Artist` to populate the compact player's title and artist.
 3. The first gallery image is used as cover art; the profile avatar is the fallback.
-4. The player exposes play/pause, seek/progress, elapsed/duration and a page-level mute/volume slider. Visitors must click Play; playback is not started automatically.
+4. The player exposes play/pause, seek/progress, elapsed/duration and a page-level mute/volume slider. Clicking the entry overlay starts the directly hosted track as a user-initiated action. Visitors can then pause, resume, seek or adjust volume.
 
 When no direct audio file is linked, the first visible Spotify track link uses Spotify's official compact track embed. Spotify remains responsible for its own playback controls and volume. The parent page does not pretend to control the Spotify iframe's volume because the official iFrame API does not expose a volume setter. Playlist, album, artist and podcast embeds are intentionally not expanded on the compact bio page.
 
