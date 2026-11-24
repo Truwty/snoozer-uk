@@ -400,8 +400,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
       return <>
         {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-          {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
-            rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
+          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={label} aria-label={label}
             data-analytics-profile={preview ? undefined : profile.username}
             data-analytics-position={preview ? undefined : index + 1}>
             <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
