@@ -34,7 +34,7 @@ export default async function StudioDiscoveryPage({ searchParams }: { searchPara
     <section className="studio-dashboard-panel stack" aria-labelledby="discovery-preview-title">
       <p className="eyebrow">PUBLIC LISTING PREVIEW</p>
       <h2 id="discovery-preview-title">How your creator card will look</h2>
-      <p className="muted">This preview uses your current published profile details and the category/interests below. It will appear in Discover only when your profile is published and you opt in.</p>
+      <p className="muted">This preview uses the current values in your Studio draft and the category/interests below. The verified-domain mark is omitted here because Discover checks live domain verification before showing it.</p>
       <div className="discovery-preview-card">
         <DiscoveryProfileCard profile={{
           username: draft.username,
@@ -43,7 +43,7 @@ export default async function StudioDiscoveryPage({ searchParams }: { searchPara
           avatar: draft.avatar,
           category: typeof settings.category === "string" ? settings.category : "other",
           tags: tags.slice(0, 5),
-          has_verified_domain: Boolean(draft.custom_domain),
+          has_verified_domain: false,
         }}/>
       </div>
     </section>
