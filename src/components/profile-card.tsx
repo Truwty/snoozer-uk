@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -266,7 +266,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   entryExperience?: boolean;
 }) {
   const [entered, setEntered] = useState(!entryExperience);
-  const [entryOverlayVisible, setEntryOverlayVisible] = useState(entryExperience);
+  const entryDetailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    // A native <details> disclosure can open before React hydrates. Sync the
+    // typewriter state after hydration so an early click is never discarded.
+    if (entryExperience && entryDetailsRef.current?.open) setEntered(true);
+  }, [entryExperience]);
   const [musicVolume, setMusicVolume] = useState(0.72);
   const [musicMuted, setMusicMuted] = useState(false);
   const profileAudioRef = useRef<HTMLAudioElement>(null);
@@ -543,20 +548,17 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
 
   function enterProfile() {
-    setEntered(true);
+    // Playback is attempted in the click gesture when hydration has completed.
+    // The native disclosure itself also works before JavaScript is ready.
     const audio = profileAudioRef.current;
     if (audio) void audio.play().catch(() => undefined);
-    window.setTimeout(() => setEntryOverlayVisible(false), 380);
   }
 
-  return <>
-    {entryExperience && entryOverlayVisible && <button type="button"
-      className={"profile-entry-overlay" + (entered ? " is-entered" : "")}
-      onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
-      <span>click to enter...</span>
-      <small>@{profile.username}</small>
-    </button>}
-    <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined} aria-hidden={entryExperience && !entered ? true : undefined} inert={entryExperience && !entered}
+  function handleEntryToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+    if (event.currentTarget.open) setEntered(true);
+  }
+
+  const profileCard = <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
@@ -584,7 +586,17 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
         {entryExperience ? <>{renderLinks()}{renderMoreContent()}</> : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
-    </section>
+    </section>;
+
+  return <>
+    {entryExperience ? <details ref={entryDetailsRef} className="profile-entry-shell" onToggle={handleEntryToggle}>
+      <summary className="profile-entry-overlay"
+        onClick={enterProfile} aria-label={"Click to enter " + profile.display_name + " profile"}>
+        <span>click to enter...</span>
+        <small>@{profile.username}</small>
+      </summary>
+      {profileCard}
+    </details> : profileCard}
     {entryExperience && hasNativeAudio && <div className="profile-volume-control" role="group" aria-label="Music volume control">
       <button type="button" className="profile-volume-mute" aria-label={musicMuted ? "Unmute music" : "Mute music"}
         onClick={() => setMusicMuted((value) => !value)}>
