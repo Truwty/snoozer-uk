@@ -154,6 +154,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     const events: string[] = [];
     publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
     await publicPage.goto("/" + name);
+    await enterPublicBio(publicPage);
     await expect(publicPage.locator(".discord-presence-card")).toHaveCount(0);
     expect((await visitor.request.get("/api/v1/discord/presence?username=" + name)).status()).toBe(404);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
@@ -173,6 +174,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await publicPage.getByRole("button", { name: "Turn off profile analytics" }).click();
     expect(await publicPage.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("snoozer-analytics-browser-v3:")))).toEqual([]);
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
     // Spotify is a visible native iframe, while YouTube still waits for opt-in.
@@ -251,6 +253,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect((await visitor.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id)).status()).toBe(401);
     // A signed-in creator who opts in still must not count their own page.
     await page.goto("/" + name);
+    await enterPublicBio(page, false);
     await page.getByText("Analytics preferences", { exact: true }).click();
     const selfView = page.waitForResponse((r) => r.url().endsWith("/api/v1/analytics/view"));
     await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
@@ -266,6 +269,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     campaignUrl.searchParams.set("utm_source", "newsletter");
     const traffic = async () => (await owner.rpc("get_my_profile_traffic_totals", { p_profile: id })).data;
     await publicPage.goto(campaignUrl.href);
+    await enterPublicBio(publicPage);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
     await expect.poll(traffic).toEqual(expect.arrayContaining([
@@ -274,6 +278,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByRole("button", { name: "Pause campaign", exact: true }).click();
     await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(false);
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect.poll(traffic).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: "Newsletter", source: "email", views: 1 }),
       expect.objectContaining({ campaign: null, source: "email", views: 1 }),
@@ -281,6 +286,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByRole("button", { name: "Resume campaign", exact: true }).click();
     await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(true);
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect.poll(traffic).toEqual(expect.arrayContaining([
       expect.objectContaining({ label: "Newsletter", source: "email", views: 2 }),
     ]));
@@ -332,6 +338,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(revoked.status()).toBe(400);
     expect(await revoked.text()).toBe("");
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("button", { name: "Load GitHub summary", exact: true })).toHaveCount(0);
   } finally {
     await visitor.close();
@@ -565,6 +572,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     const publicPage = await visitor.newPage();
     await publicPage.goto(`/${name}`);
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
     await editorTab(page, "Settings");
     await page.getByLabel("SEO title", { exact: true }).fill("Custom portfolio title");
@@ -572,6 +580,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Draft saved.");
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
@@ -587,6 +596,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage).toHaveTitle("Custom portfolio title · Snoozer");
     await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute("content", "Custom portfolio description");
     await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
@@ -652,6 +662,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText("Draft saved.");
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -661,10 +672,12 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await editorTab(page, "Sections");
     await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Portfolio second publication", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
     await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
     await editorTab(page, "Profile");
@@ -677,6 +690,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
     await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Draft after scheduling");
@@ -688,6 +702,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await page.getByRole("button", { name: "Check due publication", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Scheduled version is now live." })).toBeVisible();
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Scheduled future version", exact: true })).toBeVisible();
     await editorTab(page, "Profile");
     await expect(page.getByLabel("Display name")).toHaveValue("Draft after scheduling");
@@ -796,6 +811,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.goto("/" + name);
+    await enterPublicBio(page, false);
     const publicBlocks = page.locator(".public-page .profile-layout-block");
     await expect(publicBlocks).toHaveCount(5);
     await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
@@ -1131,12 +1147,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
 
     const publicPage = await visitor.newPage();
     const unavailable = await publicPage.goto(`/${name}`);
+    await enterPublicBio(publicPage);
     expect(unavailable?.status()).toBe(404);
     await expect(publicPage.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
     await publicPage.goto(`/${name}`);
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
     const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
@@ -1236,11 +1254,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Section 3 attribution")).toHaveValue("Studio notebook");
     await expect(page.getByLabel("Section 4 target time")).toHaveValue("2096-02-29T18:15");
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
     await expect(publicPage.getByRole("heading", { name: "Notes" })).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByText("Live · Up to date")).toBeVisible();
     await publicPage.reload();
+    await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
 
     const responsivePage = await page.context().newPage();
@@ -1469,6 +1489,7 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
+    await enterPublicBio(page, false);
   const fullPageBackground = page.locator("main.public-page");
   await expect(fullPageBackground).toHaveAttribute("data-background-image", "true");
   await expect(fullPageBackground).toHaveCSS("background-size", "cover, cover");
@@ -1532,6 +1553,7 @@ test("gallery images upload to private Storage and follow publication visibility
 
   // The Studio preview also contains this image, but uses the owner-only URL.
   await page.goto("/" + name);
+    await enterPublicBio(page, false);
   const openWater = page.getByRole("img", { name: "Open water" });
   await expect(openWater).toHaveAttribute("src", /^\/media\/gallery\//);
   const openWaterPath = (await openWater.getAttribute("src"))!;
@@ -2020,6 +2042,7 @@ test("interactive profile widgets publish, accept visitor interactions and enfor
     });
     const page = await visitor.newPage();
     await page.goto("/" + name);
+    await enterPublicBio(page, false);
     await expect(page.getByRole("heading", { name: "Kind words" })).toBeVisible();
     await expect(page.getByText("A lovely project.", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
