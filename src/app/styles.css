@@ -1261,6 +1261,9 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .block-library-intro { font-size: .82rem; line-height: 1.45; padding-inline: .25rem; }
 .block-library-grid { display: grid; gap: .45rem; }
 .block-library-item {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   display: grid;
   grid-template-columns: 2.05rem minmax(0, 1fr) 1rem;
   align-items: center;
