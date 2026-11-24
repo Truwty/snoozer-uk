@@ -713,9 +713,13 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
 
-    await page.setViewportSize({ width: 1440, height: 900 });
     const workspace = page.locator("main.studio-shell");
-    expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(1200);
+    for (const width of [1280, 1366, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(900);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `Studio at ${width}px`).toBeLessThanOrEqual(width);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
     await expect(page.locator(".block-library-item")).toHaveCount(18);
     await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled native callout" })).toBeVisible();
