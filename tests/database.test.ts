@@ -2812,6 +2812,34 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       profiles: [{ username: "discover-alice" }, { username: "discover-bob" }],
     });
 
+    // Public shelves are capped at 20 entries, but collection URLs must not
+    // become inaccessible once the Owner creates more than 20 collections.
+    await db.exec("reset role");
+    await db.query(`
+      insert into snoozer.discovery_collections(
+        slug,collection_type,title,published,sort_order,created_by,updated_by
+      )
+      select 'overflow-' || lpad(n::text,2,'0'),'collection','Overflow ' || n,true,100+n,$1,$1
+      from generate_series(1,21) n
+    `, [alice]);
+    await db.query(`
+      insert into snoozer.discovery_collection_profiles(collection_id,profile_id,position)
+      select c.id,$1,1
+      from snoozer.discovery_collections c
+      where c.slug like 'overflow-%'
+    `, [aliceProfile]);
+    await act("service_role");
+    const publicShelf = await result<Array<{ slug: string }>>(
+      "select public.get_public_discovery_collections(20,$1) as value", [fingerprint],
+    );
+    expect(publicShelf?.map((item) => item.slug)).not.toContain("overflow-21");
+    const overflowCollection = await result<Record<string, unknown>>(
+      "select public.get_public_discovery_collection('overflow-21',$1) as value", [fingerprint],
+    );
+    expect(overflowCollection).toMatchObject({
+      slug: "overflow-21", profiles: [{ username: "discover-alice" }],
+    });
+
     await act("authenticated", bob);
     await result("select public.set_profile_discovery_settings($1,false,true,true,'developers',array['roblox','gaming']::text[]) as value", [bobProfile]);
     await act("service_role");
