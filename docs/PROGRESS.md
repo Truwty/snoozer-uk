@@ -1,29 +1,59 @@
-## Snoozer Studio workspace and visual builder redesign — PR #95 (23 November 2026)
+## Studio workspace redesign — release status (24 November 2026)
 
-**Status: Implementation in progress on `feature/studio-platform-redesign-v2`; not merged and not deployed.** This redesign replaces the cramped editor experience with a wider Studio workspace, clear account overview and dedicated editing destinations. It extends the existing drag-and-drop foundation from PR #94; it does not replace or rebuild unrelated working Snoozer features.
+**Code status: Complete — merged to `main` and deployed live to the Render staging service. Owner-side visual acceptance on a real signed-in session remains the final manual check.**
+
+**Release identifiers**
+- PR [#94](https://github.com/Truwty/snoozer-uk/pull/94), merged 23 November 2026
+- Merge commit [`370a5d9`](https://github.com/Truwty/snoozer-uk/commit/370a5d9492fc546a9d3c4971464dce7d74d0d0d9)
+- PR CI run [#754](https://github.com/Truwty/snoozer-uk/actions/runs/45224886552): success on tested PR head `632a03a47b032e5e57b53c4553b201c4d20197be`
+- Supabase project `edgptbiwswcdmmxzwhxv`: migration `profile_page_layout` is applied as version `20261123215130`
+- Render staging service `srv-dbts6jon74is73en2rjg`: deployment `dep-dc2c8388v5cc73cgru10`, status `live`, commit `370a5d9`
+
+**Delivered**
+- Rebuilt the Studio editor as a full-width workspace with a compact tool rail, eight-item block library, editing panels and live profile preview.
+- Added Text, Callout, Quote, Link, Guestbook, Testimonials, Poll and FAQ through click-to-add or drag-and-drop onto the preview.
+- Added one cross-category profile canvas order for text sections, links, interactive widgets and gallery.
+- Reused the public `ProfileCard` renderer for Studio preview and published profiles; editor drag handles are preview-only.
+- Added accessible Move up / Move down controls, pointer-based touch reordering, visible drag/drop feedback and keyboard announcements.
+- Preserved draft autosave, undo/redo, revision-conflict protection, save/publish actions and publication restore.
+- Applied responsive workspace widths across Studio routes, with tablet/mobile breakpoints and reduced-motion handling.
+
+**Automated validation**
+The successful CI job completed secret scanning, dependency audit, lint, TypeScript, `npm test`, disposable Supabase startup, production build and Chromium Playwright E2E. The new browser journey verifies the wide desktop workspace, all eight block choices, click-to-add, drag-to-preview, cross-category reorder, keyboard activation of Move up/Down, draft save/reload, publish, public-page order, a 360px mobile viewport without horizontal overflow and zero Axe violations.
+
+**Hosted verification**
+The hosted migration registry includes `20261123215130_profile_page_layout`. Render reports the deployment live and its build/deploy succeeded. A warning/error log query covering the post-deploy period returned no entries. Render auto-deploy remains disabled; this release was manually deployed.
+
+**Remaining manual acceptance**
+A live authenticated Studio session and a real phone/tablet drag gesture have not been independently inspected from this execution environment. The staging hostname could not be opened by the external browser check, so do not claim a separate public-browser visual smoke test. This does not block the merged code or green CI; it is the final owner-side visual/gesture check. No further database migration or deployment is pending for this release.
+---
+
+## Snoozer Studio v2 — PR #95 (24 November 2026)
+
+**Status:** Implementation committed on `feature/studio-platform-redesign-v2`; PR #95 remains open and is not deployed. This extends the PR #94 full-width Studio/editor baseline already merged to `main`; it does not replace unrelated working Snoozer features.
 
 ### Delivered in the PR branch
 
-- Full-width Studio service shell with grouped, searchable navigation, Ctrl/Cmd+K focus, mobile navigation, account switching control and Help Centre access.
-- Account overview with profile status/completion, consent-aware views/click activity, aliases and plan links.
-- Dedicated Page Builder, Customize, Links, Widgets and Profile Settings destinations. Focused destinations use a two-panel inspector/preview arrangement instead of repeating the full builder palette.
-- Desktop three-column builder (component library, live profile canvas, editing inspector), responsive tablet/mobile layouts, desktop/phone/narrow-phone preview widths, draft/publish actions and existing undo/redo integration.
-- Drag-to-add for the component library, drag/touch reorder in the profile canvas, keyboard move controls, and click-to-add alternatives.
-- Ten safe native content block types: Heading, About, Callout, Quote, Project, Skills, Call to action, Divider, Countdown and Statistics. Blocks have bounded content, visibility/lock state, full/half/third width, alignment and presentation variants; creators can duplicate a block with a fresh ID.
-- Typed blocks persist through revision-checked draft saving, immutable publication snapshots and publication restoration. Public reads omit hidden blocks and layout references. The older 14-argument save RPC remains compatible and preserves existing blocks.
-- Profile rendering supports mixed full/half/third-width block layouts and collapses to one column on narrow cards.
-- Original Snoozer profile presentation styling, responsive public preview, focused route styling and documentation.
+- Account overview plus dedicated Page Builder, Customize, Links, Widgets and Profile Settings routes.
+- Selected-profile context retained through workspace navigation and template application.
+- Ten typed native blocks with bounded fields: Heading, About, Callout, Quote, Project, Skills, Call to action, Divider, Countdown and Statistics.
+- Duplicate-with-fresh-ID, visibility, lock/unlock, mixed widths, alignment and presentation variants.
+- Revision-safe draft persistence, immutable published snapshots, hidden-block filtering and publication restoration.
+- Legacy 14-argument `save_profile` compatibility.
+- Responsive builder and focused editing destinations, drag/drop, keyboard alternatives and existing autosave/undo/redo behaviour.
 
 ### Verification evidence
 
-- The disposable unit/database suite on an earlier revision of this branch reported **330 passing tests across 44 files**, including block validation, hidden filtering, publication snapshot, restoration and legacy RPC compatibility.
-- On that run, secret scanning, dependency audit, ESLint and TypeScript checks passed.
-- The branch has since gained block duplication, mixed-width layout and strict lock behavior; a fresh full CI run is required to validate those latest edits and the Playwright journey before release.
-- The active latest-head workflow is recorded in the PR and must be rechecked before this progress section is changed to complete.
+- Secret scan, npm audit, lint and TypeScript passed on the latest completed run before the final two browser fixes.
+- Unit/database suite: **330 tests passed**.
+- Disposable Supabase startup/migration replay and production build passed.
+- The last completed Chromium Playwright run (#45298553729) failed two journeys: the nested preview-card drop target and password-reset sign-in timing. Both have been corrected on the current code head; a new full CI run is required before release.
+- Do not describe this head as fully verified until that run passes.
 
 ### Release boundary
 
-No hosted Supabase migration has been applied and no Render deployment has been made for PR #95. The branch is not a production release. Keep the PR open until the latest-head CI, including production build and Chromium Playwright, passes. Only after review/merge should the Supabase migration be applied and the configured staging release performed. Validate the live Studio and a published test profile before describing the redesign as deployed.
+No PR #95 migration has been applied to hosted Supabase and no PR #95 deployment has been made to Render. The pending migrations are `20261123221000_studio_appearance_controls.sql`, `20261123223000_social_link_visibility.sql` and `20261123224000_profile_blocks.sql`. After latest-head CI passes and PR #95 merges, apply them in order, verify the hosted migration registry and legacy/new save RPC signatures/grants, then manually deploy the merged commit to the existing staging service (auto-deploy remains disabled). Test an authenticated draft save, publication, restore and public rendering.
+
 ---
 
 ## Feature #29 — Interactive Profile Widgets (23 November 2026)
