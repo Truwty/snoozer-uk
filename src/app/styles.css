@@ -2844,3 +2844,26 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
   grid-column: auto;
   justify-self: center;
 }
+
+.public-page .profile-card--bio-experience .profile-identity {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: none;
+  justify-items: center;
+  align-items: stretch;
+  column-gap: 0;
+  row-gap: .62rem;
+  text-align: center;
+  border-block-end: 0;
+  padding-block: 0;
+}
+.public-page .profile-card--bio-experience .profile-identity .profile-name-heading {
+  grid-area: auto;
+  grid-column: auto;
+}
+.public-page .profile-card--bio-experience .profile-identity .profile-bio {
+  grid-area: auto;
+  grid-column: auto;
+  justify-self: center;
+  max-width: 42ch;
+  margin-block-start: 0;
+}
