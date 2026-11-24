@@ -560,8 +560,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   const profileCard = <section className={`profile-card theme-${profile.theme}${entryExperience ? " profile-card--bio-experience" : ""}`} aria-label={preview ? previewLabel : undefined}
-    aria-hidden={entryExperience && !entered ? true : undefined}
-    inert={entryExperience && !entered ? true : undefined}
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
