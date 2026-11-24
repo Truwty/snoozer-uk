@@ -16,11 +16,11 @@ concurrency:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     outputs:
       run_full: ${{ steps.decision.outputs.run_full }}
     steps:
-      - name: Avoid repeating CI for an already-verified PR merge
+      - name: Skip only when the merged PR already passed the required CI check
         id: decision
         env:
           GH_TOKEN: ${{ github.token }}
@@ -35,17 +35,65 @@ jobs:
           if [[ "$EVENT_NAME" == "push" ]]; then
             associated_prs="$(gh api -H "Accept: application/vnd.github+json" \
               "/repos/$REPOSITORY/commits/$COMMIT_SHA/pulls")"
-            if jq -e 'any(.[]; .merged_at != null)' <<<"$associated_prs" >/dev/null; then
-              run_full=false
-              echo "This main-branch commit belongs to a pull request whose CI ran before merge."
-              echo "Skipping the duplicate full test suite on the merge push."
+            merged_pr="$(jq -c 'first(.[] | select(.merged_at != null)) // empty' <<<"$associated_prs")"
+
+            if [[ -n "$merged_pr" ]]; then
+              pr_number="$(jq -r '.number' <<<"$merged_pr")"
+              pr_head="$(gh api -H "Accept: application/vnd.github+json" \
+                "/repos/$REPOSITORY/pulls/$pr_number" --jq '.head.sha')"
+              checks="$(gh api -H "Accept: application/vnd.github+json" \
+                "/repos/$REPOSITORY/commits/$pr_head/check-runs")"
+
+              if jq -e 'any(.check_runs[]; .name == "validate" and .conclusion == "success")' \
+                <<<"$checks" >/dev/null; then
+                run_full=false
+                echo "PR #$pr_number already passed the aggregate validate check on $pr_head."
+                echo "Skipping only the redundant post-merge full test suite."
+              else
+                echo "PR #$pr_number has no successful aggregate validate check; full CI will run."
+              fi
             fi
           fi
 
           echo "run_full=$run_full" >> "$GITHUB_OUTPUT"
 
+  quality:
+    name: Security and quality checks
+    needs: prepare
+    if: needs.prepare.outputs.run_full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      - name: Scan source for secrets
+        run: docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --redact --no-banner --verbose
+
+      - name: Run dependency and policy audit
+        run: npm run audit
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript checks
+        run: npm run typecheck
+
+      - name: Run unit and database tests
+        run: npm test
+
   verify:
-    name: Verification (shard ${{ matrix.shard }}/3)
+    name: Browser tests (shard ${{ matrix.shard }}/5)
     needs: prepare
     if: needs.prepare.outputs.run_full == 'true'
     runs-on: ubuntu-latest
@@ -53,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       SNOOZER_TEST_LIGHTHOUSE: "1"
@@ -87,27 +135,16 @@ jobs:
           ' >"$log" 2>&1 </dev/null &
 
           echo "$!" > "$pid_file"
-          echo "Supabase startup is running while independent checks execute."
+          echo "Supabase startup is running while the build cache is restored."
 
-      - name: Scan source for secrets
-        if: matrix.shard == 1
-        run: docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --redact --no-banner --verbose
-
-      - name: Run dependency and policy audit
-        if: matrix.shard == 1
-        run: npm run audit
-
-      - name: Run ESLint
-        if: matrix.shard == 1
-        run: npm run lint
-
-      - name: Run TypeScript checks
-        if: matrix.shard == 1
-        run: npm run typecheck
-
-      - name: Run unit and database tests
-        if: matrix.shard == 1
-        run: npm test
+      - name: Restore Next.js build cache
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # actions/cache v5.0.1
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
       - name: Wait for disposable Supabase and load test credentials
         shell: bash
@@ -153,15 +190,6 @@ jobs:
             printf 'SNOOZER_TEST_LOCAL_SUPABASE=1\n'
           } >> "$GITHUB_ENV"
 
-      - name: Restore Next.js build cache
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # actions/cache v5.0.1
-        with:
-          path: .next/cache
-          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-${{ github.sha }}
-          restore-keys: |
-            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-
-            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-
       - name: Build production application
         run: npm run build
 
@@ -169,7 +197,7 @@ jobs:
         run: npx playwright install --only-shell chromium
 
       - name: Run Playwright shard
-        run: npm run test:e2e -- --workers=2 --shard=${{ matrix.shard }}/3
+        run: npm run test:e2e -- --workers=2 --shard=${{ matrix.shard }}/5
 
       - name: Upload Playwright failure diagnostics
         if: failure()
@@ -183,7 +211,7 @@ jobs:
   validate:
     name: validate
     if: always()
-    needs: [prepare, verify]
+    needs: [prepare, quality, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -191,6 +219,7 @@ jobs:
         env:
           PREPARE_RESULT: ${{ needs.prepare.result }}
           RUN_FULL: ${{ needs.prepare.outputs.run_full }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
           VERIFY_RESULT: ${{ needs.verify.result }}
         shell: bash
         run: |
@@ -200,11 +229,15 @@ jobs:
             exit 1
           fi
           if [[ "$RUN_FULL" == "false" ]]; then
-            echo "Full CI already passed on the pull request. The merge push does not repeat the same suite."
+            echo "The merged PR passed validate. Skipping duplicate post-merge CI."
             exit 0
           fi
+          if [[ "$QUALITY_RESULT" != "success" ]]; then
+            echo "::error::Security, static or unit checks failed or were skipped."
+            exit 1
+          fi
           if [[ "$VERIFY_RESULT" != "success" ]]; then
-            echo "::error::One or more CI verification shards failed or were skipped."
+            echo "::error::One or more browser verification shards failed or were skipped."
             exit 1
           fi
           echo "All security, static, unit, database, build and browser checks passed."
