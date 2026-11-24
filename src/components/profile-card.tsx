@@ -371,7 +371,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     if (entryExperience) {
       const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
         const provider = socialProviderForUrl(url);
-        return provider && provider.id !== "spotify" && !hasProviderEmbed(url)
+        return provider && provider.id !== "spotify"
           ? [{ label, url, index, providerId: provider.id }]
           : [];
       });
