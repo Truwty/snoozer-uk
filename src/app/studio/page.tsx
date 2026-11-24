@@ -19,6 +19,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const draft = await readStudioDraft(params.profile);
 
   if (!draft) return <main className="shell studio-shell studio-overview">
+    {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
     <header className="studio-page-heading">
       <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
     </header>
