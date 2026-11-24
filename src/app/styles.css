@@ -2278,3 +2278,22 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
     padding-top: .5rem;
   }
 }
+
+
+/* Inline confirmation control on the Discord integration settings page. */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  min-height: 2.5rem;
+  color: var(--ink);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+.checkbox-row input {
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-block: .15rem 0;
+  accent-color: var(--accent);
+}
