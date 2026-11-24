@@ -6,9 +6,11 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const response = await page.goto("/");
-    expect(response?.headers()["content-security-policy"]).toContain("script-src 'self' 'nonce-");
-    expect(response?.headers()["content-security-policy"]).not.toContain("'unsafe-inline'; img-src");
-    expect(response?.headers()["content-security-policy"]).toContain("media-src 'self' https: blob:");
+    const csp = response?.headers()["content-security-policy"] ?? "";
+    expect(csp).toContain("script-src 'self' 'nonce-");
+    expect(csp.split(";").find((directive) => directive.trimStart().startsWith("script-src ")) ?? "")
+      .not.toContain("'unsafe-inline'");
+    expect(csp).toContain("media-src 'self' https: blob:");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Make yourself");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     // Playwright's storageState already keeps optional analytics disabled.
