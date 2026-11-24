@@ -18,6 +18,7 @@ import { Unpublish } from "./unpublish";
 import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { SocialProviderIcon } from "./social-provider-icon";
 import { EffectsEditor } from "./effects-editor";
 import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
@@ -547,7 +548,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             {filterSocialProviders(providerQuery, providerCategory).map((provider) => <button type="button"
               key={provider.id} className="studio-provider-card" disabled={content.links.length >= linkLimit}
               onClick={() => addSocialProvider(provider)}>
-              <span className="studio-provider-mark" aria-hidden="true">{provider.mark}</span>
+              <span className="studio-provider-mark" aria-hidden="true"><SocialProviderIcon providerId={provider.id} /></span>
               <span>{provider.label}</span><span className="studio-provider-plus" aria-hidden="true">+</span>
             </button>)}
           </div>
@@ -559,7 +560,9 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         {content.links.map((item, index) => <div className="link-editor link-row" key={index} data-reorder-index={index}
           data-drop-target={linkDropIndex === index || undefined}>
           <div className="studio-link-item-heading">
-            <span className="studio-provider-mark" aria-hidden="true">{socialProviderForUrl(item.url)?.mark ?? "↗"}</span>
+            <span className="studio-provider-mark" aria-hidden="true">
+              <SocialProviderIcon providerId={socialProviderForUrl(item.url)?.id ?? "website"} />
+            </span>
             <strong>Link {index + 1}</strong>
             <label className="check"><input type="checkbox" checked={!item.hidden} onChange={(event) =>
               set("links", content.links.map((entry, i) => i === index ? { ...entry, hidden: !event.target.checked } : entry))}/> Visible on profile</label>

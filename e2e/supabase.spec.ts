@@ -1101,6 +1101,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Redo edit" }).click();
     await expect(lock).toBeChecked();
     await editorTab(page, "Links");
+    const instagramProvider = page.getByRole("button", { name: "Instagram" });
+    await expect(instagramProvider.locator("svg path")).toHaveAttribute("d", /^M/);
     await page.getByText("Add Ko-fi support link", { exact: true }).click();
     await editorTab(page, "Links");
     await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
@@ -1129,6 +1131,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
     const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
+    await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
 
     await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");

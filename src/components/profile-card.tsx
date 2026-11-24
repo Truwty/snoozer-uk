@@ -4,7 +4,7 @@ import { useRef, type CSSProperties, type DragEvent, type MouseEvent, type Point
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
-import { socialMarkForUrl } from "@/lib/social-providers";
+import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
 import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
@@ -20,10 +20,9 @@ import { defaultEffects } from "@/lib/profile-effects";
 import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
+import { SocialProviderIcon } from "./social-provider-icon";
 
-type SocialLink = { label: string; url: string; index: number; mark: string };
-
-const socialMark = socialMarkForUrl;
+type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId };
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -217,17 +216,17 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
     );
     const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
-      const mark = socialMark(url);
-      return mark && !hasProviderEmbed(url) ? [{ label, url, index, mark }] : [];
+      const provider = socialProviderForUrl(url);
+      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id }] : [];
     });
-    const regular = valid.filter(({ url }) => !socialMark(url) || hasProviderEmbed(url));
+    const regular = valid.filter(({ url }) => !socialProviderForUrl(url) || hasProviderEmbed(url));
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-        {social.map(({ label, url, index, mark }) => <a key={url + index} className="profile-social-link" href={url}
-          rel="ugc nofollow noreferrer" title={label} aria-label={`${mark} ${label}`}
+        {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
+          rel="ugc nofollow noreferrer" title={label} aria-label={label}
           data-analytics-profile={preview ? undefined : profile.username}
           data-analytics-position={preview ? undefined : index + 1}>
-          <span aria-hidden="true" className="profile-social-mark">{mark}</span>
+          <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
         </a>)}
       </nav>}
       {regular.length > 0 && <ul className="profile-links" style={linkStyle}>
