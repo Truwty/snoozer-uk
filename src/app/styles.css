@@ -2754,6 +2754,17 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 }
 
 
+/* Third-party widgets inside the collapsed More section must use the full
+   content width. Without this, intrinsic grid sizing can collapse the
+   Twitch container below its 400px minimum and hide its load control. */
+.profile-card--bio-experience .profile-more-content,
+.profile-card--bio-experience .profile-more-content .profile-links,
+.profile-card--bio-experience .profile-more-content .profile-links > li,
+.profile-card--bio-experience .profile-more-content .profile-links > li > :is(.public-widget, .twitch-widget, .youtube-widget, .spotify-widget) {
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+}
 .profile-card--bio-experience .profile-more-content {
   width: 100%;
   margin-top: .08rem;
