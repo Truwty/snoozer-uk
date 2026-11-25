@@ -13,10 +13,10 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     expect(csp.split(";").find((directive) => directive.trimStart().startsWith("script-src ")) ?? "")
       .not.toContain("'unsafe-inline'");
     expect(csp).toContain("media-src 'self' https: blob:");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Make yourself");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Everything you share");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     // Playwright's storageState already keeps optional analytics disabled.
-    await page.getByRole("link", { name: "Create your page" }).click();
+    await page.getByRole("link", { name: "Create your page" }).first().click();
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email address" })).toBeVisible();
     expect(errors).toEqual([]);
@@ -55,12 +55,12 @@ test("homepage leaderboard link opens both Top 50 period tabs", async ({ page })
 test("Privacy and Terms footer links open their legal pages", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("link", { name: "Privacy", exact: true }).click();
+  await page.getByRole("navigation", { name: "Legal links" }).getByRole("link", { name: "Privacy Policy", exact: true }).click();
   await expect(page).toHaveURL(/\/privacy\/?$/);
   await expect(page.getByRole("heading", { name: "Privacy Policy", exact: true })).toBeVisible();
 
   await page.goto("/");
-  await page.getByRole("link", { name: "Terms", exact: true }).click();
+  await page.getByRole("navigation", { name: "Legal links" }).getByRole("link", { name: "Terms of Service", exact: true }).click();
   await expect(page).toHaveURL(/\/terms\/?$/);
   await expect(page.getByRole("heading", { name: "Terms and Conditions", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Discord integration and Discord API Data", exact: true })).toBeVisible();
@@ -228,7 +228,7 @@ test("new visitors do not see a phantom saved account in the dropdown", async ({
 
 test("Legal information is reachable and readable", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Footer" }).getByRole("link", { name: "Legal information" }).click();
+  await page.getByRole("navigation", { name: "Legal links" }).getByRole("link", { name: "Legal information" }).click();
   await expect(page).toHaveURL(new RegExp("/legal/?$"));
   await expect(page.getByRole("heading", { name: "Legal information", exact: true })).toBeVisible();
   const contents = page.getByRole("navigation", { name: "Legal page contents" });
