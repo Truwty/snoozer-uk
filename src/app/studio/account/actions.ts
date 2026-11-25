@@ -100,8 +100,10 @@ export async function claimGiftLink(form:FormData):Promise<ActionState>{
  const {data,error}=await client.rpc("claim_gift_link",{p_token:token.data.toLowerCase()});
  if(error)return fail("Could not claim this gift right now. Try again later.");
  if(!data)return fail("This gift link has already been claimed, expired or been revoked.");
+ await client.rpc("refresh_my_profile_badges");
  const details=z.object({plan:z.enum(["plus","pro","studio"]),duration_days:z.number().int(),expires_at:z.string()}).safeParse(data);
  if(!details.success)return fail("The gift was processed, but its confirmation could not be read. Check your plan page.");
  revalidatePath("/studio/plan");
+ revalidatePath("/studio/badges");
  return ok(details.data.plan.toUpperCase()+" has been added to your account for "+details.data.duration_days+" days.");
 }
