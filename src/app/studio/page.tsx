@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClaimForm } from "@/components/claim-form";
 import { AnalyticsChart } from "@/components/analytics-chart";
+import { CopyLink } from "@/components/copy-link";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
@@ -21,13 +22,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   if (!draft) return <main className="shell studio-shell studio-overview">
     {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
     <header className="studio-page-heading">
-      <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
+      <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account Overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
     </header>
-    <section className="panel claim-panel stack">
+    <section className="studio-dashboard-panel studio-claim-panel stack">
+      <div className="studio-panel-icon" aria-hidden="true">✦</div>
       <h2>Claim your address</h2>
       <p className="muted">Choose the username people will use to find your page.</p>
       <ClaimForm/>
-      <Link href="/studio/growth">Referral choices and Growth</Link>
+      <Link href="/studio/growth">Referral choices and Growth ↗</Link>
     </section>
   </main>;
 
@@ -43,6 +45,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const views = dailyAnalytics.safeParse(viewsResponse.data);
   const viewTotal = views.success ? views.data.reduce((sum, row) => sum + row.views, 0) : null;
   const clickTotal = views.success ? views.data.reduce((sum, row) => sum + row.clicks, 0) : null;
+  const profileId = draft.profile_id.replace(/-/g, "").slice(0, 8).toUpperCase();
   const completionItems = [
     { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/builder", selected) },
     { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/builder", selected) },
@@ -59,59 +62,95 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     {params.logout === "failed" && <p className="message error" role="alert">Could not sign out. Try again.</p>}
     {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
     {params.restored === "1" && <p className="message" role="status">Version restored to your draft.</p>}
+
     <header className="studio-page-heading">
-      <div><p className="eyebrow">ACCOUNT / OVERVIEW</p><h1>Account overview</h1><p className="muted">Your profile, account progress and recent activity.</p></div>
-      <div className="actions">
-        {draft.published_revision !== null && <Link className="button small" href={"/" + draft.username}>View my page ↗</Link>}
-        <Link className="button primary" href={studioHref("/studio/builder", selected)}>Open Page Builder</Link>
+      <div>
+        <p className="eyebrow">ACCOUNT / OVERVIEW</p>
+        <h1>Account Overview</h1>
+        <p className="muted">Your profile, account progress and recent activity in one place.</p>
+      </div>
+      <div className="actions studio-overview-actions">
+        {draft.published_revision !== null && <CopyLink path={"/" + draft.username} label="Share profile"/>}
+        {draft.published_revision !== null && <Link className="button small" href={"/" + draft.username} target="_blank" rel="noreferrer">View My Page ↗</Link>}
+        <Link className="button primary" href={studioHref("/studio/builder", selected)}>Open Page Builder <span aria-hidden="true">→</span></Link>
       </div>
     </header>
 
-    <section className="studio-overview-stats" aria-label="Account overview">
-      <article className="studio-stat-card"><span>Username</span><strong>@{draft.username}</strong><small>{status}</small></article>
-      <article className="studio-stat-card"><span>Aliases used</span><strong>{aliases.success ? aliases.data.used + " / " + aliases.data.limit : "—"}</strong><small>Reserved profile addresses</small></article>
-      <article className="studio-stat-card"><span>Profile views</span><strong>{viewTotal === null ? "—" : viewTotal.toLocaleString("en-GB")}</strong><small>Recorded during your analytics retention period</small></article>
-      <article className="studio-stat-card"><span>Link clicks</span><strong>{clickTotal === null ? "—" : clickTotal.toLocaleString("en-GB")}</strong><small>Recorded link interactions</small></article>
+    <section className="studio-overview-stats" aria-label="Account overview statistics">
+      <article className="studio-stat-card studio-stat-username">
+        <span className="studio-stat-icon" aria-hidden="true">@</span>
+        <div><span className="studio-stat-label">Username</span><strong>@{draft.username}</strong><small>{status}</small></div>
+      </article>
+      <article className="studio-stat-card">
+        <span className="studio-stat-icon" aria-hidden="true">⌑</span>
+        <div><span className="studio-stat-label">Aliases</span><strong>{aliases.success ? aliases.data.used + " / " + aliases.data.limit : "—"}</strong>
+          <small>{aliases.success ? Math.max(0, aliases.data.limit - aliases.data.used) + " slots remaining" : "Alias data unavailable"}</small></div>
+      </article>
+      <article className="studio-stat-card">
+        <span className="studio-stat-icon" aria-hidden="true">#</span>
+        <div><span className="studio-stat-label">Profile ID</span><strong className="studio-stat-code">{profileId}</strong><small>Unique profile reference</small></div>
+      </article>
+      <article className="studio-stat-card">
+        <span className="studio-stat-icon" aria-hidden="true">◉</span>
+        <div><span className="studio-stat-label">Profile Views</span><strong>{viewTotal === null ? "—" : viewTotal.toLocaleString("en-GB")}</strong>
+          <small>{clickTotal === null ? "Analytics unavailable" : clickTotal.toLocaleString("en-GB") + " recorded link clicks"}</small></div>
+      </article>
     </section>
 
     <div className="studio-overview-grid">
       <section className="studio-dashboard-panel studio-completion-panel">
-        <div className="studio-panel-heading"><div><p className="eyebrow">PROFILE HEALTH</p><h2>Profile completion</h2></div><strong>{percentage}%</strong></div>
-        <div className="studio-progress-track" role="progressbar" aria-label="Profile completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage}><span style={{ width: percentage + "%" }}/></div>
-        <p className="muted">{completed === completionItems.length ? "Your profile is ready to share." : completed + " of " + completionItems.length + " suggested steps completed."}</p>
+        <div className="studio-panel-heading">
+          <div><p className="eyebrow">PROFILE HEALTH</p><h2>Account Statistics</h2><p className="muted">Profile completion</p></div>
+          <strong className="studio-completion-percent">{percentage}% <small>complete</small></strong>
+        </div>
+        <div className="studio-progress-track" role="progressbar" aria-label="Profile completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage}>
+          <span style={{ width: percentage + "%" }}/>
+        </div>
+        <div className="studio-completion-callout">
+          <span aria-hidden="true">✓</span>
+          <div><strong>{completed === completionItems.length ? "Your profile is complete!" : "You’re making progress."}</strong>
+            <p>{completed === completionItems.length ? "Your profile is ready to share. Keep exploring Studio to make it your own." : "Complete the steps below to get your Snoozer page ready for visitors."}</p></div>
+        </div>
         <ul className="studio-completion-list">
           {completionItems.map((item) => <li key={item.label}>
             <span className={item.done ? "is-complete" : ""} aria-hidden="true">{item.done ? "✓" : "○"}</span>
             <span>{item.label}</span>
-            {!item.done && <Link href={item.href}>Complete ↗</Link>}
+            {!item.done && <Link href={item.href}>Complete <span aria-hidden="true">↗</span></Link>}
           </li>)}
         </ul>
       </section>
 
       <aside className="studio-dashboard-panel studio-manage-panel">
-        <p className="eyebrow">QUICK ACTIONS</p><h2>Manage your account</h2>
-        <Link href={studioHref("/studio/builder", selected)}>Edit profile details ↗</Link>
-        <Link href={studioHref("/studio/customize", selected)}>Customize appearance ↗</Link>
-        <Link href={studioHref("/studio/settings", selected)}>Aliases and custom domains ↗</Link>
-        <Link href={studioHref("/studio/gallery", selected)}>Manage gallery and assets ↗</Link>
-        <Link href={studioHref("/studio/plan", selected)}>Subscription and usage ↗</Link>
-        <div className="studio-connection-card"><strong>Connections</strong><span>Configure connected services and live status.</span>
-          <Link href={studioHref("/studio/discord", selected)}>Discord Presence settings ↗</Link>
-          <Link href="/studio/spotify">Spotify embeds ↗</Link>
+        <p className="eyebrow">QUICK ACTIONS</p>
+        <h2>Manage your account</h2>
+        <p className="muted">Shortcuts to the parts of Snoozer you use most.</p>
+        <Link href={studioHref("/studio/builder", selected)}><span>✎</span>Edit profile details <b>↗</b></Link>
+        <Link href={studioHref("/studio/customize", selected)}><span>✦</span>Customize appearance <b>↗</b></Link>
+        <Link href={studioHref("/studio/links", selected)}><span>⌁</span>Manage social links <b>↗</b></Link>
+        <Link href={studioHref("/studio/settings", selected)}><span>⚙</span>Aliases & custom domains <b>↗</b></Link>
+        <Link href={studioHref("/studio/plan", selected)}><span>◇</span>Plan and usage <b>↗</b></Link>
+        <div className="studio-connection-card">
+          <div><strong>Connections</strong><span>Services connected to your profile</span></div>
+          <Link href={studioHref("/studio/discord", selected)}>Discord Presence <b>↗</b></Link>
+          <Link href={studioHref("/studio/spotify", selected)}>Spotify Embeds <b>↗</b></Link>
         </div>
       </aside>
     </div>
 
     <section className="studio-dashboard-panel studio-overview-analytics">
-      <div className="studio-panel-heading"><div><p className="eyebrow">ACCOUNT ANALYTICS</p><h2>Profile activity</h2><p className="muted">Consent-based aggregate activity reported for your profile.</p></div><Link className="button small" href={studioHref("/studio/analytics", selected)}>View full analytics ↗</Link></div>
+      <div className="studio-panel-heading">
+        <div><p className="eyebrow">ACCOUNT ANALYTICS</p><h2>Profile activity</h2><p className="muted">Consent-based aggregate activity reported for your profile.</p></div>
+        <Link className="button small" href={studioHref("/studio/analytics", selected)}>View full analytics <span aria-hidden="true">↗</span></Link>
+      </div>
       {views.success && views.data.length > 0
         ? <AnalyticsChart rows={views.data}/>
-        : <div className="studio-empty-state"><strong>No chart data available yet</strong><span>{viewsResponse.error ? "Analytics could not be loaded right now." : "Views will appear here when visitors with analytics consent open your page."}</span></div>}
+        : <div className="studio-empty-state"><strong>No chart data available yet</strong>
+          <span>{viewsResponse.error ? "Analytics could not be loaded right now." : "Views will appear here when visitors with analytics consent open your page."}</span></div>}
     </section>
 
     <section className="studio-bottom-note">
-      <span>Current plan</span><strong>{plan.success ? plan.data.plan.toUpperCase() : "PLAN DETAILS UNAVAILABLE"}</strong>
-      <Link href={studioHref("/studio/plan", selected)}>View plan and usage ↗</Link>
+      <div><span>Current plan</span><strong>{plan.success ? plan.data.plan.toUpperCase() : "PLAN DETAILS UNAVAILABLE"}</strong></div>
+      <Link href={studioHref("/studio/plan", selected)}>View plan and usage <span aria-hidden="true">↗</span></Link>
     </section>
   </main>;
 }

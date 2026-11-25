@@ -35,7 +35,10 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
     <details className="account-dropdown" ref={menu}>
       <summary className="account-trigger">
         <Avatar name={active} src={current?.avatar}/>
-        <span>{current ? "Dashboard" : "Sign in"}</span>
+        <span className="account-trigger-identity">
+          <strong>{current?.username ? "@" + current.username : active}</strong>
+          <small>{current ? "YOUR ACCOUNT" : "Sign in"}</small>
+        </span>
         <svg aria-hidden="true" className="account-chevron" width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
       </summary>
       <div className="account-popover">
@@ -43,8 +46,10 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
           <p className="account-popover-owner"><Avatar name={active} src={current.avatar}/><strong>{active}</strong>{current.isOwner && <span className="account-owner-mark">OWNER</span>}</p>
           <div className="account-popover-rule"/>
           <Link href="/studio">Dashboard</Link>
-          {current.isOwner && <Link href="/owner">Owner Control Centre</Link> }
+          {current.isOwner && <Link href="/owner">Owner Control Centre</Link>}
           {current.username ? <Link href={`/${current.username}`}>My Page</Link> : <Link href="/studio">My Page</Link>}
+          <Link href="/">Home</Link>
+          <Link href="/leaderboard">Leaderboard</Link>
           <button type="button" onClick={showManager}>Switch Accounts</button>
           <form action={signOut}><button type="submit" className="account-danger">Logout</button></form>
         </> : <>
