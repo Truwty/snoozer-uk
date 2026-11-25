@@ -21,6 +21,7 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 import { SocialProviderIcon } from "./social-provider-icon";
+import { BadgeArtwork } from "./badge-artwork";
 
 type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
 
@@ -324,7 +325,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
       {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
-        <span aria-hidden="true">{badge.icon}</span>
+        <span aria-hidden="true"><BadgeArtwork slug={badge.slug} size={24}/></span>
       </span>)}
       {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
     </nav>}
