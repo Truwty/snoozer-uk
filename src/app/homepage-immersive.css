@@ -582,12 +582,32 @@
   .home-immersive .snoozer-global-header { padding-top: .55rem; }
   .home-immersive .snoozer-topbar {
     min-height: 3.75rem;
-    padding: .35rem .6rem .35rem .9rem;
+    gap: .35rem;
+    padding: .35rem .45rem .35rem .7rem;
     border-radius: 999px;
   }
-  .home-immersive .snoozer-topbar .brand { font-size: 1.2rem; }
-  .home-immersive .snoozer-header-links { display: none; }
-  .home-immersive .account-trigger { min-height: 2.5rem; }
+  .home-immersive .snoozer-topbar .brand { flex: none; font-size: 1.08rem; }
+  .home-immersive .snoozer-header-links {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: .23rem;
+  }
+  .home-immersive .snoozer-header-links a {
+    min-width: 0;
+    padding-inline: .08rem;
+    font-size: .56rem;
+    white-space: nowrap;
+  }
+  .home-immersive .snoozer-header-links a:nth-child(3) { display: none; }
+  .home-immersive .account-trigger {
+    flex: none;
+    min-height: 2.2rem;
+    padding-inline: .48rem;
+    font-size: .65rem;
+  }
   .home-hero { padding-top: 2.8rem; }
   .home-hero-copy { gap: .9rem; }
   .home-hero h1 { max-width: 15ch; font-size: clamp(2.15rem, 9vw, 3.1rem); }
@@ -644,6 +664,11 @@
   .home-profile-showcase-fade { height: 5rem; }
 }
 @media (max-width: 22rem) {
+  .home-immersive .snoozer-topbar { gap: .2rem; padding-inline: .48rem .35rem; }
+  .home-immersive .snoozer-topbar .brand { font-size: .95rem; }
+  .home-immersive .snoozer-header-links { gap: .1rem; }
+  .home-immersive .snoozer-header-links a { font-size: .49rem; padding-inline: .03rem; }
+  .home-immersive .account-trigger { min-height: 2rem; padding-inline: .34rem; font-size: .58rem; }
   .home-profile-showcase { height: 33rem; }
   .home-profile-showcase-cards { top: 12.6rem; }
   .home-profile-preview--back-left,
