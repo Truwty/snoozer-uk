@@ -63,6 +63,7 @@ export async function GET(request: Request) {
       await activeClient.rpc("refresh_my_profile_badges");
       return NextResponse.redirect(new URL("/studio/account?google=linked", siteUrl()), 303);
     }
+    if (!presenceFlow) await activeClient.rpc("refresh_my_profile_badges");
     const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
     const destination = assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"
       ? "/auth/mfa?next=" + encodeURIComponent(next) : next;
