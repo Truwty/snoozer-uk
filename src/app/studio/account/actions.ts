@@ -96,7 +96,7 @@ export async function verifyLoginMfa(form:FormData){
 export async function claimGiftLink(form:FormData):Promise<ActionState>{
  const token=z.string().regex(/^[a-f0-9]{32}$/i).safeParse(form.get("token"));
  if(!token.success)return fail("This gift link is invalid or incomplete.");
- const {client}=await requireAccount();
+ const {client}=await requireAccount("/gift");
  const {data,error}=await client.rpc("claim_gift_link",{p_token:token.data.toLowerCase()});
  if(error)return fail("Could not claim this gift right now. Try again later.");
  if(!data)return fail("This gift link has already been claimed, expired or been revoked.");
