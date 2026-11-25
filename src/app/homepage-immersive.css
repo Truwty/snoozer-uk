@@ -565,7 +565,6 @@
 }
 @media (max-width: 54rem) {
   .home-immersive .snoozer-topbar { border-radius: 1.25rem; }
-  .home-immersive .snoozer-header-links a:nth-child(2),
   .home-immersive .snoozer-header-links a:nth-child(3) { display: none; }
   .home-dashboard-preview { width: 63%; height: 25rem; grid-template-columns: 7rem minmax(0,1fr); }
   .home-dashboard-lower { grid-template-columns: minmax(0,1fr); }
