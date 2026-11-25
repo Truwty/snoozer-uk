@@ -48,7 +48,7 @@ export default function Home() {
       </figure>
     </section>
 
-    <div className="hi-marquee" aria-label="One page for your links, work, photos and ideas">
+    <div className="hi-marquee" aria-hidden="true">
       <div className="hi-marquee-track" aria-hidden="true">
         {Array.from({ length: 2 }).map((_, index) => <span className="hi-marquee-group" key={index}>
           <b>YOUR LINKS</b><i>✳</i><b>YOUR WORK</b><i>✳</i><b>YOUR PHOTOS</b><i>✳</i><b>YOUR WORLD</b><i>✳</i>
