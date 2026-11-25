@@ -3,8 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    # Run full CI on main and the active homepage verification branch.
-    branches: [main, design/profile-first-homepage-verified]
+    # Feature branches are validated by pull_request; only run post-merge CI on main.
+    branches: [main]
 
 permissions:
   contents: read
@@ -132,13 +132,16 @@ jobs:
           from pathlib import Path
 
           shard = int(os.environ["SUPABASE_CI_SHARD"])
+          run_id = int(os.environ["GITHUB_RUN_ID"])
           config = Path("supabase/config.toml")
           lines = config.read_text().splitlines()
-          project_id = f"snoozer-uk-ci-{shard}"
+          project_id = f"snoozer-uk-ci-{run_id}-{shard}"
+          # Use per-run ports below the Linux ephemeral range to avoid host-port collisions.
+          port_base = 10000 + (run_id % 100) * 60 + shard * 10
           ports = {
-              "api": 54321 + shard * 10,
-              "db": 54322 + shard * 10,
-              "local_smtp": 54324 + shard * 10,
+              "api": port_base,
+              "db": port_base + 1,
+              "local_smtp": port_base + 3,
           }
           section = None
           updated = set()
