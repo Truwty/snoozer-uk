@@ -90,7 +90,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         </div>
       </div>
       <div className="studio-setting-row studio-setting-row--stack">
-        <div><strong>Devices and active sessions</strong><p>Review where this account is signed in. Revoking a device ends only that session; the current device is protected from accidental self-revocation.</p></div>
+        <div><strong>Devices and active sessions</strong><p>Review where this account is signed in. Revoking a device prevents that session from refreshing. Its previously issued access token remains valid only until its short expiry; the current device is protected from accidental self-revocation.</p></div>
         <div className="studio-device-sessions">
           {deviceSessions.success ? deviceSessions.data.length ? deviceSessions.data.map((session) => <article className="studio-device-session" key={session.session_id}>
             <div><strong>{deviceLabel(session.user_agent)}</strong>
