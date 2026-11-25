@@ -102,7 +102,7 @@ export default function Home() {
             <p className="home-plan-price"><strong>From £3</strong><span>/ month</span></p>
             <p className="home-plan-description">Pick the level that fits the way you create. All prices are in GBP.</p>
           </div>
-          <div className="home-premium-tiers" aria-label="Snoozer Premium prices">
+          <div className="home-premium-tiers" role="group" aria-label="Snoozer Premium prices">
             <div><strong>Plus</strong><span>£3 <small>/ mo</small></span><small>£30 / year</small></div>
             <div><strong>Pro</strong><span>£6 <small>/ mo</small></span><small>£60 / year</small></div>
             <div><strong>Studio</strong><span>£12 <small>/ mo</small></span><small>£100 / year</small></div>
