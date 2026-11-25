@@ -135,8 +135,10 @@ jobs:
           run_id = int(os.environ["GITHUB_RUN_ID"])
           config = Path("supabase/config.toml")
           lines = config.read_text().splitlines()
-          project_id = f"snoozer-uk-ci-{run_id}-{shard}"
-          # Use per-run ports below the Linux ephemeral range to avoid host-port collisions.
+          # Each GitHub Actions job gets its own runner/Docker daemon. Keep the
+          # project ID stable because Owner E2E tests exec into supabase_db_snoozer-uk.
+          project_id = "snoozer-uk"
+          # Use per-run DB/SMTP ports below the Linux ephemeral range to avoid host-port collisions.
           port_base = 10000 + (run_id % 100) * 60 + shard * 10
           ports = {
               # Keep the API URL stable; E2E safety guards require 127.0.0.1:54321.
