@@ -252,7 +252,7 @@
 .hi-footer-bottom{flex-direction:column}
 }
 @media(prefers-reduced-motion:reduce){
-.hi-marquee-track,.hi-hero-visual>img,.hi-hero-stamp,.hi-price-spark{animation:none!important}
+.hi-hero-copy,.hi-hero-visual,.hi-marquee-track,.hi-hero-visual>img,.hi-hero-stamp,.hi-price-spark{animation:none!important}
 .hi-photo>img,.hi-final>img,.hi-demo-choice,.hi-text-link,.home-immersive .button{transition:none!important}
 .home-immersive.motion-enhanced [data-reveal]{opacity:1;filter:none;transform:none;transition:none}
 }
