@@ -116,6 +116,7 @@ export const publishedProfile = profileContent.extend({
   username,
   avatar: z.uuid().nullable(),
   gallery: z.array(galleryItem).max(galleryLimit).default([]),
+  badges: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), awarded_at:z.string() })).default([]),
 });
 
 export const draftProfile = publishedProfile.extend({

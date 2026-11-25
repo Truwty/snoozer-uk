@@ -12,6 +12,9 @@ export async function requireAccount() {
   const { data, error } = await client.auth.getUser();
   if (error && (error.status === 0 || (error.status ?? 0) >= 500)) throw new Error("Account service unavailable.");
   if (!data.user?.email_confirmed_at) redirect("/sign-in");
+  const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) throw new Error("Account security checks are unavailable.");
+  if (assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") redirect("/auth/mfa?next=%2Fstudio");
   const { data: restricted, error: accessError } = await client.rpc("my_account_restriction");
   if (accessError) throw new Error("Account access checks are unavailable.");
   if (restricted) redirect("/account-restricted");
