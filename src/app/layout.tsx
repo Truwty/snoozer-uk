@@ -4,6 +4,7 @@ import { siteUrl } from "@/lib/env";
 import { browserThemeColour } from "@/lib/tokens";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./styles.css";
+import "./homepage-immersive.css";
 
 export const dynamic = "force-dynamic";
 
