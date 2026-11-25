@@ -32,8 +32,7 @@ begin
  from auth.sessions s where s.user_id=actor and (s.not_after is null or s.not_after>now())
  order by (s.id::text=current_session) desc,coalesce(s.refreshed_at,s.updated_at,s.created_at) desc
  limit 50;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.revoke_my_device_session(p_session uuid)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -45,8 +44,7 @@ begin
  if p_session is null or p_session::text=current_session then return false; end if;
  delete from auth.sessions where id=p_session and user_id=actor;
  return found;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_create_gift_link(p_plan text, p_version integer, p_duration_days integer, p_expiry_days integer, p_reason text)
  RETURNS TABLE(gift_id uuid, token text, expires_at timestamp with time zone)
  LANGUAGE plpgsql
@@ -67,8 +65,7 @@ begin
  insert into snoozer.admin_audit_events(actor_id,action,reason,details)
  values(actor,'gift_link.create',btrim(p_reason),jsonb_build_object('gift_id',issued,'plan',p_plan,'duration_days',p_duration_days,'expires_at',expiry));
  gift_id:=issued; token:=secret; expires_at:=expiry; return next;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_list_gift_links()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -83,8 +80,7 @@ begin
  'status',case when g.revoked_at is not null then 'revoked' when g.claimed_at is not null then 'claimed'
  when g.expires_at<=now() then 'expired' else 'ready' end) order by g.created_at desc)
  from snoozer.owner_gift_links g),'[]'::jsonb);
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_revoke_gift_link(p_gift uuid, p_reason text)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -99,8 +95,7 @@ begin
  insert into snoozer.admin_audit_events(actor_id,action,reason,details)
  values(actor,'gift_link.revoke',btrim(p_reason),jsonb_build_object('gift_id',p_gift));
  return true;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.claim_gift_link(p_token text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -117,8 +112,7 @@ begin
  returning id into grant_id;
  update snoozer.owner_gift_links set claimed_by=actor,claimed_at=now(),entitlement_id=grant_id where id=gift.id;
  return jsonb_build_object('plan',gift.plan,'duration_days',gift.duration_days,'expires_at',now()+gift.duration_days*interval '24 hours');
-end $function$
-
+end $function$;
 revoke all on function public.list_my_device_sessions() from public,anon,authenticated,service_role;
 grant execute on function public.list_my_device_sessions() to authenticated;
 revoke all on function public.revoke_my_device_session(uuid) from public,anon,authenticated,service_role;
