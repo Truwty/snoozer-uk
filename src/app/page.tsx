@@ -20,13 +20,12 @@ export default function Home() {
       <section className="home-hero" aria-labelledby="home-hero-title">
         <div className="home-hero-copy">
           <p className="home-eyebrow"><span aria-hidden="true">✳</span> YOUR PAGE. YOUR STYLE.</p>
-          <h1 id="home-hero-title">Everything you share.<br /><em>One Snoozer link.</em></h1>
+          <h1 id="home-hero-title">Everything you want, right here.</h1>
           <p className="home-hero-lead">
-            Your socials, photos, projects and all the things that make you, you.
-            Bring everything together on a profile that feels like yours.
+            Your socials, photos and projects, brought together on one custom Snoozer profile.
           </p>
           <div className="home-hero-actions">
-            <Link className="button primary" href="/sign-up">Create your page <span aria-hidden="true">↗</span></Link>
+            <Link className="button primary" href="/sign-up">Sign up for free <span aria-hidden="true">↗</span></Link>
             <Link className="button home-secondary-button" href="/pricing">View pricing</Link>
           </div>
           <p className="home-hero-note"><span aria-hidden="true">✓</span> Free to start. Yours to customise.</p>
@@ -108,8 +107,7 @@ export default function Home() {
 
       <section className="home-faq" aria-labelledby="home-faq-title">
         <header className="home-section-heading" data-reveal="up">
-          <p className="home-eyebrow">GOOD TO KNOW</p>
-          <h2 id="home-faq-title">A few things you<br /><em>might be wondering.</em></h2>
+          <h2 id="home-faq-title">Frequently Asked Questions</h2>
         </header>
         <div className="home-faq-list" data-reveal="up">
           <Disclosure title="What is Snoozer?">
