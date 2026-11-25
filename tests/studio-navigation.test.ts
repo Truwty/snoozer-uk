@@ -12,8 +12,8 @@ describe("Studio navigation", () => {
   it("keeps every implemented dashboard destination discoverable", () => {
     const hrefs = studioNavigationGroups.flatMap((group) => group.items.map((item) => item.href));
     for (const href of [
-      "/studio/customize", "/studio/builder", "/studio/links", "/studio/plan",
-      "/studio/gallery", "/studio/templates", "/studio/widgets", "/studio/discord",
+      "/studio/account", "/studio/customize", "/studio/builder", "/studio/links", "/studio/plan",
+      "/studio/settings", "/studio/gallery", "/studio/templates", "/studio/widgets", "/studio/discord",
       "/studio/spotify", "/studio/history", "/studio/discovery", "/studio/growth",
     ]) expect(hrefs).toContain(href);
   });
@@ -21,6 +21,8 @@ describe("Studio navigation", () => {
   it("filters across labels and keywords without returning empty groups", () => {
     expect(filterStudioNavigation("appearance").flatMap((group) => group.items).map((item) => item.href))
       .toContain("/studio/customize");
+    expect(filterStudioNavigation("email security").flatMap((group) => group.items).map((item) => item.href))
+      .toContain("/studio/account");
     expect(filterStudioNavigation("gallery").flatMap((group) => group.items).map((item) => item.href))
       .toContain("/studio/gallery");
     expect(filterStudioNavigation("not-a-real-feature")).toEqual([]);

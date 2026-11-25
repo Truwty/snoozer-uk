@@ -32,7 +32,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
     dialog.current?.showModal();
   };
   return <>
-    <details className="account-dropdown" ref={menu}>
+    <details id="studio-account-menu" className="account-dropdown" ref={menu}>
       <summary className="account-trigger">
         <Avatar name={active} src={current?.avatar}/>
         <span className="account-trigger-identity">

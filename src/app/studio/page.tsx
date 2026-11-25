@@ -124,6 +124,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         <p className="eyebrow">QUICK ACTIONS</p>
         <h2>Manage your account</h2>
         <p className="muted">Shortcuts to the parts of Snoozer you use most.</p>
+        <Link href={studioHref("/studio/account", selected)}><span>◎</span>Account settings <b>↗</b></Link>
         <Link href={studioHref("/studio/builder", selected)}><span>✎</span>Edit profile details <b>↗</b></Link>
         <Link href={studioHref("/studio/customize", selected)}><span>✦</span>Customize appearance <b>↗</b></Link>
         <Link href={studioHref("/studio/links", selected)}><span>⌁</span>Manage social links <b>↗</b></Link>

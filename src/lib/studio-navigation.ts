@@ -5,7 +5,7 @@ export const studioNavigationGroups = [
       { label: "Overview", href: "/studio", icon: "⌂", keywords: "dashboard home progress stats" },
       { label: "Analytics", href: "/studio/analytics", icon: "⌁", keywords: "views clicks visitors performance" },
       { label: "Badges", href: "/studio/badges", icon: "✧", keywords: "achievements milestones recognition" },
-      { label: "Settings", href: "/studio/settings", icon: "⚙", keywords: "profile aliases domains search visibility privacy" },
+      { label: "Settings", href: "/studio/account", icon: "⚙", keywords: "email password security sessions account settings" },
     ],
   },
   {
@@ -20,6 +20,7 @@ export const studioNavigationGroups = [
   {
     label: "Your profile",
     items: [
+      { label: "Profile Settings", href: "/studio/settings", icon: "⚙", keywords: "profile aliases domains search visibility privacy custom domain" },
       { label: "Premium & Usage", href: "/studio/plan", icon: "◇", keywords: "subscription usage billing plan" },
       { label: "Image Gallery", href: "/studio/gallery", icon: "▧", keywords: "images media folders uploads storage" },
       { label: "Templates", href: "/studio/templates", icon: "▤", keywords: "browse favourites recent community" },
