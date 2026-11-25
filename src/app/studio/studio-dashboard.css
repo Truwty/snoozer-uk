@@ -561,7 +561,7 @@
   }
   .studio-sidebar-brand-row { justify-content:space-between; }
   .studio-collapse-menu { display:none; }
-  .studio-mobile-menu { display:grid; width:2.35rem; height:2.35rem; min-height:2.35rem; border-color:var(--studio-line); background:#17191d; }
+  .studio-mobile-menu { display:grid; width:2.75rem; min-width:2.75rem; height:2.75rem; min-height:2.75rem; border-color:var(--studio-line); background:#17191d; }
   .studio-sidebar-search,
   .studio-sidebar-nav,
   .studio-sidebar-footer,
