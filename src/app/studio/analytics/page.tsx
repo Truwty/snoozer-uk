@@ -58,7 +58,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const allTraffic = trafficAnalytics.safeParse(trafficResponse?.data);
   const allBrowsers = browserAnalytics.safeParse(browserResponse?.data);
 
-  const rows = allRows.success ? [...inRange(allRows.data, range)].sort((a, b) => a.day.localeCompare(b.day)) : [];
+  const rows = allRows.success ? [...inRange(allRows.data, range)] : [];
   const links = allLinks.success ? allLinks.data : [];
   const traffic = allTraffic.success ? allTraffic.data : [];
   const browsers = allBrowsers.success ? inRange(allBrowsers.data, range) : [];

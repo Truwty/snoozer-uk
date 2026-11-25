@@ -41,11 +41,13 @@ export const studioNavigationGroups = [
 ] as const;
 
 export function filterStudioNavigation(query: string) {
-  const needle = query.trim().toLocaleLowerCase("en-GB");
-  if (!needle) return studioNavigationGroups;
+  const needles = query.trim().toLocaleLowerCase("en-GB").split(/\\s+/).filter(Boolean);
+  if (needles.length === 0) return studioNavigationGroups;
   return studioNavigationGroups.map((group) => ({
     ...group,
-    items: group.items.filter((item) =>
-      (item.label + " " + item.href + " " + item.keywords).toLocaleLowerCase("en-GB").includes(needle)),
+    items: group.items.filter((item) => {
+      const haystack = (item.label + " " + item.href + " " + item.keywords).toLocaleLowerCase("en-GB");
+      return needles.every((needle) => haystack.includes(needle));
+    }),
   })).filter((group) => group.items.length > 0);
 }

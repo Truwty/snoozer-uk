@@ -61,7 +61,7 @@ export default async function AccountSettings() {
       </div>
       <div className="studio-setting-row">
         <div><strong>Active sessions</strong><p>Studio supports switching between up to four accounts saved in this browser. It does not currently provide a device-by-device session history.</p></div>
-        <a className="button small" href="#studio-account-menu">Open account switcher ↓</a>
+        <a className="button small" href="#studio-account-menu">Find account switcher ↓</a>
       </div>
     </section>
 
