@@ -150,7 +150,7 @@ export async function confirmEmail(_: ActionState, form: FormData): Promise<Acti
   if (result.error || !result.data.user?.email_confirmed_at) return error("This verification link has expired or already been used.");
   const jar = await cookies();
   saveAccount(jar, currentSlot(jar), result.data.user.id, result.data.user.email);
-  if (requestedType === "email_change") redirect("/studio/account?email=changed");
+  if (requestedType === "email_change") redirect("/studio/account?email=confirmation");
   if (result.data.user.user_metadata.snoozer_referral_consent === true) {
     const attribution = await client.rpc("accept_my_referral");
     if (attribution.error || !["accepted", "already_recorded"].includes(attribution.data)) redirect("/studio/growth?referral=unconfirmed");
