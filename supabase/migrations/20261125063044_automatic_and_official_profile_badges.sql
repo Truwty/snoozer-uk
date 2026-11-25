@@ -209,8 +209,7 @@ begin
   when 'gift_claimed' then exists(select 1 from snoozer.entitlement_grants g where g.owner_id=p.owner_id and g.source='gift' and g.revoked_at is null)
   else false end
  on conflict(profile_id,slug) do nothing;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION snoozer.refresh_profile_badges_trigger()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -223,8 +222,7 @@ begin
  target:=nullif(coalesce(rec->>'profile_id',rec->>'id'),'')::uuid;
  if target is not null then perform snoozer.award_profile_milestones(target); end if;
  if tg_op='DELETE' then return old; else return new; end if;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION snoozer.public_profile_badges(p_profile uuid)
  RETURNS jsonb
  LANGUAGE sql
@@ -271,8 +269,7 @@ begin
    'category',c.category,'rarity',c.rarity,'award_mode',c.award_mode,'enabled',c.enabled,
    'earned',exists(select 1 from snoozer.profile_badges a where a.profile_id=target and a.slug=c.slug and a.revoked_at is null))
    order by c.sort_order,c.name) from snoozer.badge_catalog c where (c.unique_profile_id is null and c.award_mode<>'manual') or c.unique_profile_id=target),'[]'::jsonb));
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_badge_catalog()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -292,8 +289,7 @@ declare actor uuid:=snoozer.admin_actor();
 begin
  if not exists(select 1 from snoozer.profiles where id=p_profile) then return '[]'::jsonb; end if;
  return coalesce((select jsonb_agg(to_jsonb(b) order by b.awarded_at desc) from snoozer.profile_badges b where b.profile_id=p_profile),'[]'::jsonb);
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_award_profile_badge(p_profile uuid, p_slug text, p_name text, p_description text, p_icon text, p_category text, p_rarity text, p_reason text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -324,8 +320,7 @@ begin
  select actor,p.owner_id,'badge.award',btrim(p_reason),jsonb_build_object('profile_id',p_profile,'slug',chosen_slug,'badge_id',award_id)
  from snoozer.profiles p where p.id=p_profile;
  return award_id;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.owner_revoke_profile_badge(p_badge uuid, p_reason text)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -341,8 +336,7 @@ begin
  select actor,p.owner_id,'badge.revoke',btrim(p_reason),jsonb_build_object('profile_id',target,'slug',slug,'badge_id',p_badge)
  from snoozer.profiles p where p.id=target;
  return true;
-end $function$
-
+end $function$;
 create trigger badges_profiles_refresh after insert or update of bio,avatar,published_revision,appearance,widgets,blocks on snoozer.profiles for each row execute function snoozer.refresh_profile_badges_trigger();
 create trigger badges_links_refresh after insert or update or delete on snoozer.links for each row execute function snoozer.refresh_profile_badges_trigger();
 create trigger badges_sections_refresh after insert or update or delete on snoozer.sections for each row execute function snoozer.refresh_profile_badges_trigger();
