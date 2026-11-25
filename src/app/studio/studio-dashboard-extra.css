@@ -300,3 +300,15 @@
   .studio-main-content .studio-stat-card,
   .studio-main-content .studio-dashboard-panel { transition:none !important; }
 }
+
+
+/* Keep the badge description span from inheriting the compact icon frame style. */
+.studio-main-content .studio-official-badge > .studio-badge-card-copy {
+  width:auto;
+  height:auto;
+  flex:1 1 auto;
+  place-items:initial;
+  border:0;
+  color:inherit;
+  font-size:inherit;
+}
