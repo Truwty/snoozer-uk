@@ -56,8 +56,7 @@ begin
   when 'gift_claimed' then exists(select 1 from snoozer.entitlement_grants g where g.owner_id=p.owner_id and g.source='gift' and g.revoked_at is null)
   else false end
  on conflict(profile_id,slug) do nothing;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.refresh_my_profile_badges()
  RETURNS integer
  LANGUAGE plpgsql
@@ -70,8 +69,7 @@ begin
   perform snoozer.award_profile_milestones(item.id); total:=total+1;
  end loop;
  return total;
-end $function$
-
+end $function$;
 create trigger badges_clicks_refresh after insert or update of clicks on snoozer.profile_view_days
  for each row execute function snoozer.refresh_profile_badges_trigger();
 revoke all on function snoozer.award_profile_milestones(uuid) from public,anon,authenticated,service_role;
