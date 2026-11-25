@@ -1,9 +1,10 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { helpCategories } from "@/lib/help-content";
 
 type HelpShellProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   activeCategory?: string;
 };
 
