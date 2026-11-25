@@ -123,7 +123,7 @@ test("liveness works without credentials", async ({ request }) => {
 
 test("an anonymous visitor cannot open Studio", async ({ page }) => {
   await page.goto("/studio");
-  await expect(page).toHaveURL("/sign-in");
+  await expect(page).toHaveURL("/sign-in?next=%2Fstudio");
 });
 
 test("Stripe intake is unavailable without server configuration", async ({ request }) => {
