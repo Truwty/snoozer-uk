@@ -2923,17 +2923,30 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.exec("reset role");
     await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
 
+    // Verify that assigning the Owner role grants the catalogue immediately,
+    // before the account calls the badge RPC or opens the badge manager.
+    await db.exec("reset role");
+    expect(await result<boolean>(
+      "select exists(select 1 from snoozer.platform_owners where owner_id=$1) as value",
+      [alice],
+    )).toBe(true);
+    expect(await result<boolean>(
+      "select exists(select 1 from snoozer.profiles where id=$1 and owner_id=$2) as value",
+      [ownerProfile, alice],
+    )).toBe(true);
+    const availableCount = await result<number>(
+      "select count(*)::int as value from snoozer.badge_catalog where enabled and unique_profile_id is null",
+    );
+    const assignedCount = await result<number>(
+      "select count(*)::int as value from snoozer.profile_badges where profile_id=$1 and revoked_at is null",
+      [ownerProfile],
+    );
+    expect(assignedCount).toBe(availableCount);
+
     await act("authenticated", alice);
     const collection = await result<{ earned: Array<{ slug: string; is_public: boolean }> }>(
       "select public.get_my_profile_badges($1) as value", [ownerProfile],
     );
-    // The catalogue lives in a private schema, so inspect it using the
-    // elevated test connection rather than the simulated authenticated role.
-    await db.exec("reset role");
-    const availableCount = await result<number>(
-      "select count(*)::int as value from snoozer.badge_catalog where enabled and unique_profile_id is null",
-    );
-    await act("authenticated", alice);
     expect(collection?.earned.length).toBe(availableCount);
     expect(collection?.earned.map((badge) => badge.slug)).toContain("founding-member");
     expect(collection?.earned.map((badge) => badge.slug)).toContain("one-of-one");
