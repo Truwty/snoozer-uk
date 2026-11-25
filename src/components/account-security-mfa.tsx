@@ -17,7 +17,7 @@ export function AccountSecurityMfa({verifiedFactorId}:{verifiedFactorId?:string}
    ? <p className="studio-setting-status is-good">Authenticator enabled</p>
    : <form action={begin}><button className="button small" type="submit" disabled={pending}>{pending?"Preparing…":"Set up authenticator app"}</button></form>}
   {enrollment.error&&<p role="alert">{enrollment.error}</p>}
-  {enrollment.qr&&<section className="studio-mfa-enrolment stack">
+  {enrollment.qr&&!verification.success&&<section className="studio-mfa-enrolment stack">
    <p>Scan this QR code in an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password. Then enter its current six-digit code.</p>
    {/* Supabase returns a data SVG for the QR; it is not an external URL. */}
    {/* eslint-disable-next-line @next/next/no-img-element */}
