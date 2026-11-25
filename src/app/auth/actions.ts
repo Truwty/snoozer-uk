@@ -65,6 +65,7 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   } else {
     saveAccount(jar, slot, result.data.user.id, result.data.user.email);
   }
+  await activeClient.rpc("refresh_my_profile_badges");
   const next = safeNextPath(form.get("next"));
   const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
   redirect(assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"
