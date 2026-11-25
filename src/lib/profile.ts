@@ -17,6 +17,8 @@ export const profileDensities = ["compact", "balanced", "airy"] as const;
 export const profileCorners = ["square", "soft", "round"] as const;
 export const profileEntrances = ["none", "fade", "rise"] as const;
 export const profileLayouts = ["centred", "editorial", "portfolio"] as const;
+export const profileTemplateStyles = ["slate","mono","paper","sakura","oni","cel","noir","dusk","grain","terminal","matrix","synthwave","forest","ocean","desert","arcade","esports","pixel","studio","brutalist","gallery","vinyl","waveform","backstage","cloud","bloom","lilac","obsidian","goldline","velvet"] as const;
+export type ProfileTemplateStyle = typeof profileTemplateStyles[number];
 const profileHexColour = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hexadecimal colour.");
 const profileCustomColours = z.strictObject({
   background: profileHexColour.optional(),
@@ -39,6 +41,7 @@ export const profileAppearance = z.strictObject({
   accent: z.enum(linkAccents).default(defaultAppearance.accent),
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
   backgroundImage: z.uuid().optional(),
+  templateStyle: z.enum(profileTemplateStyles).optional(),
   effects: profileEffects.optional(),
   colors: profileCustomColours.optional(),
   font: z.enum(["system", "sans", "serif", "mono"]).optional(),

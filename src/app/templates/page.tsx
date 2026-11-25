@@ -3,50 +3,80 @@ import { SiteHeader } from "@/components/site-header";
 import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
-import { defaultAppearance, profileLayouts, themes } from "@/lib/profile";
-import { findTemplates, templateFilters } from "@/lib/studio-templates";
+import { profileLayouts, themes } from "@/lib/profile";
+import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePageSize } from "@/lib/studio-templates";
 
 export const metadata = {
-  title: "Templates",
-  description: "Explore first-party Snoozer templates for your personal page.",
+  title: "Profile templates",
+  description: "Explore 120 free Snoozer profile designs across ten creative categories.",
 };
+type SearchParams = { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[]; page?: string | string[]; profile?: string | string[] };
 
-export default async function Templates({ searchParams }: { searchParams: Promise<{ q?: string | string[]; theme?: string | string[]; layout?: string | string[]; profile?: string | string[] }> }) {
+export default async function Templates({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const filters = templateFilters(params);
   const selectedProfile = typeof params.profile === "string" && /^[0-9a-f-]{36}$/i.test(params.profile) ? params.profile : undefined;
-  const profileQuery = selectedProfile ? "&profile=" + encodeURIComponent(selectedProfile) : "";
-  const templateHref = (id: string) => "/studio/builder?template=" + encodeURIComponent(id) + profileQuery;
   const templates = findTemplates(filters);
-  const active = filters.q || filters.theme !== "all" || filters.layout !== "all";
+  const { page, pageCount, start } = getTemplatePage(params.page, templates.length);
+  const visibleTemplates = templates.slice(start, start + templatePageSize);
+  const active = Boolean(filters.q || filters.theme !== "all" || filters.layout !== "all" || filters.category !== "all");
   const layoutLabels = { centred: "Centred card", editorial: "Editorial", portfolio: "Portfolio grid" };
+  const queryForPage = (nextPage: number) => {
+    const query = new URLSearchParams();
+    if (filters.q) query.set("q", filters.q);
+    if (filters.theme !== "all") query.set("theme", filters.theme);
+    if (filters.layout !== "all") query.set("layout", filters.layout);
+    if (filters.category !== "all") query.set("category", filters.category);
+    if (selectedProfile) query.set("profile", selectedProfile);
+    if (nextPage > 1) query.set("page", String(nextPage));
+    return "/templates" + (query.size ? "?" + query.toString() : "");
+  };
+  const templateHref = (id: string) => "/studio/builder?template=" + encodeURIComponent(id)
+    + (selectedProfile ? "&profile=" + encodeURIComponent(selectedProfile) : "");
 
-  return <main className="shell stack">
+  return <main className="shell stack template-library">
     <SiteHeader />
     <header className="page-header stack">
-      <p className="eyebrow">SNOOZER STUDIO</p>
-      <h1>Find a starting point</h1>
-      <p className="muted">Explore twelve free template styles. Change the colours and text in Studio before sharing your page.</p>
+      <p className="eyebrow">SNOOZER STUDIO · DESIGN LIBRARY</p>
+      <h1>Find your profile style.</h1>
+      <p className="muted">120 original starting points across ten styles of self-expression. Pick a complete composition, then make the details yours in Studio.</p>
+      <div className="template-library-stats" aria-label="Template library contents">
+        <span><strong>120</strong> designs</span><span><strong>30</strong> compositions</span><span><strong>10</strong> categories</span><span><strong>4</strong> colour treatments</span>
+      </div>
     </header>
     <form key={JSON.stringify(filters)} action="/templates" method="get" className="template-filters">
       {selectedProfile && <input type="hidden" name="profile" value={selectedProfile} />}
-      <label>Search templates<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Name or style" /></label>
-      <label>Template theme<select name="theme" defaultValue={filters.theme}><option value="all">All themes</option>{themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}</select></label>
-      <label>Template layout<select name="layout" defaultValue={filters.layout}><option value="all">All layouts</option>{profileLayouts.map((layout) => <option key={layout} value={layout}>{layoutLabels[layout]}</option>)}</select></label>
-      <button className="button" type="submit">Find templates</button>
+      <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, mono..." /></label>
+      <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+      <label>Colour treatment<select name="theme" defaultValue={filters.theme}><option value="all">All treatments</option>{themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}</select></label>
+      <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map((layout) => <option key={layout} value={layout}>{layoutLabels[layout]}</option>)}</select></label>
+      <button className="button" type="submit">Filter templates</button>
       {active && <Link className="text-link" href={selectedProfile ? "/templates?profile=" + encodeURIComponent(selectedProfile) : "/templates"}>Clear filters</Link>}
     </form>
-    <p className="muted" role="status">{templates.length} {templates.length === 1 ? "template" : "templates"} found</p>
-    {templates.length === 0 && <EmptyState title="No matching templates" description="Try a different name, theme or layout."><Link className="button" href={selectedProfile ? "/templates?profile=" + encodeURIComponent(selectedProfile) : "/templates"}>Browse all templates</Link></EmptyState>}
+    <div className="template-results-heading">
+      <p className="muted" role="status">Showing {templates.length ? start + 1 : 0}–{Math.min(start + templatePageSize, templates.length)} of {templates.length} matching designs</p>
+      <p className="muted">Page {page} of {pageCount}</p>
+    </div>
+    {templates.length === 0 && <EmptyState title="No matching designs" description="Try a different search or remove one of your filters."><Link className="button" href={selectedProfile ? "/templates?profile=" + encodeURIComponent(selectedProfile) : "/templates"}>Browse all templates</Link></EmptyState>}
     <ul className="template-grid">
-      {templates.map((template) => <li className="template-item stack" key={template.id}>
-        <p className="eyebrow">EXAMPLE · {template.id}</p>
-        <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{ seo: { title: "", description: "" },
-          username: template.id, display_name: template.name, bio: template.description, theme: template.theme,
-          indexable: false, avatar: null, appearance: template.appearance ?? defaultAppearance, blocks: [], pageLayout: { version: 1, items: [] }, gallery: [], badges: [], widgets: defaultProfileWidgets, links: [{ label: "GitHub", url: "https://github.com/" }], sections: template.sections,
-        }} />
-        <Link className="button primary" href={templateHref(template.id)}>Use this template</Link>
+      {visibleTemplates.map((template) => <li className="template-item stack" key={template.id}>
+        <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
+        <div className="template-preview-frame">
+          <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{
+            seo: { title: "", description: "" }, username: "snoozer-preview", display_name: "Your name",
+            bio: "A little space on the internet that feels like you.", theme: template.theme, indexable: false,
+            avatar: null, appearance: template.appearance, blocks: [], pageLayout: { version: 1, items: [] },
+            gallery: [], badges: [], widgets: defaultProfileWidgets,
+            links: [{ label: "Your website", url: "https://example.com/" }], sections: template.sections,
+          }} />
+        </div>
+        <Link className="button primary" href={templateHref(template.id)}>Customise this design <span aria-hidden="true">↗</span></Link>
       </li>)}
     </ul>
+    {pageCount > 1 && <nav className="template-pagination" aria-label="Template pages">
+      <Link className={"button" + (page === 1 ? " is-disabled" : "")} aria-disabled={page === 1} tabIndex={page === 1 ? -1 : undefined} href={queryForPage(Math.max(1, page - 1))}>Previous</Link>
+      <span className="muted">Page {page} / {pageCount}</span>
+      <Link className={"button" + (page === pageCount ? " is-disabled" : "")} aria-disabled={page === pageCount} tabIndex={page === pageCount ? -1 : undefined} href={queryForPage(Math.min(pageCount, page + 1))}>Next</Link>
+    </nav>}
   </main>;
 }
