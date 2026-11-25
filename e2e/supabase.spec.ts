@@ -396,7 +396,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("link", { name: "Page Builder", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("link", { name: "Templates", exact: true }).click();
-    await expect(page.getByRole("link", { name: "Use this template", exact: true }).first())
+    await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first())
       .toHaveAttribute("href", new RegExp("^/studio/builder\\?template=.*&profile=" + selectedProfile));
     await page.goto("/studio/builder?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
