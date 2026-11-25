@@ -41,7 +41,7 @@ export const studioNavigationGroups = [
 ] as const;
 
 export function filterStudioNavigation(query: string) {
-  const needles = query.trim().toLocaleLowerCase("en-GB").split(/\\s+/).filter(Boolean);
+  const needles = query.trim().toLocaleLowerCase("en-GB").split(/\s+/).filter(Boolean);
   if (needles.length === 0) return studioNavigationGroups;
   return studioNavigationGroups.map((group) => ({
     ...group,
