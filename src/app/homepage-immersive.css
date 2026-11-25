@@ -6,6 +6,7 @@
   --hi-lime: #d8fb86;
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
   width: min(calc(100% - 2rem), 86rem);
   padding-bottom: clamp(2rem, 5vw, 4rem);
   color: var(--hi-text);
@@ -173,6 +174,7 @@
 .home-profile-showcase {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   width: min(100%, 86rem);
   height: clamp(30rem, 38vw, 35rem);
   margin: clamp(1.5rem, 3vw, 2.5rem) auto 0;
