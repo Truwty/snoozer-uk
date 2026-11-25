@@ -14,7 +14,7 @@ Supabase's default secure email-change policy can send confirmations to both the
 
 The email change redirect already includes `?type=email_change`, so the token hash is appended with `&`. The local CLI template is `supabase/templates/email_change.html`.
 
-TOTP is opt-in. Snoozer enforces the AAL2 challenge after sign-in when a factor is enrolled; Owner writes continue to require AAL2. The flow does not issue downloadable recovery codes, so the UI advises adding a second trusted authenticator before changing phones.
+TOTP is opt-in. When a verified factor is enrolled, sign-in requires AAL2 and the shared `snoozer.verified_user()` database guard also rejects AAL1 RPC calls. This prevents a caller from bypassing the Studio second-factor screen by invoking profile RPCs directly. Owner writes continue to require AAL2. The flow does not issue downloadable recovery codes, so the UI advises adding a second trusted authenticator before changing phones.
 
 Session revocation deletes the selected Auth session after checking ownership and preventing self-revocation of the current session. The refresh token is revoked immediately; an already issued access JWT remains valid until expiry. Snoozer's protected RPCs also validate the JWT session ID against `auth.sessions`.
 
