@@ -139,7 +139,8 @@ jobs:
           # Use per-run ports below the Linux ephemeral range to avoid host-port collisions.
           port_base = 10000 + (run_id % 100) * 60 + shard * 10
           ports = {
-              "api": port_base,
+              # Keep the API URL stable; E2E safety guards require 127.0.0.1:54321.
+              "api": 54321,
               "db": port_base + 1,
               "local_smtp": port_base + 3,
           }
