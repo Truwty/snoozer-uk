@@ -72,10 +72,10 @@ export default async function OwnerBadges({searchParams}:{searchParams:Promise<{
     <div className="owner-badge-earned-list">
      {earned.filter(b=>!b.revoked_at).map(b=><div className="owner-badge-earned" key={b.id}>
       <span aria-hidden="true">{b.icon}</span><div><strong>{b.name}</strong><small>{b.rarity} · {b.source==="owner"?"Owner award":"Automatic award"}</small>{b.award_reason&&<small>Reason: {b.award_reason}</small>}</div>
-      <form action={ownerRevokeBadge}><input type="hidden" name="user" value={target!.id}/><input type="hidden" name="profile" value={profile.id}/><input type="hidden" name="badge" value={b.id}/>
+      {b.source==="owner"&&<form action={ownerRevokeBadge}><input type="hidden" name="user" value={target!.id}/><input type="hidden" name="profile" value={profile.id}/><input type="hidden" name="badge" value={b.id}/>
        <input name="reason" required minLength={8} maxLength={500} placeholder="Reason for revocation" aria-label={"Reason for revoking "+b.name}/>
        <button className="button small danger" type="submit">Revoke</button>
-      </form>
+      </form>}
      </div>)}
      {earned.every(b=>b.revoked_at)&&<p className="muted">No active badges on this profile yet.</p>}
     </div>
