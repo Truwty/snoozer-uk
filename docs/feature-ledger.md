@@ -320,20 +320,20 @@ Creator storefronts, PDF products, third-party seller onboarding, creator member
 
 | ID | Capability | Status |
 | --- | --- | --- |
-| 18.1 | Opt-In Public Directory | Deferred |
-| 18.2 | Category Pages | Deferred |
-| 18.3 | Verified Ownership Indicators | Deferred |
-| 18.4 | Search With Safe Ranking | Deferred |
-| 18.5 | Profile Collections | Deferred |
-| 18.6 | Featured Creators | Deferred |
-| 18.7 | Curated Spotlight | Deferred |
-| 18.8 | Community Guidelines | Deferred |
-| 18.9 | Report Button | Deferred |
+| 18.1 | Opt-In Public Directory | Feature #30: per-profile directory opt-in, default off; immediate opt-out removal |
+| 18.2 | Category Pages | Feature #30: allow-listed category pages with filters and pagination |
+| 18.3 | Verified Ownership Indicators | Feature #30: verified custom-domain indicator only; not an identity badge |
+| 18.4 | Search With Safe Ranking | Feature #30: bounded username/profile-text/interest search with stable cursors; no popularity ranking |
+| 18.5 | Profile Collections | Feature #30: Owner-curated, scheduled collections with eligibility rechecks |
+| 18.6 | Featured Creators | Feature #30: featured editorial collections; no paid placement |
+| 18.7 | Curated Spotlight | Feature #30: Owner-managed, time-bounded curated collections |
+| 18.8 | Community Guidelines | Feature #30: Terms and Help Centre guidance for public listings and curation |
+| 18.9 | Report Button | Feature #30: discovery cards link into the existing verified profile-report queue |
 | 18.10 | Block And Mute | Deferred |
-| 18.11 | Spam-Resistant Guestbook | Deferred |
-| 18.12 | Profile Recommendation Privacy Controls | Deferred |
-| 18.13 | Opt-Out Of Indexing | Partially implemented |
-| 18.14 | No Purchased Fake Traffic | Deferred |
+| 18.11 | Spam-Resistant Guestbook | Complete in Feature #29: moderated Guestbook, token limits and existing report integration |
+| 18.12 | Profile Recommendation Privacy Controls | Feature #30: per-profile recommendation opt-in; metadata-only related creators |
+| 18.13 | Opt-Out Of Indexing | SEO indexing setting remains separate; discovery is an independent opt-in |
+| 18.14 | No Purchased Fake Traffic | Feature #30: no view/click/follower ranking or paid placement; anti-manipulation Terms |
 
 ## 19. ADMIN AND TRUST SAFETY
 

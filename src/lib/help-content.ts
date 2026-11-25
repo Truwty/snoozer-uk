@@ -117,6 +117,32 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
+    slug: "creator-discovery", title: "List your profile in Discover", category: "Profiles & Studio",
+    summary: "Choose whether your published page appears in public creator search and curated collections.",
+    sections: [
+      { heading: "Opt in to Discover", steps: [
+        "Open Studio and select the profile you want to manage.",
+        "Choose Profile → Discovery in the Studio navigation.",
+        "Turn on Allow my profile to appear in Discover. New and existing profiles are not listed unless this is enabled.",
+        "Choose one primary category and up to five interests that accurately describe your page.",
+        "Save your preferences. Your profile can appear once it is published, activated and not restricted by moderation.",
+      ] },
+      { heading: "What visitors can see", paragraphs: [
+        "Discover can show your published display name, username, avatar, biography, category and selected interests. Visitors can search by public profile text, browse category pages and open curated collections.",
+        "Discover is separate from search-engine indexing. Changing your Discover choice does not change the public profile URL or your SEO indexing setting.",
+        "You can separately choose whether your profile appears on the Views Leaderboard. Leaderboard participation is not the same as being listed in Discover.",
+      ] },
+      { heading: "Recommendations and curated collections", paragraphs: [
+        "Turn on Include my profile in related creators to allow your public profile to appear beside similar creators who have also enabled recommendations. Suggestions use public categories and interests, not private visitor histories or analytics.",
+        "Snoozer may curate Featured creator shelves, Community spotlight shelves and standard public collections. These are editorial surfaces, not paid placements or identity endorsements. Collections cannot override your Discover opt-out, an unpublished profile or an active moderation restriction.",
+      ] },
+      { heading: "Turn Discover off or report a profile", paragraphs: [
+        "Turn off Allow my profile to appear in Discover and save. Snoozer removes the listing from directory search, category pages, recommendations and curated collections without requiring another publication. Your profile URL remains public until you unpublish it.",
+        "Visitors can use Report profile on a discovery card or public profile to send a report through Snoozer's existing moderation process. Reports must be genuine and made in good faith.",
+      ] },
+    ],
+  },
+  {
     slug: "profile-analytics", title: "Understand your analytics", category: "Profiles & Studio",
     summary: "Track consented views, clicks and campaign results.",
     sections: [

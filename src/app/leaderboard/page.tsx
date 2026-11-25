@@ -72,7 +72,7 @@ export default async function Page({ searchParams }: {
       Views are consented events, not unique people. Owner views and known bots are excluded.
       The monthly leaderboard resets each UTC calendar month. All-time figures include the
       daily analytics still retained when this leaderboard launched, plus new views afterwards;
-      older purged history cannot be recovered. Profiles that opt out of discovery are not listed.
+      older purged history cannot be recovered. Profiles that opt out of the Views Leaderboard are not listed. This preference is separate from the Discover directory and search-engine indexing.
     </p>
     <footer className="leaderboard-footer"><Link href="/">Back to Snoozer</Link></footer>
   </main>;

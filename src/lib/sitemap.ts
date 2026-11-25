@@ -1,3 +1,4 @@
+import { discoveryCategories } from "./discovery";
 import type { MetadataRoute } from "next";
 
 export type SitemapProfile = { username: string; last_modified: string };
@@ -6,6 +7,8 @@ export function sitemapEntries(origin: URL, profiles: readonly SitemapProfile[])
   return [
     { url: origin.href, changeFrequency: "weekly", priority: 1 },
     { url: new URL("/templates", origin).href, changeFrequency: "monthly", priority: 0.7 },
+    { url: new URL("/discover", origin).href, changeFrequency: "daily", priority: 0.8 },
+    ...discoveryCategories.map((category) => ({ url: new URL("/discover/category/" + category.value, origin).href, changeFrequency: "weekly" as const, priority: 0.6 })),
     { url: new URL("/privacy", origin).href, changeFrequency: "yearly", priority: 0.3 },
     { url: new URL("/terms", origin).href, changeFrequency: "yearly", priority: 0.3 },
     ...profiles.map((profile) => ({
