@@ -396,7 +396,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("link", { name: "Page Builder", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("link", { name: "Templates", exact: true }).click();
-    await expect(page.getByRole("link", { name: "Use this template", exact: true }).first())
+    await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first())
       .toHaveAttribute("href", new RegExp("^/studio/builder\\?template=.*&profile=" + selectedProfile));
     await page.goto("/studio/builder?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
@@ -967,11 +967,14 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Profile");
     await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");
-    await page.goto("/templates");
-    await page.locator('a[href="/studio/builder?template=project-notebook"]').click();
-    await expect(page.getByLabel("Preview a template")).toHaveValue("project-notebook");
+    // Terminal is on a later catalogue page; filter the library rather than
+    // assuming every design is present in the first 24-card page.
+    await page.goto("/templates?q=terminal&category=cyber&palette=nocturne");
+    await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(1);
+    await page.locator('a[href="/studio/builder?template=terminal-nocturne"]').click();
+    await expect(page.getByLabel("Preview a design")).toHaveValue("terminal-nocturne");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a template").selectOption("");
+    await page.getByLabel("Preview a design").selectOption("");
 
     await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Snoozer Creator");
@@ -1004,25 +1007,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Design");
     await page.getByText("Copy or paste appearance", { exact: true }).click();
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a template").selectOption("project-notebook");
-    await expect(page.getByRole("heading", { name: "Current projects" })).toBeVisible();
+    await page.getByLabel("Preview a design").selectOption("terminal-nocturne");
+    await expect(page.getByRole("heading", { name: "whoami" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply with starter sections" }).click();
+    await page.getByRole("button", { name: "Apply design with sample sections" }).click();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("midnight");
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Current projects");
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("whoami");
     await editorTab(page, "Sections");
     await page.getByLabel("Section 1 text").fill("First line.\nLiteral <em>markup</em>.");
     await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Move up (section 2)" }).press("Enter");
     await expect(page.getByLabel("Section 1 heading")).toBeFocused();
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a template").selectOption("field-guide");
-    await expect(page.getByRole("button", { name: "Apply with starter sections" })).toHaveCount(0);
+    await page.getByLabel("Preview a design").selectOption("forest-glacier");
+    await expect(page.getByRole("button", { name: "Apply design with sample sections" })).toHaveCount(0);
     await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply template colours" }).click();
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await page.getByRole("button", { name: "Apply template design" }).click();
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
     await page.getByLabel("Enable effects").check();
@@ -1076,19 +1079,19 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.mouse.down();
     await page.mouse.move(1, end.y, { steps: 8 });
     await page.mouse.up();
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
 
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(end.x, end.y, { steps: 10 });
     await expect(nextSection).toHaveAttribute("data-drop-target", "true");
     await page.mouse.up();
-    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Projects");
     await expect(page.getByLabel("Section 2 heading")).toBeFocused();
     await page.getByRole("button", { name: "Undo edit" }).click();
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
     await page.getByRole("button", { name: "Redo edit" }).click();
-    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Projects");
     for (const [index, label] of ["First", "Second"].entries()) {
       await editorTab(page, "Links");
       await page.getByRole("button", { name: "Add link" }).click();
@@ -1175,7 +1178,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
 
-    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["Current projects", "Notes", "Launch"]);
+    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["whoami", "Projects", "Launch"]);
     await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
     await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
     const bioCard = publicPage.locator(".profile-card");
@@ -1189,7 +1192,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(1);
     expect(await publicPage.locator(".profile-more-content .profile-links a").first()
       .evaluate((element) => parseFloat(getComputedStyle(element).borderRadius))).toBeGreaterThan(0);
-    await expect(publicPage.locator(".profile-callout h2")).toHaveText("Notes");
+    await expect(publicPage.locator(".profile-callout h2")).toHaveText("Projects");
     await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
     await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
@@ -1242,8 +1245,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Remove section 3" }).click();
     await lock.uncheck();
     await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
-    await expect(preview.getByRole("heading", { name: "Notes" })).toHaveCount(0);
-    await expect(publicPage.getByRole("heading", { name: "Notes" })).toBeVisible();
+    await expect(preview.getByRole("heading", { name: "Projects" })).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Projects" })).toBeVisible();
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
     await page.getByRole("link", { name: "Publish History", exact: true }).click();
@@ -1255,7 +1258,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Restore to draft" }).click();
     await expect(page.getByRole("status")).toContainText("Version restored");
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
-    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Notes");
+    await expect(page.getByLabel("Section 2 heading")).toHaveValue("Projects");
     await expect(page.getByLabel("Profile layout")).toHaveValue("editorial");
     await expect(page.getByLabel("Link accent")).toHaveValue("ink");
     await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
@@ -1271,7 +1274,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.reload();
     await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Second publication" })).toBeVisible();
-    await expect(publicPage.getByRole("heading", { name: "Notes" })).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Projects" })).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByText("Live · Up to date")).toBeVisible();
     await publicPage.reload();

@@ -104,7 +104,7 @@ test("handle availability, template choices and password controls work", async (
   await page.getByLabel("Username", { exact: true }).fill("available-handle");
   await expect(page.getByRole("status")).toContainText("Available. Claim it to reserve it.");
   await page.goto("/templates");
-  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(24);
   await page.goto("/sign-up");
   const password = page.getByLabel("New password", { exact: true });
   await password.fill("twelve-characters");
@@ -154,21 +154,27 @@ test("template search combines filters, preserves URL state and clears empty res
   await page.setViewportSize({ width: 360, height: 812 });
   await page.goto("/templates");
   // The global Playwright storage state already opts out of optional analytics.
-  await page.getByLabel("Search templates", { exact: true }).fill("notebook compact");
-  await page.getByRole("combobox", { name: "Template theme", exact: true }).selectOption("midnight");
-  await page.getByRole("button", { name: "Find templates", exact: true }).click();
-  await expect(page).toHaveURL(/q=notebook\+compact/);
-  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(1);
+  const search = page.getByLabel("Search designs", { exact: true });
+  await search.fill("terminal");
+  await page.getByRole("combobox", { name: "Category", exact: true }).selectOption("cyber");
+  await page.getByRole("combobox", { name: "Colour treatment", exact: true }).selectOption("nocturne");
+  await page.getByRole("button", { name: "Filter templates", exact: true }).click();
+  await expect(page).toHaveURL(/q=terminal/);
+  await expect(page).toHaveURL(/category=cyber/);
+  await expect(page).toHaveURL(/palette=nocturne/);
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(1);
   await page.reload();
-  await expect(page.getByLabel("Search templates", { exact: true })).toHaveValue("notebook compact");
-  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveAttribute("href", "/studio/builder?template=project-notebook-compact");
-  await page.getByLabel("Search templates", { exact: true }).fill("no such template");
-  await page.getByRole("button", { name: "Find templates", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "No matching templates", exact: true })).toBeVisible();
+  await expect(search).toHaveValue("terminal");
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true }))
+    .toHaveAttribute("href", "/studio/builder?template=terminal-nocturne");
+  await search.fill("no such design");
+  await page.getByRole("button", { name: "Filter templates", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "No matching designs", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Browse all templates", exact: true }).click();
-  await expect(page.getByLabel("Search templates", { exact: true })).toHaveValue("");
-  await expect(page.getByRole("combobox", { name: "Template theme", exact: true })).toHaveValue("all");
-  await expect(page.getByRole("link", { name: "Use this template", exact: true })).toHaveCount(12);
+  await expect(search).toHaveValue("");
+  await expect(page.getByRole("combobox", { name: "Category", exact: true })).toHaveValue("all");
+  await expect(page.getByRole("combobox", { name: "Colour treatment", exact: true })).toHaveValue("all");
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(24);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });
 

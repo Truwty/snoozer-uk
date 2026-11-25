@@ -105,7 +105,12 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       const nextContent = {
         ...current.content,
         theme: template.theme,
-        appearance: { ...current.content.appearance, ...template.appearance },
+        appearance: {
+          ...current.content.appearance,
+          ...template.appearance,
+          ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}),
+          ...(current.content.appearance.effects ? { effects: current.content.appearance.effects } : {}),
+        },
         sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
       };
       return {
@@ -497,19 +502,21 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
       <fieldset className="stack">
-        <legend className="section-title">Studio templates</legend>
-        <label>Preview a template
+        <legend className="section-title">Profile design library</legend>
+        <p className="muted">Choose from 120 designs. The live preview updates here before you apply anything.</p>
+        <label>Preview a design
           <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
-            <option value="">Show my draft</option>
-            {studioTemplates.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+            <option value="">Show my current design</option>
+            {studioTemplates.map(({ id, name, categoryLabel }) => <option key={id} value={id}>{name} · {categoryLabel}</option>)}
           </select>
         </label>
+        <p><Link className="text-link" href="/templates">Browse the full library of 120 templates ↗</Link></p>
         {template && <>
-          <p className="muted">{template.description} The preview is private.</p>
+          <p className="muted">{template.categoryLabel} · {template.description} Your links, widgets, badges, gallery and existing sections stay yours.</p>
           <div className="actions">
-            <button type="button" className="button small" onClick={() => applyTemplate(false)}>Apply template colours</button>
+            <button type="button" className="button small primary" onClick={() => applyTemplate(false)}>Apply template design</button>
             {content.sections.length === 0 && <button type="button" className="button small"
-              onClick={() => applyTemplate(true)}>Apply with starter sections</button>}
+              onClick={() => applyTemplate(true)}>Apply design with sample sections</button>}
           </div>
         </>}
       </fieldset>
