@@ -17,7 +17,7 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Everything you share");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     // Playwright's storageState already keeps optional analytics disabled.
-    await page.getByRole("link", { name: "Create your page" }).first().click();
+    await page.getByRole("link", { name: "Sign up for free" }).first().click();
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email address" })).toBeVisible();
     expect(errors).toEqual([]);
