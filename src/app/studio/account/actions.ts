@@ -93,7 +93,7 @@ export async function verifyLoginMfa(form:FormData){
  redirect(next);
 }
 
-export async function claimGiftLink(form:FormData):Promise<ActionState>{
+export async function claimGiftLink(_:ActionState,form:FormData):Promise<ActionState>{
  const token=z.string().regex(/^[a-f0-9]{32}$/i).safeParse(form.get("token"));
  if(!token.success)return fail("This gift link is invalid or incomplete.");
  const {client}=await requireAccount("/gift");
