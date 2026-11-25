@@ -41,7 +41,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
 
   return <main className="shell studio-shell studio-account-page">
     {status.email === "confirmation" && <p role="status">An email-change confirmation has been recorded. With secure email change enabled, Supabase may require verification from both your current and new inboxes. Check the email shown above after completing all requested confirmations.</p>}
-    {status.email === "changed" && <p role="status">Your email address has been updated.</p>
+    {status.email === "changed" && <p role="status">Your email address has been updated.</p>}
     {status.google === "linked" && <p role="status">Google is now linked to this Snoozer account.</p>}
     {status.google === "failed" && <p role="alert">Google linking could not be completed. The existing account was not changed.</p>}
     {status.google === "unavailable" && <p role="alert">Google linking is temporarily unavailable.</p>}
