@@ -102,14 +102,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const deviceTotal = devices.reduce((sum, [, count]) => sum + count, 0);
   let deviceCursor = 0;
   const deviceGradient = deviceTotal > 0
-    ? devices.map(([device, count], index) => {
+    ? devices.map(([, count], index) => {
       const start = deviceCursor;
       deviceCursor += count / deviceTotal * 100;
       return DEVICE_COLOURS[index % DEVICE_COLOURS.length] + " " + start.toFixed(2) + "% " + deviceCursor.toFixed(2) + "%";
     }).join(", ")
     : "#252a25";
-  const chartRows = viewRows
-    .filter((row) => row.day >= new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10))
+  const chartRows = [...viewRows].slice(0, 7)
     .sort((a, b) => a.day.localeCompare(b.day));
   const chart = profileChart(chartRows);
 
@@ -225,7 +224,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           </div> : <div className="studio-device-chart-wrap"><div className="studio-empty-state">
             <strong>No profile views yet</strong><span>Views will appear here when visitors allow analytics on your published profile.</span>
           </div></div>}
-          <p className="muted">Daily consented profile views over the last 7 days (UTC).</p>
+          <p className="muted">Latest seven active UTC dates with consented profile views; inactive dates are omitted.</p>
         </section>
       </div>
     </section>
