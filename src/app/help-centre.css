@@ -1165,3 +1165,26 @@
   .hc-search button { transition: none !important; }
   .hc-category-card:hover { transform: none; }
 }
+
+.hc-article-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.hc-article-links a {
+  min-height: 2.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .42rem .7rem;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 2%);
+  color: var(--text-muted);
+  font-size: .7rem;
+  text-decoration: none;
+}
+.hc-article-links a:hover {
+  border-color: rgb(216 251 134 / 30%);
+  color: var(--accent);
+}
