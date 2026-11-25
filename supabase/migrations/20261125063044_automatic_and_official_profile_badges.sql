@@ -277,7 +277,7 @@ CREATE OR REPLACE FUNCTION public.owner_badge_catalog()
  SET search_path TO ''
 AS $function$
 declare actor uuid:=snoozer.admin_actor();
-begin return coalesce((select jsonb_agg(to_jsonb(c) order by c.sort_order,c.name) from snoozer.badge_catalog c where c.unique_profile_id is null),'[]'::jsonb); end $function$
+begin return coalesce((select jsonb_agg(to_jsonb(c) order by c.sort_order,c.name) from snoozer.badge_catalog c where c.unique_profile_id is null),'[]'::jsonb); end $function$;
 
 CREATE OR REPLACE FUNCTION public.owner_profile_badges(p_profile uuid)
  RETURNS jsonb
