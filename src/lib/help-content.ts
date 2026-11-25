@@ -11,6 +11,7 @@ export type HelpSection = {
   paragraphs?: string[];
   steps?: string[];
   bullets?: string[];
+  links?: { label: string; href: string }[];
 };
 
 export type HelpArticle = {
@@ -607,10 +608,10 @@ export const helpArticles: HelpArticle[] = [
       },
       {
         heading: "Read the full policies",
-        bullets: [
-          "Privacy Policy",
-          "Terms of Service",
-          "Legal information and business contact details",
+        links: [
+          { label: "Privacy Policy", href: "/privacy" },
+          { label: "Terms of Service", href: "/terms" },
+          { label: "Legal information and business contact details", href: "/legal" },
         ],
       },
     ],
