@@ -6,7 +6,7 @@ import { requireOwner } from "@/lib/owner/auth";
 
 const uuid=z.uuid();
 const reason=z.string().trim().min(8).max(500);
-function returnTo(user:string,status:string){redirect("/owner/badges?"+new URLSearchParams({user,status}).toString());}
+function returnTo(user:string,status:string):never{redirect("/owner/badges?"+new URLSearchParams({user,status}).toString());}
 
 export async function ownerAwardBadge(form:FormData){
  const profile=uuid.safeParse(form.get("profile"));

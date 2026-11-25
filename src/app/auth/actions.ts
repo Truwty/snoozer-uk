@@ -106,7 +106,7 @@ export async function signInWithGoogle(form: FormData) {
   const client = await sessionClientForSlot(slot);
   const { data, error: authError } = await client.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: new URL("/auth/callback?next=" + encodeURIComponent(next), siteUrl()).href },
+    options: { redirectTo: new URL("/auth/callback?flow=google-login&next=" + encodeURIComponent(next), siteUrl()).href },
   });
   if (authError || !data.url) redirect("/sign-in?google=failed");
   redirect(data.url);

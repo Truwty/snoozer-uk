@@ -10,17 +10,24 @@ export function GiftClaimForm(){
  const [token,setToken]=useState("");
  const [state,submit,pending]=useActionState(claimGiftLink,initialState);
  useEffect(()=>{
-  let value="";
-  try{
-   value=window.location.hash.slice(1);
-   if(!/^[a-f0-9]{32}$/i.test(value))value=sessionStorage.getItem("snoozer-gift-token")??"";
-   if(/^[a-f0-9]{32}$/i.test(value)){
-    sessionStorage.setItem("snoozer-gift-token",value);
-    setToken(value.toLowerCase());
+  let value=window.location.hash.slice(1);
+  if(!/^[a-f0-9]{32}$/i.test(value)){
+   try{value=sessionStorage.getItem("snoozer-gift-token")??"";}catch{/* Storage is optional. */}
+  }
+  if(/^[a-f0-9]{32}$/i.test(value)){
+   setToken(value.toLowerCase());
+   try{
+    sessionStorage.setItem("snoozer-gift-token",value.toLowerCase());
     if(window.location.hash)history.replaceState(null,"",window.location.pathname+window.location.search);
-   }
-  }catch{/* Private browsing can block storage; the hash is still captured above when available. */}
+   }catch{/* Leave the hash in place if storage is unavailable so sign-in can return to it. */}
+  }
  },[]);
+ useEffect(()=>{
+  if(state.status==="success"){
+   try{sessionStorage.removeItem("snoozer-gift-token");}catch{/* No persistent token to clear. */}
+   setToken("");
+  }
+ },[state.status]);
  return <div className="panel stack">
   {token
    ? <form action={submit} className="stack">

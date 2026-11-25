@@ -6,13 +6,14 @@ import { chooseAccount, clearPending, pendingSlot, saveAccount, storedAccounts }
 import { z } from "zod";
 import { safeNextPath } from "@/lib/account-security";
 
-// This route receives the code AFTER Discord has returned it to Supabase.
+// This route receives provider codes after Google or Discord returns to Supabase.
 // Supabase's PKCE verifier lives in the HTTP-only cookie created when login began.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const presenceFlow = url.searchParams.get("flow") === "discord-presence";
   const googleLinkFlow = url.searchParams.get("flow") === "google-link";
+  const googleLoginFlow = url.searchParams.get("flow") === "google-login";
   const next = safeNextPath(url.searchParams.get("next"));
   const profile = z.uuid().safeParse(url.searchParams.get("profile"));
   const presenceTarget = new URL("/studio/discord", siteUrl());
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
   const failed = async () => {
     try { clearPending(await cookies()); } catch { /* No pending session to clear. */ }
     if (googleLinkFlow) return NextResponse.redirect(new URL("/studio/account?google=failed", siteUrl()), 303);
+    if (googleLoginFlow) return NextResponse.redirect(new URL("/sign-in?google=failed", siteUrl()), 303);
     if (presenceFlow) {
       const target = new URL(presenceTarget);
       target.searchParams.set("error", "link");
