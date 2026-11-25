@@ -1,8 +1,8 @@
 /* Profile-led Snoozer homepage: the product preview is the hero. */
 .home-immersive {
   --hi-text: #f4f5f0;
-  --hi-muted: #a8afa5;
-  --hi-soft: #737d73;
+  --hi-muted: #b4bcb1;
+  --hi-soft: #929d90;
   --hi-lime: #d8fb86;
   position: relative;
   isolation: isolate;
@@ -655,13 +655,11 @@
 
 /* Motion stays subtle and respects reduced-motion preferences. */
 .home-immersive.motion-enhanced [data-reveal] {
-  opacity: 0;
   transform: translateY(18px);
-  transition: opacity .65s ease, transform .65s cubic-bezier(.2,.8,.2,1);
+  transition: transform .65s cubic-bezier(.2,.8,.2,1);
   transition-delay: var(--reveal-delay, 0ms);
 }
 .home-immersive.motion-enhanced [data-reveal].is-visible {
-  opacity: 1;
   transform: translateY(0);
 }
 @keyframes home-copy-enter {
@@ -690,7 +688,7 @@
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
   }
-  .home-immersive.motion-enhanced [data-reveal] { opacity: 1; transform: none; }
+  .home-immersive.motion-enhanced [data-reveal] { transform: none; }
 }
 
 /* Straightforward feature strip — no faux dashboard or made-up usage metrics. */
@@ -719,11 +717,12 @@
 }
 .home-highlights h2 {
   margin: .12rem 0 .35rem;
+  color: #f0f2ec;
   font-size: .98rem;
   letter-spacing: -.025em;
 }
 .home-highlights p {
-  color: var(--hi-muted);
+  color: #b4bcb1;
   font-size: .76rem;
   line-height: 1.6;
 }
