@@ -28,3 +28,8 @@ The public profile card, Studio preview and template gallery all use the same Pr
 Add a style identifier to `profileTemplateStyles` in `src/lib/profile.ts`, then add one composition record to `src/lib/studio-templates.ts`. Every composition is expanded into all four palettes automatically. The catalogue tests enforce 120 entries, 30 styles and ten categories.
 
 Run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build` before release.
+
+
+## Database validation
+
+The selected `appearance.templateStyle` is stored with the profile revision. PostgreSQL accepts only the 30 registered first-party style identifiers; arbitrary style names, CSS strings and objects are rejected. The same validator protects draft writes and published revisions, so a chosen design survives saving, publishing and restoring.

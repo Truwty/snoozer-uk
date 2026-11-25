@@ -1949,6 +1949,16 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("appearance-alice")).toMatchObject({ appearance: custom });
     await expect(write(7, false, { ...custom, colors: { background: "red" } })).rejects.toMatchObject({ code: "22023" });
     await expect(write(7, false, { ...custom, blur: 25 })).rejects.toMatchObject({ code: "22023" });
+
+    const templated = { ...custom, templateStyle: "terminal" };
+    await write(7, false, templated);
+    expect(await draft()).toMatchObject({ appearance: templated });
+    await write(8, true, templated);
+    expect(await published("appearance-alice")).toMatchObject({ appearance: templated });
+    await expect(write(9, false, { ...templated, templateStyle: "not-a-registered-style" }))
+      .rejects.toMatchObject({ code: "22023" });
+    await expect(write(9, false, { ...templated, templateStyle: { injected: true } }))
+      .rejects.toMatchObject({ code: "22023" });
   });
 
   it("publishes a selected gallery background and restores it with its gallery image", async () => {
