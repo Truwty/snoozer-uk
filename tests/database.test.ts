@@ -2920,7 +2920,21 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await claim("owner-badge-visibility");
     const ownerProfile = (await draft() as { profile_id: string }).profile_id;
 
+    // beforeEach truncates profiles with CASCADE, which also clears the badge
+    // catalogue through its optional unique_profile_id foreign key. Recreate
+    // representative global entries so this test exercises real grant logic.
     await db.exec("reset role");
+    await db.query(`
+      insert into snoozer.badge_catalog(
+        slug,name,description,icon,category,rarity,award_mode,criterion_key,enabled,sort_order
+      ) values
+        ('profile-claimed','First Steps','Your Snoozer profile has been claimed.','✦','milestone','common','automatic','profile_claimed',true,10),
+        ('founding-member','Founding Member','Recognised as an early member of Snoozer.','♛','community','legendary','manual',null,true,400),
+        ('one-of-one','One of One','Received a unique individually issued badge.','♛','unique','mythic','future',null,true,1850)
+      on conflict(slug) do update set enabled=excluded.enabled,
+        unique_profile_id=null,award_mode=excluded.award_mode,criterion_key=excluded.criterion_key
+    `);
+
     await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
 
     // Verify that assigning the Owner role grants the catalogue immediately,
@@ -2937,6 +2951,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const availableCount = await result<number>(
       "select count(*)::int as value from snoozer.badge_catalog where enabled and unique_profile_id is null",
     );
+    expect(availableCount).toBe(3);
     const assignedCount = await result<number>(
       "select count(*)::int as value from snoozer.profile_badges where profile_id=$1 and revoked_at is null",
       [ownerProfile],
