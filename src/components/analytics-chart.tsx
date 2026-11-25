@@ -42,7 +42,11 @@ export function AnalyticsChart({ rows }: { rows: Row[] }) {
   return <figure className="activity-chart">
     <figcaption className="chart-legend"><span>Profile views</span><span>Link clicks</span></figcaption>
     <div className="chart-plot">
-      <div className="chart-axis" aria-hidden="true"><span>{peak.toLocaleString("en-GB")}</span><span>{Math.round(peak / 2).toLocaleString("en-GB")}</span><span>0</span></div>
+      <div className="chart-axis" aria-hidden="true">
+        <span>{peak.toLocaleString("en-GB")}</span>
+        <span>{(peak / 2).toLocaleString("en-GB", { maximumFractionDigits: 1 })}</span>
+        <span>0</span>
+      </div>
       <div className="chart-stage">
         <svg className="analytics-line-svg" viewBox="0 0 1000 200" preserveAspectRatio="none" aria-hidden="true">
           <defs>
