@@ -30,7 +30,8 @@ export default async function Templates({ searchParams }: { searchParams: Promis
     if (filters.palette !== "all") query.set("palette", filters.palette);
     if (selectedProfile) query.set("profile", selectedProfile);
     if (nextPage > 1) query.set("page", String(nextPage));
-    return "/templates" + (query.size ? "?" + query.toString() : "");
+    const queryString = query.toString();
+    return "/templates" + (queryString ? "?" + queryString : "");
   };
   const templateHref = (id: string) => "/studio/builder?template=" + encodeURIComponent(id)
     + (selectedProfile ? "&profile=" + encodeURIComponent(selectedProfile) : "");

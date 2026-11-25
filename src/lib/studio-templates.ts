@@ -1,4 +1,4 @@
-import { defaultAppearance, profileLayouts, profileTemplateStyles, themes, type ProfileContent, type ProfileTemplateStyle, type TextSection } from "./profile";
+import { defaultAppearance, profileLayouts, themes, type ProfileContent, type ProfileTemplateStyle, type TextSection } from "./profile";
 
 export const templateCategories = [
   {

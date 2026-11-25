@@ -8,9 +8,11 @@ import { defaultAppearance, profileContent, username } from "../src/lib/profile"
 import { contrastRatio } from "../src/lib/link-accent";
 
 describe("design catalogue and token boundaries", () => {
-  it("provides twelve valid, distinct templates using supported appearance settings", () => {
-    expect(studioTemplates).toHaveLength(12);
-    expect(new Set(studioTemplates.map((template) => template.id)).size).toBe(12);
+  it("provides 120 valid, distinct templates using supported appearance settings", () => {
+    expect(studioTemplates).toHaveLength(120);
+    expect(new Set(studioTemplates.map((template) => template.id)).size).toBe(120);
+    expect(new Set(studioTemplates.map((template) => template.style)).size).toBe(30);
+    expect(new Set(studioTemplates.map((template) => template.category)).size).toBe(10);
     for (const template of studioTemplates) {
       expect(username.safeParse(template.id).success, template.id).toBe(true);
       expect(profileContent.safeParse({ display_name: template.name, bio: template.description, theme: template.theme,
