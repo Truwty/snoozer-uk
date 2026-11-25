@@ -5,7 +5,7 @@ create table snoozer.owner_gift_links(
  token_hash bytea not null unique check(octet_length(token_hash)=32),
  plan text not null, plan_version integer not null,
  duration_days integer not null check(duration_days between 1 and 366),
- created_by uuid not null references auth.users(id),
+ created_by uuid references auth.users(id) on delete set null,
  reason text not null check(char_length(reason) between 8 and 500),
  created_at timestamptz not null default now(), expires_at timestamptz not null,
  claimed_by uuid references auth.users(id) on delete set null, claimed_at timestamptz,
