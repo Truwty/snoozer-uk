@@ -10,7 +10,6 @@ type SampleProfile = {
   bio: string;
   theme: PublishedProfile["theme"];
   accent: string;
-  avatar: string;
   links: PublishedProfile["links"];
   heading: string;
   detail: string;
@@ -52,7 +51,6 @@ const profiles = [
       bio: "Building things, playing games and sharing the process.",
       theme: "midnight",
       accent: "#d8fb86",
-      avatar: "",
       links: [
         { label: "Portfolio", url: "https://example.com/" },
         { label: "GitHub", url: "https://github.com/" },
@@ -73,7 +71,6 @@ const profiles = [
       bio: "Art, odd little projects and everything in between.",
       theme: "lagoon",
       accent: "#b5f4dc",
-      avatar: "",
       links: [
         { label: "My work", url: "https://example.com/portfolio" },
         { label: "Instagram", url: "https://instagram.com/" },
@@ -95,7 +92,6 @@ const profiles = [
       bio: "Digital creator | design, music and late-night ideas.",
       theme: "daybreak",
       accent: "#b69cff",
-      avatar: "",
       links: [
         { label: "My projects", url: "https://example.com/projects" },
         { label: "YouTube", url: "https://youtube.com/" },
