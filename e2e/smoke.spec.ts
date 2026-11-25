@@ -88,8 +88,9 @@ test("privacy choices can be declined and reopened", async ({ page }) => {
 test("homepage profile showcase uses the profile renderer and social brand icons", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 860 });
   await page.goto("/");
-  const showcase = page.getByRole("img", { name: /Three example Snoozer profile pages/i });
+  const showcase = page.getByRole("img", { name: /Snoozer dashboard preview beside three overlapping creator profile previews/i });
   await expect(showcase).toBeVisible();
+  await expect(page.locator(".home-dashboard-preview")).toHaveCount(1);
   await expect(page.locator(".home-profile-preview")).toHaveCount(3);
   await expect(page.locator(".home-profile-preview .profile-card")).toHaveCount(3);
   await expect(page.locator(".home-profile-preview .avatar[src^='https://images.unsplash.com']")).toHaveCount(3);
