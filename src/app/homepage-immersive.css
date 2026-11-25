@@ -921,30 +921,61 @@
 .home-faq {
   width: min(100%, 54rem);
   margin: 0 auto;
-  padding-block: 0 clamp(3.5rem, 7vw, 6rem);
+  padding-block: clamp(2.2rem, 5vw, 4rem) clamp(3.5rem, 7vw, 6rem);
 }
-.home-faq .home-section-heading { margin-bottom: 1.6rem; }
-.home-faq-list { display: grid; gap: .4rem; }
+.home-faq .home-section-heading {
+  margin-bottom: 1.75rem;
+  text-align: center;
+}
+.home-faq .home-section-heading h2 {
+  color: #f0f0ef;
+  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-weight: 560;
+  line-height: 1.25;
+  letter-spacing: -.025em;
+}
+.home-faq-list { display: grid; gap: .65rem; }
 .home-faq-list .disclosure {
   overflow: hidden;
   padding: 0;
-  border: 0;
-  border-bottom: 1px solid #ffffff20;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid #ffffff0d;
+  border-radius: .9rem;
+  background: #111213;
+  transition: background .2s ease, border-color .2s ease;
+}
+.home-faq-list .disclosure:hover,
+.home-faq-list .disclosure[open] {
+  border-color: #ffffff1c;
+  background: #141615;
 }
 .home-faq-list .disclosure > summary {
-  min-height: 3.5rem;
-  padding: .9rem .15rem;
-  color: #eff2ea;
-  font-size: .91rem;
-  font-weight: 680;
+  display: flex;
+  min-height: 3.6rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1.15rem;
+  color: #efefed;
+  font-size: .9rem;
+  font-weight: 620;
+  list-style: none;
+  cursor: pointer;
 }
-.home-faq-list .disclosure > summary::marker { color: var(--hi-lime); }
+.home-faq-list .disclosure > summary::-webkit-details-marker { display: none; }
+.home-faq-list .disclosure > summary::marker { content: ""; }
+.home-faq-list .disclosure > summary::after {
+  content: "⌄";
+  flex: none;
+  color: #d5d8d1;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+.home-faq-list .disclosure[open] > summary::after { transform: rotate(180deg); }
 .home-faq-list .disclosure > .stack {
-  padding: 0 .15rem 1rem;
-  color: var(--hi-muted);
-  font-size: .86rem;
+  padding: 0 1.15rem 1.05rem;
+  color: #aeb4aa;
+  font-size: .84rem;
   line-height: 1.7;
 }
 .home-faq-list .disclosure a {
