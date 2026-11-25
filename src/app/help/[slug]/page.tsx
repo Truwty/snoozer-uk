@@ -76,6 +76,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                     {section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
                   </ul>
                 )}
+                {section.links && (
+                  <div className="hc-article-links">
+                    {section.links.map((item) => (
+                      <Link href={item.href} key={item.href}>{item.label}<span aria-hidden="true">↗</span></Link>
+                    ))}
+                  </div>
+                )}
               </section>
             ))}
             <div className="hc-article-end">
