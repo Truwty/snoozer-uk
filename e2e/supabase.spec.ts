@@ -7,7 +7,7 @@ import { expect, test, type Page, type APIRequestContext } from "@playwright/tes
 import sharp from "sharp";
 import Stripe from "stripe";
 
-const mailOrigin = "http://127.0.0.1:54324";
+const mailOrigin = process.env.SNOOZER_TEST_MAIL_ORIGIN ?? "http://127.0.0.1:54324";
 const password = randomUUID();
 const newPassword = randomUUID();
 const project = process.env.NEXT_PUBLIC_SUPABASE_URL;

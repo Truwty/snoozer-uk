@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 for (const width of [320, 375, 768, 1024, 1440, 1920]) {
-  test(`home fits at ${width}px and account links work`, async ({ page }) => {
+  test("home fits at " + width + "px and account links work", async ({ page }) => {
     await page.setViewportSize({ width, height: 860 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -14,10 +14,10 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
       .not.toContain("'unsafe-inline'");
     expect(csp).toContain("media-src 'self' https: blob:");
     expect(csp).toContain("img-src 'self' data: blob: https://images.unsplash.com");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Everything you are");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Everything you want, right here");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     // Playwright's storageState already keeps optional analytics disabled.
-    await page.getByRole("link", { name: "Create your page" }).first().click();
+    await page.getByRole("link", { name: "Sign up for free" }).first().click();
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email address" })).toBeVisible();
     expect(errors).toEqual([]);
@@ -85,17 +85,16 @@ test("privacy choices can be declined and reopened", async ({ page }) => {
   expect(await page.evaluate(() => localStorage.getItem("snoozer-analytics-consent-v3"))).toBe("yes");
 });
 
-test("homepage preview applies Studio themes and layouts with keyboard controls", async ({ page }) => {
+test("homepage profile showcase uses the profile renderer and social brand icons", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 860 });
   await page.goto("/");
-  const example = page.getByRole("region", { name: "Example profile" });
-  const lagoon = page.getByRole("button", { name: "Lagoon", exact: true });
-  await lagoon.focus();
-  await lagoon.press("Space");
-  await expect(lagoon).toHaveAttribute("aria-pressed", "true");
-  await expect(example).toHaveClass(/theme-lagoon/);
-  await page.getByRole("button", { name: "Editorial", exact: true }).click();
-  await expect(example).toHaveAttribute("data-layout", "editorial");
+  const showcase = page.getByRole("img", { name: /Snoozer dashboard preview beside three overlapping creator profile previews/i });
+  await expect(showcase).toBeVisible();
+  await expect(page.locator(".home-dashboard-preview")).toHaveCount(1);
+  await expect(page.locator(".home-profile-preview")).toHaveCount(3);
+  await expect(page.locator(".home-profile-preview .profile-card")).toHaveCount(3);
+  await expect(page.locator(".home-profile-preview .avatar[src^='https://images.unsplash.com']")).toHaveCount(3);
+  await expect(page.locator(".home-profile-preview .profile-social-mark svg").first()).toBeAttached();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
