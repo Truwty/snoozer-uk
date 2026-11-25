@@ -1460,7 +1460,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("alice")).toEqual({
       username: "alice", display_name: "Published Alice", bio: "Bio", theme: "lagoon", avatar: null,
       indexable: false, blocks: [], links: links.map((link) => ({ ...link, hidden: false })),
-      sections: [], gallery: [], seo: { title: "", description: "" },
+      sections: [], gallery: [], badges: [], seo: { title: "", description: "" },
       widgets: defaultProfileWidgets, pageLayout: { version: 1, items: [] },
     });
     await expect(draft()).rejects.toMatchObject({ code: "42501" });
