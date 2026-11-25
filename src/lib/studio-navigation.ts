@@ -22,7 +22,7 @@ export const studioNavigationGroups = [
     items: [
       { label: "Profile Settings", href: "/studio/settings", icon: "⚙", keywords: "profile aliases domains search visibility privacy custom domain" },
       { label: "Premium & Usage", href: "/studio/plan", icon: "◇", keywords: "subscription usage billing plan" },
-      { label: "Image Gallery", href: "/studio/gallery", icon: "▧", keywords: "images media folders uploads storage" },
+      { label: "Gallery & Assets", href: "/studio/gallery", icon: "▧", keywords: "image gallery images media folders uploads storage" },
       { label: "Templates", href: "/studio/templates", icon: "▤", keywords: "browse favourites recent community" },
       { label: "Discovery", href: "/studio/discovery", icon: "◎", keywords: "directory category tags public creator listing leaderboard" },
       { label: "Publish History", href: "/studio/history", icon: "◷", keywords: "versions restore publish" },

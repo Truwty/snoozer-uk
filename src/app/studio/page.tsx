@@ -22,14 +22,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   if (!draft) return <main className="shell studio-shell studio-overview">
     {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
     <header className="studio-page-heading">
-      <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account Overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
+      <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
     </header>
     <section className="studio-dashboard-panel studio-claim-panel stack">
       <div className="studio-panel-icon" aria-hidden="true">✦</div>
       <h2>Claim your address</h2>
       <p className="muted">Choose the username people will use to find your page.</p>
       <ClaimForm/>
-      <Link href="/studio/growth">Referral choices and Growth ↗</Link>
+      <Link href="/studio/growth">Referral choices and Growth</Link>
     </section>
   </main>;
 
@@ -66,7 +66,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     <header className="studio-page-heading">
       <div>
         <p className="eyebrow">ACCOUNT / OVERVIEW</p>
-        <h1>Account Overview</h1>
+        <h1>Account overview</h1>
         <p className="muted">Your profile, account progress and recent activity in one place.</p>
       </div>
       <div className="actions studio-overview-actions">

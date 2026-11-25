@@ -66,7 +66,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
           </div>
           <div className="studio-template-card-copy"><h2>{template.name}</h2><p>{template.description}</p>
             <span className="studio-template-creator">@snoozer</span></div>
-          <Link className="button primary" href={templateHref(template.id)}>Use Template <span aria-hidden="true">→</span></Link>
+          <Link className="button primary" href={templateHref(template.id)}>Use this template <span aria-hidden="true">→</span></Link>
         </li>;
       })}
     </ul>
