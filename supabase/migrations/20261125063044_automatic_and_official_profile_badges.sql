@@ -234,7 +234,7 @@ AS $function$
  select coalesce(jsonb_agg(jsonb_build_object('slug',b.slug,'name',b.name,'description',b.description,'icon',b.icon,
  'category',b.category,'rarity',b.rarity,'awarded_at',b.awarded_at) order by b.awarded_at,b.slug),'[]'::jsonb)
  from snoozer.profile_badges b where b.profile_id=p_profile and b.revoked_at is null and b.is_public
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.get_published_profile(p_name text)
  RETURNS jsonb
@@ -249,7 +249,7 @@ AS $function$
   || jsonb_build_object('badges',snoozer.public_profile_badges(p.id))
  from snoozer.profiles p where p.username=p_name and p.published_revision is not null
   and not snoozer.public_profile_blocked(p.id,p.owner_id)
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.get_my_profile_badges(p_profile uuid DEFAULT NULL::uuid)
  RETURNS jsonb
