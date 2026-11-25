@@ -3389,3 +3389,18 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media(max-width:48rem){.owner-badge-award-grid,.owner-gift-form-grid{grid-template-columns:minmax(0,1fr)}}
 
 .studio-main-content .studio-mfa-secret { display:block; max-width:100%; overflow-wrap:anywhere; padding:.75rem; border:1px solid var(--studio-line); background:#090b0d; color:var(--studio-copy); user-select:all; }
+
+
+.owner-badge-artwork-field {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:.25rem .8rem;
+  padding:.8rem;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+}
+.owner-badge-artwork-field > span { font-size:.78rem; font-weight:600; }
+.owner-badge-artwork-field > .badge-artwork { grid-column:2; grid-row:1; }
+.owner-badge-artwork-field small { grid-column:1/-1; color:var(--muted); font-size:.7rem; }
