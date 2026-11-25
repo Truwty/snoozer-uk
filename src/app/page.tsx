@@ -62,7 +62,7 @@ export default function Home() {
 
       <section className="home-plans" id="pricing" aria-labelledby="home-plans-title">
         <header className="home-section-heading" data-reveal="up">
-          <p className="home-eyebrow">START FREE. GROW WHEN YOU'RE READY.</p>
+          <p className="home-eyebrow">START FREE. GROW WHEN YOU&apos;RE READY.</p>
           <h2 id="home-plans-title">Your page first.<br /><em>More room when you need it.</em></h2>
           <p>Build your profile for free, then choose a Premium plan when you want more tools and room to grow.</p>
         </header>
