@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, link, profileAppearance, profileBackgroundImage, profileContent, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, link, profileAppearance, profileBackgroundImage, profileContent, profileTemplateStyles, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
+  it("accepts only registered first-party template style tokens and leaves older profiles valid", () => {
+    expect(profileTemplateStyles).toHaveLength(30);
+    for (const templateStyle of profileTemplateStyles) {
+      expect(profileAppearance.safeParse({ ...defaultAppearance, templateStyle }).success).toBe(true);
+    }
+    expect(profileAppearance.safeParse({ ...defaultAppearance, templateStyle: "untrusted-style" }).success).toBe(false);
+    expect(profileAppearance.safeParse(defaultAppearance).success).toBe(true);
+  });
+
   it("accepts only bounded built-in motion presets without executable appearance settings", () => {
     for (const entrance of ["none", "fade", "rise"]) expect(profileAppearance.parse({ ...defaultAppearance, entrance }).entrance).toBe(entrance);
     for (const entrance of ["loop", "bounce", "url(https://example.com)", null]) expect(profileAppearance.safeParse({ ...defaultAppearance, entrance }).success).toBe(false);

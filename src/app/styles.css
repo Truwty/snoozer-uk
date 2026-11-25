@@ -3430,7 +3430,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .template-pagination { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:1rem; padding-block:1.5rem; }
 .template-pagination .is-disabled { opacity:.45; pointer-events:none; }
 
-.profile-card[data-template-style] { --card-radius:1.1rem; --block-radius:.75rem; }
+.profile-card[data-template-style]:not([data-template-style="classic"]) { --card-radius:1.1rem; --block-radius:.75rem; }
 .profile-card[data-template-style="slate"] { --card-radius:.85rem; --block-radius:.55rem; }
 .profile-card[data-template-style="slate"] .profile-inner { gap:1.25rem; }
 .profile-card[data-template-style="slate"] .profile-text-section { border-inline-start:2px solid var(--detail); background:transparent; padding-inline:1rem; }
