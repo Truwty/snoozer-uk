@@ -65,11 +65,11 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   } else {
     saveAccount(jar, slot, result.data.user.id, result.data.user.email);
   }
-  await activeClient.rpc("refresh_my_profile_badges");
   const next = safeNextPath(form.get("next"));
   const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
-  redirect(assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"
-    ? "/auth/mfa?next=" + encodeURIComponent(next) : next);
+  const needsMfa = assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2";
+  if (!needsMfa) await activeClient.rpc("refresh_my_profile_badges");
+  redirect(needsMfa ? "/auth/mfa?next=" + encodeURIComponent(next) : next);
 }
 
 // OAuth is initiated on the server so Supabase's PKCE verifier is stored in
