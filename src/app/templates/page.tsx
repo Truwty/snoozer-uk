@@ -3,14 +3,14 @@ import { SiteHeader } from "@/components/site-header";
 import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
-import { profileLayouts, themes } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePageSize } from "@/lib/studio-templates";
+import { profileLayouts } from "@/lib/profile";
+import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
 
 export const metadata = {
   title: "Profile templates",
   description: "Explore 120 free Snoozer profile designs across ten creative categories.",
 };
-type SearchParams = { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[]; page?: string | string[]; profile?: string | string[] };
+type SearchParams = { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[]; palette?: string | string[]; page?: string | string[]; profile?: string | string[] };
 
 export default async function Templates({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
@@ -19,7 +19,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
   const templates = findTemplates(filters);
   const { page, pageCount, start } = getTemplatePage(params.page, templates.length);
   const visibleTemplates = templates.slice(start, start + templatePageSize);
-  const active = Boolean(filters.q || filters.theme !== "all" || filters.layout !== "all" || filters.category !== "all");
+  const active = Boolean(filters.q || filters.theme !== "all" || filters.layout !== "all" || filters.category !== "all" || filters.palette !== "all");
   const layoutLabels = { centred: "Centred card", editorial: "Editorial", portfolio: "Portfolio grid" };
   const queryForPage = (nextPage: number) => {
     const query = new URLSearchParams();
@@ -27,6 +27,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
     if (filters.theme !== "all") query.set("theme", filters.theme);
     if (filters.layout !== "all") query.set("layout", filters.layout);
     if (filters.category !== "all") query.set("category", filters.category);
+    if (filters.palette !== "all") query.set("palette", filters.palette);
     if (selectedProfile) query.set("profile", selectedProfile);
     if (nextPage > 1) query.set("page", String(nextPage));
     return "/templates" + (query.size ? "?" + query.toString() : "");
@@ -48,7 +49,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
       {selectedProfile && <input type="hidden" name="profile" value={selectedProfile} />}
       <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, mono..." /></label>
       <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
-      <label>Colour treatment<select name="theme" defaultValue={filters.theme}><option value="all">All treatments</option>{themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}</select></label>
+      <label>Colour treatment<select name="palette" defaultValue={filters.palette}><option value="all">All treatments</option>{templatePalettes.map((palette) => <option key={palette.id} value={palette.id}>{palette.label}</option>)}</select></label>
       <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map((layout) => <option key={layout} value={layout}>{layoutLabels[layout]}</option>)}</select></label>
       <button className="button" type="submit">Filter templates</button>
       {active && <Link className="text-link" href={selectedProfile ? "/templates?profile=" + encodeURIComponent(selectedProfile) : "/templates"}>Clear filters</Link>}

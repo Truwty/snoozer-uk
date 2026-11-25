@@ -1,6 +1,6 @@
 # Snoozer profile template library
 
-The first-party template library contains 120 free designs built from 30 distinct visual compositions and four colour treatments (Nocturne, Glacier, Parchment and Afterglow).
+The first-party template library contains 120 free designs built from 30 distinct visual compositions and four colour treatments (Nocturne, Glacier, Parchment and Afterglow), each independently filterable in the gallery.
 
 ## Categories
 

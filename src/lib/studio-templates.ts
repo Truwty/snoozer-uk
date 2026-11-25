@@ -95,6 +95,7 @@ const palettes: readonly Palette[] = [
     "gradientEnd": "#5c2148"
   }
 ];
+export const templatePalettes = palettes.map(({ id, name }) => ({ id, label: name }));
 
 type Composition = {
   style: ProfileTemplateStyle; name: string; category: TemplateCategory; description: string;
@@ -138,7 +139,7 @@ const compositions: readonly Composition[] = [
 
 export type StudioTemplate = {
   id: string; name: string; description: string; category: TemplateCategory; categoryLabel: string;
-  style: ProfileTemplateStyle; palette: string; theme: ProfileContent["theme"];
+  style: ProfileTemplateStyle; palette: string; paletteId: string; theme: ProfileContent["theme"];
   sections: TextSection[]; appearance: ProfileContent["appearance"];
 };
 const categoryLabels = Object.fromEntries(templateCategories.map((item) => [item.id, item.label])) as Record<TemplateCategory, string>;
@@ -152,6 +153,7 @@ export const studioTemplates: readonly StudioTemplate[] = compositions.flatMap((
     categoryLabel: categoryLabels[composition.category],
     style: composition.style,
     palette: palette.name,
+    paletteId: palette.id,
     theme: palette.theme,
     sections: [
       { heading: composition.sectionOne, body: "Make this space your own. Add a short introduction, a favourite detail or something you are working on." },
@@ -170,12 +172,13 @@ export const studioTemplates: readonly StudioTemplate[] = compositions.flatMap((
 );
 
 export const templatePageSize = 24;
-export function templateFilters(input: { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[] }) {
+export function templateFilters(input: { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[]; palette?: string | string[] }) {
   return {
     q: typeof input.q === "string" ? input.q.trim().slice(0, 80) : "",
     theme: themes.find((theme) => theme === input.theme) ?? "all",
     layout: profileLayouts.find((layout) => layout === input.layout) ?? "all",
     category: templateCategories.find((category) => category.id === input.category)?.id ?? "all",
+    palette: templatePalettes.find((palette) => palette.id === input.palette)?.id ?? "all",
   };
 }
 export function findTemplates(filters: ReturnType<typeof templateFilters>) {
@@ -185,6 +188,7 @@ export function findTemplates(filters: ReturnType<typeof templateFilters>) {
     return (filters.theme === "all" || template.theme === filters.theme)
       && (filters.layout === "all" || filters.layout === template.appearance.layout)
       && (filters.category === "all" || filters.category === template.category)
+      && (filters.palette === "all" || filters.palette === template.paletteId)
       && words.every((word) => text.includes(word));
   });
 }
