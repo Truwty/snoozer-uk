@@ -3216,7 +3216,7 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .home-plan-grid { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); gap: 1.1rem; align-items: stretch; }
 .home-plan-card { position: relative; display: flex; flex-direction: column; gap: 1.15rem; min-width: 0; padding: clamp(1.35rem,3vw,2.2rem); border: 1px solid #ffffff19; border-radius: 1.25rem; background: linear-gradient(155deg,#191a1f,#14151a); }
 .home-plan-premium { border-color: color-mix(in srgb, var(--accent) 45%, #ffffff18); background: radial-gradient(ellipse at 100% 0%, #d8fb8616, transparent 52%), linear-gradient(150deg,#20251e,#17191a 48%,#14151a); box-shadow: 0 1.5rem 4rem #0004, 0 0 35px #d8fb860a; }
-.home-plan-featured-label { position: absolute; top: - .7rem; right: 1.35rem; padding: .35rem .75rem; border: 1px solid #d8fb8665; border-radius: 999px; background: #1d241a; color: var(--accent); font-size: .62rem; font-weight: 800; letter-spacing: .12em; }
+.home-plan-featured-label { position: absolute; top: -.7rem; right: 1.35rem; padding: .35rem .75rem; border: 1px solid #d8fb8665; border-radius: 999px; background: #1d241a; color: var(--accent); font-size: .62rem; font-weight: 800; letter-spacing: .12em; }
 .home-plan-heading { display: grid; gap: .65rem; }
 .home-plan-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: .8rem; background: #d8fb8615; color: var(--accent); font-size: 1.3rem; }
 .home-plan-heading .eyebrow { font-size: .68rem; }
