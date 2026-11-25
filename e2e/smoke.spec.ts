@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 for (const width of [320, 375, 768, 1024, 1440, 1920]) {
-  test(\`home fits at \${width}px and account links work\`, async ({ page }) => {
+  test("home fits at " + width + "px and account links work", async ({ page }) => {
     await page.setViewportSize({ width, height: 860 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
