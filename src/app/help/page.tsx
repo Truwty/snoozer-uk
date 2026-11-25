@@ -145,7 +145,7 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
           <section className="hc-update-strip" aria-label="Latest Snoozer updates">
             <div className="hc-update-icon" aria-hidden="true">✳</div>
             <div>
-              <p className="hc-eyebrow">WHAT'S NEW</p>
+              <p className="hc-eyebrow">WHAT&apos;S NEW</p>
               <h2>See what’s changed in Snoozer</h2>
               <p>New features, improvements and fixes from across the platform.</p>
             </div>
