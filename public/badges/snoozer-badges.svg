@@ -1,0 +1,988 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Snoozer official badge artwork</title>
+  <symbol id="badge-profile-claimed" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-profile-claimed" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-profile-claimed)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 32h30M13 32a11 11 0 0 1 22 0M24 9v6M10 17l4 3M38 17l-4 3M7 26h5M36 26h5M17 39h14"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-first-publish" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-first-publish" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-first-publish)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-profile-story" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-profile-story" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-profile-story)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-avatar-ready" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-avatar-ready" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-avatar-ready)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="12" width="26" height="24" rx="3"/><circle cx="19" cy="20" r="2.5"/><path d="m13 32 8-8 5 5 4-4 6 7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-first-link" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-first-link" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-first-link)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 29 17 32a6 6 0 0 1-9-8l7-7a6 6 0 0 1 9 0M28 19l3-3a6 6 0 0 1 9 8l-7 7a6 6 0 0 1-9 0M17 27l14-6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-link-builder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-link-builder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-link-builder)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-networker" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-networker" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-networker)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 29 17 32a6 6 0 0 1-9-8l7-7a6 6 0 0 1 9 0M28 19l3-3a6 6 0 0 1 9 8l-7 7a6 6 0 0 1-9 0M17 27l14-6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-first-section" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-first-section" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-first-section)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-gallery-opener" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-gallery-opener" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-gallery-opener)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="12" width="26" height="24" rx="3"/><circle cx="19" cy="20" r="2.5"/><path d="m13 32 8-8 5 5 4-4 6 7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-getting-noticed" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-getting-noticed" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-getting-noticed)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-rising-star" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-rising-star" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-rising-star)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-crowd-favourite" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-crowd-favourite" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-crowd-favourite)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-profile-icon" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-profile-icon" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-profile-icon)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-million-views" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-million-views" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-million-views)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-discovery-ready" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-discovery-ready" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-discovery-ready)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-own-domain" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-own-domain" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-own-domain)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-discord-connected" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-discord-connected" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-discord-connected)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 29 17 32a6 6 0 0 1-9-8l7-7a6 6 0 0 1 9 0M28 19l3-3a6 6 0 0 1 9 8l-7 7a6 6 0 0 1-9 0M17 27l14-6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-interactive" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-interactive" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-interactive)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-block-builder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-block-builder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-block-builder)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-one-week" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-one-week" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-one-week)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-one-month" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-one-month" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-one-month)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-half-thousand" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-half-thousand" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-half-thousand)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-on-the-map" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-on-the-map" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-on-the-map)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-half-million" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-half-million" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-half-million)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-made-it-yours" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-made-it-yours" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-made-it-yours)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-profile-curator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-profile-curator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-profile-curator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-gallery-curator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-gallery-curator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-gallery-curator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="12" width="26" height="24" rx="3"/><circle cx="19" cy="20" r="2.5"/><path d="m13 32 8-8 5 5 4-4 6 7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-people-click" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-people-click" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-people-click)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-early-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-early-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-early-creator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-founding-member" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-founding-member" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-founding-member)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-community-helper" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-community-helper" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-community-helper)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-community-champion" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-community-champion" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-community-champion)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-trusted-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-trusted-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-trusted-creator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-staff-member" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-staff-member" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-staff-member)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-moderator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-moderator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-moderator)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-support-team" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-support-team" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-support-team)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-developer" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-developer" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-developer)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-partner" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-partner" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-partner)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 8 6 6-13 6 13 8-6-3 17H13l-3-17Z"/><path d="M14 40h20"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-event-winner" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-event-winner" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-event-winner)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-creator-spotlight" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-creator-spotlight" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-creator-spotlight)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-beta-tester" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-beta-tester" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-beta-tester)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-bug-hunter" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-bug-hunter" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-bug-hunter)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-early-access" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-early-access" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-early-access)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 32h30M13 32a11 11 0 0 1 22 0M24 9v6M10 17l4 3M38 17l-4 3M7 26h5M36 26h5M17 39h14"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-premium-supporter" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-premium-supporter" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-premium-supporter)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 6-8h12l6 8-12 18-12-18Z"/><path d="m12 19 12 18 12-18M18 11l6 8 6-8M18 11l-2 8h16l-2-8"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-gift-giver" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-gift-giver" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-gift-giver)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21h22v16H13zM11 16h26v6H11zM24 16v21M24 16c-7 0-10-1.8-9-5 1.1-3.6 7.4-1.6 9 5Zm0 0c7 0 10-1.8 9-5-1.1-3.6-7.4-1.6-9 5Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-verified-identity" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-verified-identity" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-verified-identity)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-winter-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-winter-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-winter-creator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-winter-wonder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-winter-wonder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-winter-wonder)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v32M10 16l28 16M10 32l28-16M20 12l4-4 4 4M20 36l4 4 4-4M13 22l-3-6 6 1M32 31l6 1-3-6M13 26l-3 6 6-1M32 17l6-1-3 6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-spring-awakening" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-spring-awakening" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-spring-awakening)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-blooming-profile" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-blooming-profile" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-blooming-profile)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-summer-vibes" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-summer-vibes" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-summer-vibes)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v32M10 16l28 16M10 32l28-16M20 12l4-4 4 4M20 36l4 4 4-4M13 22l-3-6 6 1M32 31l6 1-3-6M13 26l-3 6 6-1M32 17l6-1-3 6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-heatwave" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-heatwave" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-heatwave)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-autumn-leaves" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-autumn-leaves" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-autumn-leaves)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-harvest-gold" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-harvest-gold" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-harvest-gold)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-halloween-haunt" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-halloween-haunt" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-halloween-haunt)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-spooky-season" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-spooky-season" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-spooky-season)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v32M10 16l28 16M10 32l28-16M20 12l4-4 4 4M20 36l4 4 4-4M13 22l-3-6 6 1M32 31l6 1-3-6M13 26l-3 6 6-1M32 17l6-1-3 6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-new-year" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-new-year" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-new-year)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-anniversary-one" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-anniversary-one" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-anniversary-one)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-anniversary-five" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-anniversary-five" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-anniversary-five)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-launch-day" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-launch-day" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-launch-day)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-midnight-drop" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-midnight-drop" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-midnight-drop)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-community-day" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-community-day" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-community-day)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-birthday-club" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-birthday-club" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-birthday-club)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-easter-egg" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-easter-egg" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-easter-egg)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-click-magnet" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-click-magnet" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-click-magnet)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-click-legend" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-click-legend" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-click-legend)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 8 6 6-13 6 13 8-6-3 17H13l-3-17Z"/><path d="M14 40h20"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-audience-builder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-audience-builder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-audience-builder)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-audience-icon" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-audience-icon" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-audience-icon)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-seven-day-streak" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-seven-day-streak" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-seven-day-streak)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-thirty-day-streak" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-thirty-day-streak" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-thirty-day-streak)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-daily-featured" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-daily-featured" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-daily-featured)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-weekly-featured" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-weekly-featured" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-weekly-featured)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-monthly-featured" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-monthly-featured" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-monthly-featured)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-trending-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-trending-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-trending-creator)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-top-one-percent" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-top-one-percent" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-top-one-percent)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-leaderboard-top-ten" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-leaderboard-top-ten" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-leaderboard-top-ten)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-leaderboard-number-one" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-leaderboard-number-one" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-leaderboard-number-one)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-domain-pioneer" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-domain-pioneer" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-domain-pioneer)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-portfolio-pro" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-portfolio-pro" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-portfolio-pro)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-gallery-master" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-gallery-master" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-gallery-master)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="12" width="26" height="24" rx="3"/><circle cx="19" cy="20" r="2.5"/><path d="m13 32 8-8 5 5 4-4 6 7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-widget-master" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-widget-master" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-widget-master)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-design-master" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-design-master" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-design-master)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-accessibility-champion" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-accessibility-champion" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-accessibility-champion)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-privacy-first" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-privacy-first" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-privacy-first)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-security-elite" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-security-elite" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-security-elite)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-two-factor" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-two-factor" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-two-factor)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-google-connected" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-google-connected" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-google-connected)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 29 17 32a6 6 0 0 1-9-8l7-7a6 6 0 0 1 9 0M28 19l3-3a6 6 0 0 1 9 8l-7 7a6 6 0 0 1-9 0M17 27l14-6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-account-guardian" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-account-guardian" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-account-guardian)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 11.5 33 15v6.1c0 6-3.8 10.4-9 13.2-5.2-2.8-9-7.2-9-13.2V15l9-3.5Z"/><path d="m19.5 23.5 3 3 6-7"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-gifted-premium" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-gifted-premium" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-gifted-premium)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21h22v16H13zM11 16h26v6H11zM24 16v21M24 16c-7 0-10-1.8-9-5 1.1-3.6 7.4-1.6 9 5Zm0 0c7 0 10-1.8 9-5-1.1-3.6-7.4-1.6-9 5Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-premium-year" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-premium-year" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-premium-year)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 6-8h12l6 8-12 18-12-18Z"/><path d="m12 19 12 18 12-18M18 11l6 8 6-8M18 11l-2 8h16l-2-8"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-studio-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-studio-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-studio-creator)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-plus-member" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-plus-member" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-plus-member)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 6-8h12l6 8-12 18-12-18Z"/><path d="m12 19 12 18 12-18M18 11l6 8 6-8M18 11l-2 8h16l-2-8"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-pro-member" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-pro-member" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-pro-member)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 6-8h12l6 8-12 18-12-18Z"/><path d="m12 19 12 18 12-18M18 11l6 8 6-8M18 11l-2 8h16l-2-8"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-studio-member" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-studio-member" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-studio-member)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 6-8h12l6 8-12 18-12-18Z"/><path d="m12 19 12 18 12-18M18 11l6 8 6-8M18 11l-2 8h16l-2-8"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-first-purchase" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-first-purchase" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b9d8c6" stop-opacity=".34"/><stop offset="1" stop-color="#b9d8c6" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-first-purchase)" stroke="#b9d8c6" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b9d8c6" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b9d8c6" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b9d8c6" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-community-builder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-community-builder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-community-builder)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-guestbook-host" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-guestbook-host" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-guestbook-host)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-poll-master" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-poll-master" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-poll-master)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-feedback-friend" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-feedback-friend" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-feedback-friend)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-reporting-hero" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-reporting-hero" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-reporting-hero)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-kindness-counts" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-kindness-counts" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-kindness-counts)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-helpful-human" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-helpful-human" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-helpful-human)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-snoozer-original" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-snoozer-original" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-snoozer-original)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-legacy-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-legacy-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-legacy-creator)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14c6-2 10-1 14 2 4-3 8-4 14-2v21c-6-2-10-1-14 2-4-3-8-4-14-2V14Z"/><path d="M24 16v21M14 20c3-.7 5-.4 7 .4M27 20c2-.8 4-1.1 7-.4"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-one-hundred-days" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-one-hundred-days" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-one-hundred-days)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-one-year" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-one-year" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-one-year)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-two-years" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-two-years" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-two-years)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-five-years" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-five-years" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-five-years)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M25 9c2 7-2 8-1 13 3-2 5-5 5-8 6 5 9 11 7 17-1.5 5-6 8-12 8s-11-4-12-10c-1-5 2-10 7-14 0 5 1 7 3 9 1-6 4-9 3-15Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-global-creator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-global-creator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-global-creator)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24s6-10 17-10 17 10 17 10-6 10-17 10S7 24 7 24Z"/><circle cx="24" cy="24" r="5"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-multi-profile" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-multi-profile" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-multi-profile)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-brand-builder" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-brand-builder" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-brand-builder)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 16-7 8 7 8M29 16l7 8-7 8M27 12l-6 24"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-ultimate-customiser" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-ultimate-customiser" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#d8fb86" stop-opacity=".34"/><stop offset="1" stop-color="#d8fb86" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-ultimate-customiser)" stroke="#d8fb86" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#d8fb86" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#d8fb86" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#d8fb86" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-motion-artist" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-motion-artist" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-motion-artist)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-audio-curator" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-audio-curator" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-audio-curator)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="18" r="6"/><path d="M12 37c1.4-6.3 5.5-9.5 12-9.5S34.6 30.7 36 37"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-social-butterfly" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-social-butterfly" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#9cdbac" stop-opacity=".34"/><stop offset="1" stop-color="#9cdbac" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-social-butterfly)" stroke="#9cdbac" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#9cdbac" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 29 17 32a6 6 0 0 1-9-8l7-7a6 6 0 0 1 9 0M28 19l3-3a6 6 0 0 1 9 8l-7 7a6 6 0 0 1-9 0M17 27l14-6"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#9cdbac" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#9cdbac" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-night-owl" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-night-owl" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-night-owl)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-early-bird" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-early-bird" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#7dd7c7" stop-opacity=".34"/><stop offset="1" stop-color="#7dd7c7" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-early-bird)" stroke="#7dd7c7" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#7dd7c7" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h14v8c0 7-3.1 11-7 11s-7-4-7-11v-8ZM17 15H11v3c0 5 3 7 7 7M31 15h6v3c0 5-3 7-7 7M24 30v7M18 39h12"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#7dd7c7" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#7dd7c7" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-mystery-box" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-mystery-box" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#b3b5f5" stop-opacity=".34"/><stop offset="1" stop-color="#b3b5f5" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-mystery-box)" stroke="#b3b5f5" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#b3b5f5" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 17 14-7 14 7v17l-14 7-14-7V17Z"/><path d="m10 17 14 7 14-7M24 24v17M17 13l14 7M17 29l4 2"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#b3b5f5" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#b3b5f5" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-golden-ticket" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-golden-ticket" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-golden-ticket)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21h22v16H13zM11 16h26v6H11zM24 16v21M24 16c-7 0-10-1.8-9-5 1.1-3.6 7.4-1.6 9 5Zm0 0c7 0 10-1.8 9-5-1.1-3.6-7.4-1.6-9 5Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-one-of-one" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-one-of-one" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-one-of-one)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 8 6 6-13 6 13 8-6-3 17H13l-3-17Z"/><path d="M14 40h20"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-snoozer-legend" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-snoozer-legend" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-snoozer-legend)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 8 6 6-13 6 13 8-6-3 17H13l-3-17Z"/><path d="M14 40h20"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-hall-of-fame" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-hall-of-fame" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-hall-of-fame)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 8 6 6-13 6 13 8-6-3 17H13l-3-17Z"/><path d="M14 40h20"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+<symbol id="badge-unique" viewBox="0 0 48 48">
+    <defs><linearGradient id="fill-unique" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c58c" stop-opacity=".34"/><stop offset="1" stop-color="#f0c58c" stop-opacity=".06"/></linearGradient></defs>
+    <path d="M24 2.8 40.4 9v12.1c0 11.2-6.8 19.2-16.4 24.1C14.4 40.3 7.6 32.3 7.6 21.1V9L24 2.8Z" fill="url(#fill-unique)" stroke="#f0c58c" stroke-opacity=".82" stroke-width="1.5"/>
+    <path d="M24 7.1 36.1 11.7v9.1c0 8.7-4.7 15.1-12.1 19.3-7.4-4.2-12.1-10.6-12.1-19.3v-9.1L24 7.1Z" fill="#101611" fill-opacity=".68" stroke="#f0c58c" stroke-opacity=".26"/>
+    <g fill="none" stroke="#f2f8e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m24 9 4.2 9 9.8 1.3-7.2 6.9 1.8 9.8-8.6-4.9-8.6 4.9 1.8-9.8-7.2-6.9 9.8-1.3L24 9Z"/></g>
+    <path d="m35.7 8.3 1.1 2.1 2.1 1.1-2.1 1.1-1.1 2.1-1.1-2.1-2.1-1.1 2.1-1.1 1.1-2.1Z" fill="#f0c58c" fill-opacity=".94"/>
+    <circle cx="12.4" cy="35.4" r="1.15" fill="#f0c58c" fill-opacity=".82"/>
+  </symbol>
+</svg>

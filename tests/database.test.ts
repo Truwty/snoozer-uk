@@ -2911,4 +2911,56 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(removedCollection).toBeNull();
   });
 
+
+  it("grants platform Owners the shared badge catalogue and persists public badge selection", async () => {
+    await db.exec("reset role");
+    await db.query("delete from snoozer.platform_owners where owner_id = $1", [alice]);
+
+    await act("authenticated", alice);
+    await claim("owner-badge-visibility");
+    const ownerProfile = (await draft() as { profile_id: string }).profile_id;
+
+    await db.exec("reset role");
+    await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
+
+    await act("authenticated", alice);
+    const collection = await result<{ earned: Array<{ slug: string; is_public: boolean }> }>(
+      "select public.get_my_profile_badges($1) as value", [ownerProfile],
+    );
+    const availableCount = await result<number>(
+      "select count(*)::int as value from snoozer.badge_catalog where enabled and unique_profile_id is null",
+    );
+    expect(collection?.earned.length).toBe(availableCount);
+    expect(collection?.earned.map((badge) => badge.slug)).toContain("founding-member");
+    expect(collection?.earned.map((badge) => badge.slug)).toContain("one-of-one");
+    expect(collection?.earned.every((badge) => badge.is_public)).toBe(true);
+
+    await save(0, "Owner badge profile", [], true);
+    expect(await result(
+      "select public.set_my_profile_badge_visibility($1,array['profile-claimed']::text[]) as value",
+      [ownerProfile],
+    )).toBeGreaterThan(0);
+
+    await act("anon");
+    const publicProfile = await published("owner-badge-visibility");
+    expect((publicProfile as { badges: Array<{ slug: string }> }).badges.map((badge) => badge.slug)).toEqual(["profile-claimed"]);
+
+    await act("authenticated", bob);
+    await expect(result(
+      "select public.set_my_profile_badge_visibility($1,array['profile-claimed']::text[]) as value",
+      [ownerProfile],
+    )).rejects.toMatchObject({ code: "P0002" });
+
+    await db.exec("reset role");
+    await db.query(`
+      insert into snoozer.badge_catalog(slug,name,description,icon,category,rarity,award_mode,enabled,sort_order)
+      values('owner-catalog-trigger','Owner catalogue trigger','A badge added after Owner assignment.','✦','unique','mythic','future',true,9998)
+    `);
+    await act("authenticated", alice);
+    const refreshed = await result<{ earned: Array<{ slug: string }> }>(
+      "select public.get_my_profile_badges($1) as value", [ownerProfile],
+    );
+    expect(refreshed?.earned.map((badge) => badge.slug)).toContain("owner-catalog-trigger");
+  });
+
 });

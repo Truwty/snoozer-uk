@@ -2,6 +2,7 @@ import Link from "next/link";
 import { z } from "zod";
 import { requireOwner } from "@/lib/owner/auth";
 import { ownerAwardBadge, ownerRevokeBadge } from "./actions";
+import { BadgeArtwork } from "@/components/badge-artwork";
 
 export const metadata={title:"Owner · Official badges",robots:{index:false,follow:false}};
 const uuid=z.uuid();
@@ -71,7 +72,7 @@ export default async function OwnerBadges({searchParams}:{searchParams:Promise<{
     <div><h3>@{profile.username}</h3><p className="muted">{profile.published?"Published profile":"Draft profile"} · <code>{profile.id}</code></p></div>
     <div className="owner-badge-earned-list">
      {earned.filter(b=>!b.revoked_at).map(b=><div className="owner-badge-earned" key={b.id}>
-      <span aria-hidden="true">{b.icon}</span><div><strong>{b.name}</strong><small>{b.rarity} · {b.source==="owner"?"Owner award":"Automatic award"}</small>{b.award_reason&&<small>Reason: {b.award_reason}</small>}</div>
+      <span aria-hidden="true"><BadgeArtwork slug={b.slug} size={30}/></span><div><strong>{b.name}</strong><small>{b.rarity} · {b.source==="owner"?"Owner award":target!.is_owner?"Owner collection":"Automatic award"}</small>{b.award_reason&&<small>Reason: {b.award_reason}</small>}</div>
       {b.source==="owner"&&<form action={ownerRevokeBadge}><input type="hidden" name="user" value={target!.id}/><input type="hidden" name="profile" value={profile.id}/><input type="hidden" name="badge" value={b.id}/>
        <input name="reason" required minLength={8} maxLength={500} placeholder="Reason for revocation" aria-label={"Reason for revoking "+b.name}/>
        <button className="button small danger" type="submit">Revoke</button>
@@ -96,7 +97,7 @@ export default async function OwnerBadges({searchParams}:{searchParams:Promise<{
       <input type="hidden" name="user" value={target.id}/><input type="hidden" name="profile" value={profile.id}/><input type="hidden" name="slug" value=""/>
       <label>Badge name<input name="name" minLength={2} maxLength={48} required/></label>
       <label>Description<input name="description" minLength={8} maxLength={240} required/></label>
-      <label>Icon / emoji<input name="icon" maxLength={24} placeholder="♛" required/></label>
+      <div className="owner-badge-artwork-field"><span>Badge artwork</span><BadgeArtwork slug="unique" size={42}/><small>One-off badges use Snoozer’s matching vector artwork.</small><input type="hidden" name="icon" value="✦"/></div>
       <div className="actions">
        <label>Category<select name="category"><option value="unique">Unique</option><option value="staff">Staff</option><option value="community">Community</option><option value="creator">Creator</option></select></label>
        <label>Rarity<select name="rarity"><option value="mythic">Mythic</option><option value="legendary">Legendary</option><option value="epic">Epic</option><option value="rare">Rare</option></select></label>
@@ -109,7 +110,7 @@ export default async function OwnerBadges({searchParams}:{searchParams:Promise<{
   </section>}
   <section className="panel stack">
    <h2>Badge catalogue</h2><p className="muted">{badges.success?badges.data.length:"—"} entries. Automatic criteria are awarded by the database. Manual and future entries can be issued from the profile controls above.</p>
-   {badges.success&&<div className="owner-badge-catalogue">{badges.data.map(item=><article key={item.slug}><span aria-hidden="true">{item.icon}</span><div><strong>{item.name}</strong><small>{item.category} · {item.rarity} · {item.award_mode}</small><p>{item.description}</p></div></article>)}</div>}
+   {badges.success&&<div className="owner-badge-catalogue">{badges.data.map(item=><article key={item.slug}><span aria-hidden="true"><BadgeArtwork slug={item.slug} size={30}/></span><div><strong>{item.name}</strong><small>{item.category} · {item.rarity} · {item.award_mode}</small><p>{item.description}</p></div></article>)}</div>}
   </section>
  </main>;
 }
