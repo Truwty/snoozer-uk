@@ -967,7 +967,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Profile");
     await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");
-    await page.goto("/templates");
+    // Terminal is on a later catalogue page; filter the library rather than
+    // assuming every design is present in the first 24-card page.
+    await page.goto("/templates?q=terminal&category=cyber&palette=nocturne");
+    await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(1);
     await page.locator('a[href="/studio/builder?template=terminal-nocturne"]').click();
     await expect(page.getByLabel("Preview a design")).toHaveValue("terminal-nocturne");
     await editorTab(page, "Design");
