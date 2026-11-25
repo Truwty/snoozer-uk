@@ -122,6 +122,11 @@ export async function linkGoogleIdentity() {
   const client = await sessionClientForSlot(slot);
   const { data: current } = await client.auth.getUser();
   if (!current.user?.email_confirmed_at) redirect("/sign-in");
+  const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) redirect("/studio/account?google=unavailable");
+  if (assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+    redirect("/auth/mfa?next=" + encodeURIComponent("/studio/account"));
+  }
   markPending(jar, slot);
   const { data, error: authError } = await client.auth.linkIdentity({
     provider: "google",
