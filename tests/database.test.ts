@@ -2927,9 +2927,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const collection = await result<{ earned: Array<{ slug: string; is_public: boolean }> }>(
       "select public.get_my_profile_badges($1) as value", [ownerProfile],
     );
+    // The catalogue lives in a private schema, so inspect it using the
+    // elevated test connection rather than the simulated authenticated role.
+    await db.exec("reset role");
     const availableCount = await result<number>(
       "select count(*)::int as value from snoozer.badge_catalog where enabled and unique_profile_id is null",
     );
+    await act("authenticated", alice);
     expect(collection?.earned.length).toBe(availableCount);
     expect(collection?.earned.map((badge) => badge.slug)).toContain("founding-member");
     expect(collection?.earned.map((badge) => badge.slug)).toContain("one-of-one");
