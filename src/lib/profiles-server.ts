@@ -7,14 +7,14 @@ import { anonymousClient, sessionClient } from "./supabase";
 import { canonicalUsername, draftProfile, publishedProfile, username } from "./profile";
 import { resolveEffects, type EffectTier } from "./profile-effects";
 
-export async function requireAccount() {
+export async function requireAccount(nextPath = "/studio") {
   const client = await sessionClient();
   const { data, error } = await client.auth.getUser();
   if (error && (error.status === 0 || (error.status ?? 0) >= 500)) throw new Error("Account service unavailable.");
-  if (!data.user?.email_confirmed_at) redirect("/sign-in");
+  if (!data.user?.email_confirmed_at) redirect("/sign-in?next=" + encodeURIComponent(nextPath));
   const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) throw new Error("Account security checks are unavailable.");
-  if (assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") redirect("/auth/mfa?next=%2Fstudio");
+  if (assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") redirect("/auth/mfa?next=" + encodeURIComponent(nextPath));
   const { data: restricted, error: accessError } = await client.rpc("my_account_restriction");
   if (accessError) throw new Error("Account access checks are unavailable.");
   if (restricted) redirect("/account-restricted");
