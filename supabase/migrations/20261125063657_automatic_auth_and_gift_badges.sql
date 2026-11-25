@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION snoozer.award_profile_milestones(p_profile uuid)
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-declare p snoozer.profiles; link_count integer; section_count integer; gallery_count integer; view_count bigint; click_count bigint;
+declare p snoozer.profiles; link_count integer; section_count integer; gallery_count integer; view_count bigint; click_count bigint; has_totp boolean:=false;
 begin
  select * into p from snoozer.profiles where id=p_profile; if not found then return; end if;
  select count(*) into link_count from snoozer.links where profile_id=p.id and hidden=false;
@@ -17,6 +17,10 @@ begin
  select count(*) into gallery_count from snoozer.gallery_items where profile_id=p.id and position is not null and blocked_at is null;
  select coalesce((select total_views from snoozer.profile_view_leaderboard where profile_id=p.id),0) into view_count;
  select coalesce(sum(clicks),0) into click_count from snoozer.profile_view_days where profile_id=p.id;
+ if to_regclass('auth.mfa_factors') is not null then
+  execute 'select exists(select 1 from auth.mfa_factors f where f.user_id=$1 and f.factor_type::text = ''totp'' and f.status::text = ''verified'')'
+    into has_totp using p.owner_id;
+ end if;
  insert into snoozer.profile_badges(profile_id,slug,name,description,icon,category,rarity,source)
  select p.id,b.slug,b.name,b.description,b.icon,b.category,b.rarity,'automatic'
  from snoozer.badge_catalog b where b.enabled and b.award_mode='automatic'
@@ -52,7 +56,7 @@ begin
   when 'active_30_days' then p.created_at<=now()-interval '30 days'
   when 'active_90_days' then p.created_at<=now()-interval '90 days'
   when 'google_connected' then exists(select 1 from auth.identities i where i.user_id=p.owner_id and i.provider='google')
-  when 'two_factor' then exists(select 1 from auth.mfa_factors f where f.user_id=p.owner_id and f.factor_type::text='totp' and f.status::text='verified')
+  when 'two_factor' then has_totp
   when 'gift_claimed' then exists(select 1 from snoozer.entitlement_grants g where g.owner_id=p.owner_id and g.source='gift' and g.revoked_at is null)
   else false end
  on conflict(profile_id,slug) do nothing;
