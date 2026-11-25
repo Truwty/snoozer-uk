@@ -19,7 +19,6 @@ export default function Home() {
 
       <section className="home-hero" aria-labelledby="home-hero-title">
         <div className="home-hero-copy">
-          <p className="home-eyebrow"><span aria-hidden="true">✳</span> YOUR PAGE. YOUR STYLE.</p>
           <h1 id="home-hero-title">Everything you want, right here.</h1>
           <p className="home-hero-lead">
             Your socials, photos and projects, brought together on one custom Snoozer profile.
