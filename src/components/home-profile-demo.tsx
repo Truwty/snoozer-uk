@@ -1,76 +1,142 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { defaultAppearance, type PublishedProfile } from "@/lib/profile";
+import { defaultProfileWidgets } from "@/lib/profile-widgets";
+import { ProfileCard } from "./profile-card";
 
-const themes = [
-  { value: "midnight", label: "Midnight" },
-  { value: "lagoon", label: "Lagoon" },
-  { value: "daybreak", label: "Daybreak" },
-] as const;
+type SampleProfile = {
+  username: string;
+  displayName: string;
+  bio: string;
+  theme: PublishedProfile["theme"];
+  accent: string;
+  avatar: string;
+  links: PublishedProfile["links"];
+  heading: string;
+  detail: string;
+};
 
-const layouts = [
-  { value: "centred", label: "Centred" },
-  { value: "editorial", label: "Editorial" },
+function makeProfile(sample: SampleProfile): PublishedProfile {
+  return {
+    seo: { title: "", description: "" },
+    username: sample.username,
+    display_name: sample.displayName,
+    bio: sample.bio,
+    theme: sample.theme,
+    appearance: {
+      ...defaultAppearance,
+      density: "compact",
+      corners: "round",
+      colors: { accent: sample.accent },
+    },
+    indexable: false,
+    avatar: null,
+    gallery: [],
+    widgets: defaultProfileWidgets,
+    blocks: [],
+    pageLayout: { version: 1, items: [] },
+    links: sample.links,
+    sections: [{ heading: sample.heading, body: sample.detail, kind: "callout" }],
+  };
+}
+
+const profiles = [
+  {
+    position: "back-left",
+    label: "Creator profile example",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&h=240&q=85",
+    background: "city",
+    profile: makeProfile({
+      username: "ethan",
+      displayName: "Ethan",
+      bio: "Building things, playing games and sharing the process.",
+      theme: "midnight",
+      accent: "#d8fb86",
+      avatar: "",
+      links: [
+        { label: "Portfolio", url: "https://example.com/" },
+        { label: "GitHub", url: "https://github.com/" },
+        { label: "Discord", url: "https://discord.com/" },
+      ],
+      heading: "Currently building",
+      detail: "Small projects. Big ideas. More soon.",
+    }),
+  },
+  {
+    position: "front",
+    label: "Featured creator profile example",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&h=240&q=85",
+    background: "coast",
+    profile: makeProfile({
+      username: "mira",
+      displayName: "Mira",
+      bio: "Art, odd little projects and everything in between.",
+      theme: "lagoon",
+      accent: "#b5f4dc",
+      avatar: "",
+      links: [
+        { label: "My work", url: "https://example.com/portfolio" },
+        { label: "Instagram", url: "https://instagram.com/" },
+        { label: "Pinterest", url: "https://pinterest.com/" },
+        { label: "Discord", url: "https://discord.com/" },
+      ],
+      heading: "A little about me",
+      detail: "Collecting ideas, making things and finding new inspiration.",
+    }),
+  },
+  {
+    position: "back-right",
+    label: "Artist profile example",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=240&h=240&q=85",
+    background: "mountain",
+    profile: makeProfile({
+      username: "kai",
+      displayName: "Kai",
+      bio: "Digital creator | design, music and late-night ideas.",
+      theme: "daybreak",
+      accent: "#b69cff",
+      avatar: "",
+      links: [
+        { label: "My projects", url: "https://example.com/projects" },
+        { label: "YouTube", url: "https://youtube.com/" },
+        { label: "TikTok", url: "https://tiktok.com/" },
+      ],
+      heading: "Find me online",
+      detail: "New work, videos and whatever I'm making next.",
+    }),
+  },
 ] as const;
 
 export function HomeProfileDemo() {
-  const [theme, setTheme] = useState<(typeof themes)[number]["value"]>("midnight");
-  const [layout, setLayout] = useState<(typeof layouts)[number]["value"]>("centred");
-
-  return <div className="hi-demo" role="group" aria-label="Interactive preview of a Snoozer profile">
-    <div className="hi-demo-scene">
-      <Image
-        className="hi-demo-background"
-        src="https://images.unsplash.com/photo-1510519138101-570d1dca3d66?auto=format&fit=crop&w=1400&q=85"
-        alt="A creative desk setup used as the background for the profile preview."
-        fill unoptimized sizes="(max-width: 760px) 100vw, 50vw"
-      />
-      <div className="hi-demo-scene-shade" aria-hidden="true" />
-      <div className={"hi-demo-profile theme-" + theme} data-layout={layout} role="region" aria-label="Example profile">
-        <div className="hi-demo-avatar">
-          <Image
-            src="https://images.unsplash.com/photo-1758613655800-98248330920d?auto=format&fit=crop&w=240&h=240&q=85"
-            alt="Portrait used in the example creator profile."
-            fill unoptimized sizes="80px"
-          />
-        </div>
-        <p className="hi-demo-profile-kicker">SNOOZER / PROFILE</p>
-        <h3>After Hours<span aria-hidden="true">✳</span></h3>
-        <p className="hi-demo-bio">Design notes, late-night playlists and things worth keeping.</p>
-        <div className="hi-demo-profile-links" aria-label="Example profile links">
-          <span>PORTFOLIO <b>↗</b></span>
-          <span>INSTAGRAM <b>↗</b></span>
-          <span>MY PROJECTS <b>↗</b></span>
-        </div>
-        <span className="hi-demo-profile-address">snoozer.uk/afterhours</span>
-      </div>
-      <span className="hi-demo-live"><i aria-hidden="true" /> LIVE PREVIEW</span>
-    </div>
-
-    <div className="hi-demo-controls">
-      <fieldset>
-        <legend>Theme</legend>
-        <div className="hi-demo-options">
-          {themes.map(({ value, label }) => <button
-            key={value} type="button" className="hi-demo-choice"
-            aria-pressed={theme === value} onClick={() => setTheme(value)}
+  return (
+    <div
+      className="home-profile-showcase"
+      role="img"
+      aria-label="Three example Snoozer profile pages, each with its own avatar, background, bio and social links."
+    >
+      <div className="home-profile-showcase-cards" aria-hidden="true" inert>
+        {profiles.map((item) => (
+          <article
+            className={
+              "home-profile-preview home-profile-preview--" +
+              item.position +
+              " home-profile-preview--" +
+              item.background
+            }
+            key={item.position}
           >
-            <i className={"hi-demo-swatch hi-demo-swatch-" + value} aria-hidden="true" />
-            {label}
-          </button>)}
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>Layout</legend>
-        <div className="hi-demo-options">
-          {layouts.map(({ value, label }) => <button
-            key={value} type="button" className="hi-demo-choice"
-            aria-pressed={layout === value} onClick={() => setLayout(value)}
-          >{label}</button>)}
-        </div>
-      </fieldset>
-      <p>Your choices update the preview straight away.</p>
+            <ProfileCard
+              profile={item.profile}
+              avatarSrc={item.avatar}
+              preview
+              previewLabel={item.label}
+            />
+          </article>
+        ))}
+      </div>
+      <span className="home-profile-showcase-caption" aria-hidden="true">
+        YOUR PAGE · YOUR STYLE · YOURS TO SHARE
+      </span>
     </div>
-  </div>;
+  );
 }
