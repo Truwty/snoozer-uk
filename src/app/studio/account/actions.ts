@@ -35,8 +35,8 @@ export async function revokeDeviceSession(form:FormData){
  redirect("/studio/account?session=revoked");
 }
 
-export type MfaState={error:string;success:string;factorId:string;qr:string};
-const emptyMfa:MfaState={error:"",success:"",factorId:"",qr:""};
+export type MfaState={error:string;success:string;factorId:string;qr:string;secret:string};
+const emptyMfa:MfaState={error:"",success:"",factorId:"",qr:"",secret:""};
 
 export async function enrollAccountMfa(_:MfaState):Promise<MfaState>{
  const {client}=await requireAccount();
@@ -44,9 +44,12 @@ export async function enrollAccountMfa(_:MfaState):Promise<MfaState>{
  if(listed.error)return {...emptyMfa,error:"Could not read your authenticator factors."};
  const verified=listed.data?.totp?.find(f=>f.status==="verified");
  if(verified)return {...emptyMfa,success:"Authenticator MFA is already enabled."};
+ for(const pending of listed.data?.all?.filter(f=>f.factor_type==="totp"&&f.status==="unverified")??[]){
+  await client.auth.mfa.unenroll({factorId:pending.id});
+ }
  const {data,error}=await client.auth.mfa.enroll({factorType:"totp",friendlyName:"Snoozer account"});
- if(error||!data?.totp?.qr_code)return {...emptyMfa,error:"Could not start authenticator enrolment."};
- return {...emptyMfa,factorId:data.id,qr:data.totp.qr_code};
+ if(error||!data?.totp?.qr_code||!data.totp.secret)return {...emptyMfa,error:"Could not start authenticator enrolment."};
+ return {...emptyMfa,factorId:data.id,qr:data.totp.qr_code,secret:data.totp.secret};
 }
 
 export async function verifyAccountMfa(_:MfaState,form:FormData):Promise<MfaState>{
