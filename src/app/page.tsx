@@ -62,7 +62,7 @@ export default function Home() {
         <h2 id="hi-intro-title">Not just another link.<br /><em>A place that feels like you.</em></h2>
       </div>
       <div className="hi-intro-aside">
-        <p>Give people somewhere to land. Put the things you make, the places you post and the projects you care about together, without squeezing yourself into somebody else's template.</p>
+        <p>Give people somewhere to land. Put the things you make, the places you post and the projects you care about together, without squeezing yourself into somebody else&apos;s template.</p>
         <Link className="hi-text-link" href="/templates">Find your starting point <span aria-hidden="true">↗</span></Link>
       </div>
     </section>
@@ -81,7 +81,7 @@ export default function Home() {
         <Image src={photos.creatorStudio} alt="A creator working in a blue-lit filming and editing studio." fill unoptimized sizes="(max-width: 760px) 100vw, 40vw" />
         <div className="hi-photo-shade" aria-hidden="true" />
         <figcaption>
-          <span>02 — YOUR PROJECTS</span><strong>Show what you're building.</strong>
+          <span>02 — YOUR PROJECTS</span><strong>Show what you&apos;re building.</strong>
           <a href="https://unsplash.com/photos/a-man-standing-at-a-desk-in-front-of-a-camera-ypCEZV7i0eg" target="_blank" rel="noreferrer">Photo by Jakob Owens ↗</a>
         </figcaption>
       </figure>
@@ -98,7 +98,7 @@ export default function Home() {
     <section className="hi-reasons" aria-label="What makes a Snoozer page yours">
       <article data-reveal="up"><span className="hi-reason-number">01</span><h3>Look like yourself.</h3><p>Choose Midnight, Lagoon or Daybreak. Set the mood, pick your layout and make the page feel right.</p></article>
       <article data-reveal="up"><span className="hi-reason-number">02</span><h3>Bring it together.</h3><p>Give your links, photos, widgets and projects one home instead of sending people all over the place.</p></article>
-      <article data-reveal="up"><span className="hi-reason-number">03</span><h3>Publish when you're ready.</h3><p>Work in your draft, preview the result and put it live when it feels like you.</p></article>
+      <article data-reveal="up"><span className="hi-reason-number">03</span><h3>Publish when you&apos;re ready.</h3><p>Work in your draft, preview the result and put it live when it feels like you.</p></article>
     </section>
 
     <section className="hi-studio" aria-labelledby="hi-studio-title">
