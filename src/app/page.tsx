@@ -42,16 +42,16 @@ export default function Home() {
 
     <section className="home-highlights" aria-label="What makes Snoozer yours">
       <article className="home-highlight-card">
-        <span className="home-highlight-value">01</span>
-        <div><h2>One address</h2><p>One simple link for everything you want to share.</p></div>
+        <span className="home-highlight-value">03</span>
+        <div><h2>Profile themes</h2><p>Choose from Midnight, Lagoon and Daybreak.</p></div>
       </article>
       <article className="home-highlight-card">
-        <span className="home-highlight-value">03</span>
-        <div><h2>Visual themes</h2><p>Midnight, Lagoon and Daybreak. Pick your look.</p></div>
+        <span className="home-highlight-value">10</span>
+        <div><h2>Discover categories</h2><p>Find the right place for your public creator profile.</p></div>
       </article>
       <article className="home-highlight-card">
-        <span className="home-highlight-value">03</span>
-        <div><h2>Premium plans</h2><p>Plus, Pro and Studio when you need more room.</p></div>
+        <span className="home-highlight-value">05</span>
+        <div><h2>Interests to choose</h2><p>Add up to five interests to your Discover listing.</p></div>
       </article>
       <article className="home-highlight-card">
         <span className="home-highlight-word">DRAFT</span>
