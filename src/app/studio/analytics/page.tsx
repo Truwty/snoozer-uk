@@ -7,7 +7,7 @@ import {
   browserAnalytics, browserCtr,
 } from "@/lib/analytics";
 import { siteUrl } from "@/lib/env";
-import { readStudioDraft, type StudioProfileQuery } from "@/lib/profiles-server";
+import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
 
 export const metadata = { title: "Analytics", robots: { index: false, follow: false } };
@@ -58,6 +58,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const allTraffic = trafficAnalytics.safeParse(trafficResponse?.data);
   const allBrowsers = browserAnalytics.safeParse(browserResponse?.data);
 
+  // Daily records are returned newest first; AnalyticsChart reverses them for its oldest-to-newest plot.
   const rows = allRows.success ? [...inRange(allRows.data, range)] : [];
   const links = allLinks.success ? allLinks.data : [];
   const traffic = allTraffic.success ? allTraffic.data : [];
@@ -70,8 +71,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "All available time";
   const periodHint = range === "all" ? "Within your plan’s analytics retention window" : "In the " + rangeLabel.toLowerCase();
 
-  // The traffic and per-link RPCs currently return retention-window aggregates,
-  // not dated daily rows. Keep them truthful and label their wider time window.
+  // The traffic and per-link RPCs return retention-window aggregates, not dated daily rows.
   const devices = traffic.reduce<Record<string, number>>((result, row) => {
     result[row.device] = (result[row.device] ?? 0) + row.views;
     return result;
@@ -126,7 +126,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
       <section className="analytics-main-grid">
         <article className="analytics-card">
           <div className="analytics-card-heading"><div><h2>Profile Views</h2><p>{periodHint} · UTC dates</p></div>
-            <a className="button small" download="snoozer-analytics.csv" href={"/api/v1/analytics/export?profile=" + encodeURIComponent(draft.profile_id)}>Export CSV</a>
+            <a className="button small" download="snoozer-analytics.csv" href={studioHref("/api/v1/analytics/export", draft.profile_id)}>Download CSV</a>
           </div>
           {rows.length ? <AnalyticsChart rows={rows}/> :
             <Empty title="No profile views yet" description="Views appear here when visitors allow analytics on your published Snoozer page."/>}
@@ -178,18 +178,67 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
 
       <section className="analytics-card stack">
         <div className="analytics-card-heading"><div><h2>Daily Activity</h2><p>Recorded views and link clicks by UTC date</p></div></div>
-        {rows.length ? <TableScroll label="Daily profile activity report">
-          <table className="analytics-data-table">
-            <caption>Consent-based event totals inside the selected date range</caption>
-            <thead><tr><th scope="col">Date (UTC)</th><th scope="col">Profile views</th><th scope="col">Link clicks</th></tr></thead>
-            <tbody>{[...rows].reverse().map((row) => <tr key={row.day}><th scope="row"><time dateTime={row.day}>{row.day}</time></th><td>{compact(row.views)}</td><td>{compact(row.clicks)}</td></tr>)}</tbody>
-          </table>
-        </TableScroll> : <Empty title="No daily activity" description="There are no recorded events in this time range."/>}
+        {rows.length ? <Disclosure title="Daily activity table">
+          <TableScroll label="Daily activity report">
+            <table className="analytics-data-table">
+              <caption>Recorded activity by UTC day within your plan’s retention window</caption>
+              <thead><tr><th scope="col">Date</th><th scope="col">Views</th><th scope="col">Clicks</th></tr></thead>
+              <tbody>{rows.map((row) => <tr key={row.day}><th scope="row"><time dateTime={row.day}>{row.day}</time></th><td>{compact(row.views)}</td><td>{compact(row.clicks)}</td></tr>)}</tbody>
+            </table>
+          </TableScroll>
+        </Disclosure> : <Empty title="No daily activity" description="There are no recorded events in this time range."/>}
       </section>
+
+      {browsers.length > 0 && <section className="analytics-card stack">
+        <div className="analytics-card-heading"><div><h2>Daily Browsers & Click Rate</h2><p>Browser observations, not unique people</p></div>
+          <a className="button small" download="snoozer-browser-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=browsers", draft.profile_id)}>Download browser CSV</a>
+        </div>
+        <Disclosure title="How daily browser counts work">
+          <p className="muted">Only visitors who allowed the latest analytics scope and have writable browser storage are included. A browser counts once per profile and UTC day. These are approximate browser counts, not people; clearing storage or withdrawing and allowing consent again can count a browser again. Daily counts must not be added together as unique visitors across days.</p>
+        </Disclosure>
+        <TableScroll label="Daily browser report">
+          <table className="analytics-data-table">
+            <caption>Daily browser observations within your plan’s retention window</caption>
+            <thead><tr><th scope="col">UTC date</th><th scope="col">Daily browsers</th><th scope="col">Clicked browsers</th><th scope="col">Browser CTR</th></tr></thead>
+            <tbody>{browsers.map((row) => <tr key={row.day}><th scope="row">{row.day}</th><td>{compact(row.unique_browsers)}</td><td>{compact(row.clicked_browsers)}</td><td>{browserCtr(row.unique_browsers, row.clicked_browsers)}</td></tr>)}</tbody>
+          </table>
+        </TableScroll>
+      </section>}
 
       {linksResponse?.error && <p className="message error" role="alert">Per-link reports are unavailable. Please reload to try again.</p>}
       {trafficResponse?.error && <p className="message error" role="alert">Traffic-source reports are unavailable. Please reload to try again.</p>}
-      <p className="muted">Analytics are optional and privacy-conscious. They are not guaranteed to represent unique people, full visitor totals or precise device identities. “All available time” still means the retention window set by your current plan.</p>
+      {links.length > 0 && <section className="analytics-card stack">
+        <div className="analytics-card-heading"><div><h2>Most Clicked Links</h2><p>Top published label and destination pairs within your retention window</p></div>
+          <a className="button small" download="snoozer-link-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=links", draft.profile_id)}>Download link CSV</a>
+        </div>
+        <TableScroll label="Per-link report">
+          <table className="analytics-data-table analytics-links">
+            <caption>Clicks attributed to published destinations</caption>
+            <thead><tr><th scope="col">Link</th><th scope="col">Clicks</th></tr></thead>
+            <tbody>{links.map(({ label, url, clicks: linkClicks }) => <tr key={JSON.stringify([label, url])}>
+              <th scope="row"><a href={url} rel="nofollow noreferrer">{label}</a><small>{url}</small></th><td>{compact(linkClicks)}</td>
+            </tr>)}</tbody>
+          </table>
+        </TableScroll>
+      </section>}
+
+      {traffic.length > 0 && <section className="analytics-card stack">
+        <div className="analytics-card-heading"><div><h2>Traffic Sources & Campaigns</h2><p>Descriptive comparisons over the analytics retention window</p></div>
+          <a className="button small" download="snoozer-traffic-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=traffic", draft.profile_id)}>Download traffic CSV</a>
+        </div>
+        <p className="muted">Source and device groups are approximate; missing referrers appear as direct traffic. No visitor identities or statistical significance are inferred.</p>
+        <TableScroll label="Traffic source report">
+          <table className="analytics-data-table">
+            <caption>Campaign, source and device event totals</caption>
+            <thead><tr><th scope="col">Campaign</th><th scope="col">Source</th><th scope="col">Device</th><th scope="col">Views</th><th scope="col">Clicks</th></tr></thead>
+            <tbody>{traffic.map((row) => <tr key={JSON.stringify([row.campaign, row.source, row.device])}>
+              <th scope="row">{row.label}</th><td>{row.source}</td><td>{row.device}</td><td>{compact(row.views)}</td><td>{compact(row.clicks)}</td>
+            </tr>)}</tbody>
+          </table>
+        </TableScroll>
+      </section>}
+
+      <p className="muted">Analytics are optional and privacy-conscious. These are not guaranteed to represent unique people, full visitor totals or precise device identities. Daily charts use the selected date range; device, referrer and per-link tables use the current plan’s retention window because those APIs do not return dated rows. “All available time” still means the retention window set by your current plan.</p>
     </>}
   </main>;
 }
