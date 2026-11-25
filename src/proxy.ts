@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
     "form-action 'self'", `script-src 'self' 'nonce-${nonce}'${development ? " 'unsafe-eval'" : ""}`,
     `script-src-elem 'self' 'nonce-${nonce}'`,
     "script-src-attr 'none'",
-    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "font-src 'self'", "media-src 'self' https: blob:",
+    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https://images.unsplash.com", "font-src 'self'", "media-src 'self' https: blob:",
     "frame-src https://www.youtube-nocookie.com https://player.twitch.tv https://open.spotify.com",
     `connect-src 'self' ${storage}`, ...(siteUrl().protocol === "https:" ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
