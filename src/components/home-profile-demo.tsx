@@ -20,7 +20,7 @@ export function HomeProfileDemo() {
   const [layout, setLayout] = useState<PublishedProfile["appearance"]["layout"]>("centred");
   const currentTheme = themes.find((item) => item.value === theme)?.label ?? "Midnight";
 
-  return <div className="home-showcase" aria-label="Interactive preview of a Snoozer profile">
+  return <div className="home-showcase" role="group" aria-label="Interactive preview of a Snoozer profile">
     <div className="home-showcase-board">
       <div className="home-showcase-windowbar">
         <span className="home-showcase-window-dots" aria-hidden="true"><i /><i /><i /></span>
