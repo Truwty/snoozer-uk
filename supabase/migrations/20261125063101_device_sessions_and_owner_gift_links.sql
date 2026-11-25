@@ -12,7 +12,7 @@ create table snoozer.owner_gift_links(
  entitlement_id uuid references snoozer.entitlement_grants(id) on delete set null,
  revoked_at timestamptz,
  foreign key(plan,plan_version) references snoozer.plan_versions(plan,version),
- check(expires_at>created_at), check((claimed_by is null)=(claimed_at is null))
+ check(expires_at>created_at), check(claimed_by is null or claimed_at is not null)
 );
 create index owner_gift_links_owner_recent on snoozer.owner_gift_links(created_by,created_at desc);
 alter table snoozer.owner_gift_links enable row level security;
