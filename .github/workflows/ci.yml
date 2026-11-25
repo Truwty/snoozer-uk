@@ -164,6 +164,9 @@ jobs:
           else:
               raise SystemExit("Could not set the isolated Supabase project ID.")
           config.write_text("\n".join(lines) + "\n")
+          mail_origin = f"http://127.0.0.1:{ports['local_smtp']}"
+          with Path(os.environ["GITHUB_ENV"]).open("a") as env:
+              env.write(f"SNOOZER_TEST_MAIL_ORIGIN={mail_origin}\\n")
           print(f"Supabase shard {shard}: {project_id}, {ports}")
           PY
 
