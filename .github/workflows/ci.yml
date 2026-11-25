@@ -122,6 +122,178 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # Give every matrix shard a distinct project/container name and host
+          # ports. This prevents parallel shards from racing for 54321/54322.
+          shard="${{ matrix.shard }}"
+          export SUPABASE_CI_SHARD="$shard"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          shard = int(os.environ["SUPABASE_CI_SHARD"])
+          config = Path("supabase/config.toml")
+          text = config.read_text()
+
+          project_id = f"snoozer-uk-ci-{shard}"
+          text, count = re.subn(
+              r'(?m)^project_id\\s*=\\s*"[^"]+"\\s*          exit_file="$RUNNER_TEMP/supabase-start.exit"
+          pid_file="$RUNNER_TEMP/supabase-start.pid"
+          rm -f "$log" "$exit_file" "$pid_file"
+
+          nohup bash -c '
+            set +e
+            npx --yes supabase@3.1.0 start --exclude studio,edge-runtime,logflare,vector,supavisor,postgres-meta
+            result=$?
+            printf "%s\n" "$result" > "$RUNNER_TEMP/supabase-start.exit"
+            exit "$result"
+          ' >"$log" 2>&1 </dev/null &
+
+          echo "$!" > "$pid_file"
+          echo "Supabase startup is running while the build cache is restored."
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # actions/cache v5.0.1
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ matrix.shard }}-
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      - name: Wait for disposable Supabase and load test credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          pid="$(cat "$RUNNER_TEMP/supabase-start.pid")"
+          exit_file="$RUNNER_TEMP/supabase-start.exit"
+          log="$RUNNER_TEMP/supabase-start.log"
+
+          for attempt in $(seq 1 180); do
+            [[ -f "$exit_file" ]] && break
+            if ! kill -0 "$pid" 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [[ ! -f "$exit_file" ]]; then
+            echo "::error::Supabase startup did not finish within six minutes."
+            tail -n 80 "$log" || true
+            exit 1
+          fi
+
+          startup_status="$(cat "$exit_file")"
+          if [[ "$startup_status" != "0" ]]; then
+            echo "::error::The disposable Supabase stack could not start."
+            python3 -c 'import pathlib,re,sys; lines=pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines(); match=[l for l in lines if re.search(r"(?i)sqlstate|error:|failed|migration|permission denied|invalid|timeout",l)]; print("\n".join(re.sub(r"[A-Za-z0-9_.-]{120,}","[REDACTED]",l)[:350] for l in match[-20:]))' "$log"
+            exit "$startup_status"
+          fi
+
+          eval "$(npx --yes supabase@3.1.0 status -o env)"
+          kofi_fixture_token="$(openssl rand -hex 32)"
+          stripe_fixture_secret="whsec_$(openssl rand -hex 32)"
+          printf '::add-mask::%s\n' "$kofi_fixture_token" "$stripe_fixture_secret"
+          printf '::add-mask::%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+          {
+            printf 'NEXT_PUBLIC_SITE_URL=http://localhost:3000\n'
+            printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$API_URL"
+            printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "${PUBLISHABLE_KEY:-$ANON_KEY}"
+            printf 'SUPABASE_SERVICE_ROLE_KEY=%s\n' "${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+            printf 'KOFI_WEBHOOK_TOKEN=%s\n' "$kofi_fixture_token"
+            printf 'STRIPE_SANDBOX_WEBHOOK_SECRET=%s\n' "$stripe_fixture_secret"
+            printf 'SNOOZER_TEST_LOCAL_SUPABASE=1\n'
+          } >> "$GITHUB_ENV"
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Install Chromium headless shell
+        run: npx playwright install --only-shell chromium
+
+      - name: Run Playwright shard
+        run: npm run test:e2e -- --workers=2 --shard=${{ matrix.shard }}/5
+
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-failure-diagnostics-${{ matrix.shard }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  validate:
+    name: validate
+    if: always()
+    needs: [prepare, quality, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Report the combined CI result
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          RUN_FULL: ${{ needs.prepare.outputs.run_full }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$PREPARE_RESULT" != "success" ]]; then
+            echo "::error::CI could not determine whether full validation should run."
+            exit 1
+          fi
+          if [[ "$RUN_FULL" == "false" ]]; then
+            echo "The merged PR passed validate. Skipping duplicate post-merge CI."
+            exit 0
+          fi
+          if [[ "$QUALITY_RESULT" != "success" ]]; then
+            echo "::error::Security, static or unit checks failed or were skipped."
+            exit 1
+          fi
+          if [[ "$VERIFY_RESULT" != "success" ]]; then
+            echo "::error::One or more browser verification shards failed or were skipped."
+            exit 1
+          fi
+          echo "All security, static, unit, database, build and browser checks passed."
+,
+              f'project_id = "{project_id}"',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Could not isolate the Supabase project ID.")
+
+          ports = {
+              "api": 54321 + shard * 10,
+              "db": 54322 + shard * 10,
+              "local_smtp": 54324 + shard * 10,
+          }
+          for section, port in ports.items():
+              start = re.search(rf"(?m)^\\[{re.escape(section)}\\]\\s*$", text)
+              if not start:
+                  raise SystemExit(f"Missing Supabase [{section}] section.")
+              next_section = re.search(r"(?m)^\\[", text[start.end():])
+              end = start.end() + next_section.start() if next_section else len(text)
+              block = text[start.end():end]
+              block, changed = re.subn(
+                  r"(?m)^port\\s*=\\s*\\d+\\s*$",
+                  f"port = {port}",
+                  block,
+                  count=1,
+              )
+              if changed != 1:
+                  raise SystemExit(f"Could not set the Supabase [{section}] port.")
+              text = text[:start.end()] + block + text[end:]
+
+          config.write_text(text)
+          print(
+              f"Isolated Supabase shard {shard}: project={project_id}, "
+              f"api={ports['api']}, db={ports['db']}, smtp={ports['local_smtp']}"
+          )
+          PY
+
           log="$RUNNER_TEMP/supabase-start.log"
           exit_file="$RUNNER_TEMP/supabase-start.exit"
           pid_file="$RUNNER_TEMP/supabase-start.pid"
