@@ -135,7 +135,7 @@ export default function Home() {
         </article>
         <article className="hi-price-premium" data-reveal="up">
           <div className="hi-premium-heading">
-            <div><p className="hi-price-kicker">WHEN YOU WANT MORE</p><h3>Snoozer Premium</h3><p className="hi-price-description">Pick the plan that fits what you're building.</p></div>
+            <div><p className="hi-price-kicker">WHEN YOU WANT MORE</p><h3>Snoozer Premium</h3><p className="hi-price-description">Pick the plan that fits what you&apos;re building.</p></div>
             <span className="hi-price-spark" aria-hidden="true">✳</span>
           </div>
           <div className="hi-premium-tiers" aria-label="Snoozer Premium prices">
