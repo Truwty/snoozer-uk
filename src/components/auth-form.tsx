@@ -5,7 +5,7 @@ import { initialState, type ActionState } from "@/lib/actions";
 import { Button, Field } from "./ui";
 import { ActionMessage } from "./action-message";
 
-export function AuthForm({ action, label, email, password, token, referral, addAccount = false }: {
+export function AuthForm({ action, label, email, password, token, referral, addAccount = false, next }: {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
   label: string;
   email?: boolean;
@@ -13,6 +13,7 @@ export function AuthForm({ action, label, email, password, token, referral, addA
   token?: string;
   referral?: string;
   addAccount?: boolean;
+  next?: string;
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
   const [visible, setVisible] = useState(false);
@@ -21,6 +22,7 @@ export function AuthForm({ action, label, email, password, token, referral, addA
   const id = useId();
   return <form action={submit} className="stack">
     {addAccount && <input type="hidden" name="add_account" value="1" />}
+    {next && <input type="hidden" name="next" value={next} />}
     {email && <Field label="Email address"><input name="email" type="email" autoComplete="email" required maxLength={254}
       aria-invalid={!!errors.email} aria-describedby={errors.email ? id + "-email" : undefined}
       onBlur={(event) => setErrors((current) => ({ ...current, email: event.target.value && !event.target.validity.valid ? event.target.validationMessage : "" }))} />
