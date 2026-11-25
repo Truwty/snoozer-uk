@@ -13,6 +13,7 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
     expect(csp.split(";").find((directive) => directive.trimStart().startsWith("script-src ")) ?? "")
       .not.toContain("'unsafe-inline'");
     expect(csp).toContain("media-src 'self' https: blob:");
+    expect(csp).toContain("img-src 'self' data: blob: https://images.unsplash.com");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Everything you are");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     // Playwright's storageState already keeps optional analytics disabled.
