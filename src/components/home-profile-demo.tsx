@@ -31,6 +31,7 @@ function makeProfile(sample: SampleProfile): PublishedProfile {
     indexable: false,
     avatar: null,
     gallery: [],
+    badges: [],
     widgets: defaultProfileWidgets,
     blocks: [],
     pageLayout: { version: 1, items: [] },
