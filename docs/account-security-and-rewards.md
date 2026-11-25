@@ -22,7 +22,7 @@ References: [Supabase TOTP MFA](https://supabase.com/docs/guides/auth/auth-mfa/t
 
 ## One-time Premium gift links
 
-Owner Control Centre → Gift links creates Plus, Pro or Studio entitlements. Links are single-use, expire, store a SHA-256 token hash only, and record an audit reason. The raw token is returned once. Owners can revoke an unclaimed link.
+Owner Control Centre → Gift links creates Plus, Pro or Studio entitlements. Links are single-use, expire, store a SHA-256 token hash only, and record an audit reason. The raw token is returned once. Owner and recipient foreign keys use deletion-safe semantics: deleting either account does not unblock a claimed token or erase the audit trail. Owners can revoke an unclaimed link.
 
 Claim tokens travel in the `/gift` URL fragment, are moved into tab session storage and removed from the address bar before the claim POST. They are never placed in query strings. Claiming requires a verified Snoozer account.
 
