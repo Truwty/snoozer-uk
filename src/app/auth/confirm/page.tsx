@@ -9,8 +9,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const { token_hash: token, type } = await searchParams;
   const emailChange = type === "email_change";
   return <AuthShell title={emailChange ? "Confirm your new email" : "Verify your email"} description={emailChange ? "Confirm this change to update the email address on your Snoozer account." : "Confirm your email to start building your Snoozer page."}>
-    {typeof token === "string" ? <AuthForm action={confirmEmail} label={emailChange ? "Confirm email change" : "Verify email"} token={token} />
-        {emailChange && <input type="hidden" name="type" value="email_change" />}
+    {typeof token === "string" ? <AuthForm action={confirmEmail} label={emailChange ? "Confirm email change" : "Verify email"} token={token} emailChange={emailChange} />
       : <Link className="button primary" href="/sign-in">Go to sign in</Link>}
   </AuthShell>;
 }

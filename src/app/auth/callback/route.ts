@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     const slot = pendingSlot(jar);
     if (!slot) return failed();
     const client = await sessionClientForSlot(slot);
+    let activeClient = client;
     const expected = googleLinkFlow ? storedAccounts(jar).find((entry) => entry.slot === slot) : null;
     const before = googleLinkFlow ? await client.auth.getUser() : null;
     if (googleLinkFlow && (!expected?.userId || before?.data.user?.id !== expected.userId)) return failed();
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
     if (existing) {
       await client.auth.signOut({ scope: "local" });
       chooseAccount(jar, existing.slot);
+      activeClient = await sessionClientForSlot(existing.slot);
     } else {
       saveAccount(jar, slot, data.user.id, data.user.email);
     }
@@ -55,8 +57,11 @@ export async function GET(request: Request) {
       presenceTarget.searchParams.set("linked", "1");
       return NextResponse.redirect(presenceTarget, 303);
     }
-    if (googleLinkFlow) return NextResponse.redirect(new URL("/studio/account?google=linked", siteUrl()), 303);
-    const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (googleLinkFlow) {
+      await activeClient.rpc("refresh_my_profile_badges");
+      return NextResponse.redirect(new URL("/studio/account?google=linked", siteUrl()), 303);
+    }
+    const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
     const destination = assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"
       ? "/auth/mfa?next=" + encodeURIComponent(next) : next;
     return NextResponse.redirect(new URL(destination, siteUrl()), 303);

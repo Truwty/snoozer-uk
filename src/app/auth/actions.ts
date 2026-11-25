@@ -57,14 +57,16 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   }
   // Never retain two refresh-token cookies for the same account.
   const existing = adding && storedAccounts(jar).find((item) => item.userId === result.data.user!.id);
+  let activeClient = client;
   if (existing) {
     await client.auth.signOut({ scope: "local" });
     chooseAccount(jar, existing.slot);
+    activeClient = await sessionClientForSlot(existing.slot);
   } else {
     saveAccount(jar, slot, result.data.user.id, result.data.user.email);
   }
   const next = safeNextPath(form.get("next"));
-  const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
   redirect(assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"
     ? "/auth/mfa?next=" + encodeURIComponent(next) : next);
 }
