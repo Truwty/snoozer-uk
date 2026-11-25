@@ -93,13 +93,23 @@ end
 $function$;
 
 drop trigger if exists badges_owner_profiles_grant on snoozer.profiles;
-create trigger badges_owner_profiles_grant
-after insert or update of owner_id on snoozer.profiles
+drop trigger if exists badges_owner_profiles_insert_grant on snoozer.profiles;
+create trigger badges_owner_profiles_insert_grant
+after insert on snoozer.profiles
+for each row execute function snoozer.grant_owner_badges_after_profile_change();
+drop trigger if exists badges_owner_profiles_owner_change_grant on snoozer.profiles;
+create trigger badges_owner_profiles_owner_change_grant
+after update of owner_id on snoozer.profiles
 for each row execute function snoozer.grant_owner_badges_after_profile_change();
 
 drop trigger if exists badges_owner_assignment_grant on snoozer.platform_owners;
-create trigger badges_owner_assignment_grant
-after insert or update of owner_id on snoozer.platform_owners
+drop trigger if exists badges_owner_assignment_insert_grant on snoozer.platform_owners;
+create trigger badges_owner_assignment_insert_grant
+after insert on snoozer.platform_owners
+for each row execute function snoozer.grant_owner_badges_after_owner_change();
+drop trigger if exists badges_owner_assignment_owner_change_grant on snoozer.platform_owners;
+create trigger badges_owner_assignment_owner_change_grant
+after update of owner_id on snoozer.platform_owners
 for each row execute function snoozer.grant_owner_badges_after_owner_change();
 
 drop trigger if exists badges_owner_catalog_insert_grant on snoozer.badge_catalog;
@@ -147,6 +157,9 @@ begin
     raise exception 'Profile not found' using errcode = 'P0002';
   end if;
 
+  -- Also reconcile the Owner catalogue when the owner opens the badge
+  -- manager; this is a safe idempotent fallback to the assignment triggers.
+  perform snoozer.grant_owner_profile_badges(target);
   perform snoozer.award_profile_milestones(target);
 
   return jsonb_build_object(
