@@ -8,7 +8,7 @@ import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient, sessionClient, sessionClientForSlot } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { safeNextPath } from "@/lib/account-security";
-import { currentSlot, storedAccounts, saveAccount, markPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
+import { currentSlot, storedAccounts, saveAccount, markPending, clearPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
 
 const email = z.email().max(254);
 const newPassword = z.string().min(12).max(72).refine((value) => Buffer.byteLength(value) <= 72);
@@ -90,7 +90,7 @@ export async function signInWithDiscord(form: FormData) {
       scopes: "identify email",
     },
   });
-  if (authError || !data.url) redirect("/sign-in?discord=failed");
+  if (authError || !data.url) { clearPending(jar); redirect("/sign-in?discord=failed"); }
   redirect(data.url);
 }
 
@@ -108,7 +108,7 @@ export async function signInWithGoogle(form: FormData) {
     provider: "google",
     options: { redirectTo: new URL("/auth/callback?flow=google-login&next=" + encodeURIComponent(next), siteUrl()).href },
   });
-  if (authError || !data.url) redirect("/sign-in?google=failed");
+  if (authError || !data.url) { clearPending(jar); redirect("/sign-in?google=failed"); }
   redirect(data.url);
 }
 
@@ -126,7 +126,7 @@ export async function linkGoogleIdentity() {
     provider: "google",
     options: { redirectTo: new URL("/auth/callback?flow=google-link", siteUrl()).href },
   });
-  if (authError || !data.url) redirect("/studio/account?google=failed");
+  if (authError || !data.url) { clearPending(jar); redirect("/studio/account?google=failed"); }
   redirect(data.url);
 }
 
