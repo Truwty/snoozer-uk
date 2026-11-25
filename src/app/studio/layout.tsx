@@ -6,6 +6,7 @@ import { readStudioDraft } from "@/lib/profiles-server";
 import "./studio-dashboard.css";
 import "./studio-dashboard-extra.css";
 import "./studio-video-fidelity.css";
+import "./studio-video-screens.css";
 
 export default async function StudioLayout({ children }: { children: ReactNode }) {
   const draft = await readStudioDraft(undefined);
