@@ -7,6 +7,7 @@ import type { ActionState } from "@/lib/actions";
 import { requireAccount } from "@/lib/profiles-server";
 import { siteUrl } from "@/lib/env";
 import { safeNextPath } from "@/lib/account-security";
+import { sessionClient } from "@/lib/supabase";
 
 const fail=(message:string):ActionState=>({status:"error",message});
 const ok=(message:string):ActionState=>({status:"success",message});
@@ -55,6 +56,7 @@ export async function verifyAccountMfa(_:MfaState,form:FormData):Promise<MfaStat
  const {client}=await requireAccount();
  const {error}=await client.auth.mfa.challengeAndVerify({factorId:factor.data,code:code.data});
  if(error)return {...emptyMfa,factorId:factor.data,error:"That code was not accepted. Check the time on your device and try again."};
+ await client.rpc("refresh_my_profile_badges");
  revalidatePath("/studio/account");
  return {...emptyMfa,success:"Authenticator MFA is enabled. New sign-ins will now require a one-time code."};
 }
@@ -76,7 +78,7 @@ export async function verifyLoginMfa(form:FormData){
  const code=z.string().regex(/^\d{6}$/).safeParse(form.get("code"));
  const next=safeNextPath(form.get("next"));
  if(!factor.success||!code.success)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
- const {client}=await import("@/lib/supabase").then(async({sessionClient})=>({client:await sessionClient()}));
+ const client=await sessionClient();
  const user=await client.auth.getUser();
  if(!user.data.user?.email_confirmed_at)redirect("/sign-in");
  const listed=await client.auth.mfa.listFactors();
@@ -84,6 +86,7 @@ export async function verifyLoginMfa(form:FormData){
  if(!valid)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
  const {error}=await client.auth.mfa.challengeAndVerify({factorId:factor.data,code:code.data});
  if(error)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+ await client.rpc("refresh_my_profile_badges");
  redirect(next);
 }
 

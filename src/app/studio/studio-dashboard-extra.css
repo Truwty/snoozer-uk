@@ -94,3 +94,29 @@
 @media(max-width:44rem) {
   .studio-main-content .studio-template-card-grid { grid-template-columns:minmax(0,1fr); }
 }
+
+.studio-main-content .studio-setting-row--stack { align-items:stretch; flex-direction:column; }
+.studio-main-content .studio-account-security-control,
+.studio-main-content .studio-device-sessions { display:grid; gap:.75rem; width:100%; }
+.studio-main-content .studio-mfa-enrolment { max-width:28rem; padding:1rem; border:1px solid var(--studio-line); background:#0e1013; }
+.studio-main-content .studio-mfa-enrolment img { width:220px; height:220px; padding:.5rem; background:#fff; }
+.studio-main-content .studio-device-session { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.8rem; padding:.8rem 0; border-top:1px solid var(--studio-line); }
+.studio-main-content .studio-email-change { display:grid; gap:.8rem; padding:.9rem 0; border-top:1px solid var(--studio-line); }
+.studio-main-content .studio-email-change summary { width:max-content; color:var(--studio-lime); cursor:pointer; font-size:.7rem; }
+.studio-main-content .studio-official-badge-grid,
+.studio-main-content .studio-future-badge-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+.studio-main-content .studio-official-badge,
+.studio-main-content .studio-future-badge { display:flex; align-items:flex-start; gap:.75rem; padding:.85rem; border:1px solid var(--studio-line); background:#101215; }
+.studio-main-content .studio-official-badge > span,
+.studio-main-content .studio-future-badge > span { display:grid; place-items:center; width:2.3rem; height:2.3rem; flex:0 0 auto; border:1px solid var(--studio-line-strong); color:var(--studio-lime); font-size:1.1rem; }
+.studio-main-content .studio-official-badge strong,
+.studio-main-content .studio-future-badge strong { font-size:.73rem; }
+.studio-main-content .studio-official-badge p,
+.studio-main-content .studio-future-badge p { margin:.2rem 0; color:var(--studio-muted); font-size:.64rem; line-height:1.45; }
+.studio-main-content .studio-official-badge small,
+.studio-main-content .studio-future-badge small { color:var(--studio-dim); font-size:.56rem; }
+.studio-main-content .studio-future-badge { opacity:.68; }
+.studio-main-content .studio-future-badge.is-earned { opacity:1; border-color:rgba(216,251,134,.3); }
+.studio-main-content .studio-future-badge-catalogue { border-top:1px solid var(--studio-line); padding-top:.9rem; }
+.studio-main-content .studio-future-badge-catalogue summary { color:var(--studio-lime); cursor:pointer; font-size:.72rem; margin-bottom:.8rem; }
+@media(max-width:44rem){.studio-main-content .studio-official-badge-grid,.studio-main-content .studio-future-badge-grid{grid-template-columns:minmax(0,1fr)}}

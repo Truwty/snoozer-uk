@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
-import { requireAccount } from "@/lib/profiles-server";
+import { readStudioDraft, studioHref, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
 import { z } from "zod";
 
 export const metadata = { title: "Badges and milestones", robots: { index: false, follow: false } };

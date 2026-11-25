@@ -69,7 +69,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         <span className="studio-setting-caption">Private reference</span>
       </div>
       <details className="studio-email-change"><summary>Change email address</summary>
-        <EmailChangeForm currentEmail={user.email ?? ""}/>
+        <EmailChangeForm/>
       </details>
     </section>
 
