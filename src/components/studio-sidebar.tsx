@@ -63,7 +63,7 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
   return <aside className={"studio-sidebar" + (mobileOpen ? " is-mobile-open" : "") + (collapsed ? " is-collapsed" : "")}
     aria-label="Studio navigation">
     <div className="studio-sidebar-brand-row">
-      <Link href={hrefFor("/studio")} className="studio-sidebar-brand" aria-label="Snoozer Studio home">
+      <Link href={hrefFor("/studio")} className="studio-sidebar-brand">
         <span className="studio-brand-mark" aria-hidden="true">S</span>
         <span className="studio-brand-word">snoozer<small>STUDIO</small></span>
       </Link>
