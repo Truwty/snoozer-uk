@@ -687,7 +687,7 @@
   .home-profile-preview .profile-links { gap: .25rem; }
   .home-profile-preview .profile-links a { min-height: 1.9rem; padding: .3rem; font-size: .57rem; }
   .home-profile-preview .profile-sections { display: none; }
-  .home-profile-preview--city { top: 27%; left: -1%; transform: rotate(-8deg) scale(.86); }
+  .home-profile-preview--city { top: 24%; left: -1%; transform: rotate(-8deg) scale(.86); }
   .home-profile-preview--front {
     top: 0;
     left: 50%;
@@ -696,7 +696,7 @@
   }
   .home-profile-preview--front .profile-card,
   .home-profile-preview--front .profile-inner { min-height: 27rem; }
-  .home-profile-preview--mountain { top: 31%; right: -1%; transform: rotate(8deg) scale(.86); }
+  .home-profile-preview--mountain { top: 24%; right: -1%; transform: rotate(8deg) scale(.86); }
   .home-profile-showcase:hover .home-profile-preview--city { transform: translateY(-.2rem) rotate(-8deg) scale(.87); }
   .home-profile-showcase:hover .home-profile-preview--front { transform: translateX(-50%) translateY(-.2rem); }
   .home-profile-showcase:hover .home-profile-preview--mountain { transform: translateY(-.2rem) rotate(8deg) scale(.87); }
