@@ -473,7 +473,7 @@ export const helpArticles: HelpArticle[] = [
     title: "Stay signed in and switch accounts",
     category: "account-security",
     summary: "Keep multiple Snoozer accounts signed in on one browser and switch between them.",
-    keywords: ["switch", "accounts", "session", "logout", "sign out", "browser"],
+    keywords: ["switch", "accounts", "account switching", "session", "logout", "sign out", "browser"],
     sections: [
       {
         heading: "Add another account",
