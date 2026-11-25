@@ -4,6 +4,7 @@ import { requireOwner } from "@/lib/owner/auth";
 const sections = [
   ["Overview", "/owner"], ["Users", "/owner/users"], ["Profiles", "/owner/profiles"],
   ["Moderation", "/owner/moderation"], ["Discovery", "/owner/discovery"], ["Premium", "/owner/premium"],
+  ["Badges", "/owner/badges"], ["Gift links", "/owner/gifts"],
   ["Analytics", "/owner/analytics"], ["Settings", "/owner/settings"],
   ["Privacy requests", "/owner/privacy"], ["Audit log", "/owner/audit"], ["System", "/owner/system"],
   ["Owner MFA", "/owner/security"],

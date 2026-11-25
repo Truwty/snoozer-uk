@@ -3358,3 +3358,34 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 @media (prefers-reduced-motion: reduce) {
   .home-showcase-board, .home-float-card { transform: none; animation: none !important; }
 }
+
+/* Public earned Snoozer badges */
+.profile-official-badges { display:flex; flex-wrap:wrap; justify-content:center; gap:.35rem; margin:.5rem 0 .75rem; }
+.profile-official-badge { display:inline-grid; place-items:center; width:1.9rem; height:1.9rem; border:1px solid rgba(216,251,134,.3); background:rgba(216,251,134,.07); color:currentColor; font-size:.85rem; line-height:1; cursor:help; }
+.profile-official-badge.rarity-legendary,.profile-official-badge.rarity-mythic { border-color:rgba(216,251,134,.65); box-shadow:0 0 14px rgba(216,251,134,.13); }
+.profile-official-badge-more { display:inline-grid; place-items:center; min-width:1.9rem; height:1.9rem; padding:0 .35rem; border:1px solid currentColor; color:inherit; font-size:.65rem; }
+.owner-badges-page,.owner-gifts-page { display:grid; align-content:start; gap:1rem; }
+.owner-badge-account-results,.owner-gift-list,.owner-badge-catalogue { display:grid; gap:.6rem; }
+.owner-badge-account,.owner-badge-earned,.owner-gift-row,.owner-badge-catalogue article { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem; border:1px solid var(--line); background:rgba(255,255,255,.025); color:inherit; text-decoration:none; }
+.owner-badge-account { align-items:flex-start; flex-direction:column; }
+.owner-badge-account small,.owner-badge-earned small,.owner-badge-catalogue small { display:block; color:var(--muted); font-size:.7rem; }
+.owner-badge-account.is-selected { border-color:var(--accent); }
+.owner-badge-profile { padding:1rem 0; border-top:1px solid var(--line); }
+.owner-badge-earned { align-items:flex-start; flex-wrap:wrap; }
+.owner-badge-earned > span,.owner-badge-catalogue article > span { display:grid; place-items:center; flex:0 0 2rem; height:2rem; border:1px solid var(--line); font-size:1.1rem; }
+.owner-badge-earned > div { flex:1 1 10rem; }
+.owner-badge-earned form { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+.owner-badge-award-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.owner-badge-award-grid form { min-width:0; padding:1rem; border:1px solid var(--line); }
+.owner-badge-catalogue article { justify-content:flex-start; align-items:flex-start; }
+.owner-badge-catalogue article > div { min-width:0; }
+.owner-badge-catalogue p { color:var(--muted); font-size:.72rem; margin:.2rem 0 0; }
+.owner-gift-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; }
+.owner-gift-issued { padding:1rem; border:1px solid var(--accent); background:rgba(216,251,134,.04); }
+.owner-gift-issued input { width:100%; }
+.owner-gift-row { align-items:flex-start; flex-wrap:wrap; }
+.owner-gift-row > div { min-width:0; flex:1 1 16rem; }
+.owner-gift-row form { width:min(100%,28rem); }
+@media(max-width:48rem){.owner-badge-award-grid,.owner-gift-form-grid{grid-template-columns:minmax(0,1fr)}}
+
+.studio-main-content .studio-mfa-secret { display:block; max-width:100%; overflow-wrap:anywhere; padding:.75rem; border:1px solid var(--studio-line); background:#090b0d; color:var(--studio-copy); user-select:all; }

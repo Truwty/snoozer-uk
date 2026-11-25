@@ -7,7 +7,8 @@ import type { ActionState } from "@/lib/actions";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient, sessionClient, sessionClientForSlot } from "@/lib/supabase";
 import { cookies } from "next/headers";
-import { currentSlot, storedAccounts, saveAccount, markPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
+import { safeNextPath } from "@/lib/account-security";
+import { currentSlot, storedAccounts, saveAccount, markPending, clearPending, removeAccountFromList, isAtAccountLimit, chooseAccount } from "@/lib/account-session-server";
 
 const email = z.email().max(254);
 const newPassword = z.string().min(12).max(72).refine((value) => Buffer.byteLength(value) <= 72);
@@ -56,13 +57,19 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   }
   // Never retain two refresh-token cookies for the same account.
   const existing = adding && storedAccounts(jar).find((item) => item.userId === result.data.user!.id);
+  let activeClient = client;
   if (existing) {
     await client.auth.signOut({ scope: "local" });
     chooseAccount(jar, existing.slot);
+    activeClient = await sessionClientForSlot(existing.slot);
   } else {
     saveAccount(jar, slot, result.data.user.id, result.data.user.email);
   }
-  redirect("/studio");
+  const next = safeNextPath(form.get("next"));
+  const assurance = await activeClient.auth.mfa.getAuthenticatorAssuranceLevel();
+  const needsMfa = assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2";
+  if (!needsMfa) await activeClient.rpc("refresh_my_profile_badges");
+  redirect(needsMfa ? "/auth/mfa?next=" + encodeURIComponent(next) : next);
 }
 
 // OAuth is initiated on the server so Supabase's PKCE verifier is stored in
@@ -72,6 +79,7 @@ export async function signInWithDiscord(form: FormData) {
   const jar = await cookies();
   const adding = form.get("add_account") === "1";
   if (adding && isAtAccountLimit(jar)) redirect("/sign-in?add=1&limit=1");
+  const next = safeNextPath(form.get("next"));
   const slot = adding ? crypto.randomUUID() : currentSlot(jar);
   // The callback must use precisely the same cookie namespace for PKCE.
   markPending(jar, slot);
@@ -79,11 +87,52 @@ export async function signInWithDiscord(form: FormData) {
   const { data, error: authError } = await client.auth.signInWithOAuth({
     provider: "discord",
     options: {
-      redirectTo: new URL("/auth/callback", siteUrl()).href,
+      redirectTo: new URL("/auth/callback?next=" + encodeURIComponent(next), siteUrl()).href,
       scopes: "identify email",
     },
   });
-  if (authError || !data.url) redirect("/sign-in?discord=failed");
+  if (authError || !data.url) { clearPending(jar); redirect("/sign-in?discord=failed"); }
+  redirect(data.url);
+}
+
+// Google sign-in uses the same isolated PKCE cookie slot as Discord.
+export async function signInWithGoogle(form: FormData) {
+  if (!supabaseUrl || !supabaseKey) redirect("/sign-in?google=unavailable");
+  const jar = await cookies();
+  const adding = form.get("add_account") === "1";
+  if (adding && isAtAccountLimit(jar)) redirect("/sign-in?add=1&limit=1");
+  const next = safeNextPath(form.get("next"));
+  const slot = adding ? crypto.randomUUID() : currentSlot(jar);
+  markPending(jar, slot);
+  const client = await sessionClientForSlot(slot);
+  const { data, error: authError } = await client.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: new URL("/auth/callback?flow=google-login&next=" + encodeURIComponent(next), siteUrl()).href },
+  });
+  if (authError || !data.url) { clearPending(jar); redirect("/sign-in?google=failed"); }
+  redirect(data.url);
+}
+
+// Add Google to the currently authenticated Snoozer identity. The callback
+// verifies the same user ID before accepting the OAuth result.
+export async function linkGoogleIdentity() {
+  if (!supabaseUrl || !supabaseKey) redirect("/studio/account?google=unavailable");
+  const jar = await cookies();
+  const slot = currentSlot(jar);
+  const client = await sessionClientForSlot(slot);
+  const { data: current } = await client.auth.getUser();
+  if (!current.user?.email_confirmed_at) redirect("/sign-in");
+  const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) redirect("/studio/account?google=unavailable");
+  if (assurance.data?.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+    redirect("/auth/mfa?next=" + encodeURIComponent("/studio/account"));
+  }
+  markPending(jar, slot);
+  const { data, error: authError } = await client.auth.linkIdentity({
+    provider: "google",
+    options: { redirectTo: new URL("/auth/callback?flow=google-link", siteUrl()).href },
+  });
+  if (authError || !data.url) { clearPending(jar); redirect("/studio/account?google=failed"); }
   redirect(data.url);
 }
 
@@ -102,10 +151,12 @@ export async function confirmEmail(_: ActionState, form: FormData): Promise<Acti
   if (!token.success) return error("This verification link is invalid.");
   if (!supabaseUrl || !supabaseKey) return unavailable();
   const client = await sessionClient();
-  const result = await client.auth.verifyOtp({ type: "email", token_hash: token.data });
+  const requestedType = form.get("type") === "email_change" ? "email_change" : "email";
+  const result = await client.auth.verifyOtp({ type: requestedType, token_hash: token.data });
   if (result.error || !result.data.user?.email_confirmed_at) return error("This verification link has expired or already been used.");
   const jar = await cookies();
   saveAccount(jar, currentSlot(jar), result.data.user.id, result.data.user.email);
+  if (requestedType === "email_change") redirect("/studio/account?email=confirmation");
   if (result.data.user.user_metadata.snoozer_referral_consent === true) {
     const attribution = await client.rpc("accept_my_referral");
     if (attribution.error || !["accepted", "already_recorded"].includes(attribution.data)) redirect("/studio/growth?referral=unconfirmed");

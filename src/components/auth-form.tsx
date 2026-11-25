@@ -5,7 +5,7 @@ import { initialState, type ActionState } from "@/lib/actions";
 import { Button, Field } from "./ui";
 import { ActionMessage } from "./action-message";
 
-export function AuthForm({ action, label, email, password, token, referral, addAccount = false }: {
+export function AuthForm({ action, label, email, password, token, referral, addAccount = false, next, emailChange = false }: {
   action: (state: ActionState, form: FormData) => Promise<ActionState>;
   label: string;
   email?: boolean;
@@ -13,6 +13,8 @@ export function AuthForm({ action, label, email, password, token, referral, addA
   token?: string;
   referral?: string;
   addAccount?: boolean;
+  next?: string;
+  emailChange?: boolean;
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
   const [visible, setVisible] = useState(false);
@@ -21,6 +23,7 @@ export function AuthForm({ action, label, email, password, token, referral, addA
   const id = useId();
   return <form action={submit} className="stack">
     {addAccount && <input type="hidden" name="add_account" value="1" />}
+    {next && <input type="hidden" name="next" value={next} />}
     {email && <Field label="Email address"><input name="email" type="email" autoComplete="email" required maxLength={254}
       aria-invalid={!!errors.email} aria-describedby={errors.email ? id + "-email" : undefined}
       onBlur={(event) => setErrors((current) => ({ ...current, email: event.target.value && !event.target.validity.valid ? event.target.validationMessage : "" }))} />
@@ -44,6 +47,7 @@ export function AuthForm({ action, label, email, password, token, referral, addA
       <small className="muted">No names or email addresses are shared. No rewards are granted. You can withdraw in Growth after signing in. Verification within 24 hours of signup is required.</small>
     </fieldset>}
     {token && <input type="hidden" name="token_hash" value={token} />}
+    {emailChange && <input type="hidden" name="type" value="email_change" />}
     <Button variant="primary" disabled={pending}>{pending ? "Working…" : label}</Button>
     <ActionMessage state={state} />
   </form>;
