@@ -103,13 +103,70 @@ const profiles = [
   },
 ] as const;
 
+function DashboardPreview() {
+  return (
+    <div className="home-dashboard-preview">
+      <aside className="home-dashboard-sidebar">
+        <div className="home-dashboard-brand"><span>☾</span> snoozer<span className="home-dashboard-brand-dot">.</span></div>
+        <p className="home-dashboard-sidebar-label">YOUR SPACE</p>
+        <nav aria-label="Example dashboard navigation">
+          <span className="is-active"><i>◉</i> Account</span>
+          <span><i>✎</i> Customize</span>
+          <span><i>↗</i> Links</span>
+          <span><i>✳</i> Premium</span>
+          <span><i>▧</i> Image host</span>
+        </nav>
+        <div className="home-dashboard-sidebar-bottom">
+          <span className="home-dashboard-avatar">A</span>
+          <span><strong>After Hours</strong><small>Example profile</small></span>
+        </div>
+      </aside>
+
+      <div className="home-dashboard-main">
+        <div className="home-dashboard-heading">
+          <div><p>ACCOUNT OVERVIEW</p><h3>Your dashboard</h3></div>
+          <span className="home-dashboard-preview-label">EXAMPLE</span>
+        </div>
+        <div className="home-dashboard-stats">
+          <div><small>USERNAME</small><strong>@afterhours</strong></div>
+          <div><small>ALIAS</small><strong>After Hours</strong></div>
+          <div><small>PROFILE VIEWS</small><strong>4,807</strong></div>
+          <div><small>PAGE STATUS</small><strong><i /> Published</strong></div>
+        </div>
+        <div className="home-dashboard-lower">
+          <section className="home-dashboard-chart">
+            <div className="home-dashboard-panel-heading"><div><strong>Profile views</strong><small>Example activity</small></div><span>LAST 7 DAYS</span></div>
+            <svg viewBox="0 0 720 190" preserveAspectRatio="none" aria-hidden="true">
+              <defs><linearGradient id="home-chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#d8fb86" stopOpacity=".32"/><stop offset="100%" stopColor="#d8fb86" stopOpacity="0"/></linearGradient></defs>
+              <path className="home-chart-grid" d="M0 30H720M0 75H720M0 120H720M0 165H720"/>
+              <path className="home-chart-area" d="M0 130 C45 130 48 125 80 112 S128 64 164 93 S213 151 250 70 S310 105 345 117 S392 145 425 89 S474 42 510 92 S565 146 595 85 S663 108 720 30 L720 190 L0 190Z"/>
+              <path className="home-chart-line" d="M0 130 C45 130 48 125 80 112 S128 64 164 93 S213 151 250 70 S310 105 345 117 S392 145 425 89 S474 42 510 92 S565 146 595 85 S663 108 720 30"/>
+            </svg>
+            <div className="home-dashboard-chart-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+          </section>
+          <section className="home-dashboard-actions">
+            <strong>Manage your account</strong>
+            <small>Quick links and settings</small>
+            <span>✎ &nbsp; Change username</span>
+            <span>◉ &nbsp; Change display name</span>
+            <span>⌘ &nbsp; Account settings</span>
+            <span className="home-dashboard-discord"><b>●</b> Discord connected</span>
+          </section>
+        </div>
+        <div className="home-dashboard-footer">© 2026 Snoozer.uk <span>YOUR SPACE. YOUR WAY.</span></div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeProfileDemo() {
   return (
     <div
       className="home-profile-showcase"
       role="img"
-      aria-label="Three example Snoozer profile pages, each with its own avatar, background, bio and social links."
+      aria-label="Snoozer dashboard preview beside three overlapping creator profile previews, with real portrait photos, profile backgrounds and social icons."
     >
+      <DashboardPreview />
       <div className="home-profile-showcase-cards" aria-hidden="true" inert>
         {profiles.map((item) => (
           <article
@@ -130,9 +187,7 @@ export function HomeProfileDemo() {
           </article>
         ))}
       </div>
-      <span className="home-profile-showcase-caption" aria-hidden="true">
-        YOUR PAGE · YOUR STYLE · YOURS TO SHARE
-      </span>
+      <div className="home-profile-showcase-fade" aria-hidden="true" />
     </div>
   );
 }
