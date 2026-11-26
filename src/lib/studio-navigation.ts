@@ -4,7 +4,6 @@ export const studioNavigationGroups = [
     items: [
       { label: "Overview", href: "/studio", icon: "⌂", keywords: "dashboard home progress stats" },
       { label: "Analytics", href: "/studio/analytics", icon: "◔", keywords: "views clicks visitors performance charts" },
-      { label: "Badges", href: "/studio/badges", icon: "✧", keywords: "achievements milestones recognition collection" },
       { label: "Settings", href: "/studio/account", icon: "⚙", keywords: "email password security sessions account settings google mfa" },
     ],
   },
