@@ -1,0 +1,86 @@
+# Snoozer platform optimisation — audit and implementation record
+
+**Audit date:** 26 November 2026  
+**Baseline main commit:** c57d68733f5e3ebccd3ebc495b84788f406175db  
+**Implementation branch:** optimization/full-platform-hardening  
+**Tracking PR:** #114 (draft)
+
+## Payment-preservation boundary
+
+Live Snoozer Premium Checkout is intentionally enabled. The owner explicitly confirmed that the live payment configuration is valid and payments are meant to be accepted. This programme must not disable Checkout, modify the six LIVE GBP prices, change Stripe account or webhook configuration, rotate payment credentials, or alter the payment activation gates.
+
+The connected Supabase project currently reports all three Premium policy flags true. Its preflight returns six approved offers, one customer, zero current subscriptions and zero unprocessed receipts. Render's 26 November 04:12:30 UTC startup audit verified the LIVE key, six prices, account and Billing Portal. The payment launch document has been corrected to reflect this state.
+
+## Baseline environment
+
+- Repository tree at the baseline commit contained 798 entries.
+- Connected Render resource: free Frankfurt web service named snoozer-uk-staging, tracking main with commit-triggered auto-deploy.
+- The service was configured with no HTTP health-check path, although the repository Blueprint defines /health/live and checksPass deployment triggering.
+- In the sampled 26 November 03:15–04:20 UTC Render metrics, memory ranged from approximately 225 MB to 273 MB against a 512 MiB limit. Render returned no HTTP latency or request-count time series for that sample.
+- The sampled Render application-error and HTTP 5xx log queries returned no entries. This is a bounded sample, not proof of zero production errors.
+
+## Database migration reconciliation
+
+The main branch contained 14 migrations dated 26 November 2026 that had not yet been recorded in the connected staging project's migration registry. They were applied in timestamp order and the Supabase migration history versions were reconciled to the exact repository versions.
+
+Verified result:
+- Latest migration: 20261126090013.
+- Total recorded migrations: 160.
+- Username rename, profile UID and redirect fields exist.
+- Marketing preference, custom badge, community template and Image Host text-paste tables exist.
+- The plan catalogue includes the custom badge quota column.
+- All Premium payment gates remain true and all six LIVE offers remain available.
+
+## Supabase advisory baseline after migration
+
+These are advisor findings, not automatically confirmed vulnerabilities. The private application schema is intentionally protected from direct anon/authenticated table access. Review each item against actual grants, query plans, and application requirements.
+
+| Advisor | Current count | Planned treatment |
+| --- | ---: | --- |
+| RLS enabled without a table policy | 116 | Verify private-schema access and table grants; preserve intentionally service-only tables |
+| Security-definer functions executable by anon | 16 | Function-by-function public API and privilege review |
+| Security-definer functions executable by authenticated | 177 | Verify identity/ownership checks and owner assurance; no blanket revocation |
+| Unindexed foreign keys | 82 | Rank by workload, row counts and query plans before indexing |
+| Unused-index notices | 25 | Establish usage window and write overhead before removal |
+| Duplicate-index warning | 1 | Verify duplicate definition and dependencies before removal |
+| Table without a primary key | 1 | Check whether published_profiles is a projection/materialised snapshot and choose an integrity-safe key |
+
+Supabase also reports leaked-password protection as a warning; its Auth configuration should be verified and enabled where appropriate.
+
+## Workload observations
+
+The connected database's pg_stat_statements counters showed repeated scheduled work around publication dispatch, analytics retention cleanup, domain-request cleanup and Discord presence subscription reads. These operations are expected to recur, so call totals alone do not prove a performance problem. The next step is to inspect schedule frequency, query plans, lock waits, table growth and average/max latency before changing job cadence or SQL.
+
+The Render metrics sample did not expose HTTP request counts or latency. Performance conclusions must therefore be based on a repeatable browser/Lighthouse baseline and a better request-metrics sample, not CPU/memory alone.
+
+## Codebase findings
+
+- The root layout forced every route into dynamic request-time rendering.
+- Homepage and Help Centre stylesheets were imported by the root layout despite only being used on their respective route groups.
+- Public profile cards statically imported optional YouTube, Spotify, Twitch, metadata and interactive widgets.
+- The global application stylesheet is approximately 213 KB of source CSS; deeper stylesheet extraction requires selector/route analysis to avoid regressions.
+- The server-side public-profile reader already uses React request memoisation. Persistent caching is not introduced until invalidation on publish, unpublish, rename, restriction and deletion can be proven.
+
+## Implementation progress
+
+- [x] Create isolated optimisation branch and draft PR; main remains unchanged.
+- [x] Remove the root-level force-dynamic override.
+- [x] Move homepage CSS to the homepage route.
+- [x] Scope Help Centre CSS to a Help route layout.
+- [x] Split optional public profile widgets into dynamic chunks with SSR retained.
+- [x] Apply and verify the 14 outstanding 26 November migrations on connected staging.
+- [x] Reconcile Premium documentation with owner-confirmed enabled payment state.
+- [ ] Complete full CI for the final optimisation PR head.
+- [ ] Complete function-by-function security-definer and RLS review.
+- [ ] Prioritise foreign-key indexes using measured query plans.
+- [ ] Investigate duplicate and unused indexes with a sufficiently long usage window.
+- [ ] Profile and optimise scheduled database work where measurements justify changes.
+- [ ] Establish browser performance baselines and compare post-change results.
+- [ ] Complete responsive, accessibility and account/billing regression checks.
+- [ ] Update all continuation and operational documentation.
+
+## Release boundary
+
+No changes from this optimisation branch have been merged into main. No Render deployment has been manually triggered. The connected Render service tracks main and auto-deploys main commits; keep implementation on this branch until the owner reviews the final PR.
+
+The connected Supabase target inspected for migration reconciliation is the staging project. Do not apply these changes to another database without separately verifying its identity, current migration history and release approval.
