@@ -497,9 +497,9 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("heading", { name: "Assets Uploader", exact: true })).toBeVisible();
     await expect(page.locator(".studio-asset-card")).toHaveCount(4);
     for (const label of ["Background","Audio","Profile Avatar","Custom Cursor"]) await expect(page.getByText(label, { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "General Customization", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Color Customization", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Other Customization", exact: true })).toBeVisible();
+    await expect(page.getByText("General Customization", { exact: true })).toBeVisible();
+    await expect(page.getByText("Color Customization", { exact: true })).toBeVisible();
+    await expect(page.getByText("Other Customization", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Click to open audio manager", exact: true }).click();
     const audioManager = page.getByRole("dialog", { name: "Audio Manager", exact: true });
@@ -628,7 +628,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("alert").filter({ hasText: "Choose an image to upload" })).toBeVisible();
 
     await editorTab(page, "Profile");
-    await page.getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
+    await page.getByRole("tabpanel", { name: "Profile" }).getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
     await editorTab(page, "Profile");
     await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");

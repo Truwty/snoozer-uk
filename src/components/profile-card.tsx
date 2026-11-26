@@ -578,7 +578,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   function renderWidgets() {
-    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience} />;
+    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience && !entered} />;
   }
 
   function renderGallery() {
@@ -652,7 +652,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {entryExperience ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience && !entered ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
     </section>;
