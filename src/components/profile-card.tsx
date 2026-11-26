@@ -23,6 +23,7 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
+import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
@@ -121,44 +122,86 @@ function formatAudioTime(value: number) {
   return minutes + ":" + String(seconds).padStart(2, "0");
 }
 
-function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
-  src: string;
-  title: string;
-  artist: string;
+type ProfileAudioTrack = { src: string; title: string; artist: string };
+
+function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
+  tracks: ProfileAudioTrack[];
   cover?: string;
   volume: number;
   audioRef: RefObject<HTMLAudioElement | null>;
 }) {
+  const [trackIndex, setTrackIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [shuffle, setShuffle] = useState(false);
+  const resumeAfterChange = useRef(false);
+  const track = tracks[trackIndex] ?? tracks[0];
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.load();
+    setPosition(0);
+    setDuration(0);
+    if (resumeAfterChange.current) {
+      resumeAfterChange.current = false;
+      void audio.play().catch(() => setPlaying(false));
+    }
+  }, [trackIndex]);
+
+  function changeTrack(next: number, resume = playing) {
+    if (tracks.length < 2) return;
+    resumeAfterChange.current = resume;
+    setTrackIndex((next + tracks.length) % tracks.length);
+  }
+
+  function nextTrack(resume = true) {
+    if (tracks.length < 2) return;
+    const next = shuffle
+      ? (() => {
+          const choices = tracks.map((_, index) => index).filter((index) => index !== trackIndex);
+          return choices[Math.floor(Math.random() * choices.length)] ?? trackIndex;
+        })()
+      : trackIndex + 1;
+    changeTrack(next, resume);
+  }
+
+  function previousTrack() {
+    const audio = audioRef.current;
+    if (audio && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      setPosition(0);
+      return;
+    }
+    changeTrack(trackIndex - 1, playing);
+  }
+
   async function togglePlayback() {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      try {
-        await audio.play();
-      } catch {
-        setPlaying(false);
-      }
-    } else {
-      audio.pause();
-    }
+      try { await audio.play(); } catch { setPlaying(false); }
+    } else audio.pause();
   }
 
   return <section className="profile-audio-player" aria-label="Profile music player">
-    <audio ref={audioRef} src={src} preload="metadata"
+    <audio ref={audioRef} src={track.src} preload="metadata"
       onPlay={() => setPlaying(true)}
       onPause={() => setPlaying(false)}
       onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
       onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
       onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
-      onEnded={() => { setPlaying(false); setPosition(0); }} />
+      onEnded={() => {
+        if (tracks.length > 1) nextTrack(true);
+        else { setPlaying(false); setPosition(0); }
+      }} />
     {cover
       // The selected image is already a same-origin, resized profile asset.
       // eslint-disable-next-line @next/next/no-img-element
@@ -169,8 +212,8 @@ function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
           </svg>
         </span>}
     <div className="profile-audio-details">
-      <strong title={title}>{title}</strong>
-      <span title={artist}>{artist}</span>
+      <strong title={track.title}>{track.title}</strong>
+      <span title={track.artist}>{track.artist}</span>
       <input className="profile-audio-progress" type="range" min={0} max={Math.max(duration, 1)}
         step={0.1} value={Math.min(position, duration || 0)} disabled={!duration}
         aria-label="Track progress"
@@ -180,14 +223,23 @@ function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
             setPosition(audioRef.current.currentTime);
           }
         }} />
-      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)}</span>
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)} · {trackIndex + 1}/{tracks.length}</span>
     </div>
-    <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
-      aria-label={playing ? "Pause music" : "Play music"}>
-      {playing
-        ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
-        : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
-    </button>
+    <div className="profile-audio-transport">
+      <button className="profile-audio-step" type="button" onClick={previousTrack} disabled={tracks.length < 2}
+        aria-label="Previous track" title="Previous track">|◀</button>
+      <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
+        aria-label={playing ? "Pause music" : "Play music"}>
+        {playing
+          ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
+          : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
+      </button>
+      <button className="profile-audio-step" type="button" onClick={() => nextTrack()} disabled={tracks.length < 2}
+        aria-label="Next track" title="Next track">▶|</button>
+      <button className={"profile-audio-step profile-audio-shuffle" + (shuffle ? " is-active" : "")}
+        type="button" onClick={() => setShuffle((value) => !value)} disabled={tracks.length < 2}
+        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">{shuffle ? "SHUF" : "SHUF"}</button>
+    </div>
   </section>;
 }
 
@@ -369,6 +421,16 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {preview ? <h2 className="profile-name-heading">{nameContent}</h2> : <h1 className="profile-name-heading">{nameContent}</h1>}
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
+    {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
+      {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
+        <span aria-hidden="true">{badge.category === "custom" ? badge.image_id
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img className="profile-custom-badge-art" src={`/media/badges/${badge.image_id}`} alt="" width={24} height={24}/>
+          : <span className="profile-custom-badge-icon" style={{ color: badge.color }}>{badge.icon}</span>
+          : <BadgeArtwork slug={badge.slug} size={24}/>}</span>
+      </span>)}
+      {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
+    </nav>}
     {profile.appearance.showLocation && profile.appearance.location && <p className="profile-location"><span aria-hidden="true">⌖</span>{profile.appearance.location}</p>}
     {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
@@ -437,10 +499,13 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
           ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
           : [];
       });
-      const audioLink = valid.find(({ url }) => directAudioSource(url));
-      const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
-      const audioSource = audioLink ? directAudioSource(audioLink.url) : null;
-      const audioInfo = audioLink ? audioMetadata(audioLink.label, profile.display_name) : null;
+      const audioTracks = valid.flatMap(({ label, url }) => {
+        const src = directAudioSource(url);
+        if (!src) return [];
+        const info = audioMetadata(label, profile.display_name);
+        return [{ src, title: info.title, artist: info.artist }];
+      });
+      const spotifyTrack = audioTracks.length ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
       const spotifyTrackResource = spotifyTrack ? spotifyResource(spotifyTrack.url) : null;
       const cover = profile.gallery[0] && galleryBase
         ? galleryBase + "/" + profile.gallery[0].id
@@ -455,9 +520,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
           </a>)}
         </nav>}
-        {audioLink && audioSource && audioInfo
-          ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
-              cover={cover} volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
+        {audioTracks.length > 0
+          ? <ProfileAudioPlayer tracks={audioTracks} cover={cover}
+              volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
           : spotifyTrack && spotifyTrackResource
             ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
                 resource={spotifyTrackResource} label={spotifyTrack.label} compact
@@ -494,11 +559,11 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       const provider = socialProviderForUrl(url);
       return provider && !hasProviderEmbed(url) && provider.id !== "spotify";
     });
-    const audioLink = valid.find(({ url }) => directAudioSource(url));
-    const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
+    const audioTrackIndexes = new Set(valid.filter(({ url }) => directAudioSource(url)).map(({ index }) => index));
+    const spotifyTrack = audioTrackIndexes.size ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
     const extras = valid.filter((link) =>
       !social.some((item) => item.index === link.index)
-      && (!audioLink || link.index !== audioLink.index)
+      && !audioTrackIndexes.has(link.index)
       && (!spotifyTrack || link.index !== spotifyTrack.index)
     );
     const additionalLinks = renderLinkList(extras, true);

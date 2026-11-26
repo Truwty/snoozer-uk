@@ -53,7 +53,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       <h2>Claim your address</h2>
       <p className="muted">Choose the username people will use to find your page.</p>
       <ClaimForm/>
-      <Link href="/studio/growth">Referral choices and Growth</Link>
+      <Link href="/studio/growth">Manage your Snoozer account</Link>
     </section>
   </main>;
 
@@ -95,9 +95,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     || Boolean(user?.identities?.some((identity) => identity.provider === "google"));
 
   const completionItems = [
-    { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/builder", selected) },
-    { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/builder", selected) },
-    { label: "Connect Discord", done: discord.success && discord.data.connected, href: studioHref("/studio/discord", selected) },
+    { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/customize", selected) },
+    { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/customize", selected) },
+    { label: "Connect Discord", done: discord.success && discord.data.connected, href: studioHref("/studio/account", selected) },
     { label: "Add a social link", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
     { label: "Receive 10 profile views", done: viewTotal >= 10, href: studioHref("/studio/analytics", selected) },
   ];
@@ -137,7 +137,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </div>
       <div className="actions studio-overview-actions">
         {draft.published_revision !== null && <Link className="button small" href={"/" + draft.username} target="_blank" rel="noreferrer">View My Page ↗</Link>}
-        <Link className="button primary" href={studioHref("/studio/builder", selected)}>Edit Profile <span aria-hidden="true">→</span></Link>
+        <Link className="button primary" href={studioHref("/studio/customize", selected)}>Edit Profile <span aria-hidden="true">→</span></Link>
       </div>
     </header>
 
@@ -157,8 +157,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">◉</span>
-        <div><span className="studio-stat-label">Retained Profile Views</span><strong>{viewTotal.toLocaleString("en-GB")}</strong>
-          <small>{clickTotal.toLocaleString("en-GB")} retained link clicks</small>
+        <div><span className="studio-stat-label">Profile Views</span><strong>{viewTotal.toLocaleString("en-GB")}</strong>
+          <small>{clickTotal.toLocaleString("en-GB")} link clicks within your analytics retention period</small>
           <small>{canCompareSevenDays
             ? `${sevenDayViews.toLocaleString("en-GB")} in 7 days · ${sevenDayDelta >= 0 ? "+" : ""}${sevenDayDelta.toLocaleString("en-GB")} vs prior 7 days`
             : `${sevenDayViews.toLocaleString("en-GB")} in 7 days · prior week is outside your analytics retention`}</small></div>
@@ -191,16 +191,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       <aside className="studio-dashboard-panel studio-manage-panel">
         <p className="eyebrow">QUICK ACTIONS</p>
         <h2>Manage your account</h2>
-        <Link href={studioHref("/studio/settings", selected)}><span>✎</span>Change Username <b>↗</b></Link>
-        <Link href={studioHref("/studio/builder", selected)}><span>✧</span>Change Display Name <b>↗</b></Link>
-        <Link href={studioHref("/studio/settings", selected)}><span>⌑</span>Manage Aliases <b>↗</b></Link>
+        <Link href={studioHref("/studio/account", selected)}><span>✎</span>Change Username <b>↗</b></Link>
+        <Link href={studioHref("/studio/customize", selected)}><span>✧</span>Change Display Name <b>↗</b></Link>
+        <Link href={studioHref("/studio/account", selected)}><span>⌑</span>Manage Aliases <b>↗</b></Link>
         <Link href={studioHref("/studio/account", selected)}><span>⚙</span>Account Settings <b>↗</b></Link>
         <div className="studio-connection-card">
           <div><strong>Connections</strong><span>Linked services and profile integrations</span></div>
-          <Link href={studioHref("/studio/discord", selected)}>Discord Presence <b>↗</b></Link>
+          <Link href={studioHref("/studio/account", selected)}>Discord connection and presence settings <b>↗</b></Link>
           <div className="studio-connection-status"><span>Google account</span><strong>{googleConnected ? "Connected" : "Not connected"}</strong></div>
           {!googleConnected && <form action={linkGoogleIdentity}><button type="submit">Connect Google</button></form>}
-          <Link href={studioHref("/studio/spotify", selected)}>Spotify Embeds <b>↗</b></Link>
         </div>
       </aside>
     </div>
