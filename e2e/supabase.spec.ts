@@ -238,6 +238,9 @@ test("profile analytics requires consent, counts published link clicks and expor
       "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
     await expect(publicPage.locator(".spotify-link-slot > a")).toHaveCount(0);
     await spotify.scrollIntoViewIfNeeded();
+    const fullBox = await spotify.boundingBox();
+    expect(fullBox?.width ?? 0).toBeGreaterThanOrEqual(280);
+    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await expect.poll(() => spotifyRequests).toBeGreaterThan(0);
     expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
