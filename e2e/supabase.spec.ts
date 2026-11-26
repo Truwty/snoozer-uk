@@ -224,16 +224,17 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(page.getByRole("checkbox", { name: /I meet Discord’s minimum age requirement/ })).not.toBeChecked();
     await page.getByRole("link", { name: "Back to Page Builder" }).click();
     await page.getByRole("link", { name: "Analytics", exact: true }).click();
-    await page.getByText("Daily activity table", { exact: true }).click();
-    await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
-    await expect(page.getByRole("table", { name: "Clicks attributed to published destinations" })).toContainText("Work");
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download CSV" }).click();
-    expect((await downloadPromise).suggestedFilename()).toBe("snoozer-analytics.csv");
-    const linkDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download link CSV", exact: true }).click();
-    expect((await linkDownload).suggestedFilename()).toBe("snoozer-link-analytics.csv");
+    for (const heading of [
+      "Account Analytics", "Total Link Clicks", "Click Rate", "Profile Views",
+      "Average Daily Views", "Visitor Devices", "Most Clicked Socials",
+      "Most Clicked Buttons", "Top Referrers", "Top Countries by Views",
+    ]) {
+      await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
+    }
+    await expect(page.locator(".analytics-metric")).toHaveCount(4);
+    await expect(page.getByText("Daily activity table", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Campaign links (0/20)", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Download .*CSV/ })).toHaveCount(0);
     const linksCsv = await page.request.get("/api/v1/analytics/export?breakdown=links&profile=" + id);
     expect(linksCsv.status()).toBe(200);
     expect(await linksCsv.text()).toBe('label,url,clicks\r\n"Work","https://example.com/",1\r\n');
@@ -241,20 +242,14 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(csv.status()).toBe(200);
     expect(csv.headers()["cache-control"]).toBe("private, no-store");
     expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
-    await expect(page.getByRole("table", { name: "Daily browser observations within your plan’s retention window" })).toContainText("100.0%");
-    expect(await page.getByRole("region", { name: "Daily browser report", exact: true })
-      .evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
+    await expect(page.locator(".analytics-reference-main")).toBeVisible();
+    await expect(page.locator(".analytics-reference-breakdowns")).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 1280, height: 720 });
-    const browserDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download browser CSV", exact: true }).click();
-    expect((await browserDownload).suggestedFilename()).toBe("snoozer-browser-analytics.csv");
-    const browserCsv = await page.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id);
-    expect(browserCsv.status()).toBe(200);
-    expect(await browserCsv.text()).toMatch(/^date_utc,daily_browsers,clicked_browsers,browser_ctr_percent\r\n\d{4}-\d{2}-\d{2},1,1,100.0\r\n$/);
-    expect((await visitor.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id)).status()).toBe(401);
     // A signed-in creator who opts in still must not count their own page.
     await page.goto("/" + name);
     await enterPublicBio(page);
@@ -263,50 +258,6 @@ test("profile analytics requires consent, counts published link clicks and expor
     await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
     expect((await selfView).status()).toBe(204);
     expect(await read()).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
-
-    await page.goto("/studio/analytics?profile=" + id);
-    await page.getByText("Campaign links (0/20)", { exact: true }).click();
-    await page.getByLabel("Campaign name", { exact: true }).fill("Newsletter");
-    await page.getByRole("button", { name: "Create campaign link", exact: true }).click();
-    await expect(page.getByText("Campaign link ready.", { exact: true })).toBeVisible();
-    const campaignUrl = new URL(await page.getByLabel("Campaign link: Newsletter", { exact: true }).inputValue());
-    campaignUrl.searchParams.set("utm_source", "newsletter");
-    const traffic = async () => (await owner.rpc("get_my_profile_traffic_totals", { p_profile: id })).data;
-    await publicPage.goto(campaignUrl.href);
-    await enterPublicBio(publicPage);
-    await publicPage.getByText("Analytics preferences", { exact: true }).click();
-    await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", device: "desktop", views: 1, clicks: 0 }),
-    ]));
-    await page.getByRole("button", { name: "Pause campaign", exact: true }).click();
-    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(false);
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", views: 1 }),
-      expect.objectContaining({ campaign: null, source: "email", views: 1 }),
-    ]));
-    await page.getByRole("button", { name: "Resume campaign", exact: true }).click();
-    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(true);
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", views: 2 }),
-    ]));
-    // The first scope was withdrawn, so the new opt-in creates one new browser code.
-    // Reloads while this scope remains allowed reuse it.
-    await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 2, clicked_browsers: 1 }]);
-    await page.reload();
-    await expect(page.getByRole("table", { name: "Campaign, source and device event totals" })).toContainText("Newsletter");
-    const trafficDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download traffic CSV", exact: true }).click();
-    expect((await trafficDownload).suggestedFilename()).toBe("snoozer-traffic-analytics.csv");
-    const trafficCsv = await page.request.get("/api/v1/analytics/export?breakdown=traffic&profile=" + id);
-    expect(trafficCsv.status()).toBe(200);
-    expect(await trafficCsv.text()).toContain('"Newsletter",email,desktop,2,0');
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
     await publicPage.getByRole("button", { name: "Load GitHub summary", exact: true }).click();
     await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toBeVisible();
     await expect(publicPage.getByText("Stars", { exact: true })).toBeVisible();
