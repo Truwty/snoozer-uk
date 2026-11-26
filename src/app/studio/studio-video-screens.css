@@ -226,3 +226,17 @@
 .studio-main-content .studio-audio-cover-control .button{white-space:normal}
 @media(max-width:1150px){.studio-main-content .studio-assets-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.studio-main-content .studio-assets-heading{flex-direction:column}.studio-main-content .studio-assets-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Profile share QR modal */
+.studio-profile-qr-overlay{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:1rem;background:rgba(0,0,0,.78);backdrop-filter:blur(12px)}
+.studio-profile-qr-dialog{position:relative;display:grid;justify-items:center;gap:.85rem;width:min(100%,28rem);max-height:min(90svh,48rem);overflow:auto;padding:1.8rem;border:1px solid var(--edge);border-radius:1rem;background:var(--surface);box-shadow:0 2rem 5rem rgba(0,0,0,.45);text-align:center}
+.studio-profile-qr-dialog h2{font-size:1.5rem;letter-spacing:-.04em}
+.studio-profile-qr-dialog>.muted{max-width:22rem;font-size:.83rem}
+.studio-profile-qr-close{position:absolute;top:.65rem;right:.65rem;display:grid;place-items:center;width:2rem;height:2rem;border:1px solid var(--edge);border-radius:50%;background:var(--ground);color:var(--ink);font-size:1.3rem}
+.studio-profile-qr-frame{display:grid;place-items:center;padding:.75rem;border:1px solid var(--edge);border-radius:.85rem;background:#fff}
+.studio-profile-qr-frame svg{display:block;max-width:100%;height:auto}
+.studio-profile-qr-url{width:100%;overflow-wrap:anywhere;color:var(--muted);font-size:.72rem}
+.studio-profile-qr-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:.5rem}
+.studio-profile-qr-actions .button{min-width:0;padding-inline:.45rem;font-size:.78rem}
+@media(max-width:420px){.studio-profile-qr-dialog{padding:1.25rem}.studio-profile-qr-actions{grid-template-columns:1fr}.studio-profile-qr-frame svg{width:min(100%,220px);height:auto}}
