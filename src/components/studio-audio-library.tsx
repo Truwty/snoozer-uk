@@ -185,6 +185,12 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     }}>
       Click to open audio manager
     </button>
+    <input ref={coverInput} type="file" accept={galleryTypes.join(",")} hidden
+      onChange={event=>{
+        const file=event.target.files?.[0];
+        const item=items.find(track=>track.id===coverTarget);
+        if(file&&item)void uploadCoverForTrack(item,file);
+      }}/>
 
     {managerOpen&&<div className="studio-audio-modal-overlay" onMouseDown={event=>{
       if(event.target===event.currentTarget){setAddOpen(false);setManagerOpen(false);}
@@ -249,12 +255,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
         </div>
         <input ref={audioInput} type="file" accept={audioAccept} hidden onChange={event=>setAudioFile(event.target.files?.[0]??null)}/>
         <input ref={newCoverInput} type="file" accept={galleryTypes.join(",")} hidden onChange={event=>setNewCoverFile(event.target.files?.[0]??null)}/>
-        <input ref={coverInput} type="file" accept={galleryTypes.join(",")} hidden
-          onChange={event=>{
-            const file=event.target.files?.[0];
-            const item=items.find(track=>track.id===coverTarget);
-            if(file&&item)void uploadCoverForTrack(item,file);
-          }}/>
         <label className="studio-audio-title-field">Audio Title
           <input value={title} maxLength={80} onChange={event=>setTitle(event.target.value)} placeholder="Add a title…"/>
         </label>
