@@ -46,7 +46,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
           <p className="account-popover-owner"><Avatar name={active} src={current.avatar}/><strong>{active}</strong>{current.isOwner && <span className="account-owner-mark">OWNER</span>}</p>
           <div className="account-popover-rule"/>
           <Link href="/studio/account">Account Settings</Link>
-          {current.username ? <Link href={`/${current.username}`}>My Page</Link> : <Link href="/studio">My Page</Link>
+          {current.username ? <Link href={`/${current.username}`}>My Page</Link> : <Link href="/studio">My Page</Link>}
           <button type="button" onClick={showManager}>Switch Accounts</button>
           <form action={signOut}><button type="submit" className="account-danger">Logout</button></form>
         </> : <>
