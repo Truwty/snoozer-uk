@@ -160,3 +160,19 @@ The latest read-only SQL review verified the advisor findings against actual pri
 The active Render service still has an empty `healthCheckPath`, while the checked-in Blueprint declares `/health/live`. The service tracks `main` with commit-triggered auto-deploy, and no deployment or service setting was changed. Reconcile this configuration only as a separately reviewed release operation.
 
 The current Render metric endpoint continues to return no HTTP request count, p95 latency or instance-count series. Route-level Lighthouse/Web Vitals and authenticated Studio/Discover profiling have not yet been collected. Therefore this audit does not claim a proven LCP/INP improvement or a measured page-speed percentage. The completed CSS and optional-widget splitting reduce global stylesheet and initial optional widget loading scope, but route-level before/after browser measurements remain outstanding.
+## Query workload and index evidence — 26 November 2026
+
+A fresh `pg_stat_statements` sample and `pg_stat_user_tables` inspection was taken after migration reconciliation. These counters are cumulative since the statistics reset, not a 24-hour request histogram:
+
+| Query / job | Calls | Mean execution | Maximum observed | Interpretation |
+| --- | ---: | ---: | ---: | --- |
+| `public.run_due_publications` | 11,280 | 6.64 ms | 578 ms | Once-per-minute bounded dispatcher; retain current cadence |
+| Domain request cleanup | 11,202 | 5.01 ms | 244 ms | Cleanup scans a one-row staging table; sequential scan is appropriate at this size |
+| `public.purge_profile_analytics` | 2,345 | 23.36 ms | 404 ms | Retention task remains low-cost and has a seven-day 100% success sample |
+| `public.discord_presence_subscriptions` | 4,431 | 16.39 ms | 837 ms | Required worker refresh query; existing relevant indexes are present |
+| `public.get_published_profile` | 617 | 16.74 ms | 877 ms | User-facing reader; zero shared-block reads in the sampled cumulative stats, so no disk-read/index bottleneck is demonstrated |
+| Cron run-history cleanup delete | 13,931 | 25.76 ms | 3,423 ms | Largest cumulative cost, but this is maintenance of `cron.job_run_details`, not a profile-page query |
+
+`domain_requests` currently has one live row despite more than 11,000 sequential scans; the scans are not evidence of a table-size problem. The main application tables remain small (for example: six profiles, 23 published profile snapshots, 77 published links, 288 Discord presence events). Some high scan ratios are expected when a table contains only a handful of rows.
+
+No SQL query rewrite, cron schedule change or index addition/removal is justified by this evidence. Continue to monitor max latency, dead tuples, table growth and failed runs after meaningful traffic growth. Preserve retention, publication and Discord heartbeat cadence.
