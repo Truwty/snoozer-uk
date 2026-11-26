@@ -40,3 +40,17 @@
 .profile-audio-step:disabled { opacity:.35; cursor:not-allowed; }
 .profile-audio-step.is-active { background:color-mix(in srgb,var(--detail) 15%,transparent); }
 @media(max-width:600px) { .studio-custom-badge-create,.studio-custom-badge-edit { grid-template-columns:1fr; } }
+
+.profile-card[data-custom-cursor="true"],
+.profile-card[data-custom-cursor="true"] * {
+  cursor:var(--profile-custom-cursor,auto) !important;
+}
+.studio-sidebar-search { min-width:0; padding:0; border:0; background:transparent; }
+.studio-sidebar-search .studio-command-trigger {
+  width:100%; min-height:2.35rem; justify-content:space-between; gap:.48rem;
+  padding:.28rem .7rem; border:1px solid rgba(255,255,255,.045); border-radius:999px;
+  background:#111214; color:#aab0ab; font-size:.73rem;
+}
+.studio-sidebar-search .studio-command-trigger:hover {
+  border-color:rgba(216,251,134,.25); background:#171a17; color:#f0f3ef;
+}

@@ -422,6 +422,18 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             </button>)}
           </div>
         </fieldset>
+        <fieldset className="stack">
+          <legend className="section-title">Custom cursor</legend>
+          <p className="muted">Choose a small PNG or WebP image from your gallery. The image is used as the pointer on your published profile; other Snoozer pages are unchanged.</p>
+          <label>Cursor image
+            <select value={content.appearance.customCursorImage ?? ""}
+              onChange={(event) => set("appearance", { ...content.appearance, customCursorImage: event.target.value || undefined })}>
+              <option value="">Use the standard cursor</option>
+              {saved.gallery.map((image) => <option value={image.id} key={image.id}>{image.alt || "Gallery image"}</option>)}
+            </select>
+          </label>
+          <div><Link className="button small" href={galleryHref}>Upload or manage cursor image</Link></div>
+        </fieldset>
         <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });

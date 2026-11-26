@@ -41,6 +41,7 @@ export const profileAppearance = z.strictObject({
   accent: z.enum(linkAccents).default(defaultAppearance.accent),
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
   backgroundImage: z.uuid().optional(),
+  customCursorImage: z.uuid().optional(),
   templateStyle: z.enum(profileTemplateStyles).optional(),
   effects: profileEffects.optional(),
   colors: profileCustomColours.optional(),

@@ -386,6 +386,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage }
     : {};
+  const cursorImage = profile.appearance.customCursorImage
+    ? profile.gallery.find((image) => image.id === profile.appearance.customCursorImage)
+    : undefined;
+  const customCursor = cursorImage && galleryBase
+    ? `url("${galleryBase}/${encodeURIComponent(cursorImage.id)}") 16 16, auto`
+    : undefined;
   const colors = profile.appearance.colors;
   const fontFamilies = {
     system: "system-ui, sans-serif",
@@ -395,6 +401,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   } as const;
   const appearanceStyle = {
     ...backgroundStyle,
+    "--profile-custom-cursor": customCursor ?? "auto",
     ...(colors?.background ? { "--profile-base-page": colors.background } : {}),
     ...(colors?.text ? { "--text": colors.text } : {}),
     ...(colors?.accent ? { "--detail": colors.accent } : {}),
@@ -678,6 +685,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-template-style={profile.appearance.templateStyle ?? "classic"}
     data-background-image={backgroundImage ? "true" : undefined}
+    data-custom-cursor={customCursor ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
     data-swap-box-colors={profile.appearance.swapBoxColors ? "true" : undefined}
     data-monochrome-icons={profile.appearance.monochromeIcons ? "true" : undefined}
