@@ -27,7 +27,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const [file,setFile]=useState<File|null>(null);
   const [cover,setCover]=useState<Record<string,string>>({});
   const [coverBusy,setCoverBusy]=useState(false);
-  const coverTarget=useRef<string|null>(null);
+  const [coverTarget,setCoverTarget]=useState<string|null>(null);
   const coverInput=useRef<HTMLInputElement>(null);
   const router=useRouter();
   const [error,setError]=useState("");
@@ -110,7 +110,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     }catch{
       if(stagedId)await discardGalleryUpload(profileId,revision,stagedId).catch(()=>undefined);
       setError("The cover image could not be saved. Try again.");
-    }finally{setCoverBusy(false);coverTarget.current=null;if(coverInput.current)coverInput.current.value="";}
+    }finally{setCoverBusy(false);setCoverTarget(null);if(coverInput.current)coverInput.current.value="";}
   }
 
   async function remove(id:string){
@@ -126,7 +126,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
 
   return <section className="studio-audio-library stack" aria-label="Profile audio library">
     <input ref={coverInput} type="file" accept={galleryTypes.join(",")} hidden
-      onChange={event=>{const file=event.target.files?.[0];const item=items.find(track=>track.id===coverTarget.current);if(file&&item)void uploadCover(item,file);}}/>
+      onChange={event=>{const file=event.target.files?.[0];const item=items.find(track=>track.id===coverTarget);if(file&&item)void uploadCover(item,file);}}/>
 
     <div className="studio-audio-upload-grid">
       <label>Track title<input value={title} maxLength={80} onChange={event=>setTitle(event.target.value)} placeholder="Track title"/></label>
@@ -147,8 +147,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
               <option value="">Use profile artwork</option>{gallery.map(image=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
             </select></label>
             <button type="button" className="button small" disabled={coverBusy} onClick={()=>{
-              coverTarget.current=item.id;coverInput.current?.click();
-            }}>{coverBusy&&coverTarget.current===item.id?"Uploading cover…":"Upload cover artwork"}</button>
+              setCoverTarget(item.id);coverInput.current?.click();
+            }}>{coverBusy&&coverTarget===item.id?"Uploading cover…":"Upload cover artwork"}</button>
           </div>
           <div className="studio-audio-track-actions">
             <button type="button" className="button small primary" onClick={()=>onAddTrack({title:item.title,artist:item.artist,url:item.url,...(cover[item.id]?{coverImageId:cover[item.id]}:{})})}>Add to profile</button>

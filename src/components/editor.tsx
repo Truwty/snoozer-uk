@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
-import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
@@ -383,7 +383,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">▧</span><span className="studio-asset-kind">01 / BACKGROUND</span></div>
               <div className="studio-asset-preview">
                 {content.appearance.backgroundImage && saved.gallery.some((image)=>image.id===content.appearance.backgroundImage)
-                  ? <img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/>
+                  ? <><img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/></>
                   : <div className="studio-asset-placeholder"><span aria-hidden="true">▧</span><strong>No background selected</strong></div>}
               </div>
               <h3>Background</h3>
@@ -431,7 +431,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">⌖</span><span className="studio-asset-kind">04 / CUSTOM CURSOR</span></div>
               <div className="studio-asset-preview studio-asset-cursor-preview">
                 {content.appearance.customCursorImage && saved.gallery.some((image)=>image.id===content.appearance.customCursorImage)
-                  ? <img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/>
+                  ? <><img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/></>
                   : <div className="studio-asset-placeholder"><span aria-hidden="true">↖</span><strong>Default cursor</strong></div>}
               </div>
               <h3>Custom Cursor</h3>
