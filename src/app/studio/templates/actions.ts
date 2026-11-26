@@ -63,3 +63,14 @@ export async function reportCommunityTemplate(form: FormData) {
   const {client}=await requireAccount(); const {error}=await client.rpc("report_community_template",{p_id:template.data,p_reason:reason.data});
   redirect(error?"/studio/templates?error=report":"/studio/templates?reported=1");
 }
+
+export async function rateStudioTemplate(form: FormData) {
+  const template=key.safeParse(form.get("template"));
+  const rating=z.coerce.number().int().min(1).max(5).safeParse(form.get("rating"));
+  if(!template.success||!rating.success) redirect("/studio/templates?error=rating");
+  const {client}=await requireAccount();
+  const {error}=await client.rpc("set_my_template_rating",{p_key:template.data,p_rating:rating.data});
+  if(error) redirect("/studio/templates?error=rating");
+  revalidatePath("/studio/templates");
+  redirect("/studio/templates?rated=1");
+}
