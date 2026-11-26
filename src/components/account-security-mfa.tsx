@@ -9,8 +9,6 @@ const initial:MfaState={error:"",success:"",factorId:"",qr:"",secret:""};
 export function AccountSecurityMfa({verifiedFactorIds}:{verifiedFactorIds:string[]}){
  const [enrollment,begin,pending]=useActionState(enrollAccountMfa,initial);
  const [verification,verify,verifying]=useActionState(verifyAccountMfa,initial);
- const [recovery,recover,regenerating]=useActionState(regenerateMfaRecoveryCodes,recoveryInitial);
- const [copied,setCopied]=useState(false);
  const router=useRouter();
  const factor=enrollment.factorId;
  useEffect(()=>{if(verification.success)router.refresh();},[verification.success,router]);
