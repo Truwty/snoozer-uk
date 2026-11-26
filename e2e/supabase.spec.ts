@@ -194,7 +194,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await expect(page.getByText("Claim another profile", { exact: true })).toHaveCount(0);
     const gift = await admin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -220,7 +220,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
     expect((await request.get(`/${second}`)).status()).toBe(200);
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
     await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
     await expect(page.locator(".editor-topbar strong")).toHaveText("@" + name);
@@ -475,8 +475,10 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await customDialog.getByRole("button", { name: "Text", exact: true }).click();
     await customDialog.getByRole("textbox", { name: "URL", exact: true }).fill("https://example.org/custom-link");
     await customDialog.getByRole("button", { name: "Add", exact: true }).click();
-    const customRow = page.locator(".link-row").filter({ hasText: "example.org" });
+    const customRow = page.locator(".link-row").last();
     await expect(customRow).toBeVisible();
+    await expect(customRow.getByLabel("Link 1 label", { exact: true })).toHaveValue("example.org");
+    await expect(customRow.getByLabel("Link 1 URL", { exact: true })).toHaveValue("https://example.org/custom-link");
     await expect(customRow.getByRole("combobox", { name: "Display mode", exact: true })).toHaveValue("text");
 
     await page.getByRole("link", { name: "Templates", exact: true }).click();
@@ -561,7 +563,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 1280, height: 720 });
     await checkLighthouse(page, "/studio");
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
@@ -572,7 +574,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editProfile.click();
     await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
     await expect(page.getByRole("link", { name: "Image Host", exact: true })).toHaveAttribute("href", profileHref.replace("/studio/customize?", "/studio/image-host?"));
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -1162,7 +1164,8 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
   expect(html).toMatch(/<section\b[^>]*class="profile-card[^"]*"[^>]*data-background-image="true"/);
   expect(html).toContain(blueShorelineId);
-  expect(html).toContain('alt="Open water"');
+  // The reference's compact entry profile intentionally hides the gallery and legacy sections.
+  expect(html).not.toContain('alt="Open water"');
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
