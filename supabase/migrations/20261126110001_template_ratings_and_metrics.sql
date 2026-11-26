@@ -133,14 +133,16 @@ begin
     group by r.template_key
   )
   select q.value,
-    coalesce(u.uses, 0),
+    coalesce(community.usage_count::bigint, u.uses, 0),
     coalesce(u.weekly_uses, 0),
     coalesce(r.rating_count, 0),
     coalesce(r.rating_average, 0),
     r.my_rating
   from requested q
   left join usage u on u.template_key = q.value
-  left join ratings r on r.template_key = q.value;
+  left join ratings r on r.template_key = q.value
+  left join snoozer.community_templates community
+    on community.id::text = q.value and community.status = 'approved';
 end
 $function$;
 
