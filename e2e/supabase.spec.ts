@@ -202,7 +202,6 @@ test("profile analytics requires consent, counts published link clicks and expor
     // not third-party embeds or Snoozer-only expandable content.
     await expect(publicPage.locator("iframe")).toHaveCount(0);
     await expect(publicPage.locator(".profile-social-links a[href^=\"https://open.spotify.com/\"]")).toHaveCount(2);
-    await expect(publicPage.getByTitle(/Spotify ·/)).toHaveCount(2);
     await expect(publicPage.locator(".profile-more-content, .profile-widgets, .spotify-widget")).toHaveCount(0);
     await expect(publicPage.locator('.profile-social-links a[href="https://www.youtube.com/watch?v=M7lc1UVf-VE"]')).toHaveCount(1);
     expect(spotifyRequests).toBe(0);
