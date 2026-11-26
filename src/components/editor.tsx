@@ -8,6 +8,7 @@ import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
 import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
 import { supabaseConfig } from "@/lib/env";
+import { safeLink } from "@/lib/safe-link";
 import { type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
@@ -152,7 +153,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       setCustomUrlError("Enter a valid URL.");
       return;
     }
-    if (!["http:", "https:"].includes(parsed.protocol) || parsed.hostname.length < 3) {
+    if (!["http:", "https:"].includes(parsed.protocol) || !safeLink(parsed.href)) {
       setCustomUrlError("Use a public HTTP or HTTPS address.");
       return;
     }
@@ -191,10 +192,20 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         await refreshSaved();
       }
       const label = parsed.hostname.replace(/^www\./i, "").slice(0, 80) || "Custom URL";
-      set("links", [...content.links, {
+      const newLink = {
         label, url: parsed.href, hidden: false, mode: customSocialMode,
         ...(uploadedId ? { iconImage: uploadedId } : {}),
-      }]);
+      };
+      if (uploadedId) {
+        const latest = await refreshSaved();
+        edit((current) => ({
+          ...current,
+          revision: latest.revision,
+          content: { ...current.content, links: [...current.content.links, newLink] },
+        }));
+      } else {
+        set("links", [...content.links, newLink]);
+      }
       setCustomUrlOpen(false);
       setCustomUrl("");
       setCustomIconFile(null);
