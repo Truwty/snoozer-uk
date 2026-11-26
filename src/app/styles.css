@@ -2601,3 +2601,11 @@ body:has(> .public-page[data-background-image="true"]) {
 .studio-image-pastes { display:grid; gap:1rem; padding:0; list-style:none; }
 .studio-image-pastes > li { display:grid; gap:1rem; }
 .studio-image-pastes code { overflow-wrap:anywhere; }
+
+/* Spotify's audio iframe has a 280px minimum, including inside More on phones. */
+@media (max-width: 40rem) {
+  .profile-card--bio-experience .profile-more-content .profile-links > li > .spotify-widget {
+    width: min(31rem, calc(100% + 2.1rem));
+    margin-inline: -1.05rem;
+  }
+}
