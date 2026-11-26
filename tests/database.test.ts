@@ -3206,7 +3206,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
 
     await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal2"})]);
     expect(await result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[hashes])).toBe(10);
+    await db.exec("reset role");
     expect(await result("select count(*)::integer as value from snoozer.account_mfa_recovery_codes")).toBe(10);
+    await act("authenticated",alice);
 
     await act("authenticated",bob);
     expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(false);
@@ -3239,12 +3241,12 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const events=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
     await recordView(events[0]); await recordView(events[1]);
     await act("authenticated",alice);
-    expect(await result("select * from public.get_my_profile_country_totals($1,null)",[profile])).toEqual([]);
+    expect((await db.query("select * from public.get_my_profile_country_totals($1,null)",[profile])).rows).toEqual([]);
     await act("service_role");
     await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:"service_role"})]);
     await recordView(events[2]); await recordView(events[2]);
     await act("authenticated",alice);
-    expect(await result("select * from public.get_my_profile_country_totals($1,null)",[profile]))
+    expect((await db.query("select * from public.get_my_profile_country_totals($1,null)",[profile])).rows)
       .toEqual([{country_code:"GB",views:3,clicks:0}]);
     await expect(db.query("select * from snoozer.profile_country_days")).rejects.toMatchObject({code:"42501"});
     await expect(db.query("select public.record_profile_country_event('country-analytics',$1,'view','US')",[crypto.randomUUID()]))

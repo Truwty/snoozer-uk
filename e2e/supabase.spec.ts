@@ -198,54 +198,16 @@ test("profile analytics requires consent, counts published link clicks and expor
     await enterPublicBio(publicPage);
     await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
-    // Spotify is a visible native iframe, while YouTube still waits for opt-in.
-    const spotify = publicPage.getByTitle("Spotify: Playlist");
-    const compactSpotify = publicPage.getByTitle("Spotify: Track");
-    await expect(spotify).toHaveCount(1);
-    await expect(compactSpotify).toHaveCount(1);
-    await expect(publicPage.locator("iframe")).toHaveCount(2);
-    await expect(publicPage.getByRole("button", { name: /Load Spotify player|Hide Spotify player/ })).toHaveCount(0);
-    await expect(publicPage.getByText("Learn more about Spotify privacy")).toHaveCount(0);
-    let embedRequests = 0;
-    await publicPage.route("https://www.youtube-nocookie.com/**", (route) => { embedRequests++; return route.abort(); });
-    await publicPage.getByRole("button", { name: "Load YouTube player" }).click();
-    await expect(publicPage.getByTitle("YouTube: Video")).toHaveAttribute("referrerpolicy", "strict-origin");
-    await expect.poll(() => embedRequests).toBe(1);
-    await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
-    await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
-    await expect(publicPage.locator("iframe")).toHaveCount(2);
-    // The compact themed card replaces the former duplicate link and the
-    // Spotify player renders automatically, independent of analytics consent.
-    await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-    await expect(spotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(spotify).not.toHaveAttribute("sandbox", /.*/);
-    await expect(spotify).toHaveAttribute("height", "352");
-    await expect(compactSpotify).toHaveAttribute("src", "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
-    await expect(compactSpotify).toHaveAttribute("height", "152");
-    await expect(compactSpotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-    await expect(compactSpotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(compactSpotify).not.toHaveAttribute("sandbox", /.*/);
-    await expect(publicPage.locator(".spotify-widget__compact-open")).toHaveAttribute("href",
-      "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
-    await publicPage.setViewportSize({ width: 320, height: 800 });
-    await compactSpotify.scrollIntoViewIfNeeded();
-    const compactBox = await compactSpotify.boundingBox();
-    expect(compactBox?.width ?? 0).toBeGreaterThanOrEqual(280);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    await expect(publicPage.locator(".spotify-widget__brand")).toContainText("Spotify");
-    await expect(publicPage.locator(".spotify-widget__open")).toHaveAttribute("href",
-      "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(publicPage.locator(".spotify-link-slot > a")).toHaveCount(0);
-    await spotify.scrollIntoViewIfNeeded();
-    const fullBox = await spotify.boundingBox();
-    expect(fullBox?.width ?? 0).toBeGreaterThanOrEqual(280);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    await expect.poll(() => spotifyRequests).toBeGreaterThan(0);
+    // Reference parity: published pages expose social providers as ordinary icon links,
+    // not third-party embeds or Snoozer-only expandable content.
+    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-social-links a[href^=\"https://open.spotify.com/\"]")).toHaveCount(2);
+    await expect(publicPage.getByTitle(/Spotify ·/)).toHaveCount(2);
+    await expect(publicPage.locator(".profile-more-content, .profile-widgets, .spotify-widget")).toHaveCount(0);
+    await expect(publicPage.locator('.profile-social-links a[href="https://www.youtube.com/watch?v=M7lc1UVf-VE"]')).toHaveCount(1);
+    expect(spotifyRequests).toBe(0);
     expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
-    // Restore the desktop viewport after the 320px embed-width regression check.
-    // Later in this test the Twitch player is intentionally available only at desktop widths.
     await publicPage.setViewportSize({ width: 1280, height: 720 });
 
     await page.goto("/sign-in");

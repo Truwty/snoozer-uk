@@ -23,7 +23,8 @@ export const analyticsEvent = z.discriminatedUnion("kind", [
   z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("view"), ...attribution }).strict(),
   z.object({ username, id: z.uuid(), consent: z.literal(true), kind: z.literal("click"),
     position: z.number().int().min(1).max(2000), url: z.string().max(2048).refine(safeLink), ...attribution }).strict(),
-]).refine((event) => (!event.browser && !event.browserDay) || ((event.version === 3 || event.version === 4) && !!event.browser && !!event.browserDay));
+]).refine((event) => (!event.browser && !event.browserDay) || ((event.version === 3 || event.version === 4) && !!event.browser && !!event.browserDay))
+  .refine((event) => event.countryConsent !== true || event.version === 4);
 export type AnalyticsEvent = z.infer<typeof analyticsEvent>;
 export const dailyAnalytics = z.array(z.object({
   day: z.iso.date(), views: z.number().int().min(0).max(10000), clicks: z.number().int().min(0).max(10000),
