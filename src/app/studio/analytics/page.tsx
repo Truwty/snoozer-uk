@@ -3,8 +3,9 @@ import { z } from "zod";
 import { AnalyticsChart } from "@/components/analytics-chart";
 import { CountryAnalyticsMap } from "@/components/country-analytics-map";
 import { socialProviderForUrl } from "@/lib/social-providers";
-import { dailyAnalytics, linkAnalytics, trafficAnalytics, parseAnalyticsRange, analyticsRangeStart } from "@/lib/analytics";
-import { readStudioDraft, type StudioProfileQuery } from "@/lib/profiles-server";
+import { browserAnalytics, browserCtr, dailyAnalytics, linkAnalytics, trafficAnalytics, parseAnalyticsRange, analyticsRangeStart } from "@/lib/analytics";
+import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
+import { TableScroll } from "@/components/ui";
 import { sessionClient } from "@/lib/supabase";
 
 export const metadata = { title: "Analytics", robots: { index: false, follow: false } };
@@ -36,16 +37,18 @@ export default async function Page({searchParams}:{searchParams:Promise<Query>})
   const range=parseAnalyticsRange(params.range);
   const draft=await readStudioDraft(params.profile);
   const client=await sessionClient();
-  const [viewsResponse,linksResponse,trafficResponse,countryResponse]=draft?await Promise.all([
+  const [viewsResponse,linksResponse,trafficResponse,countryResponse,browserResponse]=draft?await Promise.all([
     client.rpc("get_my_profile_view_days",{p_profile:draft.profile_id}),
     client.rpc("get_my_profile_link_totals",{p_profile:draft.profile_id}),
     client.rpc("get_my_profile_traffic_totals",{p_profile:draft.profile_id}),
-    client.rpc("get_my_profile_country_totals",{p_profile:draft.profile_id,p_since:range==="all"?null:analyticsRangeStart(range)})
+    client.rpc("get_my_profile_country_totals",{p_profile:draft.profile_id,p_since:range==="all"?null:analyticsRangeStart(range)}),
+    client.rpc("get_my_profile_browser_days",{p_profile:draft.profile_id})
   ]):[];
 
   const parsedDays=dailyAnalytics.safeParse(viewsResponse?.data);
   const parsedLinks=linkAnalytics.safeParse(linksResponse?.data);
   const parsedTraffic=trafficAnalytics.safeParse(trafficResponse?.data);
+  const parsedBrowsers=browserAnalytics.safeParse(browserResponse?.data);
   const parsedCountries=z.array(z.object({
     country_code:z.string().regex(/^[A-Z]{2}$/),
     views:z.number().int().nonnegative().safe(),
@@ -57,6 +60,11 @@ export default async function Page({searchParams}:{searchParams:Promise<Query>})
     : [];
   const links=parsedLinks.success?parsedLinks.data:[];
   const traffic=parsedTraffic.success?parsedTraffic.data:[];
+  const browserRows=parsedBrowsers.success
+    ? range==="all"?parsedBrowsers.data:parsedBrowsers.data.filter(row=>row.day>=analyticsRangeStart(range))
+    : [];
+  const browserTotal=browserRows.reduce((sum,row)=>sum+row.unique_browsers,0);
+  const browserClicked=browserRows.reduce((sum,row)=>sum+row.clicked_browsers,0);
   const countries=parsedCountries.success?parsedCountries.data.map(row=>({
     ...row,name:new Intl.DisplayNames(["en-GB"],{type:"region"}).of(row.country_code)??row.country_code
   })):[];
@@ -177,6 +185,56 @@ export default async function Page({searchParams}:{searchParams:Promise<Query>})
           </>:<Empty title="No country data yet" description="Visitors must separately allow approximate country reporting. Snoozer shows country totals only after at least three consented views."/>}
         <p className="muted">Country estimates can be wrong for VPNs, relays or mobile networks. Snoozer stores daily country totals only, not raw IP addresses or precise location.</p>
       </section>
+
+      <section className="analytics-card stack">
+        <div className="analytics-card-heading">
+          <div><h2>Daily Activity</h2><p>Recorded views and link clicks by UTC date</p></div>
+          <a className="button small" download="snoozer-analytics.csv" href={studioHref("/api/v1/analytics/export",draft.profile_id)}>Download CSV</a>
+        </div>
+        {rows.length?<details className="analytics-daily-details">
+          <summary>Daily activity table</summary>
+          <TableScroll label="Daily activity report">
+            <table className="analytics-data-table">
+              <caption>Recorded activity by UTC day within your plan’s retention window</caption>
+              <thead><tr><th scope="col">Date</th><th scope="col">Views</th><th scope="col">Clicks</th></tr></thead>
+              <tbody>{rows.map(row=><tr key={row.day}><th scope="row"><time dateTime={row.day}>{row.day}</time></th><td>{compact(row.views)}</td><td>{compact(row.clicks)}</td></tr>)}</tbody>
+            </table>
+          </TableScroll>
+        </details>:<Empty title="No daily activity" description="There are no recorded events in this time range."/>}
+      </section>
+
+      {browserRows.length>0&&<section className="analytics-card stack">
+        <div className="analytics-card-heading">
+          <div><h2>Daily Browsers & Click Rate</h2><p>Browser-day observations, not unique people</p></div>
+          <a className="button small" download="snoozer-browser-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=browsers",draft.profile_id)}>Download browser CSV</a>
+        </div>
+        <p className="muted">{compact(browserTotal)} browser-day observations · {compact(browserClicked)} with a recorded click · {browserCtr(browserTotal,browserClicked)}</p>
+        <TableScroll label="Daily browser report">
+          <table className="analytics-data-table">
+            <caption>Daily browser observations within your plan’s retention window</caption>
+            <thead><tr><th scope="col">UTC date</th><th scope="col">Daily browsers</th><th scope="col">Clicked browsers</th><th scope="col">Browser CTR</th></tr></thead>
+            <tbody>{browserRows.map(row=><tr key={row.day}><th scope="row">{row.day}</th><td>{compact(row.unique_browsers)}</td><td>{compact(row.clicked_browsers)}</td><td>{browserCtr(row.unique_browsers,row.clicked_browsers)}</td></tr>)}</tbody>
+          </table>
+        </TableScroll>
+        {browserResponse?.error&&<p role="alert" className="message error">Browser reports are temporarily unavailable.</p>}
+      </section>}
+
+      {links.length>0&&<section className="analytics-card stack">
+        <div className="analytics-card-heading">
+          <div><h2>Published Link Activity</h2><p>Clicks attributed to published destinations within your plan’s retention window</p></div>
+          <a className="button small" download="snoozer-link-analytics.csv" href={studioHref("/api/v1/analytics/export?breakdown=links",draft.profile_id)}>Download link CSV</a>
+        </div>
+        <TableScroll label="Per-link report">
+          <table className="analytics-data-table">
+            <caption>Clicks attributed to published destinations</caption>
+            <thead><tr><th scope="col">Link</th><th scope="col">Clicks</th></tr></thead>
+            <tbody>{links.map(({label,url,clicks:linkClicks})=><tr key={JSON.stringify([label,url])}>
+              <th scope="row"><a href={url} rel="nofollow noreferrer">{label}</a><small>{url}</small></th><td>{compact(linkClicks)}</td>
+            </tr>)}</tbody>
+          </table>
+        </TableScroll>
+      </section>}
+
       <p className="muted">Analytics are optional. Counts are events, not guaranteed unique people. Daily views use the selected range; device and referring-channel breakdowns use the analytics retention window of your plan.</p>
     </>}
   </main>;
