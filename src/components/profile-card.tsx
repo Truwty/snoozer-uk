@@ -476,6 +476,9 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     });
     const iconIndexes = new Set(social.map((item) => item.index));
     const textLinks = valid.filter((item) => !audioIndexes.has(item.index) && (item.mode === "text" || !iconIndexes.has(item.index)));
+    const publicAudioTracks = audioTracks.map((track) => ({
+      src: track.src, title: track.title, artist: track.artist, cover: track.cover,
+    }));
     const cover = profile.gallery[0] && galleryBase
       ? galleryBase + "/" + profile.gallery[0].id
       : avatarSrc;
@@ -504,7 +507,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             data-analytics-position={preview ? undefined : index + 1}>{label} <span aria-hidden="true">↗</span></a>
         </li>)}
       </ul>}
-      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={audioTracks.map(({sourceIndex: _sourceIndex, ...track})=>track)} cover={cover}
+      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={publicAudioTracks} cover={cover}
         volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />}
     </>;
   }

@@ -33,7 +33,16 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     setError(result.error);
     setLoading(false);
   },[profileId]);
-  useEffect(()=>{void reload();},[reload]);
+  useEffect(()=>{
+    let active=true;
+    void loadProfileAudio(profileId).then(result=>{
+      if(!active)return;
+      setItems(result.items as AudioItem[]);
+      setError(result.error);
+      setLoading(false);
+    });
+    return ()=>{active=false;};
+  },[profileId]);
 
   async function upload(){
     if(!file||busy)return;
