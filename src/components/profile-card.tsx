@@ -12,6 +12,7 @@ import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/p
 import { youtubeVideoId } from "@/lib/youtube";
 
 import { spotifyResource } from "@/lib/spotify";
+import { SpotifyWidget } from "./spotify-widget";
 
 import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 
@@ -23,6 +24,7 @@ import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
 import { BadgeArtwork } from "./badge-artwork";
+import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
 /*
@@ -31,10 +33,8 @@ import { BadgeArtwork } from "./badge-artwork";
  * SSR remains enabled so public profile HTML and layout are preserved.
  */
 const YouTubeWidget = dynamic(() => import("./youtube-widget").then((module) => module.YouTubeWidget));
-const SpotifyWidget = dynamic(() => import("./spotify-widget").then((module) => module.SpotifyWidget));
 const PublicMetadataWidget = dynamic(() => import("./public-metadata-widget").then((module) => module.PublicMetadataWidget));
 const TwitchWidget = dynamic(() => import("./twitch-widget").then((module) => module.TwitchWidget));
-const InteractiveProfileWidgets = dynamic(() => import("./interactive-profile-widgets").then((module) => module.InteractiveProfileWidgets));
 
 type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
 
