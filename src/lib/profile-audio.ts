@@ -35,3 +35,7 @@ export function validProfileAudioBytes(bytes: Uint8Array, extension: ProfileAudi
       return ascii(0,4)==="fLaC";
   }
 }
+
+export function profileAudioCanShuffle(trackCount: number) {
+  return Number.isInteger(trackCount) && trackCount >= 2;
+}

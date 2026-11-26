@@ -16,6 +16,7 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
+import { profileAudioCanShuffle } from "@/lib/profile-audio";
 import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
@@ -120,6 +121,7 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [shuffle, setShuffle] = useState(false);
+  const [shuffleMessage, setShuffleMessage] = useState("");
   const resumeAfterChange = useRef(false);
   const track = tracks[trackIndex] ?? tracks[0];
 
@@ -168,6 +170,21 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
     changeTrack(trackIndex - 1, playing);
   }
 
+  useEffect(() => {
+    if (!shuffleMessage) return;
+    const timeout = window.setTimeout(() => setShuffleMessage(""), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [shuffleMessage]);
+
+  function toggleShuffle() {
+    if (!profileAudioCanShuffle(tracks.length)) {
+      setShuffleMessage("You need at least 2 audios to shuffle.");
+      return;
+    }
+    setShuffle((value) => !value);
+    setShuffleMessage("");
+  }
+
   async function togglePlayback() {
     const audio = audioRef.current;
     if (!audio) return;
@@ -177,6 +194,7 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
   }
 
   return <section className="profile-audio-player" aria-label="Profile music player">
+    {shuffleMessage && <p className="profile-audio-shuffle-alert" role="alert">{shuffleMessage}</p>}
     <audio ref={audioRef} src={track.src} preload="metadata"
       onPlay={() => setPlaying(true)}
       onPause={() => setPlaying(false)}
@@ -222,8 +240,8 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
       <button className="profile-audio-step" type="button" onClick={() => nextTrack()} disabled={tracks.length < 2}
         aria-label="Next track" title="Next track">▶|</button>
       <button className={"profile-audio-step profile-audio-shuffle" + (shuffle ? " is-active" : "")}
-        type="button" onClick={() => setShuffle((value) => !value)} disabled={tracks.length < 2}
-        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">{shuffle ? "SHUF" : "SHUF"}</button>
+        type="button" onClick={toggleShuffle} aria-pressed={shuffle}
+        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">SHUF</button>
     </div>
   </section>;
 }

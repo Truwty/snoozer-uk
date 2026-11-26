@@ -2622,3 +2622,18 @@ body:has(> .public-page[data-background-image="true"]) {
 .analytics-country-count{min-width:3.3rem;text-align:right;font-variant-numeric:tabular-nums}
 .analytics-country-card a{text-decoration:underline;text-underline-offset:2px}
 @media(max-width:600px){.analytics-country-row{grid-template-columns:minmax(100px,1fr) minmax(70px,1.2fr) auto;gap:.55rem}.analytics-country-label{align-items:flex-start;flex-direction:column;gap:.1rem}.analytics-country-count{min-width:2.2rem}}
+
+
+.profile-audio-shuffle-alert{
+  position:fixed;z-index:120;inset-block-start:1.25rem;inset-inline-start:50%;
+  transform:translateX(-50%);max-width:min(92vw,26rem);margin:0;
+  padding:.72rem 1rem;border:1px solid rgba(255,112,122,.32);border-radius:999px;
+  background:#4b171c;color:#ffe7e8;box-shadow:0 14px 44px rgba(0,0,0,.35);
+  font-size:.78rem;font-weight:650;text-align:center;pointer-events:none;
+  animation:profile-audio-alert-in .18s ease-out;
+}
+@keyframes profile-audio-alert-in{
+  from{opacity:0;transform:translate(-50%,-7px)}
+  to{opacity:1;transform:translate(-50%,0)}
+}
+@media(prefers-reduced-motion:reduce){.profile-audio-shuffle-alert{animation:none}}

@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {profileAudioExtension,validProfileAudioBytes} from "../src/lib/profile-audio";
+import {profileAudioCanShuffle,profileAudioExtension,validProfileAudioBytes} from "../src/lib/profile-audio";
 
 describe("profile audio validation",()=>{
   it("maps only the supported MIME types",()=>{
@@ -20,5 +20,15 @@ describe("profile audio validation",()=>{
     expect(validProfileAudioBytes(new TextEncoder().encode("fLaCxxxx"),"flac")).toBe(true);
     expect(validProfileAudioBytes(new TextEncoder().encode("OggSxxxx"),"mp3")).toBe(false);
     expect(validProfileAudioBytes(new TextEncoder().encode("OggSxxxx"),"ogg")).toBe(true);
+  });
+});
+
+describe("profile audio shuffle",()=>{
+  it("requires at least two tracks",()=>{
+    expect(profileAudioCanShuffle(0)).toBe(false);
+    expect(profileAudioCanShuffle(1)).toBe(false);
+    expect(profileAudioCanShuffle(2)).toBe(true);
+    expect(profileAudioCanShuffle(3)).toBe(true);
+    expect(profileAudioCanShuffle(1.5)).toBe(false);
   });
 });

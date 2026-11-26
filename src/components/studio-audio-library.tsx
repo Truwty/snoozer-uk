@@ -27,7 +27,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const [managerOpen,setManagerOpen]=useState(false);
   const [addOpen,setAddOpen]=useState(false);
   const [title,setTitle]=useState("");
-  const [artist,setArtist]=useState("");
   const [audioFile,setAudioFile]=useState<File|null>(null);
   const [newCoverFile,setNewCoverFile]=useState<File|null>(null);
   const [cover,setCover]=useState<Record<string,string>>({});
@@ -77,7 +76,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   },[managerOpen,addOpen]);
 
   function resetAddForm(){
-    setTitle("");setArtist("");setAudioFile(null);setNewCoverFile(null);
+    setTitle("");setAudioFile(null);setNewCoverFile(null);
     if(audioInput.current)audioInput.current.value="";
     if(newCoverInput.current)newCoverInput.current.value="";
   }
@@ -117,7 +116,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     }
     setBusy(true);setError("");setMessage("");
     try{
-      const cleanArtist=artist.trim()||"Unknown artist";
+      const cleanArtist="Unknown artist";
       const started=await startProfileAudioUpload(profileId,revision,title.trim(),cleanArtist,audioFile.type,audioFile.size);
       if("error" in started){setError(started.error??"Could not prepare the audio upload. Try again.");return;}
       const config=supabaseConfig();
@@ -257,9 +256,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
         <input ref={newCoverInput} type="file" accept={galleryTypes.join(",")} hidden onChange={event=>setNewCoverFile(event.target.files?.[0]??null)}/>
         <label className="studio-audio-title-field">Audio Title
           <input value={title} maxLength={80} onChange={event=>setTitle(event.target.value)} placeholder="Add a title…"/>
-        </label>
-        <label className="studio-audio-artist-field">Artist <span>(optional)</span>
-          <input value={artist} maxLength={80} onChange={event=>setArtist(event.target.value)} placeholder="Artist name"/>
         </label>
         {error&&<p className="message error" role="alert">{error}</p>}
         <div className="studio-audio-add-actions">
