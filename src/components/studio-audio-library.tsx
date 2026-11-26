@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { supabaseUrl, supabaseKey } from "@/lib/env";
+import { supabaseConfig } from "@/lib/env";
 import { profileAudioIncoming } from "@/lib/profile-audio";
-import { finishProfileAudioUpload, loadProfileAudio, removeProfileAudio, startProfileAudioUpload } from "@/app/studio/audio/actions";
+import { discardProfileAudioUpload, finishProfileAudioUpload, loadProfileAudio, removeProfileAudio, startProfileAudioUpload } from "@/app/studio/audio/actions";
 
 type GalleryImage={id:string;alt:string};
 type AudioItem={id:string;title:string;artist:string;extension:string;contentType:string;bytes:number;createdAt:string;url:string};
@@ -26,14 +26,14 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
 
-  async function reload(){
+  const reload=useCallback(async()=>{
     setLoading(true);
     const result=await loadProfileAudio(profileId);
     setItems(result.items as AudioItem[]);
     setError(result.error);
     setLoading(false);
-  }
-  useEffect(()=>{void reload();},[profileId]);
+  },[profileId]);
+  useEffect(()=>{void reload();},[reload]);
 
   async function upload(){
     if(!file||busy)return;
@@ -41,11 +41,12 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     try{
       const started=await startProfileAudioUpload(profileId,revision,title,artist,file.type,file.size);
       if("error" in started){setError(started.error);return;}
-      if(!supabaseUrl||!supabaseKey)throw new Error("Supabase is not configured.");
-      const browser=createBrowserClient(supabaseUrl,supabaseKey);
+      const config=supabaseConfig();
+      const browser=createBrowserClient(config.url,config.key);
       const {error:uploadError}=await browser.storage.from(profileAudioIncoming)
         .uploadToSignedUrl(started.path,started.token,file,{contentType:file.type,upsert:false});
       if(uploadError){
+        await discardProfileAudioUpload(profileId,revision,started.id);
         setError("The audio file could not be uploaded. Check its format and try again.");
         return;
       }

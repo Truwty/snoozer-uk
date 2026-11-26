@@ -121,7 +121,7 @@ create function public.get_profile_audio_upload(
   p_owner uuid,p_profile uuid,p_expected integer,p_id uuid
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 declare profile snoozer.profiles%rowtype;
-declare asset snoozer.profile_audio_assets%rowtype;
+  asset snoozer.profile_audio_assets%rowtype;
 begin
   if coalesce(auth.jwt()->>'role','') <> 'service_role' then
     raise exception 'Service role required' using errcode='42501';
@@ -143,7 +143,7 @@ create function public.commit_profile_audio_upload(
   p_owner uuid,p_profile uuid,p_expected integer,p_id uuid,p_actual_bytes integer
 ) returns boolean language plpgsql security definer set search_path='' as $$
 declare profile snoozer.profiles%rowtype;
-declare asset snoozer.profile_audio_assets%rowtype;
+asset snoozer.profile_audio_assets%rowtype;
 declare object_size bigint;
 begin
   if coalesce(auth.jwt()->>'role','') <> 'service_role' then
@@ -172,7 +172,7 @@ create function public.discard_profile_audio_upload(
   p_owner uuid,p_profile uuid,p_expected integer,p_id uuid
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 declare profile snoozer.profiles%rowtype;
-declare asset snoozer.profile_audio_assets%rowtype;
+asset snoozer.profile_audio_assets%rowtype;
 begin
   if coalesce(auth.jwt()->>'role','') <> 'service_role' then
     raise exception 'Service role required' using errcode='42501';
@@ -207,7 +207,7 @@ $$;
 create function public.remove_my_profile_audio(p_profile uuid,p_id uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare actor uuid := snoozer.verified_user();
-declare asset snoozer.profile_audio_assets%rowtype;
+  asset snoozer.profile_audio_assets%rowtype;
 begin
   if not exists(select 1 from snoozer.profiles where id=p_profile and owner_id=actor) then
     raise exception 'Profile unavailable' using errcode='42501';
@@ -228,7 +228,7 @@ $$;
 create function public.get_published_profile_audio_object(p_filename text) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare actor_role text := coalesce(auth.jwt()->>'role','');
-declare asset snoozer.profile_audio_assets%rowtype;
+  asset snoozer.profile_audio_assets%rowtype;
 begin
   if actor_role <> 'service_role' then
     raise exception 'Service role required' using errcode='42501';

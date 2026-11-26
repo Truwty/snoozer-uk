@@ -24,7 +24,8 @@ async function serve(file:string) {
     if(signError||!signed?.signedUrl) {
       return new NextResponse(null,{status:404,headers:{"Cache-Control":"no-store"}});
     }
-    return NextResponse.redirect(signed.signedUrl,307,{
+    return NextResponse.redirect(signed.signedUrl,{
+      status:307,
       headers:{
         "Cache-Control":"private, no-store, max-age=0",
         "Referrer-Policy":"no-referrer",
