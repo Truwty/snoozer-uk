@@ -9,19 +9,30 @@ import { reportCommunityTemplate, setTemplateFavorite, submitCommunityTemplate, 
 import { z } from "zod";
 
 export const metadata = { title: "Template Library", robots: { index: false, follow: false } };
-type Search = StudioProfileQuery & { q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[]; palette?:string|string[]; page?:string|string[]; tab?:string|string[]; submitted?:string|string[]; error?:string|string[]; reported?:string|string[] };
+type Search = StudioProfileQuery & { q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[]; palette?:string|string[]; page?:string|string[]; tab?:string|string[]; community_q?:string|string[]; community_sort?:string|string[]; community_page?:string|string[]; submitted?:string|string[]; error?:string|string[]; reported?:string|string[] };
 
 export default async function StudioTemplates({ searchParams }: { searchParams: Promise<Search> }) {
   const params=await searchParams;
   const draft=await readStudioDraft(params.profile);
   const selected=params.profile===undefined?undefined:draft?.profile_id;
   const {client}=await requireAccount();
-  const {data:activityData}=await client.rpc("get_my_template_activity");
+  const communityQuery=(typeof params.community_q==="string"?params.community_q:" ").trim().slice(0,80);
+  const communitySort=params.community_sort==="popular"?"popular":"newest";
+  const requestedCommunityPage=Number.parseInt(typeof params.community_page==="string"?params.community_page:"1",10);
+  const communityPageInput=Number.isFinite(requestedCommunityPage)?Math.min(Math.max(requestedCommunityPage,1),100000):1;
+  const [{data:activityData},{data:communityData}]=await Promise.all([
+    client.rpc("get_my_template_activity"),
+    params.tab==="community"?client.rpc("list_community_templates",{p_query:communityQuery,p_sort:communitySort,p_page:communityPageInput}):Promise.resolve({data:null}),
+  ]);
   const activity=z.object({favorites:z.array(z.string()),recent:z.array(z.string()),uploads:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),status:z.enum(["pending","approved","rejected"]),created_at:z.string()})),community:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()}))}).safeParse(activityData);
+  const communityListing=z.object({items:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()})).max(12),total:z.number().int().nonnegative(),page:z.number().int().positive(),pageCount:z.number().int().positive()}).safeParse(communityData);
   const favorites=activity.success?activity.data.favorites:[];
   const recent=activity.success?activity.data.recent:[];
   const uploads=activity.success?activity.data.uploads:[];
   const community=activity.success?activity.data.community:[];
+  const communityPage=communityListing.success?communityListing.data.page:1;
+  const communityPageCount=communityListing.success?communityListing.data.pageCount:1;
+  const communityVisible=communityListing.success?communityListing.data.items:[];
   const tabs=["library","favorites","recent","uploads","community","create"] as const;
   const requestedTab=typeof params.tab==="string"?params.tab:"library";
   const tab=(tabs as readonly string[]).includes(requestedTab)?requestedTab:"library";
@@ -53,12 +64,12 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     {params.reported==="1"&&<p className="message" role="status">Your report was submitted for review.</p>}
     {params.error&&<p className="message error" role="alert">We couldn’t complete that template action. Refresh and try again.</p>}
     {tab==="uploads"&&<section className="studio-dashboard-panel"><h2>My submissions</h2>{uploads.length?<ul>{uploads.map((item)=><li key={item.id}><strong>{item.title}</strong> · {item.status} <span className="muted">{item.description}</span></li>)}</ul>:<p className="muted">You have not submitted any community templates yet.</p>}</section>}
-    {tab==="community"&&<section className="studio-dashboard-panel"><h2>Community templates</h2>{community.length?<div className="studio-community-template-grid">{community.map((item)=><article className="studio-community-template" key={item.id}>
+    {tab==="community"&&<section className="studio-dashboard-panel"><h2>Community templates</h2><form action="/studio/templates" method="get" className="studio-template-search"><input type="hidden" name="tab" value="community"/>{selected&&<input type="hidden" name="profile" value={selected}/>}<label>Search community designs<input type="search" name="community_q" maxLength={80} defaultValue={communityQuery} placeholder="Search titles and descriptions"/></label><label>Sort by<select name="community_sort" defaultValue={communitySort}><option value="newest">Newest</option><option value="popular">Most used</option></select></label><button className="button small" type="submit">Search</button></form>{communityVisible.length?<div className="studio-community-template-grid">{communityVisible.map((item)=><article className="studio-community-template" key={item.id}>
       <p className="eyebrow">COMMUNITY · MODERATED</p><h3>{item.title}</h3><p className="muted">{item.description}</p><small className="muted">{item.usage_count.toLocaleString("en-GB")} uses</small>
       <form action={useStudioTemplate}><input type="hidden" name="template" value={item.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form>
       <form action={setTemplateFavorite}><input type="hidden" name="template" value={item.id}/><input type="hidden" name="favorite" value={favorites.includes(item.id)?"false":"true"}/><button className="button small" type="submit">{favorites.includes(item.id)?"★ Favourite":"☆ Favourite"}</button></form>
       <details><summary>Report this template</summary><form action={reportCommunityTemplate}><input type="hidden" name="template" value={item.id}/><label>Reason<input name="reason" required minLength={8} maxLength={500}/></label><button className="button small" type="submit">Send report</button></form></details>
-    </article>)}</div>:<p className="muted">No community templates have been approved yet. Submissions are checked before they appear here.</p>}</section>}
+    </article>)}</div>:<p className="muted">{communityListing.success?(communityListing.data.total>0?"No templates on this page.":communityQuery?"No community templates match this search.":"No community templates have been approved yet. Submissions are checked before they appear here."):"Community templates could not be loaded right now."}</p>}{communityListing.success&&communityPageCount>1&&<nav className="template-pagination" aria-label="Community template pages">{communityPage>1&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage-1}`}>Previous</Link>}<span className="muted">Page {communityPage} of {communityPageCount}</span>{communityPage<communityPageCount&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage+1}`}>Next</Link>}</nav>}</section>}
     {tab==="create"&&<section className="studio-dashboard-panel"><h2>Create a community template</h2>{!selected?<p className="muted">Choose a profile first, then save its design settings as a template.</p>:<form action={submitCommunityTemplate} className="studio-template-create-form">
       <input type="hidden" name="profile" value={selected}/><p className="muted">Only theme, appearance, and sections are shared. Your name, bio, links, avatar, gallery, widgets, embeds, and private data stay out of the template. Community templates are free and reviewed before publication.</p>
       <label>Title<input name="title" required minLength={2} maxLength={60}/></label><label>Description<input name="description" maxLength={280}/></label><button className="button primary" type="submit">Submit for review</button>
