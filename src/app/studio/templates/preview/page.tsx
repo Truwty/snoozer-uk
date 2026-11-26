@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ProfileCard } from "@/components/profile-card";
 import { CopyLink } from "@/components/copy-link";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
-import { profileAppearance, themes, textSections } from "@/lib/profile";
+import { defaultAppearance, profileAppearance, themes, textSections } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { requireAccount } from "@/lib/profiles-server";
 import { z } from "zod";
@@ -25,11 +25,14 @@ export default async function TemplatePreview({searchParams}:{searchParams:Promi
   const {client}=await requireAccount();
   const {data,error}=await client.rpc("get_community_template",{p_id:validId.data});
   const parsed=z.object({id:z.uuid(),title:z.string(),description:z.string(),config:z.object({
-    theme:z.enum(themes),appearance:profileAppearance,sections:textSections
+    theme:z.enum(themes),appearance:z.record(z.string(),z.unknown()),sections:z.unknown()
   })}).safeParse(data);
   if(error||!parsed.success)notFound();
+  const appearance=profileAppearance.safeParse({...defaultAppearance,...parsed.data.config.appearance});
+  const sections=textSections.safeParse(parsed.data.config.sections??[]);
+  if(!appearance.success||!sections.success)notFound();
   preview={id:parsed.data.id,name:parsed.data.title,description:parsed.data.description,
-    theme:parsed.data.config.theme,appearance:parsed.data.config.appearance,sections:parsed.data.config.sections};
+    theme:parsed.data.config.theme,appearance:appearance.data,sections:sections.data};
  }
  if(!preview)notFound();
  const profile={seo:{title:"",description:""},username:"template-preview",display_name:"Your name",

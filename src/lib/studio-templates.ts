@@ -96,6 +96,9 @@ const palettes: readonly Palette[] = [
   }
 ];
 export const templatePalettes = palettes.map(({ id, name }) => ({ id, label: name }));
+export const templatePaletteThemes = Object.fromEntries(palettes.map(({id,theme})=>[id,theme])) as Record<string, typeof themes[number]>;
+export const templateStyleCategories = Object.fromEntries(compositions.map(({style,category})=>[style,category])) as Record<ProfileTemplateStyle, TemplateCategory>;
+
 
 type Composition = {
   style: ProfileTemplateStyle; name: string; category: TemplateCategory; description: string;

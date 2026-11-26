@@ -90,7 +90,7 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter, locale =
               <span aria-hidden="true">↗</span><span className="studio-nav-copy">{t("My Page")}</span></Link>
           : <Link className="studio-sidebar-page-button" href={hrefFor("/studio/customize")}>
               <span aria-hidden="true">＋</span><span className="studio-nav-copy">{t("Customise your page")}</span></Link>}
-        {pageHref && pagePublished && <ProfileQrShare profilePath={pageHref}/ >}
+        {pageHref && pagePublished && <ProfileQrShare profilePath={pageHref} />}
       </div>
       {accountFooter && <div className="studio-sidebar-account-footer">{accountFooter}</div>}
     </div>

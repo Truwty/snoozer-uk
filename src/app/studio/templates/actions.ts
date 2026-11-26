@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { readDraft, requireAccount, studioHref } from "@/lib/profiles-server";
-import { profileAppearance, themes, textSections } from "@/lib/profile";
+import { defaultAppearance, profileAppearance, themes, textSections } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { save } from "@/app/studio/actions";
 
@@ -30,11 +30,14 @@ export async function useStudioTemplate(form: FormData) {
   if(studioTemplates.some((item)=>item.id===template.data)) redirect(studioHref("/studio/customize?template="+encodeURIComponent(template.data),profile.data??undefined));
   const id=uuid.safeParse(template.data); if(!id.success) redirect("/studio/templates?error=missing");
   const {data,error}=await client.rpc("get_community_template",{p_id:id.data});
-  const parsed=z.object({config:z.strictObject({theme:z.enum(themes),appearance:profileAppearance,sections:textSections})}).safeParse(data);
+  const parsed=z.object({config:z.object({theme:z.enum(themes),appearance:z.record(z.string(),z.unknown()),sections:z.unknown()})}).safeParse(data);
   if(error||!parsed.success) redirect("/studio/templates?error=unavailable");
+  const appearance=profileAppearance.safeParse({...defaultAppearance,...parsed.data.config.appearance});
+  const sections=textSections.safeParse(parsed.data.config.sections??[]);
+  if(!appearance.success||!sections.success) redirect("/studio/templates?error=unavailable");
   const draft=await readDraft(profile.data??undefined);
   if(!draft) redirect("/studio");
-  const result=await save({profileId:draft.profile_id,revision:draft.revision,content:{...draft,theme:parsed.data.config.theme,appearance:parsed.data.config.appearance,sections:parsed.data.config.sections},intent:"draft",removeAvatar:false});
+  const result=await save({profileId:draft.profile_id,revision:draft.revision,content:{...draft,theme:parsed.data.config.theme,appearance:appearance.data,sections:sections.data},intent:"draft",removeAvatar:false});
   if(result.status!=="success") redirect("/studio/templates?error=apply");
   revalidatePath("/studio/customize"); revalidatePath("/studio");
   redirect(studioHref("/studio/customize",draft.profile_id));

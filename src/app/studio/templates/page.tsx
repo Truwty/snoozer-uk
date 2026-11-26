@@ -3,8 +3,8 @@ import { CopyLink } from "@/components/copy-link";
 import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
-import { profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
+import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
+import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
 import { rateStudioTemplate, setTemplateFavorite, useStudioTemplate } from "./actions";
 import { z } from "zod";
@@ -23,7 +23,7 @@ const templateMetricSchema=z.array(z.object({
 const communityListingSchema=z.object({
   items:z.array(z.object({
     id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.coerce.number().int().nonnegative(),
-    config:z.object({theme:z.enum(themes),appearance:profileAppearance,sections:textSections}),
+    config:z.object({theme:z.enum(themes),appearance:z.record(z.string(),z.unknown()),sections:z.unknown()}),
     creator_username:z.string(),rating_count:z.coerce.number().int().nonnegative(),
     rating_average:z.coerce.number().min(0).max(5),weekly_uses:z.coerce.number().int().nonnegative()
   })).max(12),
@@ -82,12 +82,17 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     })
   ]);
   const communityParsed=communityListingSchema.safeParse(communityResponse.data);
-  const community=communityParsed.success?communityParsed.data.items.filter(item=>
-    (filters.theme==="all"||item.config.theme===filters.theme)
-    &&(filters.layout==="all"||item.config.appearance.layout===filters.layout)
-    &&(filters.palette==="all"||item.config.appearance.colors?.accent===filters.palette)
-    &&(filters.category==="all"||item.config.appearance.templateStyle?.includes(filters.category))
-  ):[];
+  const community=communityParsed.success?communityParsed.data.items.flatMap(item=>{
+    const appearance=profileAppearance.safeParse({...defaultAppearance,...item.config.appearance});
+    const sections=textSections.safeParse(item.config.sections??[]);
+    if(!appearance.success||!sections.success)return [];
+    const style=appearance.data.templateStyle;
+    if(filters.theme!=="all"&&item.config.theme!==filters.theme)return [];
+    if(filters.layout!=="all"&&appearance.data.layout!==filters.layout)return [];
+    if(filters.palette!=="all"&&templatePaletteThemes[filters.palette]!==item.config.theme)return [];
+    if(filters.category!=="all"&&(!style||templateStyleCategories[style]!==filters.category))return [];
+    return [{...item,config:{theme:item.config.theme,appearance:appearance.data,sections:sections.data}}];
+  }):[];
   const metricKeys=[...visible.map(item=>item.id),...community.map(item=>item.id)];
   const metricResponse=await client.rpc("get_template_catalogue_metrics",{p_keys:metricKeys});
   const metricParsed=templateMetricSchema.safeParse(metricResponse.data);

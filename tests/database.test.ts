@@ -3163,7 +3163,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await result("select public.set_my_template_favorite($1,true) as value",[key]);
     await result("select public.record_my_template_use($1) as value",[key]);
     await result("select public.set_my_template_rating($1,5) as value",[key]);
-    expect(await result("select public.get_template_catalogue_metrics($1::text[]) as value",[[key]]))
+    expect(await result("select coalesce(jsonb_agg(to_jsonb(metrics)), '[]'::jsonb) as value from public.get_template_catalogue_metrics($1::text[]) metrics",[[key]]))
       .toMatchObject([{template_key:key,uses:1,weekly_uses:1,rating_count:1,rating_average:5,my_rating:5}]);
     expect(await result("select public.get_my_template_activity() as value")).toMatchObject({favorites:[key],recent:[key],uploads:[],community:[]});
     await expect(result("select public.record_my_template_use('not-a-template') as value"))
