@@ -4,22 +4,19 @@ import Link from "next/link";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { defaultAppearance, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
-import { VisualSelect } from "./visual-select";
 import { CopyLink } from "./copy-link";
 import { SchedulePublication } from "./schedule-publication";
 import type { PublicationSchedule } from "@/lib/publication-schedule";
 import { Unpublish } from "./unpublish";
-import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
 import { SocialProviderIcon } from "./social-provider-icon";
-import { EffectsEditor } from "./effects-editor";
-import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
 import { ProfileBlocksEditor } from "./profile-blocks-editor";
 import { ProfileWidgetsEditor } from "./profile-widgets-editor";
@@ -346,28 +343,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </fieldset>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Design" id="editor-panel-Design" data-editor-panel="Design" hidden={tab !== "Design"} className="editor-panel stack">
-      <fieldset className="stack"><legend className="section-title">Appearance</legend>
-        <VisualSelect label="Theme" onPick={(value) => { const theme = themes.find((item) => item === value); if (theme) set("theme", theme); }}><select name="theme" value={content.theme}
-          onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
-          {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
-        </select></VisualSelect>
-        <VisualSelect label="Profile layout" onPick={(value) => { const layout = profileLayouts.find((item) => item === value); if (layout) set("appearance", { ...content.appearance, layout }); }}><select value={content.appearance.layout} onChange={(event) => {
-          const layout = profileLayouts.find((value) => value === event.target.value);
-          if (layout) set("appearance", { ...content.appearance, layout });
-        }}>
-          <option value="centred">Centred card</option>
-          <option value="editorial">Editorial</option>
-          <option value="portfolio">Portfolio grid</option>
-        </select></VisualSelect>
-        <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
-          const entrance = event.target.value;
-          if (entrance === "none" || entrance === "fade" || entrance === "rise") set("appearance", { ...content.appearance, entrance });
-        }}>
-          <option value="none">None</option>
-          <option value="fade">Fade in</option>
-          <option value="rise">Soft rise</option>
-        </select></label>
-        <small className="muted">Decorative backgrounds animate once. Your visitor’s reduced-motion setting always takes priority.</small>
         <section className="studio-assets-uploader stack" aria-labelledby="studio-assets-title">
           <div className="studio-assets-heading">
             <div><p className="eyebrow">PROFILE ASSETS</p><h2 id="studio-assets-title">Assets Uploader</h2>
@@ -383,7 +358,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">▧</span><span className="studio-asset-kind">01 / BACKGROUND</span></div>
               <div className="studio-asset-preview">
                 {content.appearance.backgroundImage && saved.gallery.some((image)=>image.id===content.appearance.backgroundImage)
-                  ? <><img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/></>
+                  ? <img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/>
                   : <div className="studio-asset-placeholder"><span aria-hidden="true">▧</span><strong>No background selected</strong></div>}
               </div>
               <h3>Background</h3>
@@ -400,7 +375,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">♫</span><span className="studio-asset-kind">02 / AUDIO</span></div>
               <div className="studio-asset-preview studio-asset-audio-preview"><span aria-hidden="true">♫</span><strong>PROFILE AUDIO</strong><small>MP3 · M4A · OGG · WAV · AAC · FLAC</small></div>
               <h3>Audio</h3>
-              <p className="muted">Upload tracks, add cover artwork and choose what plays on your public profile.</p>
+              <p className="muted">Upload audio files, add cover artwork and manage your profile playlist.</p>
               <details className="studio-asset-manager">
                 <summary className="button small primary">Open Audio Manager</summary>
                 <StudioAudioLibrary
@@ -431,11 +406,11 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">⌖</span><span className="studio-asset-kind">04 / CUSTOM CURSOR</span></div>
               <div className="studio-asset-preview studio-asset-cursor-preview">
                 {content.appearance.customCursorImage && saved.gallery.some((image)=>image.id===content.appearance.customCursorImage)
-                  ? <><img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/></>
+                  ? <img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/>
                   : <div className="studio-asset-placeholder"><span aria-hidden="true">↖</span><strong>Default cursor</strong></div>}
               </div>
               <h3>Custom Cursor</h3>
-              <p className="muted">Use a small image as the pointer on your published profile.</p>
+              <p className="muted">Choose a small image to use as the pointer on your profile.</p>
               <label>Cursor image
                 <select value={content.appearance.customCursorImage??""} onChange={(event)=>set("appearance",{...content.appearance,customCursorImage:event.target.value||undefined})}>
                   <option value="">Use standard cursor</option>
@@ -446,105 +421,107 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             </article>
           </div>
         </section>
-        <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
-          const density = profileDensities.find((value) => value === event.target.value);
-          if (density) set("appearance", { ...content.appearance, density });
-        }}>
-          {profileDensities.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></VisualSelect>
-        <VisualSelect label="Card corners" onPick={(value) => { const corners = profileCorners.find((item) => item === value); if (corners) set("appearance", { ...content.appearance, corners }); }}><select value={content.appearance.corners} onChange={(event) => {
-          const corners = profileCorners.find((value) => value === event.target.value);
-          if (corners) set("appearance", { ...content.appearance, corners });
-        }}>
-          {profileCorners.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></VisualSelect>
-        <label>Link accent<select value={content.appearance.accent} aria-describedby="link-accent-contrast" onChange={(event) => {
-          const accent = linkAccents.find((value) => value === event.target.value);
-          if (accent) set("appearance", { ...content.appearance, accent });
-        }}>
-          {linkAccents.map((accent) => <option value={accent} key={accent}>{linkAccentLabels[accent]}</option>)}
-        </select></label>
-        <p id="link-accent-contrast" className="muted" aria-live="polite">
-          {linkColours ? "Link text contrast " + (Math.floor(linkColours.ratio * 10) / 10).toFixed(1) + " to 1."
-            : "Links use your theme colours."}
-        </p>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Custom colours</legend>
-        <p className="muted">Set exact profile colours. Leave each value at its theme default until you choose a custom shade.</p>
-        <div className="studio-color-grid">
-          <label>Background<input type="color" value={customColours.background ?? "#171923"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, background: event.target.value } })}/></label>
-          <label>Text<input type="color" value={customColours.text ?? "#f5f6fa"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, text: event.target.value } })}/></label>
-          <label>Accent<input type="color" value={customColours.accent ?? "#9b8cff"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, accent: event.target.value } })}/></label>
-          <label>Icons<input type="color" value={customColours.icon ?? "#e4e7f0"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, icon: event.target.value } })}/></label>
-          <label>Effect colour<input type="color" value={customColours.effect ?? "#7c72d8"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, effect: event.target.value } })}/></label>
-          <label>Gradient start<input type="color" value={customColours.gradientStart ?? "#493c96"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientStart: event.target.value } })}/></label>
-          <label>Gradient end<input type="color" value={customColours.gradientEnd ?? "#137f83"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientEnd: event.target.value } })}/></label>
-        </div>
-        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, gradientEnabled: event.target.checked })}/> Enable profile gradient</label>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Surface and typography</legend>
-        <label>Profile opacity: {content.appearance.opacity ?? 100}%
-          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity ?? 100}
-            onChange={(event) => set("appearance", { ...content.appearance, opacity: Number(event.target.value) })}/>
-        </label>
-        <label>Background blur: {content.appearance.blur ?? 0}px
-          <input type="range" min={0} max={24} step={1} value={content.appearance.blur ?? 0}
-            onChange={(event) => set("appearance", { ...content.appearance, blur: Number(event.target.value) })}/>
-        </label>
-        <label>Typography
-          <select value={content.appearance.font ?? "system"} onChange={(event) => {
-            const font = ["system", "sans", "serif", "mono"].find((value) => value === event.target.value);
-            if (font) set("appearance", { ...content.appearance, font: font as typeof content.appearance.font });
-          }}>
-            <option value="system">System</option><option value="sans">Sans serif</option>
-            <option value="serif">Serif</option><option value="mono">Monospace</option>
-          </select>
-        </label>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Profile details and effects</legend>
-        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.swapBoxColors ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, swapBoxColors: event.target.checked })}/> Swap profile and content box colours</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, badgeGlow: event.target.checked })}/> Badge glow</label>
-        <label>Location shown on your profile (optional)
-          <input type="text" maxLength={80} autoComplete="off" value={content.appearance.location ?? ""}
-            onChange={(event) => set("appearance", { ...content.appearance, location: event.target.value || undefined })}/>
-        </label>
-        <label className="check"><input type="checkbox" checked={content.appearance.showLocation ?? false}
-          disabled={!content.appearance.location?.trim()}
-          onChange={(event) => set("appearance", { ...content.appearance, showLocation: event.target.checked })}/>
-          Show my location publicly</label>
-      </fieldset>
-      <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
-      {template && <fieldset className="stack">
-        <legend className="section-title">Template preview</legend>
-        <p className="muted">{template.categoryLabel} · {template.description}</p>
-        <button type="button" className="button small primary" onClick={()=>applyTemplate(false)}>Apply template design</button>
-      </fieldset>}
-      <AppearanceTransfer settings={content} onApply={(settings) => {
-        edit((current) => ({ ...current, content: { ...current.content, ...settings,
-          appearance: { ...settings.appearance, ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}) } } }));
-        setTemplateId("");
-      }} />
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">General Customization</legend>
+          <div className="studio-reference-customization-grid">
+            <label>Description
+              <textarea name="bio" maxLength={280} rows={3} value={content.bio}
+                onChange={(event)=>set("bio",event.target.value)}/>
+            </label>
+            <div className="studio-reference-widget">
+              <span>Profile Widget</span>
+              <Link className="studio-reference-widget-action" href="/studio/discord">
+                <span aria-hidden="true">◉</span> Discord Presence <strong>Settings ↗</strong>
+              </Link>
+            </div>
+            <label>Profile Opacity: {content.appearance.opacity??100}%
+              <input type="range" min={20} max={100} step={1} value={content.appearance.opacity??100}
+                onChange={(event)=>set("appearance",{...content.appearance,opacity:Number(event.target.value)})}/>
+            </label>
+            <label>Profile Blur: {content.appearance.blur??0}px
+              <input type="range" min={0} max={80} step={1} value={content.appearance.blur??0}
+                onChange={(event)=>set("appearance",{...content.appearance,blur:Number(event.target.value)})}/>
+            </label>
+            <label>Background Effects
+              <select value={content.appearance.effects?.background??"none"} onChange={(event)=>{
+                const background=event.target.value as ProfileEffects["background"];
+                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),background,preset:"none",enabled:background!=="none"||Boolean(content.appearance.effects?.enabled)}});
+              }}>
+                {effectBackgrounds.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Username Effects
+              <select value={content.appearance.effects?.text??"none"} onChange={(event)=>{
+                const text=event.target.value as ProfileEffects["text"];
+                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),text,preset:"none",enabled:text!=="none"||Boolean(content.appearance.effects?.enabled)}});
+              }}>
+                {effectTexts.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Location
+              <input type="text" maxLength={80} autoComplete="off" placeholder="Your location"
+                value={content.appearance.location??""}
+                onChange={(event)=>set("appearance",{...content.appearance,location:event.target.value||undefined})}/>
+            </label>
+            <div className="studio-reference-glow-settings">
+              <strong>Glow Settings</strong>
+              <div className="studio-reference-glow-options">
+                <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,usernameGlow:event.target.checked})}/> Username</label>
+                <label className="check"><input type="checkbox" checked={content.appearance.socialGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,socialGlow:event.target.checked})}/> Socials</label>
+                <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,badgeGlow:event.target.checked})}/> Badges</label>
+              </div>
+            </div>
+          </div>
+          <label className="check studio-reference-location-toggle">
+            <input type="checkbox" checked={content.appearance.showLocation??false}
+              disabled={!content.appearance.location?.trim()}
+              onChange={(event)=>set("appearance",{...content.appearance,showLocation:event.target.checked})}/>
+            Show location on my profile
+          </label>
+        </fieldset>
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">Color Customization</legend>
+          <div className="studio-reference-color-grid">
+            <label>Accent Color<input type="color" value={customColours.accent??"#9b8cff"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,accent:event.target.value}})}/></label>
+            <label>Text Color<input type="color" value={customColours.text??"#f5f6fa"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,text:event.target.value}})}/></label>
+            <label>Background Color<input type="color" value={customColours.background??"#171923"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,background:event.target.value}})}/></label>
+            <label>Icon Color<input type="color" value={customColours.icon??"#e4e7f0"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,icon:event.target.value}})}/></label>
+            <label>Background Effect Color<input type="color" value={customColours.effect??"#7c72d8"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,effect:event.target.value}})}/></label>
+            <label>Primary Color<input type="color" value={customColours.gradientStart??"#493c96"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,gradientStart:event.target.value}})}/></label>
+            <label>Secondary Color<input type="color" value={customColours.gradientEnd??"#137f83"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,gradientEnd:event.target.value}})}/></label>
+          </div>
+          <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled??false}
+            onChange={(event)=>set("appearance",{...content.appearance,gradientEnabled:event.target.checked})}/> Enable profile gradient</label>
+        </fieldset>
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">Other Customization</legend>
+          <div className="studio-reference-other-options">
+            <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons??false}
+              onChange={(event)=>set("appearance",{...content.appearance,monochromeIcons:event.target.checked})}/> Monochrome Icons</label>
+            <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle??false}
+              onChange={(event)=>set("appearance",{...content.appearance,animatedTitle:event.target.checked})}/> Animated Title</label>
+            <label className="check"><input type="checkbox" checked={content.appearance.swapBoxColors??false}
+              onChange={(event)=>set("appearance",{...content.appearance,swapBoxColors:event.target.checked})}/> Swap Box Colors</label>
+          </div>
+        </fieldset>
+        {template&&<fieldset className="stack">
+          <legend className="section-title">Template</legend>
+          <p className="muted">{template.categoryLabel} · {template.description}</p>
+          <button type="button" className="button small primary" onClick={()=>applyTemplate(false)}>Apply template design</button>
+        </fieldset>}
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
         <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />

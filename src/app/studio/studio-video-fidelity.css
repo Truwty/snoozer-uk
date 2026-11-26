@@ -397,3 +397,26 @@
 .studio-main-content .analytics-reference-countries .analytics-map-caption{font-size:.62rem}
 @media(max-width:900px){.studio-main-content .analytics-reference-main{grid-template-columns:minmax(0,1.2fr) minmax(14rem,1fr)}.studio-main-content .analytics-reference-breakdowns{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.studio-main-content .analytics-reference-main,.studio-main-content .analytics-reference-breakdowns{grid-template-columns:minmax(0,1fr)}.studio-main-content .analytics-reference-donut{width:min(12rem,65%)}}
+
+
+/* Customize follows the supplied reference section order and grid. */
+.studio-main-content .studio-reference-customization{padding:1rem;border:1px solid rgba(255,255,255,.065);border-radius:11px;background:#111315}
+.studio-main-content .studio-reference-customization>legend{padding-inline:.35rem;color:#f2f4f0;font-size:.95rem;font-weight:700}
+.studio-main-content .studio-reference-customization-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.studio-main-content .studio-reference-customization-grid>label,
+.studio-main-content .studio-reference-color-grid>label{min-width:0;display:grid;align-content:start;gap:.45rem;color:#cbd0ca;font-size:.72rem}
+.studio-main-content .studio-reference-customization-grid textarea{min-height:4rem;resize:vertical}
+.studio-main-content .studio-reference-widget{display:grid;align-content:start;gap:.45rem;color:#cbd0ca;font-size:.72rem}
+.studio-main-content .studio-reference-widget-action{display:flex;align-items:center;justify-content:space-between;gap:.4rem;min-height:2.55rem;padding:.55rem .7rem;border:1px solid rgba(255,255,255,.065);border-radius:8px;background:#191c1f;color:#dce2dc;text-decoration:none;font-size:.69rem}
+.studio-main-content .studio-reference-widget-action strong{color:var(--studio-lime);font-size:.61rem}
+.studio-main-content .studio-reference-glow-settings{grid-column:4;grid-row:2 / span 2;display:grid;align-content:start;gap:.55rem}
+.studio-main-content .studio-reference-glow-settings>strong{font-size:.72rem;color:#cbd0ca}
+.studio-main-content .studio-reference-glow-options{display:grid;gap:.45rem}
+.studio-main-content .studio-reference-glow-options label{padding:.4rem .55rem;border:1px solid rgba(216,251,134,.18);border-radius:7px;background:rgba(216,251,134,.045);font-size:.66rem}
+.studio-main-content .studio-reference-location-toggle{margin-top:.65rem;font-size:.68rem}
+.studio-main-content .studio-reference-color-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.studio-main-content .studio-reference-color-grid input[type=color]{width:100%;height:2.4rem;padding:.18rem;border:1px solid rgba(255,255,255,.09);border-radius:7px;background:#191c1f}
+.studio-main-content .studio-reference-other-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.studio-main-content .studio-reference-other-options label{display:flex;align-items:center;gap:.6rem;min-height:2.5rem;padding:.65rem;border:1px solid rgba(255,255,255,.06);border-radius:8px;background:#17191b;font-size:.7rem}
+@media(max-width:1100px){.studio-main-content .studio-reference-customization-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-main-content .studio-reference-glow-settings{grid-column:2;grid-row:auto}.studio-main-content .studio-reference-color-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.studio-main-content .studio-reference-customization-grid,.studio-main-content .studio-reference-color-grid,.studio-main-content .studio-reference-other-options{grid-template-columns:minmax(0,1fr)}.studio-main-content .studio-reference-glow-settings{grid-column:auto}}
