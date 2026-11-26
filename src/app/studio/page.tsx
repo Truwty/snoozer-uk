@@ -1,18 +1,40 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { linkGoogleIdentity } from "@/app/auth/actions";
 import { ClaimForm } from "@/components/claim-form";
-import { AnalyticsChart } from "@/components/analytics-chart";
-import { CopyLink } from "@/components/copy-link";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { aliasInventory } from "@/lib/aliases";
-import { dailyAnalytics } from "@/lib/analytics";
+import { dailyAnalytics, trafficAnalytics } from "@/lib/analytics";
 import { accountPlan } from "@/lib/entitlements";
 
-export const metadata = { title: "Studio Overview", robots: { index: false, follow: false } };
+export const metadata = { title: "Account Overview", robots: { index: false, follow: false } };
 
 type Search = StudioProfileQuery & { logout?: string; deleted?: string; restored?: string };
+
+const DEVICE_COLOURS = ["#d8fb86", "#a4b987", "#738c69", "#596a52", "#a5aaa1"];
+
+function profileChart(rows: { day: string; views: number; clicks: number }[]) {
+  if (rows.length === 0) return null;
+  const points = rows.map((row, index) => ({
+    x: rows.length === 1 ? 500 : 18 + (index / (rows.length - 1)) * 964,
+    y: 170 - row.views / Math.max(1, ...rows.map((item) => item.views)) * 145,
+  }));
+  const line = points.map((point, index) =>
+    (index === 0 ? "M" : "L") + " " + point.x.toFixed(1) + " " + point.y.toFixed(1)
+  ).join(" ");
+  return {
+    line,
+    area: line + " L 982 184 L 18 184 Z",
+    first: rows[0].day,
+    last: rows[rows.length - 1].day,
+  };
+}
+
+function deviceLabel(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 export default async function Page({ searchParams }: { searchParams: Promise<Search> }) {
   if (!supabaseUrl || !supabaseKey) redirect("/sign-in");
@@ -22,10 +44,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   if (!draft) return <main className="shell studio-shell studio-overview">
     {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
     <header className="studio-page-heading">
-      <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Account overview</h1><p className="muted">Claim your Snoozer address to start building your page.</p></div>
+      <div><p className="eyebrow">ACCOUNT OVERVIEW</p><h1>Account Overview</h1>
+        <p className="muted">Claim your Snoozer address to start building your page.</p></div>
     </header>
     <section className="studio-dashboard-panel studio-claim-panel stack">
-      <div className="studio-panel-icon" aria-hidden="true">✦</div>
+      <div className="studio-panel-icon" aria-hidden="true">☾</div>
       <h2>Claim your address</h2>
       <p className="muted">Choose the username people will use to find your page.</p>
       <ClaimForm/>
@@ -35,21 +58,34 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   const selected = params.profile === undefined ? undefined : draft.profile_id;
   const client = await sessionClient();
-  const [planResponse, aliasesResponse, viewsResponse] = await Promise.all([
+  const [planResponse, aliasesResponse, viewsResponse, trafficResponse, userResponse] = await Promise.all([
     client.rpc("get_my_plan"),
     client.rpc("list_my_aliases", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_view_days", { p_profile: draft.profile_id }),
+    client.rpc("get_my_profile_traffic_totals", { p_profile: draft.profile_id }),
+    client.auth.getUser(),
   ]);
+
   const plan = accountPlan.safeParse(planResponse.data);
   const aliases = aliasInventory.safeParse(aliasesResponse.data);
   const views = dailyAnalytics.safeParse(viewsResponse.data);
-  const viewTotal = views.success ? views.data.reduce((sum, row) => sum + row.views, 0) : null;
-  const clickTotal = views.success ? views.data.reduce((sum, row) => sum + row.clicks, 0) : null;
+  const traffic = trafficAnalytics.safeParse(trafficResponse.data);
+  const viewRows = views.success ? views.data : [];
+  const viewTotal = viewRows.reduce((sum, row) => sum + row.views, 0);
+  const clickTotal = viewRows.reduce((sum, row) => sum + row.clicks, 0);
   const profileId = draft.profile_id.replace(/-/g, "").slice(0, 8).toUpperCase();
+
+  const user = userResponse.data.user;
+  const providers = Array.isArray(user?.app_metadata?.providers)
+    ? user.app_metadata.providers.filter((provider): provider is string => typeof provider === "string")
+    : typeof user?.app_metadata?.provider === "string" ? [user.app_metadata.provider] : [];
+  const googleConnected = providers.includes("google")
+    || Boolean(user?.identities?.some((identity) => identity.provider === "google"));
+
   const completionItems = [
     { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/builder", selected) },
     { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/builder", selected) },
-    { label: "Add at least one social link", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
+    { label: "Add a social link", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
     { label: "Add a content section", done: draft.sections.length > 0, href: studioHref("/studio/builder", selected) },
     { label: "Publish your profile", done: draft.published_revision !== null, href: studioHref("/studio/builder", selected) },
   ];
@@ -58,6 +94,24 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const status = draft.published_revision === null ? "Not published"
     : draft.revision === draft.published_revision ? "Live and up to date" : "Unpublished changes";
 
+  const deviceTotals = new Map<string, number>();
+  if (traffic.success) {
+    for (const row of traffic.data) deviceTotals.set(row.device, (deviceTotals.get(row.device) ?? 0) + row.views);
+  }
+  const devices = [...deviceTotals.entries()].sort((a, b) => b[1] - a[1]);
+  const deviceTotal = devices.reduce((sum, [, count]) => sum + count, 0);
+  let deviceCursor = 0;
+  const deviceGradient = deviceTotal > 0
+    ? devices.map(([, count], index) => {
+      const start = deviceCursor;
+      deviceCursor += count / deviceTotal * 100;
+      return DEVICE_COLOURS[index % DEVICE_COLOURS.length] + " " + start.toFixed(2) + "% " + deviceCursor.toFixed(2) + "%";
+    }).join(", ")
+    : "#252a25";
+  const chartRows = [...viewRows].slice(0, 7)
+    .sort((a, b) => a.day.localeCompare(b.day));
+  const chart = profileChart(chartRows);
+
   return <main className="shell studio-shell studio-overview">
     {params.logout === "failed" && <p className="message error" role="alert">Could not sign out. Try again.</p>}
     {params.deleted === "1" && <p className="message" role="status">Your profile was deleted. Its images are queued for removal.</p>}
@@ -65,14 +119,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
     <header className="studio-page-heading">
       <div>
-        <p className="eyebrow">ACCOUNT / OVERVIEW</p>
-        <h1>Account overview</h1>
-        <p className="muted">Your profile, account progress and recent activity in one place.</p>
+        <p className="eyebrow">ACCOUNT OVERVIEW</p>
+        <h1>Account Overview</h1>
+        <p className="muted">Your account at a glance.</p>
       </div>
       <div className="actions studio-overview-actions">
-        {draft.published_revision !== null && <CopyLink path={"/" + draft.username} label="Share profile"/>}
         {draft.published_revision !== null && <Link className="button small" href={"/" + draft.username} target="_blank" rel="noreferrer">View My Page ↗</Link>}
-        <Link className="button primary" href={studioHref("/studio/builder", selected)}>Open Page Builder <span aria-hidden="true">→</span></Link>
+        <Link className="button primary" href={studioHref("/studio/builder", selected)}>Edit Profile <span aria-hidden="true">→</span></Link>
       </div>
     </header>
 
@@ -84,7 +137,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">⌑</span>
         <div><span className="studio-stat-label">Aliases</span><strong>{aliases.success ? aliases.data.used + " / " + aliases.data.limit : "—"}</strong>
-          <small>{aliases.success ? Math.max(0, aliases.data.limit - aliases.data.used) + " slots remaining" : "Alias data unavailable"}</small></div>
+          <small>{aliases.success ? Math.max(0, aliases.data.limit - aliases.data.used) + " available" : "Alias data unavailable"}</small></div>
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">#</span>
@@ -92,8 +145,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">◉</span>
-        <div><span className="studio-stat-label">Profile Views</span><strong>{viewTotal === null ? "—" : viewTotal.toLocaleString("en-GB")}</strong>
-          <small>{clickTotal === null ? "Analytics unavailable" : clickTotal.toLocaleString("en-GB") + " recorded link clicks"}</small></div>
+        <div><span className="studio-stat-label">Profile Views</span><strong>{viewTotal.toLocaleString("en-GB")}</strong>
+          <small>{clickTotal.toLocaleString("en-GB")} recorded link clicks</small></div>
       </article>
     </section>
 
@@ -108,8 +161,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         </div>
         <div className="studio-completion-callout">
           <span aria-hidden="true">✓</span>
-          <div><strong>{completed === completionItems.length ? "Your profile is complete!" : "You’re making progress."}</strong>
-            <p>{completed === completionItems.length ? "Your profile is ready to share. Keep exploring Studio to make it your own." : "Complete the steps below to get your Snoozer page ready for visitors."}</p></div>
+          <div><strong>{completed === completionItems.length ? "Your profile is complete!" : "Complete your profile."}</strong>
+            <p>{completed === completionItems.length ? "Your Snoozer page is ready to share. You can keep refining it at any time." : "Finish these steps to get your Snoozer page ready for visitors."}</p></div>
         </div>
         <ul className="studio-completion-list">
           {completionItems.map((item) => <li key={item.label}>
@@ -123,17 +176,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       <aside className="studio-dashboard-panel studio-manage-panel">
         <p className="eyebrow">QUICK ACTIONS</p>
         <h2>Manage your account</h2>
-        <p className="muted">Shortcuts to the parts of Snoozer you use most.</p>
-        <Link href={studioHref("/studio/account", selected)}><span>◎</span>Account settings <b>↗</b></Link>
-        <Link href={studioHref("/studio/builder", selected)}><span>✎</span>Edit profile details <b>↗</b></Link>
-        <Link href={studioHref("/studio/customize", selected)}><span>✦</span>Customize appearance <b>↗</b></Link>
-        <Link href={studioHref("/studio/links", selected)}><span>⌁</span>Manage social links <b>↗</b></Link>
-        <Link href={studioHref("/studio/settings", selected)}><span>⚙</span>Aliases & custom domains <b>↗</b></Link>
-        <Link href={studioHref("/studio/plan", selected)}><span>◇</span>Plan and usage <b>↗</b></Link>
-        <Link href={studioHref("/studio/badges", selected)}><span>✧</span>Manage profile badges <b>↗</b></Link>
+        <Link href={studioHref("/studio/settings", selected)}><span>✎</span>Change Username <b>↗</b></Link>
+        <Link href={studioHref("/studio/builder", selected)}><span>✧</span>Change Display Name <b>↗</b></Link>
+        <Link href={studioHref("/studio/settings", selected)}><span>⌑</span>Manage Aliases <b>↗</b></Link>
+        <Link href={studioHref("/studio/account", selected)}><span>⚙</span>Account Settings <b>↗</b></Link>
         <div className="studio-connection-card">
-          <div><strong>Connections</strong><span>Services connected to your profile</span></div>
+          <div><strong>Connections</strong><span>Linked services and profile integrations</span></div>
           <Link href={studioHref("/studio/discord", selected)}>Discord Presence <b>↗</b></Link>
+          <div className="studio-connection-status"><span>Google account</span><strong>{googleConnected ? "Connected" : "Not connected"}</strong></div>
+          {!googleConnected && <form action={linkGoogleIdentity}><button type="submit">Connect Google</button></form>}
           <Link href={studioHref("/studio/spotify", selected)}>Spotify Embeds <b>↗</b></Link>
         </div>
       </aside>
@@ -141,41 +192,46 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
     <section className="studio-dashboard-panel studio-overview-analytics">
       <div className="studio-panel-heading">
-        <div><p className="eyebrow">ACCOUNT ANALYTICS</p><h2>Profile activity</h2><p className="muted">A clear view of the activity visitors have agreed to share.</p></div>
-        <Link className="button small" href={studioHref("/studio/analytics", selected)}>View full analytics <span aria-hidden="true">↗</span></Link>
+        <div><p className="eyebrow">ACCOUNT ANALYTICS</p><h2>Account Analytics</h2></div>
+        <Link className="button small" href={studioHref("/studio/analytics", selected)}>View More <span aria-hidden="true">↗</span></Link>
       </div>
-      <div className="studio-overview-analytics-grid">
-        <section className="studio-analytics-chart-panel">
-          <div className="studio-analytics-card-heading">
-            <div><p className="eyebrow">RECENT ACTIVITY</p><h3>Views and link clicks</h3></div>
-            <span className="studio-analytics-period">Recorded activity</span>
+      <div className="studio-video-analytics-grid">
+        <section className="studio-video-analytics-card">
+          <h3>Visitor Devices</h3>
+          <div className="studio-device-chart-wrap">
+            <div className="studio-device-donut" role="img"
+              aria-label={deviceTotal > 0 ? devices.map(([device, count]) => deviceLabel(device) + " " + count).join(", ") : "No visitor device data yet"}
+              style={{ background: "conic-gradient(" + deviceGradient + ")" }}>
+              <div className="studio-device-donut-copy"><strong>{deviceTotal.toLocaleString("en-GB")}</strong><span>Recorded views</span></div>
+            </div>
           </div>
-          {views.success && views.data.length > 0
-            ? <AnalyticsChart rows={views.data}/>
-            : <div className="studio-empty-state"><strong>No chart data available yet</strong>
-              <span>{viewsResponse.error ? "Analytics could not be loaded right now." : "Views will appear here when visitors with analytics consent open your page."}</span></div>}
+          <div className="studio-device-legend">
+            {devices.length ? devices.map(([device, count], index) => <span key={device}>
+              <i style={{ background: DEVICE_COLOURS[index % DEVICE_COLOURS.length] }}/>{deviceLabel(device)} {count.toLocaleString("en-GB")}
+            </span>) : <span>No device data available yet</span>}
+          </div>
+          <p className="muted">Aggregated over your available analytics retention period.</p>
         </section>
-        <aside className="studio-analytics-insights">
-          <p className="eyebrow">ENGAGEMENT SNAPSHOT</p>
-          <h3>Your activity</h3>
-          <div className="studio-analytics-insight">
-            <span>Profile views</span>
-            <strong>{viewTotal === null ? "—" : viewTotal.toLocaleString("en-GB")}</strong>
-            <small>Consented profile visits</small>
-          </div>
-          <div className="studio-analytics-insight">
-            <span>Link clicks</span>
-            <strong>{clickTotal === null ? "—" : clickTotal.toLocaleString("en-GB")}</strong>
-            <small>Recorded link interactions</small>
-          </div>
-          <p className="muted">Snoozer only reports activity that visitors have consented to share. No visitor-level tracking is shown here.</p>
-        </aside>
+        <section className="studio-video-analytics-card">
+          <h3>Profile Views</h3>
+          {chart ? <div className="studio-profile-chart">
+            <svg viewBox="0 0 1000 200" role="img" aria-label={"Profile views from " + chart.first + " to " + chart.last}>
+              {[25, 95, 165].map((y) => <line key={y} className="chart-grid" x1="18" y1={y} x2="982" y2={y}/>)}
+              <path className="chart-area" d={chart.area}/>
+              <path className="chart-line" d={chart.line}/>
+            </svg>
+            <div className="studio-profile-chart-dates"><span>{chart.first}</span><span>{chart.last}</span></div>
+          </div> : <div className="studio-device-chart-wrap"><div className="studio-empty-state">
+            <strong>No profile views yet</strong><span>Views will appear here when visitors allow analytics on your published profile.</span>
+          </div></div>}
+          <p className="muted">Latest seven active UTC dates with consented profile views; inactive dates are omitted.</p>
+        </section>
       </div>
     </section>
 
     <section className="studio-bottom-note">
       <div><span>Current plan</span><strong>{plan.success ? plan.data.plan.toUpperCase() : "PLAN DETAILS UNAVAILABLE"}</strong></div>
-      <Link href={studioHref("/studio/plan", selected)}>View plan and usage <span aria-hidden="true">↗</span></Link>
+      <Link href={studioHref("/studio/plan", selected)}>Manage Premium <span aria-hidden="true">↗</span></Link>
     </section>
   </main>;
 }
