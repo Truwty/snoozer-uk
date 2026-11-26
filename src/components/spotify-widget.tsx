@@ -54,7 +54,8 @@ export function SpotifyWidget({
         allowFullScreen
       />
     </div>
-    {compact && <a className="spotify-widget__compact-open" href={link} target="_blank" rel="ugc nofollow noopener noreferrer">
+    {compact && <a className="spotify-widget__compact-open" href={link} target="_blank" rel="ugc nofollow noopener noreferrer"
+      data-analytics-profile={analyticsUsername} data-analytics-position={analyticsPosition}>
       Open in Spotify <span aria-hidden="true">↗</span>
     </a>}
   </section>;
