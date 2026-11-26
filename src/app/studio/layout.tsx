@@ -4,6 +4,7 @@ import { StudioSidebar } from "@/components/studio-sidebar";
 import { StudioAccountControl } from "@/components/studio-account-control";
 import { StudioCommandPalette } from "@/components/studio-command-palette";
 import { readStudioDraft } from "@/lib/profiles-server";
+import "./studio-shared.css";
 import "./studio-dashboard.css";
 import "./studio-dashboard-extra.css";
 import "./studio-video-fidelity.css";
