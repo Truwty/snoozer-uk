@@ -32,6 +32,6 @@ Existing Stripe gift-code and paid-gift processes remain separate and unchanged.
 
 The private `snoozer.badge_catalog` is the source of badge definitions; `snoozer.profile_badges` stores awards. The seeded catalogue covers automatic profile/account milestones, manual staff/community awards and future seasonal, anniversary, audience, leaderboard, creator, Premium and unique rewards.
 
-Automatic awards are calculated against real database state and inserted by profile/activity triggers. Future entries remain previews until their qualifying feature or metric is implemented and activated. Owner Control Centre → Badges allows an AAL2 Owner to search accounts, select profiles, award current or future catalogue badges, create one-off unique badges and revoke awards with an audited reason. Public profiles expose only active public awards.
+**Temporary status (26 November 2026):** achievement badges are hidden from public profiles, and the Studio/Owner badge-management pages and navigation are disabled. Stored award records, catalogue definitions, migrations and private database history are retained; no badge records or images were deleted. The badge UI can be restored later without reconstructing past awards. Awarding/trigger history remains in the database but is not exposed through the application UI during this pause.
 
 The current catalogue contains 122 badge definitions.

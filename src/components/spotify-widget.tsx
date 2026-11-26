@@ -49,11 +49,14 @@ export function SpotifyWidget({
         loading="lazy"
         width="100%"
         height={isCompact ? 152 : 352}
-        referrerPolicy="no-referrer"
+        referrerPolicy="strict-origin-when-cross-origin"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
         allowFullScreen
       />
     </div>
+    {compact && <a className="spotify-widget__compact-open" href={link} target="_blank" rel="ugc nofollow noopener noreferrer"
+      data-analytics-profile={analyticsUsername} data-analytics-position={analyticsPosition}>
+      Open in Spotify <span aria-hidden="true">↗</span>
+    </a>}
   </section>;
 }

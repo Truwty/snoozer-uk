@@ -5,7 +5,7 @@ describe("Studio navigation", () => {
   it("matches the reference order for the first-level dashboard destinations", () => {
     expect(studioNavigationGroups[0].label).toBe("Account");
     expect(studioNavigationGroups[0].items.map((item) => item.label)).toEqual([
-      "Overview", "Analytics", "Badges", "Settings",
+      "Overview", "Analytics", "Settings",
     ]);
     expect(studioNavigationGroups[1].label).toBe("Main");
     expect(studioNavigationGroups[1].items.map((item) => item.label)).toEqual([
@@ -22,6 +22,9 @@ describe("Studio navigation", () => {
       "/account/notifications", "/account/data",
     ]) expect(hrefs).toContain(href);
     expect(studioNavigationGroups[2].label).toBe("More Snoozer tools");
+    expect(hrefs).not.toContain("/studio/badges");
+    expect(hrefs).not.toContain("/owner/badges");
+    expect(filterStudioNavigation("achievement badge")).toEqual([]);
   });
 
   it("filters across labels and keywords without returning empty groups", () => {

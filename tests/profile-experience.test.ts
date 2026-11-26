@@ -74,8 +74,33 @@ describe("compact public bio experience", () => {
 
     expect(html).toContain("spotify-widget--compact");
     expect(html).toContain("https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
+    expect(html).toContain('allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"');
+    expect(html.toLowerCase()).toContain('referrerpolicy="strict-origin-when-cross-origin"');
+    expect(html).toContain("spotify-widget__compact-open");
+    expect(html).toContain("Open in Spotify");
+    expect(html).not.toContain("sandbox=");
     expect(html).not.toContain("spotify-widget__header");
     expect(html).not.toContain("Profile music volume");
+  });
+
+  it("keeps stored achievement records hidden while profile badge display is disabled", () => {
+    const profile = profileWith({
+      badges: [{
+        slug: "legacy-achievement",
+        name: "Legacy achievement",
+        description: "An award retained in the account record.",
+        icon: "★",
+        category: "creator",
+        rarity: "rare",
+        awarded_at: "2026-11-26T00:00:00.000Z",
+        color: "#d8fb86",
+        image_id: null,
+      }],
+    });
+    const html = renderToStaticMarkup(createElement(ProfileCard, { profile, entryExperience: true }));
+
+    expect(html).not.toContain("profile-official-badges");
+    expect(html).not.toContain("Legacy achievement");
   });
 
   it("keeps the existing Studio/profile renderer unchanged when entry experience is disabled", () => {

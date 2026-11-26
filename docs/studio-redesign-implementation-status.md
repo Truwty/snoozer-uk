@@ -4,18 +4,17 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 
 ## Current release state — 26 November 2026
 
-- Main commit: c57d68733f5e3ebccd3ebc495b84788f406175db.
-- PR #112 (dashboard video redesign) and PR #113 (Studio feature expansion) are merged.
-- The 14 migrations 20261126090000–20261126090013 are applied to connected Supabase project edgptbiwswcdmmxzwhxv. The migration registry was verified to end at 20261126090013.
-- The connected staging Render service srv-dbts6jon74is73en2rjg auto-deployed commit c57d687 on 26 November; the deploy dep-dc3r2b8ae00c73cqmg7g reached live.
-- Staging schema and merged Studio features are now aligned. The remaining requirements below are genuine follow-up work, not a claim that PR #113 is still unmerged.
-- Current follow-up optimisation is tracked on branch optimization/full-platform-hardening and draft PR #114. No merge to main or manual Render deployment is part of that work.
+- Main commit at the start of this follow-up: `09df799a636195433355404eda253ff3c7b0bd82`.
+- Dashboard video redesign PR #112, Studio expansion PR #113 and platform optimisation PR #114 are merged.
+- The 14 migrations `20261126090000`–`20261126090013` were applied to the connected staging Supabase project. The migration registry was previously verified through `20261126090013`.
+- Current follow-up branch: `feature/remove-profile-badges-fix-music`. It contains the temporary achievement-badge UI removal and Spotify/native-audio profile-player fixes.
+- No merge or Render deployment has been performed for this follow-up branch. The live Premium payment gates, Stripe configuration and six LIVE offers are outside this change and remain untouched.
 
 ## Branch and release state
 
-- Branch: `feature/dashboard-video-fidelity`.
-- Current follow-up is tracked in draft PR [#113](https://github.com/Truwty/snoozer-uk/pull/113), on `feature/dashboard-video-fidelity`.
-- No merge to `main` and no Render deployment were performed.
+- Working branch: `feature/remove-profile-badges-fix-music`, based on main commit `09df799a636195433355404eda253ff3c7b0bd82`.
+- A review PR for this follow-up will be opened after full CI verification.
+- Keep this branch isolated until the owner reviews and explicitly approves a release.
 
 ## Implemented in this follow-up
 
@@ -24,7 +23,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - Account overview: added a stable numeric profile UID; truthful retained view/click labels; an exact 7-day delta only when sufficient data is retained; five completion milestones; and provider connection status/actions.
 - Account overview analytics: device totals and the profile-view chart now use the same exact seven UTC calendar dates, with zero-view dates represented in the chart; added an owner-authorized, retention-aware device aggregate RPC and error states.
 - Account/security: username rename uses an atomic RPC, retains the previous URL as a permanent redirect, enforces a 30-day cooldown, and does not consume alias quota. Google/Discord unlink is confirmed, refuses to remove the last sign-in identity, and disconnects Discord Presence before unlinking. Marketing opt-in is explicit, persistent, and owner-scoped. Existing verified email change, MFA, device/session revocation, aliases, and gift-code claim flows remain.
-- Badges: official badge display ordering is user controlled; added plan-version-backed custom badge quotas (Free 0 / Plus 3 / Pro 8 / Studio 20), owner-scoped custom badge CRUD, private storage, safe image processing, public visibility controls, and archive coverage. Custom badges remain outside official system/owner award flows.
+- Badges: the public achievement-badge strip and Studio/Owner badge-management interfaces are temporarily disabled. Existing catalogue definitions, award records, private images and migrations are retained; no award history is deleted.
 - Profile editor: added rainbow/fuzzy/shuffle username effects, explicit location/visibility, and a persisted Swap Box Colours control with schema validation and a focused appearance test. Existing profile appearance/editor remains in use.
 - Image Host: added `/studio/image-host` and retained `/studio/gallery`; the new screen reuses the existing private gallery upload/folder infrastructure and includes account-owned plain-text snippets with private/public modes, edit/delete, 16 KB content validation, a 25-item quota, and a `text/plain` public route.
 - Templates: added favorites, last-used history, user uploads/create, community tab, reporting, declarative config validation, an MFA-gated owner moderation queue, and server-maintained use counts for approved community templates. Community templates remain free and cannot contain executable code or arbitrary CSS/HTML.
@@ -39,7 +38,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 | Account settings/security | Partial | Rename, email change, aliases, identity unlink, MFA, sessions and marketing preference work. Locale translations/persistence are absent. Gift purchase is still sandbox-only under the current Stripe gift implementation; no production gift purchase or buyer inventory is provided. |
 | Account overview | Partial | Numeric UID, milestones, honest retained-data metrics and conditional 7-day delta exist. Percentile is intentionally omitted because the app has no suitable comparable population dataset. |
 | Analytics | Partial | 3/7/30/all-time controls and existing reports/exports remain. No country report is produced because the privacy model has no consent-aware coarse-country aggregate. Full dashboard metric/date-range parity still needs authenticated E2E verification. |
-| Badges | Partial | Official ordering/visibility and secure custom badge CRUD/quota are implemented. No styling/recolouring for official badges (to protect award integrity), and no full earned/locked/future catalogue redesign. |
+| Badges | Temporarily disabled | Public badge rendering, Studio navigation/management and Owner badge management redirect to their dashboards. Catalogue, awards, private images and migration history are retained; no award data is deleted. |
 | Profile customisation | Partial | Username effects, explicit location, and Swap Box Colours are added. Existing controls are retained. Discord avatar/decoration settings are absent because no authorized avatar-decoration data path exists. Complete reference layout comparison remains. |
 | Asset uploader / Audio / Image Host | Partial | Dedicated Image Host route uses existing gallery storage/folders and now supports secured text pastes. It does not yet provide standalone binary asset URL management, custom domains/DNS/TLS, usage analytics, audio library/multiple tracks, or custom cursor. |
 | Community templates | Partial | Favorites, recents, user submissions, report controls, owner moderation, real aggregate use counts, and server-side title/description search, newest/popular sorting, and pagination exist. Missing covers/creator profiles, tags, and real ratings. No trending or rating claims are fabricated. |
