@@ -138,6 +138,20 @@ const compositions: readonly Composition[] = [
   { style: "velvet", name: "Velvet Room", category: "luxe", description: "Rich velvet tones, soft gradients and a spacious, lounge-like profile card.", layout: "portfolio", density: "airy", corners: "round", font: "serif", gradient: true, monochrome: false, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true, sectionOne: "The room", sectionTwo: "Curated favourites" }
 ];
 
+export function templatePaletteIdForAppearance(appearance: ProfileContent["appearance"]): string | null {
+  const colours = appearance.colors;
+  if (!colours) return null;
+  return palettes.find((palette) =>
+    palette.background === colours.background
+    && palette.text === colours.text
+    && palette.accent === colours.accent
+    && palette.icon === colours.icon
+    && palette.effect === colours.effect
+    && palette.gradientStart === colours.gradientStart
+    && palette.gradientEnd === colours.gradientEnd
+  )?.id ?? null;
+}
+
 export const templatePaletteThemes = Object.fromEntries(palettes.map(({id,theme})=>[id,theme])) as Record<string, typeof themes[number]>;
 export const templateStyleCategories = Object.fromEntries(compositions.map(({style,category})=>[style,category])) as Record<ProfileTemplateStyle, TemplateCategory>;
 

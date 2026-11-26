@@ -89,7 +89,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     const style=appearance.data.templateStyle;
     if(filters.theme!=="all"&&item.config.theme!==filters.theme)return [];
     if(filters.layout!=="all"&&appearance.data.layout!==filters.layout)return [];
-    if(filters.palette!=="all"&&templatePaletteThemes[filters.palette]!==item.config.theme)return [];
+    if(filters.palette!=="all"&&templatePaletteIdForAppearance(appearance.data)!==filters.palette)return [];
     if(filters.category!=="all"&&(!style||templateStyleCategories[style]!==filters.category))return [];
     return [{...item,config:{theme:item.config.theme,appearance:appearance.data,sections:sections.data}}];
   }):[];
