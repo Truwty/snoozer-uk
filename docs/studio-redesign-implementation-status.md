@@ -5,8 +5,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 ## Branch and release state
 
 - Branch: `feature/dashboard-video-fidelity`.
-- Local starting HEAD for this follow-up: `05d9b38fa309b8383ce3cbe54d74efe160949661`.
-- The previous PR for the earlier branch head was merged and closed. This follow-up has not been pushed or opened as a new PR yet.
+- Current follow-up is tracked in draft PR [#113](https://github.com/Truwty/snoozer-uk/pull/113), on `feature/dashboard-video-fidelity`.
 - No merge to `main` and no Render deployment were performed.
 
 ## Implemented in this follow-up
@@ -14,6 +13,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - Studio command palette: Ctrl+K / Cmd+K opens a keyboard-accessible modal; text filters Studio destinations; arrows and Enter select; Escape closes; Tab is trapped; focus is restored; the modal adapts to narrow screens. Existing sidebar filtering remains.
 - Analytics: added a real inclusive UTC 3-day range; retained the 7-day, 30-day, and all-retained-data ranges.
 - Account overview: added a stable numeric profile UID; truthful retained view/click labels; an exact 7-day delta only when sufficient data is retained; five completion milestones; and provider connection status/actions.
+- Account overview analytics: device totals and the profile-view chart now use the same exact seven UTC calendar dates, with zero-view dates represented in the chart; added an owner-authorized, retention-aware device aggregate RPC and error states.
 - Account/security: username rename uses an atomic RPC, retains the previous URL as a permanent redirect, enforces a 30-day cooldown, and does not consume alias quota. Google/Discord unlink is confirmed, refuses to remove the last sign-in identity, and disconnects Discord Presence before unlinking. Marketing opt-in is explicit, persistent, and owner-scoped. Existing verified email change, MFA, device/session revocation, aliases, and gift-code claim flows remain.
 - Badges: official badge display ordering is user controlled; added plan-version-backed custom badge quotas (Free 0 / Plus 3 / Pro 8 / Studio 20), owner-scoped custom badge CRUD, private storage, safe image processing, public visibility controls, and archive coverage. Custom badges remain outside official system/owner award flows.
 - Profile editor: added rainbow/fuzzy/shuffle username effects, explicit location/visibility, and a persisted Swap Box Colours control with schema validation and a focused appearance test. Existing profile appearance/editor remains in use.
@@ -26,7 +26,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 | Plan area | Status | Evidence / outstanding work |
 | --- | --- | --- |
 | Repository and architecture audit | Partial | Branch, PR, migrations, RLS, entitlements, actions, routes and tests inspected. A fresh connected-provider/production-schema audit still requires a configured Supabase project. |
-| Shared foundations | Partial | Migrations `20261126090000`–`20261126090010` add username history, consent, export coverage, appearance fields, badge order/custom badges, community templates, Swap Box Colours, and private/public text pastes. No common audio/cursor/custom-domain asset foundation yet. |
+| Shared foundations | Partial | Migrations `20261126090000`–`20261126090011` add username history, consent, export coverage, appearance fields, badge order/custom badges, community templates, Swap Box Colours, private/public text pastes, and seven-day device analytics. No common audio/cursor/custom-domain asset foundation yet. |
 | Account settings/security | Partial | Rename, email change, aliases, identity unlink, MFA, sessions and marketing preference work. Locale translations/persistence are absent. Gift purchase is still sandbox-only under the current Stripe gift implementation; no production gift purchase or buyer inventory is provided. |
 | Account overview | Partial | Numeric UID, milestones, honest retained-data metrics and conditional 7-day delta exist. Percentile is intentionally omitted because the app has no suitable comparable population dataset. |
 | Analytics | Partial | 3/7/30/all-time controls and existing reports/exports remain. No country report is produced because the privacy model has no consent-aware coarse-country aggregate. Full dashboard metric/date-range parity still needs authenticated E2E verification. |
@@ -50,21 +50,22 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - `supabase/migrations/20261126090008_community_template_hub.sql`
 - `supabase/migrations/20261126090009_swap_profile_box_colours.sql`
 - `supabase/migrations/20261126090010_image_host_text_pastes.sql`
+- `supabase/migrations/20261126090011_overview_seven_day_devices.sql`
 
 Migrations are covered by the repository's PGlite migration tests. Applying them to a live Supabase project and validating deployed RLS/storage behavior was not done.
 
 ## Local verification
 
-Latest results after the final code change in this follow-up:
+Latest local checks for the current working tree:
 
 - `npm test`: passed — 48 Vitest files / 360 tests, plus 10 Node tests.
 - `npm run typecheck`: passed.
-- `npm run lint`: passed with 0 errors and 6 warnings (existing unused imports/variables and an existing effect dependency warning; see command output).
+- `npm run lint`: passed with 0 errors and 6 existing warnings (unused imports/variables and an effect dependency warning).
 - `npm run audit`: passed — zero dependency vulnerabilities.
 - `npm run build`: passed — production Next.js build.
-- `npm run test:e2e`: passed — 61 passed, 30 skipped; no failures. Supabase-dependent tests are skipped because this checkout has no `.env.local` or configured Supabase test project. Discord worker configuration is also absent and the app correctly starts without that worker.
+- `npm run test:e2e`: passed — 61 passed, 30 skipped; no failures. Supabase-dependent tests are skipped locally because this checkout has no `.env.local`; GitHub CI used disposable Supabase and passed those flows on the preceding commit.
 - Focused auth regression E2E: 4 passed after the fail-closed fallback change.
-- Secret scanning and final GitHub Actions checks are not yet recorded; run them after staging/pushing the final commit.
+- GitHub Actions run `45749347497` on commit `8984d9b5e2864726d4bb584ae1acee9b4fb61f95` passed all five browser shards, security/quality checks and the aggregate validation job. A fresh run is required after the current seven-day overview alignment changes are pushed.
 
 ## Remaining blockers for full completion
 
@@ -73,4 +74,4 @@ Latest results after the final code change in this follow-up:
 - The app has no locale translation architecture; a locale selector without translated pages would misrepresent functionality.
 - There is no stored consent-aware country aggregate, authorized Discord avatar-decoration path, or reliable population dataset for percentile claims.
 - Audio library/multi-track shuffle, custom cursor, richer Image Host (standalone binary URLs, custom domains, usage analytics), complete community marketplace metadata/filtering, and full reference visual parity remain to be implemented.
-- Full CI completion depends on the final branch commit being pushed and the resulting GitHub Actions run finishing successfully.
+- Full CI must be rerun after the current overview alignment change is pushed. PR #113 remains draft while substantive plan gaps above remain.

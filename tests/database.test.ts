@@ -371,6 +371,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       { campaign, label: "Newsletter", source: "email", device: "mobile", views: 1, clicks: 0 },
       { campaign: null, label: "No campaign", source: "email", device: "mobile", views: 1, clicks: 0 },
     ]));
+    expect((await db.query("select * from public.get_my_profile_device_views_7d($1)", [profile])).rows)
+      .toEqual([{ device: "mobile", views: 2 }]);
     await db.query("select public.set_analytics_campaign_active($1,$2,false)", [profile, campaign]);
     await act("service_role");
     await record(campaign!, alice);

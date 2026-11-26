@@ -44,6 +44,9 @@ export const trafficAnalytics = z.array(z.object({
   campaign: z.uuid().nullable(), label: z.string().min(1).max(80), source: z.enum(trafficSources), device: z.enum(trafficDevices),
   views: z.number().int().nonnegative().safe(), clicks: z.number().int().nonnegative().safe(),
 })).max(1000);
+export const overviewDeviceAnalytics = z.array(z.object({
+  device: z.enum(trafficDevices), views: z.number().int().nonnegative().safe(),
+})).max(4);
 
 export async function receiveAnalytics(request: Request, origin: string, record: (event: AnalyticsEvent) => Promise<void>, boundUsername?: string) {
   const reply = (status: number) => new Response(null, { status, headers: { "Cache-Control": "no-store" } });

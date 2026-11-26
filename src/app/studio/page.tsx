@@ -6,7 +6,7 @@ import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/prof
 import { sessionClient } from "@/lib/supabase";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { aliasInventory } from "@/lib/aliases";
-import { analyticsRangeStart, dailyAnalytics, trafficAnalytics } from "@/lib/analytics";
+import { analyticsRangeStart, dailyAnalytics, overviewDeviceAnalytics } from "@/lib/analytics";
 import { accountPlan } from "@/lib/entitlements";
 import { discordPresenceSettings } from "@/lib/discord-presence";
 
@@ -59,11 +59,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   const selected = params.profile === undefined ? undefined : draft.profile_id;
   const client = await sessionClient();
-  const [planResponse, aliasesResponse, viewsResponse, trafficResponse, userResponse, uidResponse, discordResponse] = await Promise.all([
+  const [planResponse, aliasesResponse, viewsResponse, deviceResponse, userResponse, uidResponse, discordResponse] = await Promise.all([
     client.rpc("get_my_plan"),
     client.rpc("list_my_aliases", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_view_days", { p_profile: draft.profile_id }),
-    client.rpc("get_my_profile_traffic_totals", { p_profile: draft.profile_id }),
+    client.rpc("get_my_profile_device_views_7d", { p_profile: draft.profile_id }),
     client.auth.getUser(),
     client.rpc("get_my_profile_uid", { p_profile: draft.profile_id }),
     client.rpc("discord_presence_get_my_settings", { p_profile: draft.profile_id }),
@@ -72,7 +72,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const plan = accountPlan.safeParse(planResponse.data);
   const aliases = aliasInventory.safeParse(aliasesResponse.data);
   const views = dailyAnalytics.safeParse(viewsResponse.data);
-  const traffic = trafficAnalytics.safeParse(trafficResponse.data);
+  const deviceAnalytics = overviewDeviceAnalytics.safeParse(deviceResponse.data);
   const discord = discordPresenceSettings.safeParse(discordResponse.data);
   const viewRows = views.success ? views.data : [];
   const viewTotal = viewRows.reduce((sum, row) => sum + row.views, 0);
@@ -106,11 +106,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const status = draft.published_revision === null ? "Not published"
     : draft.revision === draft.published_revision ? "Live and up to date" : "Unpublished changes";
 
-  const deviceTotals = new Map<string, number>();
-  if (traffic.success) {
-    for (const row of traffic.data) deviceTotals.set(row.device, (deviceTotals.get(row.device) ?? 0) + row.views);
-  }
-  const devices = [...deviceTotals.entries()].sort((a, b) => b[1] - a[1]);
+  const devices = deviceAnalytics.success ? deviceAnalytics.data.map((row) => [row.device, row.views] as const) : [];
   const deviceTotal = devices.reduce((sum, [, count]) => sum + count, 0);
   let deviceCursor = 0;
   const deviceGradient = deviceTotal > 0
@@ -120,9 +116,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       return DEVICE_COLOURS[index % DEVICE_COLOURS.length] + " " + start.toFixed(2) + "% " + deviceCursor.toFixed(2) + "%";
     }).join(", ")
     : "#252a25";
-  const chartRows = [...viewRows].slice(0, 7)
-    .sort((a, b) => a.day.localeCompare(b.day));
-  const chart = profileChart(chartRows);
+  const viewsByDay = new Map(viewRows.filter((row) => row.day >= analyticsRangeStart("7d")).map((row) => [row.day, row]));
+  const chartRows = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(Date.parse(analyticsRangeStart("7d") + "T00:00:00.000Z") + index * 86400000).toISOString().slice(0, 10);
+    return viewsByDay.get(date) ?? { day: date, views: 0, clicks: 0 };
+  });
+  const hasRecentViews = viewRows.some((row) => row.day >= analyticsRangeStart("7d"));
+  const chart = hasRecentViews ? profileChart(chartRows) : null;
 
   return <main className="shell studio-shell studio-overview">
     {params.logout === "failed" && <p className="message error" role="alert">Could not sign out. Try again.</p>}
@@ -225,10 +225,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
               <i style={{ background: DEVICE_COLOURS[index % DEVICE_COLOURS.length] }}/>{deviceLabel(device)} {count.toLocaleString("en-GB")}
             </span>) : <span>No device data available yet</span>}
           </div>
-          <p className="muted">Aggregated over your available analytics retention period.</p>
+          {deviceResponse.error && <p className="message error" role="alert">Visitor device data could not be loaded right now.</p>}
+          <p className="muted">Recorded profile views across the last 7 UTC calendar days.</p>
         </section>
         <section className="studio-video-analytics-card">
           <h3>Profile Views</h3>
+          {viewsResponse.error && <p className="message error" role="alert">Profile views could not be loaded right now.</p>}
           {chart ? <div className="studio-profile-chart">
             <svg viewBox="0 0 1000 200" role="img" aria-label={"Profile views from " + chart.first + " to " + chart.last}>
               {[25, 95, 165].map((y) => <line key={y} className="chart-grid" x1="18" y1={y} x2="982" y2={y}/>)}
@@ -239,7 +241,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           </div> : <div className="studio-device-chart-wrap"><div className="studio-empty-state">
             <strong>No profile views yet</strong><span>Views will appear here when visitors allow analytics on your published profile.</span>
           </div></div>}
-          <p className="muted">Latest seven active UTC dates with consented profile views; inactive dates are omitted.</p>
+          <p className="muted">Consented profile views across the last 7 UTC calendar days; dates without views show as zero.</p>
         </section>
       </div>
     </section>
