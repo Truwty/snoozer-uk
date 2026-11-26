@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { createBrowserClient } from "@supabase/ssr";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
+import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
+import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
+import { supabaseConfig } from "@/lib/env";
 import { type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
@@ -49,7 +53,7 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
 ];
 
 export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
-  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
+  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, refreshSaved, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
   const [previewSize, setPreviewSize] = useState("wide");
@@ -58,6 +62,13 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [announcement, setAnnouncement] = useState("");
   const [providerQuery, setProviderQuery] = useState("");
   const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
+  const [customUrlOpen, setCustomUrlOpen] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+  const [customSocialMode, setCustomSocialMode] = useState<"icon" | "text">("icon");
+  const [customIconFile, setCustomIconFile] = useState<File | null>(null);
+  const [customIconBusy, setCustomIconBusy] = useState(false);
+  const [customUrlError, setCustomUrlError] = useState("");
+  const customIconInput = useRef<HTMLInputElement>(null);
   const [dropActive, setDropActive] = useState(false);
   const pointerBlockDrag = useRef<{ pointerId: number; kind: BuilderBlock; x: number; y: number; active: boolean } | null>(null);
   const suppressBlockClick = useRef(false);
@@ -129,6 +140,72 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     set("links", reordered);
     setAnnouncement(`Moved link to position ${to + 1} of ${reordered.length}.`);
     focusLink(to);
+  }
+
+  async function addCustomUrl() {
+    if (content.links.length >= linkLimit) {
+      setCustomUrlError("Your current plan has reached its link limit.");
+      return;
+    }
+    let parsed: URL;
+    try { parsed = new URL(customUrl.trim()); } catch {
+      setCustomUrlError("Enter a valid URL.");
+      return;
+    }
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.hostname.length < 3) {
+      setCustomUrlError("Use a public HTTP or HTTPS address.");
+      return;
+    }
+    setCustomIconBusy(true);
+    setCustomUrlError("");
+    let uploadedId: string | undefined;
+    let stagedId: string | undefined;
+    try {
+      if (customSocialMode === "icon" && customIconFile) {
+        if (customIconFile.size < 1 || customIconFile.size > galleryMaxBytes || !galleryTypes.includes(customIconFile.type)) {
+          setCustomUrlError("Choose a JPEG, PNG or WebP icon up to 4 MB.");
+          return;
+        }
+        const started = await startGalleryUpload(saved.profile_id, saved.revision, "Custom social icon — " + parsed.hostname);
+        if ("error" in started || !started.id || !started.path || !started.token) {
+          setCustomUrlError(started.error ?? "Could not prepare the icon upload.");
+          return;
+        }
+        stagedId = started.id;
+        const config = supabaseConfig();
+        const browser = createBrowserClient(config.url, config.key);
+        const { error } = await browser.storage.from(galleryIncoming)
+          .uploadToSignedUrl(started.path, started.token, customIconFile, { contentType: customIconFile.type, upsert: false });
+        if (error) {
+          await discardGalleryUpload(saved.profile_id, saved.revision, started.id);
+          setCustomUrlError("The icon could not be uploaded. Try again.");
+          return;
+        }
+        const completed = await finishGalleryUpload(saved.profile_id, saved.revision, started.id);
+        if ("error" in completed) {
+          await discardGalleryUpload(saved.profile_id, saved.revision, started.id);
+          setCustomUrlError(completed.error ?? "The icon could not be saved.");
+          return;
+        }
+        uploadedId = started.id;
+        await refreshSaved();
+      }
+      const label = parsed.hostname.replace(/^www\./i, "").slice(0, 80) || "Custom URL";
+      set("links", [...content.links, {
+        label, url: parsed.href, hidden: false, mode: customSocialMode,
+        ...(uploadedId ? { iconImage: uploadedId } : {}),
+      }]);
+      setCustomUrlOpen(false);
+      setCustomUrl("");
+      setCustomIconFile(null);
+      if (customIconInput.current) customIconInput.current.value = "";
+      setAnnouncement("Custom URL added. Save or publish your profile to make it visible.");
+    } catch (reason) {
+      if (stagedId && !uploadedId) await discardGalleryUpload(saved.profile_id, saved.revision, stagedId).catch(() => undefined);
+      setCustomUrlError(reason instanceof Error ? reason.message : "The custom URL could not be added.");
+    } finally {
+      setCustomIconBusy(false);
+    }
   }
 
   function addSocialProvider(provider: SocialProvider) {
@@ -553,7 +630,14 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <span>{provider.label}</span><span className="studio-provider-plus" aria-hidden="true">+</span>
             </button>)}
           </div>
-          {filterSocialProviders(providerQuery, providerCategory).length === 0 && <p className="muted">No providers match that search.</p>}
+          <button type="button" className="studio-provider-card studio-provider-custom-url"
+            disabled={content.links.length >= linkLimit} onClick={() => {
+              setCustomUrl(""); setCustomSocialMode("icon"); setCustomIconFile(null);
+              setCustomUrlError(""); setCustomUrlOpen(true);
+            }}>
+            <span className="studio-provider-mark" aria-hidden="true">◎</span>
+            <span>Add Custom URL</span><span className="studio-provider-plus" aria-hidden="true">+</span>
+          </button>
         </section>
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
@@ -613,6 +697,45 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             <p className="muted">Upload audio in Customize → Profile audio library. Add the uploaded track to your profile from there; it will appear after you save and publish.</p>
           </div>
         </details>}
+        {customUrlOpen && <div className="studio-custom-url-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !customIconBusy) setCustomUrlOpen(false);
+        }}>
+          <section className="studio-custom-url-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-custom-url-title">
+            <button type="button" className="studio-custom-url-close" aria-label="Close custom URL dialog"
+              disabled={customIconBusy} onClick={() => setCustomUrlOpen(false)}>×</button>
+            <p className="eyebrow">LINKS / SOCIAL PROFILES</p>
+            <h2 id="studio-custom-url-title">Add Custom URL Social</h2>
+            <p className="muted">Add a website or social destination that is not in the provider list.</p>
+            <label>Social Mode
+              <div className="studio-custom-url-mode" role="group" aria-label="Social Mode">
+                <button type="button" aria-pressed={customSocialMode === "icon"} className={customSocialMode === "icon" ? "is-selected" : ""}
+                  onClick={() => setCustomSocialMode("icon")}>Link</button>
+                <button type="button" aria-pressed={customSocialMode === "text"} className={customSocialMode === "text" ? "is-selected" : ""}
+                  onClick={() => setCustomSocialMode("text")}>Text</button>
+              </div>
+            </label>
+            {customSocialMode === "icon" && <div className="studio-custom-url-icon">
+              <strong>Upload icon (optional)</strong>
+              <p className="muted">JPEG, PNG or WebP · up to 4 MB. Images are resized and metadata is removed.</p>
+              <button type="button" className="button small" disabled={customIconBusy}
+                onClick={() => customIconInput.current?.click()}>
+                {customIconFile ? "Change icon" : "Choose icon"}
+              </button>
+              {customIconFile && <small>Selected: {customIconFile.name}</small>}
+              <input ref={customIconInput} type="file" accept={galleryTypes.join(",")} disabled={customIconBusy} hidden
+                onChange={(event) => { setCustomIconFile(event.target.files?.[0] ?? null); setCustomUrlError(""); }}/>
+            </div>}
+            <label>URL<input type="url" autoComplete="url" maxLength={2048} placeholder="https://example.com"
+              value={customUrl} onChange={(event) => setCustomUrl(event.target.value)}/></label>
+            {customUrlError && <p className="message error" role="alert">{customUrlError}</p>}
+            <div className="studio-custom-url-actions">
+              <button type="button" className="button" disabled={customIconBusy} onClick={() => setCustomUrlOpen(false)}>Cancel</button>
+              <button type="button" className="button primary" disabled={customIconBusy || content.links.length >= linkLimit}
+                onClick={() => void addCustomUrl()}>{customIconBusy ? "Uploading…" : "Add"}</button>
+            </div>
+          </section>
+        </div>}
+
 
       </fieldset>
       </section>

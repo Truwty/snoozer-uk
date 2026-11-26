@@ -46,15 +46,28 @@ export function ProfileAnalyticsConsent({ username }: { username: string }) {
   }, []);
 
   useEffect(() => {
-    if (!allowed || !globalThis.crypto?.randomUUID) return;
+    if (!allowed) return;
+    function secureUuid(): string | null {
+      const cryptoApi = globalThis.crypto;
+      if (!cryptoApi) return null;
+      if (typeof cryptoApi.randomUUID === "function") return cryptoApi.randomUUID();
+      if (typeof cryptoApi.getRandomValues !== "function") return null;
+      const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
+    }
     function send(payload: object) {
+      const id = secureUuid();
+      if (!id) return;
       let code: { browser?: string; browserDay?: string } = {};
-      try { code = browserCode(localStorage, username, new Date(), () => crypto.randomUUID()); } catch { /* Storage access itself can be blocked. */ }
+      try { code = browserCode(localStorage, username, new Date(), () => secureUuid() ?? ""); } catch { /* Storage access itself can be blocked. */ }
       void fetch("/api/v1/analytics/view", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...browserAttribution(window.location.href, document.referrer),
           ...code,
-          version: countryAllowed ? 4 : 3, ...(countryAllowed ? { countryConsent: true } : {}), username, consent: true, id: crypto.randomUUID(), ...payload }), keepalive: true,
+          version: countryAllowed ? 4 : 3, ...(countryAllowed ? { countryConsent: true } : {}), username, consent: true, id, ...payload }), keepalive: true,
       }).catch(() => undefined);
     }
     if (counted.current !== username) {

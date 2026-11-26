@@ -29,11 +29,11 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
     catalogue: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), award_mode:z.string(), enabled:z.boolean(), earned:z.boolean() })),
   }).safeParse(response.data);
   const milestones = [
-    { title: "Profile claimed", description: "Your Snoozer username is reserved and ready to customise.", complete: true, action: "Open profile settings", href: studioHref("/studio/settings", selected), icon: "@" },
-    { title: "Profile published", description: "Publish your draft so visitors can open your public page.", complete: draft.published_revision !== null, action: "Open Page Builder", href: studioHref("/studio/builder", selected), icon: "↗" },
+    { title: "Profile claimed", description: "Your Snoozer username is reserved and ready to customise.", complete: true, action: "Open profile settings", href: studioHref("/studio/account", selected), icon: "@" },
+    { title: "Profile published", description: "Publish your draft so visitors can open your public page.", complete: draft.published_revision !== null, action: "Customise your page", href: studioHref("/studio/customize", selected), icon: "↗" },
     { title: "First social link", description: "Add a social destination so visitors can find you elsewhere.", complete: draft.links.length > 0, action: "Add social links", href: studioHref("/studio/links", selected), icon: "⌁" },
-    { title: "Profile story", description: "Add a description or a content section to introduce yourself.", complete: Boolean(draft.bio.trim() || draft.sections.length > 0), action: "Edit your profile", href: studioHref("/studio/builder", selected), icon: "Aa" },
-    { title: "Gallery curator", description: "Add an image to your profile gallery.", complete: draft.gallery.length > 0, action: "Open image gallery", href: studioHref("/studio/gallery", selected), icon: "▧" },
+    { title: "Profile story", description: "Add a description or a content section to introduce yourself.", complete: Boolean(draft.bio.trim() || draft.sections.length > 0), action: "Edit your profile", href: studioHref("/studio/customize", selected), icon: "Aa" },
+    { title: "Gallery curator", description: "Add an image to your profile gallery.", complete: draft.gallery.length > 0, action: "Open Image Host", href: studioHref("/studio/image-host", selected), icon: "▧" },
   ];
 
   return <main className="shell studio-shell studio-badges-page">
