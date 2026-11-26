@@ -1,12 +1,19 @@
+> **Current-state correction — 26 November 2026 (supersedes older notes below):**
+> - Main is at c57d68733f5e3ebccd3ebc495b84788f406175db. Public Creator Discovery PR #101 and the Studio feature expansion PR #113 are merged.
+> - The connected staging Render service is srv-dbts6jon74is73en2rjg (free Frankfurt web service), tracking main with commit-triggered auto-deploy. The service is configured to auto-deploy main commits; feature-branch work does not target it.
+> - The 14 repository migrations dated 26 November 2026 have been applied to the connected Supabase staging project, and the migration registry now ends at 20261126090013.
+> - Live Snoozer Premium Checkout is intentionally enabled. Supabase currently reports checkout_enabled=true, tax_reviewed=true and legal_reviewed=true; all six LIVE GBP offers are returned. Render's 26 November 04:12:30 UTC startup audit verified the LIVE key, six prices, account and Billing Portal. **Do not disable or alter payments as part of optimisation.**
+> - The dated entries below are retained as historical records of earlier states. Instructions in those entries to keep payments OFF, or to wait for PR #101/#113 merges, are superseded by this correction.
+
 ## Feature #30 — Public Creator Discovery (24 November 2026)
 
-**Implementation and automated validation: complete. PR #101 remains open and unmerged.** The branch is ready for owner review and the separately controlled release steps.
+**Historical snapshot (24 November):** Implementation and automated validation were complete; PR #101 was awaiting merge at that time. It was subsequently merged. The branch is ready for owner review and the separately controlled release steps.
 
 **Branch/PR:** [#101 — Feature #30: Public Creator Discovery](https://github.com/Truwty/snoozer-uk/pull/101)  
 **Validated head:** `ca6b9c9b7800deaf0c5a1fce42a05248ad721df8`  
 **Base:** `main` at `3bbf0c8b6b5532396aa9bea7d53233a10c5fb649`  
 **Comparison:** 44 commits ahead, 0 behind; 45 changed files.  
-**PR state:** Open, mergeable, not merged.
+**Historical PR state (24 November):** Open, mergeable, not merged. PR #101 was subsequently merged.
 
 **Full CI:** [Run #956 — success](https://github.com/Truwty/snoozer-uk/actions/runs/45512619108), completed against the exact validated head.
 
@@ -29,7 +36,7 @@ Checklist:
 - [x] 337 unit/database tests and migration replay.
 - [x] Production build and all five Playwright shards.
 - [x] Aggregate CI validation on the exact PR head.
-- [ ] Owner merges PR #101.
+- [x] Owner merged PR #101.
 - [ ] Apply and verify hosted Supabase migrations.
 - [ ] Manually deploy Render and complete staging acceptance.
 

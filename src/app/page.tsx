@@ -1,3 +1,4 @@
+import "./homepage-immersive.css";
 import Link from "next/link";
 import { ClaimForm } from "@/components/claim-form";
 import { Disclosure } from "@/components/ui";

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import "../discovery-form-controls.css";
+import "./owner-discovery.css";
 import { requireOwner } from "@/lib/owner/auth";
 
 const sections = [

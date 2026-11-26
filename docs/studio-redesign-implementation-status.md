@@ -2,6 +2,15 @@
 
 This tracker records the current implementation against `Snoozer_Codex_Implementation_Plan.md`. A passing build does not mean every planned dashboard feature is complete.
 
+## Current release state — 26 November 2026
+
+- Main commit: c57d68733f5e3ebccd3ebc495b84788f406175db.
+- PR #112 (dashboard video redesign) and PR #113 (Studio feature expansion) are merged.
+- The 14 migrations 20261126090000–20261126090013 are applied to connected Supabase project edgptbiwswcdmmxzwhxv. The migration registry was verified to end at 20261126090013.
+- The connected staging Render service srv-dbts6jon74is73en2rjg auto-deployed commit c57d687 on 26 November; the deploy dep-dc3r2b8ae00c73cqmg7g reached live.
+- Staging schema and merged Studio features are now aligned. The remaining requirements below are genuine follow-up work, not a claim that PR #113 is still unmerged.
+- Current follow-up optimisation is tracked on branch optimization/full-platform-hardening and draft PR #114. No merge to main or manual Render deployment is part of that work.
+
 ## Branch and release state
 
 - Branch: `feature/dashboard-video-fidelity`.
@@ -55,7 +64,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - `supabase/migrations/20261126090013_community_template_listing.sql`
 - `supabase/migrations/20261126090012_community_template_usage_counts.sql`
 
-Migrations are covered by the repository's PGlite migration tests. Applying them to a live Supabase project and validating deployed RLS/storage behavior was not done.
+Migrations are covered by the repository's PGlite migration tests. All 14 migrations listed above were subsequently applied to the connected Supabase staging project and the registry was verified through version 20261126090013. Deployed RLS/storage and authenticated feature acceptance remain part of the ongoing verification.
 
 ## Local verification
 

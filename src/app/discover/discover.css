@@ -1,0 +1,42 @@
+/* Public Creator Discovery */
+.discovery-page { padding-bottom: var(--s8); }
+.discovery-hero, .discovery-category-hero { display:grid; justify-items:start; gap:.9rem; padding:clamp(2rem,6vw,4.5rem); margin:1.25rem 0 2rem; border:1px solid var(--edge); border-radius:12px; background:radial-gradient(ellipse at 8% 0,#29263b 0,#17171f 55%,#111116 100%); }
+.discovery-hero h1, .discovery-category-hero h1 { max-width:16ch; margin:0; font-size:clamp(2.2rem,5vw,4.5rem); letter-spacing:-.045em; line-height:1.02; }
+.discovery-hero > p:not(.eyebrow), .discovery-category-hero > p:not(.eyebrow) { max-width:64ch; color:var(--text-muted); line-height:1.65; margin:0; }
+.discovery-category-pills { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.7rem; }
+.discovery-category-pills a { padding:.42rem .7rem; border:1px solid var(--edge); border-radius:999px; color:var(--text-muted); background:#ffffff05; text-decoration:none; font-size:.8rem; }
+.discovery-category-pills a:hover, .discovery-category-pills a:focus-visible { color:var(--text); border-color:var(--accent); outline:none; }
+.discovery-featured, .discovery-browser { display:grid; gap:1.2rem; margin:2rem 0; }
+.discovery-results-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; }
+.discovery-results-heading h2 { margin:.2rem 0 0; }
+.discovery-collections-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.discovery-collection-card { min-width:0; display:grid; align-content:start; gap:1rem; padding:1.1rem; border:1px solid var(--edge); border-radius:10px; background:var(--panel); }
+.discovery-collection-card header { display:grid; gap:.4rem; }
+.discovery-collection-card h3, .discovery-collection-card p { margin:0; }
+.discovery-collection-card header > p:last-child { color:var(--text-muted); line-height:1.55; }
+.discovery-collection-profiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
+.discovery-collection-profiles .discovery-profile-card { padding:.75rem; }
+.discovery-collection-profiles .discovery-profile-avatar { width:42px; height:42px; }
+.discovery-collection-profiles .discovery-profile-bio, .discovery-collection-profiles .discovery-profile-tags { display:none; }
+.discovery-collection-profiles .discovery-profile-name-row strong { font-size:.85rem; }
+.discovery-search-form { display:grid; grid-template-columns:minmax(220px,1fr) minmax(130px,.45fr) minmax(130px,.45fr) minmax(130px,.42fr) auto; gap:.65rem; align-items:end; padding:.85rem; border:1px solid var(--edge); border-radius:10px; background:var(--panel); }
+.discovery-search-form label { display:grid; gap:.35rem; min-width:0; }
+.discovery-search-form select, .discovery-search-form input { width:100%; min-height:42px; padding:.65rem .75rem; border:1px solid var(--edge); border-radius:7px; color:var(--text); background:var(--ground); font:inherit; }
+.discovery-search-input { display:flex !important; flex-direction:row; align-items:center; gap:.55rem; padding-left:.75rem; border:1px solid var(--edge); border-radius:7px; background:var(--ground); }
+.discovery-search-input span { color:var(--text-muted); font-size:1.25rem; }
+.discovery-search-input input { border:0; padding-left:0; background:transparent; outline:none; }
+.discovery-results-count { color:var(--text-muted); font-size:.85rem; }
+.discovery-empty { display:grid; justify-items:start; gap:.55rem; padding:2rem; border:1px dashed var(--edge); border-radius:10px; color:var(--text-muted); }
+.discovery-empty strong { color:var(--text); }
+.discovery-pagination { display:flex; justify-content:space-between; gap:.7rem; padding-top:.35rem; }
+@media (max-width:1000px) { .discovery-search-form { grid-template-columns:repeat(2,minmax(0,1fr)); } .discovery-search-input { grid-column:1 / -1; } }
+@media (max-width:640px) {
+  .discovery-hero,.discovery-category-hero { padding:1.5rem 1.1rem; margin-top:.75rem; }
+  .discovery-collections-grid { grid-template-columns:minmax(0,1fr); }
+  .discovery-collection-profiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .discovery-search-form { grid-template-columns:minmax(0,1fr); }
+  .discovery-search-input { grid-column:auto; }
+  .discovery-search-form > button { width:100%; }
+  .discovery-results-heading { align-items:start; flex-direction:column; }
+}
+
