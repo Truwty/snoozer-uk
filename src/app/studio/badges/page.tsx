@@ -28,62 +28,37 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
     earned: z.array(z.object({ id:z.uuid(), slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), source:z.string(), awarded_at:z.string(), award_reason:z.string().nullable(), is_public:z.boolean() })),
     catalogue: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), award_mode:z.string(), enabled:z.boolean(), earned:z.boolean() })),
   }).safeParse(response.data);
-  const milestones = [
-    { title: "Profile claimed", description: "Your Snoozer username is reserved and ready to customise.", complete: true, action: "Open profile settings", href: studioHref("/studio/account", selected), icon: "@" },
-    { title: "Profile published", description: "Publish your draft so visitors can open your public page.", complete: draft.published_revision !== null, action: "Customise your page", href: studioHref("/studio/customize", selected), icon: "↗" },
-    { title: "First social link", description: "Add a social destination so visitors can find you elsewhere.", complete: draft.links.length > 0, action: "Add social links", href: studioHref("/studio/links", selected), icon: "⌁" },
-    { title: "Profile story", description: "Add a description or a content section to introduce yourself.", complete: Boolean(draft.bio.trim() || draft.sections.length > 0), action: "Edit your profile", href: studioHref("/studio/customize", selected), icon: "Aa" },
-    { title: "Gallery curator", description: "Add an image to your profile gallery.", complete: draft.gallery.length > 0, action: "Open Image Host", href: studioHref("/studio/image-host", selected), icon: "▧" },
-  ];
-
   return <main className="shell studio-shell studio-badges-page">
     <header className="studio-page-heading">
-      <div><p className="eyebrow">ACCOUNT / RECOGNITION</p><h1>Badges & milestones</h1>
+      <div><p className="eyebrow">ACCOUNT / BADGES</p><h1>Badges</h1>
         <p className="muted">Track the profile milestones you have completed and discover how recognition works on Snoozer.</p></div>
     </header>
 
-    <section className="studio-dashboard-panel">
-      <div className="studio-panel-heading">
-        <div><p className="eyebrow">YOUR PROGRESS</p><h2>Profile milestones</h2>
-          <p className="muted">These milestones are calculated from your current profile. They are progress indicators, not public account badges.</p></div>
-        <strong className="studio-badge-count">{milestones.filter((item) => item.complete).length} / {milestones.length}</strong>
-      </div>
-      <div className="studio-milestone-grid">
-        {milestones.map((item) => <article className={"studio-milestone-card" + (item.complete ? " is-complete" : "")} key={item.title}>
-          <span className="studio-milestone-icon" aria-hidden="true">{item.complete ? "✓" : item.icon}</span>
-          <div><div className="studio-milestone-title"><h3>{item.title}</h3><span>{item.complete ? "Complete" : "In progress"}</span></div>
-            <p>{item.description}</p>
-            {!item.complete && <Link href={item.href}>{item.action} <span aria-hidden="true">↗</span></Link>}
-          </div>
-        </article>)}
-      </div>
-    </section>
-
     <section className="studio-dashboard-panel studio-official-badges">
       <div className="studio-panel-heading">
-        <div><p className="eyebrow">SNOOZER RECOGNITION</p><h2>Official badges</h2>
+        <div><p className="eyebrow">SNOOZER RECOGNITION</p><h2>All badges</h2>
           <p className="muted">Choose which earned badges appear publicly. Use the arrows to set their display order; hidden badges stay in your collection.</p></div>
         {badgeData.success && <strong className="studio-badge-count">{badgeData.data.earned.length} earned</strong>}
       </div>
       {params.visibility === "saved" && <p className="studio-badge-status" role="status">Your public badge display has been updated.</p>}
       {params.visibility === "failed" && <p className="message error" role="alert">We could not update your badge display. Refresh the page and try again.</p>}
       {params.visibility === "invalid" && <p className="message error" role="alert">The badge selection was invalid. Reload the page and try again.</p>}
-      {!badgeData.success ? <p role="alert">Your official badge collection is temporarily unavailable.</p> : <>
+      {!badgeData.success ? <p role="alert">Your badge collection is temporarily unavailable.</p> : <>
         <form action={saveBadgeVisibility} className="studio-badge-visibility-form">
           <input type="hidden" name="profile" value={draft.profile_id}/>
-          {badgeData.data.earned.length ? <StudioBadgeOrder badges={badgeData.data.earned}/> : <p>No official badges have been earned yet. Complete profile milestones to unlock your first one.</p>}
+          {badgeData.data.earned.length ? <StudioBadgeOrder badges={badgeData.data.earned}/> : <p>No badges have been earned yet. Earn badges through Snoozer activity or an award from the Snoozer team.</p>}
           {badgeData.data.earned.length > 0 && <div className="studio-badge-save-row">
             <button className="button primary" type="submit">Save public badge selection</button>
             <span className="muted">Hiding a badge never removes it from your collection. Only verified Snoozer awards can appear as official badges.</span>
           </div>}
         </form>
-        <details className="studio-future-badge-catalogue">
-          <summary>Badge catalogue · {badgeData.data.catalogue.length} badges</summary>
+        <section className="studio-future-badge-catalogue">
+          <div className="studio-panel-heading"><h3>Badge catalogue</h3><span>{badgeData.data.catalogue.length} badges</span></div>
           <div className="studio-future-badge-grid">{badgeData.data.catalogue.map((badge) => <article className={"studio-future-badge" + (badge.earned ? " is-earned" : "")} key={badge.slug}>
             <BadgeArtwork slug={badge.slug} size={38}/>
             <div><strong>{badge.name}</strong><p>{badge.description}</p><small>{badge.earned ? "Earned" : badge.award_mode === "future" ? "Future reward" : "Automatic milestone"} · {badge.rarity}</small></div>
           </article>)}</div>
-        </details>
+        </section>
       </>}
       <p className="muted">Only active awards made by verified Snoozer systems or staff are eligible for public display. Future catalogue entries are previews until their qualifying feature launches.</p>
       <div className="studio-badge-links">

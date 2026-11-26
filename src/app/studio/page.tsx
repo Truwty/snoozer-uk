@@ -53,7 +53,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       <h2>Claim your address</h2>
       <p className="muted">Choose the username people will use to find your page.</p>
       <ClaimForm/>
-      <Link href="/studio/growth">Manage your Snoozer account</Link>
     </section>
   </main>;
 

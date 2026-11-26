@@ -18,7 +18,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
   const pending = data ? pendingGalleryItem.parse(data) : null;
 
   return <main className="shell stack">
-    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/builder", selected)}>Back to Page Builder</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/customize", selected)}>Back to Customize</Link></header>
     <section className="panel stack">
       <p className="eyebrow">STUDIO / MEDIA</p>
       <PageHeader title="Image gallery" />
