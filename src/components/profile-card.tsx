@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
+import dynamic from "next/dynamic";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
@@ -9,19 +10,31 @@ import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
 import { youtubeVideoId } from "@/lib/youtube";
-import { YouTubeWidget } from "./youtube-widget";
+
 import { spotifyResource } from "@/lib/spotify";
-import { SpotifyWidget } from "./spotify-widget";
+
 import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
-import { PublicMetadataWidget } from "./public-metadata-widget";
-import { TwitchWidget } from "./twitch-widget";
+
+
 import { ProfileEffectsLayer } from "./profile-effects";
 import { defaultEffects } from "@/lib/profile-effects";
 import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
-import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
+
 import { SocialProviderIcon } from "./social-provider-icon";
 import { BadgeArtwork } from "./badge-artwork";
+
+
+/*
+ * Optional profile widgets are split into independent chunks. They are only
+ * requested when a published profile actually uses the corresponding widget.
+ * SSR remains enabled so public profile HTML and layout are preserved.
+ */
+const YouTubeWidget = dynamic(() => import("./youtube-widget").then((module) => module.YouTubeWidget));
+const SpotifyWidget = dynamic(() => import("./spotify-widget").then((module) => module.SpotifyWidget));
+const PublicMetadataWidget = dynamic(() => import("./public-metadata-widget").then((module) => module.PublicMetadataWidget));
+const TwitchWidget = dynamic(() => import("./twitch-widget").then((module) => module.TwitchWidget));
+const InteractiveProfileWidgets = dynamic(() => import("./interactive-profile-widgets").then((module) => module.InteractiveProfileWidgets));
 
 type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
 
