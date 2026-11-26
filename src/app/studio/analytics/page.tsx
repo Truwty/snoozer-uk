@@ -4,7 +4,7 @@ import { AnalyticsCampaigns } from "@/components/analytics-campaigns";
 import { TableScroll, Disclosure } from "@/components/ui";
 import {
   dailyAnalytics, linkAnalytics, analyticsCampaigns, trafficAnalytics,
-  browserAnalytics, browserCtr,
+  browserAnalytics, browserCtr, parseAnalyticsRange, analyticsRangeStart,
 } from "@/lib/analytics";
 import { siteUrl } from "@/lib/env";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
@@ -12,20 +12,16 @@ import { sessionClient } from "@/lib/supabase";
 
 export const metadata = { title: "Analytics", robots: { index: false, follow: false } };
 
-type Range = "7d" | "30d" | "all";
+type Range = "3d" | "7d" | "30d" | "all";
 type Query = StudioProfileQuery & { range?: string | string[] };
 
 function selectedRange(value: Query["range"]): Range {
-  const candidate = Array.isArray(value) ? value[0] : value;
-  return candidate === "7d" || candidate === "30d" || candidate === "all" ? candidate : "7d";
+  return parseAnalyticsRange(value);
 }
 
 function inRange<T extends { day: string }>(rows: T[], range: Range) {
   if (range === "all" || rows.length === 0) return rows;
-  const today = new Date();
-  const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - (range === "7d" ? 6 : 29)));
-  const startDay = start.toISOString().slice(0, 10);
-  return rows.filter((row) => row.day >= startDay);
+  return rows.filter((row) => row.day >= analyticsRangeStart(range));
 }
 
 function compact(value: number) {
@@ -68,7 +64,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const average = rows.length ? Math.round(views / rows.length) : 0;
   const browserTotal = browsers.reduce((sum, row) => sum + row.unique_browsers, 0);
   const browserClicked = browsers.reduce((sum, row) => sum + row.clicked_browsers, 0);
-  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "All available time";
+  const rangeLabel = range === "3d" ? "Last 3 days" : range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "All available time";
   const periodHint = range === "all" ? "Within your plan’s analytics retention window" : "In the " + rangeLabel.toLowerCase();
 
   // The traffic and per-link RPCs return retention-window aggregates, not dated daily rows.
@@ -101,7 +97,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
           <input type="hidden" name="profile" value={draft.profile_id}/>
           <label>Time range
             <select name="range" defaultValue={range} aria-label="Analytics time range">
-              <option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="all">All available time</option>
+              <option value="3d">Last 3 days</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="all">All available time</option>
             </select>
           </label>
           <button className="button small" type="submit">Apply</button>

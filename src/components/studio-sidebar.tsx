@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { filterStudioNavigation } from "@/lib/studio-navigation";
 
 type Props = { pageHref?: string; pagePublished: boolean; accountFooter?: ReactNode };
@@ -12,7 +12,6 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedProfile = searchParams.get("profile");
-  const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -32,16 +31,7 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setCollapsed(false);
-        setMobileOpen(true);
-        window.requestAnimationFrame(() => searchRef.current?.focus());
-      }
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-        searchRef.current?.blur();
-      }
+      if (event.key === "Escape") setMobileOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -95,9 +85,9 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
 
     <label className="studio-sidebar-search">
       <span aria-hidden="true">⌕</span>
-      <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)}
+      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
         placeholder="Search features…" aria-label="Search Studio features" />
-      <kbd>Ctrl K</kbd>
+      <kbd>Filter</kbd>
     </label>
 
     <nav className="studio-sidebar-nav" aria-label="Dashboard sections">

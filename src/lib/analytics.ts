@@ -3,6 +3,19 @@ import { boundedBody } from "./bounded-request";
 import { username, safeLink, link } from "./profile";
 import { trafficDevices, trafficSources } from "./analytics-context";
 
+export type AnalyticsRange = "3d" | "7d" | "30d" | "all";
+
+export function parseAnalyticsRange(value: string | string[] | undefined): AnalyticsRange {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === "3d" || candidate === "7d" || candidate === "30d" || candidate === "all" ? candidate : "7d";
+}
+
+export function analyticsRangeStart(range: Exclude<AnalyticsRange, "all">, now = new Date()) {
+  const days = range === "3d" ? 3 : range === "7d" ? 7 : 30;
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (days - 1)));
+  return start.toISOString().slice(0, 10);
+}
+
 const attribution = { version: z.union([z.literal(2), z.literal(3)]).optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional(),
   browser: z.uuidv4().optional(), browserDay: z.iso.date().optional() };
 
