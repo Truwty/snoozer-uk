@@ -8,6 +8,7 @@ Published profile pages use a focused, centred bio-page presentation. Studio pre
 - Centred avatar, display name, owner-verification and Discord-presence indicators, and a short typewriter-style bio. The typewriter effect respects reduced-motion preferences.
 - Recognised profile links appear as monochrome SVG brand icons with a subtle hover glow.
 - Sections, content blocks, non-Guestbook interactive widgets, the gallery and additional non-social links are tucked behind a minimal collapsed **More** disclosure. The first screen stays compact; the saved content remains available to visitors when expanded. The Guestbook is intentionally not rendered on public bio pages.
+- Achievement badges are temporarily hidden from public profiles. Their stored award records are retained; the Studio and Owner badge-management pages are also disabled until the feature is restored.
 - The public Report profile route remains available as a small fixed link.
 
 ## Music
