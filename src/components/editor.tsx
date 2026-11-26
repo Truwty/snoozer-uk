@@ -4,7 +4,7 @@ import Link from "next/link";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { defaultAppearance, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";

@@ -34,8 +34,8 @@ describe("profile validation", () => {
     for (const colors of [{ background: "red" }, { text: "#fff" }, { customCss: "url(https://example.com)" }]) {
       expect(profileAppearance.safeParse({ ...defaultAppearance, colors }).success).toBe(false);
     }
-    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 39 }).success).toBe(false);
-    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 25 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 19 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 81 }).success).toBe(false);
     expect(profileAppearance.safeParse({ ...defaultAppearance, font: "url(https://example.com)" }).success).toBe(false);
   });
 
