@@ -222,7 +222,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     expect((await request.get(`/${second}`)).status()).toBe(200);
     await page.getByRole("link", { name: "Premium" }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
-    await expect(page).toHaveURL(/\\/studio\\/customize\\?profile=/);
+    await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
     await expect(page.locator(".editor-topbar strong")).toHaveText("@" + name);
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
   } finally {
@@ -457,7 +457,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("heading", { name: "All badges", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Badge catalogue", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Custom badges", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Purchase", exact: true })).toHaveAttribute("href", /\\/studio\\/plan/);
+    await expect(page.getByRole("link", { name: "Purchase", exact: true })).toHaveAttribute("href", /\/studio\/plan/);
     await expect(page.getByRole("button", { name: "Preview Custom Badge", exact: true })).toBeVisible();
 
     await page.getByRole("link", { name: "Settings", exact: true }).click();
