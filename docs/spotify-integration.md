@@ -1,6 +1,6 @@
 # Feature #7 — Spotify public embeds only
 
-**Status (23 November 2026): deployed; visual refresh staged for CI.** Snoozer supports official Spotify links and always-visible embedded players. The Spotify Web API/OAuth/Now Playing beta was removed by the owner because it required a Premium developer account. No Spotify developer account, credentials or subscription are needed for embeds.
+**Status (26 November 2026): Spotify embed playback fix staged on `feature/remove-profile-badges-fix-music`.** Snoozer supports official Spotify share links and embedded players. The Spotify Web API/OAuth/Now Playing beta remains removed. Creators do not need to connect a Spotify account or provide Snoozer with Spotify credentials to add an embed.
 
 ## Creator flow
 
