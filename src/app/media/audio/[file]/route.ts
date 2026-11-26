@@ -20,7 +20,7 @@ async function serve(file:string) {
       return new NextResponse(null,{status:404,headers:{"Cache-Control":"no-store"}});
     }
     const path=object.data.scope+"/"+file;
-    const {data:signed,error:signError}=await admin.storage.from(profileAudioFinal).createSignedUrl(path,60);
+    const {data:signed,error:signError}=await admin.storage.from(profileAudioFinal).createSignedUrl(path,3600);
     if(signError||!signed?.signedUrl) {
       return new NextResponse(null,{status:404,headers:{"Cache-Control":"no-store"}});
     }

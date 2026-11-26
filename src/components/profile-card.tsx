@@ -449,6 +449,17 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
 
+    const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
+      const src = directAudioSource(url);
+      if (!src) return [];
+      const info = audioMetadata(label, profile.display_name);
+      const artwork = audioCoverImage ? profile.gallery.find((image) => image.id === audioCoverImage) : undefined;
+      const trackCover = artwork && galleryBase
+        ? galleryBase + "/" + encodeURIComponent(artwork.id)
+        : undefined;
+      return [{ src, title: info.title, artist: info.artist, cover: trackCover, sourceIndex: index }];
+    }) : [];
+    const audioIndexes = new Set(audioTracks.map((track) => track.sourceIndex));
     const social: SocialLink[] = valid.flatMap((item) => {
       if (item.mode === "text" || audioIndexes.has(item.index)) return [];
       const provider = socialProviderForUrl(item.url);
@@ -465,17 +476,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     });
     const iconIndexes = new Set(social.map((item) => item.index));
     const textLinks = valid.filter((item) => !audioIndexes.has(item.index) && (item.mode === "text" || !iconIndexes.has(item.index)));
-    const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
-      const src = directAudioSource(url);
-      if (!src) return [];
-      const info = audioMetadata(label, profile.display_name);
-      const artwork = audioCoverImage ? profile.gallery.find((image) => image.id === audioCoverImage) : undefined;
-      const trackCover = artwork && galleryBase
-        ? galleryBase + "/" + encodeURIComponent(artwork.id)
-        : undefined;
-      return [{ src, title: info.title, artist: info.artist, cover: trackCover, sourceIndex: index }];
-    }) : [];
-    const audioIndexes = new Set(audioTracks.map((track) => track.sourceIndex));
     const cover = profile.gallery[0] && galleryBase
       ? galleryBase + "/" + profile.gallery[0].id
       : avatarSrc;
