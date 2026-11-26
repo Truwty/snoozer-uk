@@ -243,7 +243,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
                 <div className="analytics-country-label"><strong>{row.name}</strong><span>{row.country_code}</span></div>
                 <div className="analytics-country-bar" role="img" aria-label={row.views+" views"}><span style={{width:(row.views/maxCountryViews*100)+"%"}}/></div>
                 <strong className="analytics-country-count">{compact(row.views)}</strong>
-              </div>)}</div>
+              </div>)}</div></>
             : <Empty title="No country totals yet" description="Visitors must separately allow approximate country reporting. Totals appear after at least three consented views from a country."/>}
         <p className="muted">Country estimates may be wrong for VPNs, relays or mobile networks. Snoozer stores daily country totals only, not raw IP addresses or precise location. Country reporting is unavailable if the hosting edge does not supply a country code.</p>
       </section>
