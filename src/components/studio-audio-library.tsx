@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { supabaseConfig } from "@/lib/env";
 import { profileAudioIncoming } from "@/lib/profile-audio";
+import { discardGalleryUpload, finishGalleryUpload, startGalleryUpload } from "@/app/studio/gallery/actions";
+import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
 import { discardProfileAudioUpload, finishProfileAudioUpload, loadProfileAudio, removeProfileAudio, startProfileAudioUpload } from "@/app/studio/audio/actions";
 
 type GalleryImage={id:string;alt:string};
@@ -23,6 +26,10 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const [artist,setArtist]=useState("");
   const [file,setFile]=useState<File|null>(null);
   const [cover,setCover]=useState<Record<string,string>>({});
+  const [coverBusy,setCoverBusy]=useState(false);
+  const coverTarget=useRef<string|null>(null);
+  const coverInput=useRef<HTMLInputElement>(null);
+  const router=useRouter();
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
 
@@ -71,6 +78,41 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     }finally{setBusy(false);}
   }
 
+  async function uploadCover(item:AudioItem,file:File){
+    if(coverBusy)return;
+    if(file.size<1||file.size>galleryMaxBytes||!galleryTypes.includes(file.type)){
+      setError("Choose a JPEG, PNG or WebP cover image up to 4 MB.");return;
+    }
+    setCoverBusy(true);setError("");setMessage("");
+    let stagedId="";
+    try{
+      const started=await startGalleryUpload(profileId,revision,("Audio cover art — "+item.title).slice(0,180));
+      if("error" in started||!started.id||!started.path||!started.token){
+        setError(started.error??"Could not prepare the cover upload.");return;
+      }
+      stagedId=started.id;
+      const config=supabaseConfig();
+      const browser=createBrowserClient(config.url,config.key);
+      const {error:uploadError}=await browser.storage.from(galleryIncoming)
+        .uploadToSignedUrl(started.path,started.token,file,{contentType:file.type,upsert:false});
+      if(uploadError){
+        await discardGalleryUpload(profileId,revision,stagedId);
+        setError("The cover image could not be uploaded. Try again.");return;
+      }
+      const result=await finishGalleryUpload(profileId,revision,stagedId);
+      if("error" in result){
+        await discardGalleryUpload(profileId,revision,stagedId);
+        setError(result.error??"The cover image could not be saved.");return;
+      }
+      setCover(current=>({...current,[item.id]:stagedId}));
+      setMessage("Cover artwork added. It is now selected for "+item.title+".");
+      router.refresh();
+    }catch{
+      if(stagedId)await discardGalleryUpload(profileId,revision,stagedId).catch(()=>undefined);
+      setError("The cover image could not be saved. Try again.");
+    }finally{setCoverBusy(false);coverTarget.current=null;if(coverInput.current)coverInput.current.value="";}
+  }
+
   async function remove(id:string){
     setBusy(true);setError("");setMessage("");
     try{
@@ -83,6 +125,9 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   }
 
   return <section className="studio-audio-library stack" aria-label="Profile audio library">
+    <input ref={coverInput} type="file" accept={galleryTypes.join(",")} hidden
+      onChange={event=>{const file=event.target.files?.[0];const item=items.find(track=>track.id===coverTarget.current);if(file&&item)void uploadCover(item,file);}}/>
+
     <div className="studio-audio-upload-grid">
       <label>Track title<input value={title} maxLength={80} onChange={event=>setTitle(event.target.value)} placeholder="Track title"/></label>
       <label>Artist<input value={artist} maxLength={80} onChange={event=>setArtist(event.target.value)} placeholder="Artist name"/></label>
@@ -97,9 +142,14 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
       {loading?<p className="muted">Loading audio library…</p>:items.length===0?<p className="muted">Your audio library is empty.</p>:items.map(item=>
         <article key={item.id} className="studio-audio-track">
           <div className="studio-audio-track-copy"><strong>{item.title}</strong><span>{item.artist}</span><small>{item.extension.toUpperCase()} · {(item.bytes/1024/1024).toFixed(1)} MB</small></div>
-          <label>Cover art<select value={cover[item.id]??""} onChange={event=>setCover(current=>({...current,[item.id]:event.target.value}))}>
-            <option value="">Use profile artwork</option>{gallery.map(image=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
-          </select></label>
+          <div className="studio-audio-cover-control stack">
+            <label>Cover art<select value={cover[item.id]??""} onChange={event=>setCover(current=>({...current,[item.id]:event.target.value}))}>
+              <option value="">Use profile artwork</option>{gallery.map(image=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+            </select></label>
+            <button type="button" className="button small" disabled={coverBusy} onClick={()=>{
+              coverTarget.current=item.id;coverInput.current?.click();
+            }}>{coverBusy&&coverTarget.current===item.id?"Uploading cover…":"Upload cover artwork"}</button>
+          </div>
           <div className="studio-audio-track-actions">
             <button type="button" className="button small primary" onClick={()=>onAddTrack({title:item.title,artist:item.artist,url:item.url,...(cover[item.id]?{coverImageId:cover[item.id]}:{})})}>Add to profile</button>
             <button type="button" className="button small" disabled={busy} onClick={()=>void remove(item.id)}>Delete</button>

@@ -336,7 +336,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     }}>
 
       <section role="tabpanel" aria-labelledby="editor-tab-Profile" id="editor-panel-Profile" data-editor-panel="Profile" hidden={tab !== "Profile"} className="editor-panel stack">
-        <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>
+        {!panelOnly && <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>}
       <fieldset className="stack">
         <legend className="section-title">Profile details</legend>
         <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
@@ -368,60 +368,84 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           <option value="rise">Soft rise</option>
         </select></label>
         <small className="muted">Decorative backgrounds animate once. Your visitor’s reduced-motion setting always takes priority.</small>
-        <fieldset className="stack">
-          <legend className="section-title">Profile background image</legend>
-          <p className="muted">Choose an image from your gallery. A soft theme overlay keeps text readable, and the selected image won’t be repeated in the public gallery.</p>
-          <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
-          {!saved.gallery.length && <p className="muted">Upload an image in your gallery to use it here.</p>}
-          <div className="background-image-options" role="group" aria-label="Profile background image">
-            <button type="button" className="background-image-option background-image-none"
-              aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
-              onClick={() => setBackgroundImage()}>
-              <span aria-hidden="true">Aa</span><span>No image</span>
-            </button>
-            {saved.gallery.map((image) => <button type="button" className="background-image-option"
-              key={image.id} aria-label={`Use ${image.alt} as profile background`}
-              aria-pressed={content.appearance.backgroundImage === image.id}
-              onClick={() => setBackgroundImage(image.id)}>
-              {/* The authenticated Studio route serves this already processed image. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/studio/gallery/image/${image.id}`} alt="" width={image.width} height={image.height} loading="lazy" />
-              <span>{image.alt}</span>
-            </button>)}
+        <section className="studio-assets-uploader stack" aria-labelledby="studio-assets-title">
+          <div className="studio-assets-heading">
+            <div><p className="eyebrow">PROFILE ASSETS</p><h2 id="studio-assets-title">Assets Uploader</h2>
+              <p className="muted">Upload and manage the four assets used by your published profile.</p></div>
+            <Link className="button small" href={galleryHref}>Manage Image Host ↗</Link>
           </div>
-        </fieldset>
-        <fieldset className="stack">
-          <legend className="section-title">Profile audio library</legend>
-          <p className="muted">Upload MP3, M4A, OGG, WAV, AAC or FLAC audio. Files are private until you add a track to your profile and publish it.</p>
-          <StudioAudioLibrary
-            profileId={saved.profile_id}
-            revision={saved.revision}
-            gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
-            onAddTrack={(track) => {
-              if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
-              set("links",[...content.links,{
-                label:track.title+" — "+track.artist,
-                url:track.url,
-                mode:"text",
-                hidden:false,
-                ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
-              }]);
-              setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
-            }}
-          />
-        </fieldset>
-        <fieldset className="stack">
-          <legend className="section-title">Custom cursor</legend>
-          <p className="muted">Choose a small PNG or WebP image from your gallery. The image is used as the pointer on your published profile; other Snoozer pages are unchanged.</p>
-          <label>Cursor image
-            <select value={content.appearance.customCursorImage ?? ""}
-              onChange={(event) => set("appearance", { ...content.appearance, customCursorImage: event.target.value || undefined })}>
-              <option value="">Use the standard cursor</option>
-              {saved.gallery.map((image) => <option value={image.id} key={image.id}>{image.alt || "Gallery image"}</option>)}
-            </select>
-          </label>
-          <div><Link className="button small" href={galleryHref}>Upload or manage cursor image</Link></div>
-        </fieldset>
+          {effectTier === "free" && <div className="studio-assets-premium">
+            <div><strong>Make your page stand out</strong><p>Unlock more profile effects and media capacity with Snoozer Premium.</p></div>
+            <Link className="button small primary" href="/studio/plan">Explore Premium ↗</Link>
+          </div>}
+          <div className="studio-assets-grid">
+            <article className="studio-asset-card studio-asset-background">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">▧</span><span className="studio-asset-kind">01 / BACKGROUND</span></div>
+              <div className="studio-asset-preview">
+                {content.appearance.backgroundImage && saved.gallery.some((image)=>image.id===content.appearance.backgroundImage)
+                  ? <img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/>
+                  : <div className="studio-asset-placeholder"><span aria-hidden="true">▧</span><strong>No background selected</strong></div>}
+              </div>
+              <h3>Background</h3>
+              <p className="muted">Choose the image shown behind your profile card.</p>
+              <label>Background image
+                <select value={content.appearance.backgroundImage??""} onChange={(event)=>setBackgroundImage(event.target.value||undefined)}>
+                  <option value="">No background image</option>
+                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+                </select>
+              </label>
+              <Link className="button small" href={galleryHref}>Upload background</Link>
+            </article>
+            <article className="studio-asset-card studio-asset-audio">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">♫</span><span className="studio-asset-kind">02 / AUDIO</span></div>
+              <div className="studio-asset-preview studio-asset-audio-preview"><span aria-hidden="true">♫</span><strong>PROFILE AUDIO</strong><small>MP3 · M4A · OGG · WAV · AAC · FLAC</small></div>
+              <h3>Audio</h3>
+              <p className="muted">Upload tracks, add cover artwork and choose what plays on your public profile.</p>
+              <details className="studio-asset-manager">
+                <summary className="button small primary">Open Audio Manager</summary>
+                <StudioAudioLibrary
+                  profileId={saved.profile_id}
+                  revision={saved.revision}
+                  gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
+                  onAddTrack={(track) => {
+                    if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
+                    set("links",[...content.links,{
+                      label:track.title+" — "+track.artist,
+                      url:track.url,
+                      mode:"text",
+                      hidden:false,
+                      ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
+                    }]);
+                    setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+                  }}
+                />
+              </details>
+            </article>
+            <article className="studio-asset-card studio-asset-avatar">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">◉</span><span className="studio-asset-kind">03 / PROFILE AVATAR</span></div>
+              <div className="studio-asset-preview studio-asset-avatar-preview">{avatar}</div>
+              <h3>Profile Avatar</h3>
+              <p className="muted">Upload or replace the image shown beside your profile name.</p>
+            </article>
+            <article className="studio-asset-card studio-asset-cursor">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">⌖</span><span className="studio-asset-kind">04 / CUSTOM CURSOR</span></div>
+              <div className="studio-asset-preview studio-asset-cursor-preview">
+                {content.appearance.customCursorImage && saved.gallery.some((image)=>image.id===content.appearance.customCursorImage)
+                  ? <img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/>
+                  : <div className="studio-asset-placeholder"><span aria-hidden="true">↖</span><strong>Default cursor</strong></div>}
+              </div>
+              <h3>Custom Cursor</h3>
+              <p className="muted">Use a small image as the pointer on your published profile.</p>
+              <label>Cursor image
+                <select value={content.appearance.customCursorImage??""} onChange={(event)=>set("appearance",{...content.appearance,customCursorImage:event.target.value||undefined})}>
+                  <option value="">Use standard cursor</option>
+                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+                </select>
+              </label>
+              <Link className="button small" href={galleryHref}>Upload cursor image</Link>
+            </article>
+          </div>
+        </section>
         <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
           const density = profileDensities.find((value) => value === event.target.value);
           if (density) set("appearance", { ...content.appearance, density });
@@ -511,25 +535,11 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           Show my location publicly</label>
       </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
-      <fieldset className="stack">
-        <legend className="section-title">Profile design library</legend>
-        <p className="muted">Choose from 120 designs. The live preview updates here before you apply anything.</p>
-        <label>Preview a design
-          <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
-            <option value="">Show my current design</option>
-            {studioTemplates.map(({ id, name, categoryLabel }) => <option key={id} value={id}>{name} · {categoryLabel}</option>)}
-          </select>
-        </label>
-        <p><Link className="text-link" href="/templates">Browse the full library of 120 templates ↗</Link></p>
-        {template && <>
-          <p className="muted">{template.categoryLabel} · {template.description} Your links, widgets, badges, gallery and existing sections stay yours.</p>
-          <div className="actions">
-            <button type="button" className="button small primary" onClick={() => applyTemplate(false)}>Apply template design</button>
-            {content.sections.length === 0 && <button type="button" className="button small"
-              onClick={() => applyTemplate(true)}>Apply design with sample sections</button>}
-          </div>
-        </>}
-      </fieldset>
+      {template && <fieldset className="stack">
+        <legend className="section-title">Template preview</legend>
+        <p className="muted">{template.categoryLabel} · {template.description}</p>
+        <button type="button" className="button small primary" onClick={()=>applyTemplate(false)}>Apply template design</button>
+      </fieldset>}
       <AppearanceTransfer settings={content} onApply={(settings) => {
         edit((current) => ({ ...current, content: { ...current.content, ...settings,
           appearance: { ...settings.appearance, ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}) } } }));

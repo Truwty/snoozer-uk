@@ -187,3 +187,42 @@
 @media (prefers-reduced-motion:reduce) {
   .studio-main-content .studio-official-badge,.studio-main-content .studio-workspace * { transition:none !important; }
 }
+
+
+/* Four reference-style asset upload cards within Customize. */
+.studio-main-content .studio-assets-uploader{display:grid;gap:1rem;padding:1rem;border:1px solid rgba(255,255,255,.065);border-radius:12px;background:#111315}
+.studio-main-content .studio-assets-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.studio-main-content .studio-assets-heading h2{color:#f2f4f0;font-size:1rem}
+.studio-main-content .studio-assets-heading .muted{font-size:.68rem}
+.studio-main-content .studio-assets-premium{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem .85rem;border:1px solid rgba(216,251,134,.16);border-radius:9px;background:rgba(216,251,134,.045)}
+.studio-main-content .studio-assets-premium strong{font-size:.73rem;color:#f0f3ef}
+.studio-main-content .studio-assets-premium p{margin-top:.15rem;color:#969e97;font-size:.61rem}
+.studio-main-content .studio-assets-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;align-items:stretch}
+.studio-main-content .studio-asset-card{display:flex;flex-direction:column;gap:.55rem;min-width:0;padding:.7rem;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:#16191a}
+.studio-main-content .studio-asset-card-top{display:flex;align-items:center;justify-content:space-between;gap:.4rem}
+.studio-main-content .studio-asset-icon{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:7px;background:rgba(216,251,134,.1);color:var(--studio-lime);font-size:1rem}
+.studio-main-content .studio-asset-kind{color:#7f8980;font-size:.52rem;font-weight:750;letter-spacing:.06em}
+.studio-main-content .studio-asset-card h3{color:#eef2ec;font-size:.75rem}
+.studio-main-content .studio-asset-card>.muted{min-height:2.5em;color:#909991;font-size:.59rem;line-height:1.45}
+.studio-main-content .studio-asset-preview{display:grid;place-items:center;min-height:7rem;max-height:8rem;overflow:hidden;border:1px solid rgba(255,255,255,.055);border-radius:7px;background:#0b0d0e}
+.studio-main-content .studio-asset-preview>img{width:100%;height:7.5rem;object-fit:cover}
+.studio-main-content .studio-asset-placeholder{display:grid;justify-items:center;gap:.25rem;color:#919a91}
+.studio-main-content .studio-asset-placeholder span{font-size:1.5rem;color:#b6c1b0}
+.studio-main-content .studio-asset-placeholder strong{font-size:.58rem;font-weight:550}
+.studio-main-content .studio-asset-audio-preview{align-content:center;gap:.25rem;color:var(--studio-lime)}
+.studio-main-content .studio-asset-audio-preview span{font-size:1.65rem}
+.studio-main-content .studio-asset-audio-preview strong{font-size:.61rem;letter-spacing:.12em}
+.studio-main-content .studio-asset-audio-preview small{color:#899389;font-size:.49rem}
+.studio-main-content .studio-asset-avatar-preview .avatar-panel{margin:0!important;padding:0!important;border:0!important}
+.studio-main-content .studio-asset-avatar-preview .avatar-panel h2{display:none}
+.studio-main-content .studio-asset-avatar-preview .avatar{width:3.25rem;height:3.25rem;object-fit:cover}
+.studio-main-content .studio-asset-card label{font-size:.62rem}
+.studio-main-content .studio-asset-card select{min-height:2rem;font-size:.6rem}
+.studio-main-content .studio-asset-card .button{width:100%;justify-content:center;font-size:.6rem}
+.studio-main-content .studio-asset-manager summary{list-style:none;cursor:pointer}
+.studio-main-content .studio-asset-manager summary::-webkit-details-marker{display:none}
+.studio-main-content .studio-asset-manager[open] .studio-audio-library{margin-top:.7rem;padding-top:.7rem;border-top:1px solid rgba(255,255,255,.07)}
+.studio-main-content .studio-audio-cover-control{min-width:0;gap:.3rem}
+.studio-main-content .studio-audio-cover-control .button{white-space:normal}
+@media(max-width:1150px){.studio-main-content .studio-assets-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.studio-main-content .studio-assets-heading{flex-direction:column}.studio-main-content .studio-assets-grid{grid-template-columns:minmax(0,1fr)}}
