@@ -4,7 +4,7 @@ import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize } from "@/lib/studio-templates";
+import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
 import { rateStudioTemplate, setTemplateFavorite, useStudioTemplate } from "./actions";
 import { z } from "zod";
