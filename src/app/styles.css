@@ -564,7 +564,7 @@ body:has(> .public-page[data-background-image="true"]) {
 
 /* Compact two-row header for tablet and phone widths. The homepage has its
    own art-directed header and keeps its dedicated .home-immersive rules. */
-@media (max-width: 54rem) {
+@media (max-width: 68rem) {
   main.shell:not(.home-immersive) .snoozer-topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
