@@ -2,7 +2,7 @@
 .discovery-profile-tags li { padding:.42rem .7rem; border:1px solid var(--edge); border-radius:999px; color:var(--text-muted); background:#ffffff05; text-decoration:none; font-size:.8rem; }
 .related-creators { display:grid; gap:1.2rem; margin:2rem 0; }
 .discovery-section-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; }
-.discovery-section-heading h2 h2 { margin:.2rem 0 0; }
+.discovery-section-heading h2 { margin:.2rem 0 0; }
 .discovery-profile-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
 .discovery-profile-card { min-width:0; padding:1.15rem; border:1px solid var(--edge); border-radius:10px; background:var(--panel); transition:border-color .16s ease,transform .16s ease,background .16s ease; }
 .discovery-profile-card:hover { border-color:#77718f; background:var(--surface-raised,var(--panel)); transform:translateY(-2px); }
@@ -18,3 +18,8 @@
 .discovery-profile-bio { display:-webkit-box; width:100%; overflow:hidden; color:var(--text-muted); line-height:1.55; font-size:.87rem; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
 .discovery-profile-tags { display:flex; flex-wrap:wrap; gap:.35rem; list-style:none; margin:0; padding:0; }
 .discovery-profile-open { margin-top:.2rem; color:var(--accent); font-size:.82rem; font-weight:650; }
+
+.discovery-profile-tags li { padding:.25rem .45rem; font-size:.69rem; text-transform:capitalize; }
+
+@media(max-width:1000px) { .discovery-profile-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:640px) { .discovery-profile-grid { grid-template-columns:minmax(0,1fr); } }
