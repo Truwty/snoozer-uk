@@ -16,7 +16,7 @@ The connected Supabase project currently reports all three Premium policy flags 
 - Repository tree at the baseline commit contained 798 entries.
 - Connected Render resource: free Frankfurt web service named snoozer-uk-staging, tracking main with commit-triggered auto-deploy.
 - The service was configured with no HTTP health-check path, although the repository Blueprint defines /health/live and checksPass deployment triggering.
-- In the sampled 26 November 03:15–04:20 UTC Render metrics, memory ranged from approximately 225 MB to 273 MB against a 512 MiB limit. Render returned no HTTP latency or request-count time series for that sample.
+- In the refreshed 24-hour Render metrics sample ending 26 November 2026 05:08 UTC, memory samples ranged from approximately 227 MB to 311 MB against a 512 MiB (536,870,900-byte) limit. The latest sample was approximately 282.5 MB. CPU samples were low; Render returned no HTTP latency, request-count or instance-count time series. This is an infrastructure sample, not a route-level performance benchmark.
 - The sampled Render application-error and HTTP 5xx log queries returned no entries. This is a bounded sample, not proof of zero production errors.
 
 ## Database migration reconciliation
@@ -37,13 +37,13 @@ These are advisor findings, not automatically confirmed vulnerabilities. The pri
 
 | Advisor | Current count | Planned treatment |
 | --- | ---: | --- |
-| RLS enabled without a table policy | 116 | Verify private-schema access and table grants; preserve intentionally service-only tables |
-| Security-definer functions executable by anon | 16 | Function-by-function public API and privilege review |
-| Security-definer functions executable by authenticated | 177 | Verify identity/ownership checks and owner assurance; no blanket revocation |
+| RLS enabled without a table policy | 116 | Reviewed: all 116 tables are in private `snoozer`; `anon` and `authenticated` have no schema USAGE or direct SELECT/INSERT grants. Preserve service-only design; do not add broad policies |
+| Security-definer functions executable by anon | 16 | Reviewed as bounded public readers; retain only after visibility predicates and response fields remain tested |
+| Security-definer functions executable by authenticated | 177 | 163 use identity/session/owner guard helpers; remaining 14 are STABLE read-only lookups with no mutation statements. No blanket revocation |
 | Unindexed foreign keys | 82 | Rank by workload, row counts and query plans before indexing |
 | Unused-index notices | 25 | Establish usage window and write overhead before removal |
 | Duplicate-index warning | 1 | Verify duplicate definition and dependencies before removal |
-| Table without a primary key | 1 | Check whether published_profiles is a projection/materialised snapshot and choose an integrity-safe key |
+| Table without a primary key | 1 | `published_profiles` is a profile-scoped snapshot history table. Existing UNIQUE `(profile_id, revision)` backs five foreign keys; a primary-key rewrite is not justified for a 23-row staging table |
 
 Supabase also reports leaked-password protection as a warning; its Auth configuration should be verified and enabled where appropriate.
 
@@ -55,23 +55,23 @@ The Render metrics sample did not expose HTTP request counts or latency. Perform
 
 ## Codebase findings
 
-- The root layout forced every route into dynamic request-time rendering.
-- Homepage and Help Centre stylesheets were imported by the root layout despite only being used on their respective route groups.
-- Public profile cards statically imported optional YouTube, Spotify, Twitch, metadata and interactive widgets.
-- The global application stylesheet is approximately 213 KB of source CSS; deeper stylesheet extraction requires selector/route analysis to avoid regressions.
+- The root layout still forces dynamic request-time rendering. Removing that override exposed a Server Action `Origin: null` regression in the password-reset E2E flow, so it was restored and is deferred until a route-isolated replacement is proven.
+- Homepage, Help Centre, Pricing, Leaderboard, Discover and Studio styles have been moved to route-level stylesheets/layouts. Approximately 66,840 CSS characters were removed from the root global stylesheet, reducing it by about 31%.
+- Public profile YouTube, Twitch and external metadata widgets are now separate dynamically loaded chunks with SSR retained. Spotify and the interactive widget shell remain server-rendered to preserve initial profile HTML and existing tests.
+- Root global CSS was approximately 213 KB of source before extraction and is approximately 146 KB after route-specific extraction. Further extraction still needs selector ownership and cascade regression checks.
 - The server-side public-profile reader already uses React request memoisation. Persistent caching is not introduced until invalidation on publish, unpublish, rename, restriction and deletion can be proven.
 
 ## Implementation progress
 
 - [x] Create isolated optimisation branch and draft PR; main remains unchanged.
-- [x] Remove the root-level force-dynamic override.
+- [ ] Remove the root-level force-dynamic override (deferred after the password-reset Server Action regression; the root dynamic baseline is retained).
 - [x] Move homepage CSS to the homepage route.
 - [x] Scope Help Centre CSS to a Help route layout.
 - [x] Split optional public profile widgets into dynamic chunks with SSR retained.
 - [x] Apply and verify the 14 outstanding 26 November migrations on connected staging.
 - [x] Reconcile Premium documentation with owner-confirmed enabled payment state.
-- [ ] Complete full CI for the final optimisation PR head.
-- [ ] Complete function-by-function security-definer and RLS review.
+- [x] Full CI on PR head `c1427149ab156114a39495974fc9cc983a01ae68`: run [#45758701026](https://github.com/Truwty/snoozer-uk/actions/runs/45758701026) passed all security/quality jobs, unit/database tests, five Playwright shards and aggregate `validate`.
+- [x] Complete SQL privilege/RLS/SECURITY DEFINER risk triage and Storage path review (read-only evidence; not a formal penetration test).
 - [ ] Prioritise foreign-key indexes using measured query plans.
 - [ ] Investigate duplicate and unused indexes with a sufficiently long usage window.
 - [ ] Profile and optimise scheduled database work where measurements justify changes.
@@ -93,7 +93,7 @@ A second read-only SQL pass after the migrations established:
 - All 379 public-schema SECURITY DEFINER functions have a function-level `search_path` setting; none of the inspected public functions is missing it.
 - The 116 RLS-enabled tables reported without policies have no direct SELECT or INSERT privilege granted to either `anon` or `authenticated` (zero tables with either privilege). Their policy-free state is consistent with private/service-only access, not a demonstrated public-table exposure.
 - The 16 anonymous-executable SECURITY DEFINER functions are primarily deliberate public reads (published profile, leaderboard, profile existence/address resolution, published styling tier, sitemap, maintenance/effects state, username availability, public community template, public badge artwork and public text paste). Verify returned columns and owner/public visibility predicates rather than revoking these wholesale.
-- Of the authenticated-executable functions, 22 did not match a simple source-code identity-helper pattern. Manual inspection found that the account privacy and notification routines use `snoozer.privacy_actor()`, which requires a verified account and active auth session; public-read functions are intentionally exposed; remaining owner operations use the dedicated owner guard. This heuristic is not a substitute for reviewing every function body, so the review remains tracked.
+- Of the 177 authenticated-executable functions, 163 include `snoozer.verified_user()`, `auth.uid()`, `snoozer.privacy_actor()` or `snoozer.admin_actor()` in their function body. The other 14 are all `STABLE` and their bodies contain no `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE` or dynamic `EXECUTE` statement; they are bounded read-only helpers such as public metadata/status resolution and lookups. This source/privilege classification found zero unguarded mutating functions in that 14-function subset. It is a static SQL review, not a formal penetration test.
 
 The leaked-password-protection advisor warning remains to be checked in Supabase Auth settings. The current connector provides read-only project/database controls but does not expose this Auth setting as a supported mutation.
 
@@ -142,3 +142,21 @@ All three jobs were active and the latest completed runs were on 26 November. Th
 The initial removal of the root `force-dynamic` rendering override was reverted on the optimisation branch after the full Playwright run exposed a Server Action origin failure in the profile/password-reset lifecycle flow. The safer baseline is retained until that interaction can be isolated in a focused test. No claim is made that global request-time rendering has been optimised yet.
 
 A route-specific tablet/mobile header layout is now being added for non-homepage pages. It moves the shared navigation into its own second row at tablet widths and allows links to wrap on smaller screens; the homepage retains its separate art-directed header. The homepage stylesheet cascade is also kept in its original order: the rules formerly in root styles.css remain before the dedicated homepage stylesheet rules.
+
+## Expanded access-control and Storage review — 26 November 2026
+
+The latest read-only SQL review verified the advisor findings against actual privileges and the deployed application call paths:
+
+- All 116 policy-free RLS tables are in `snoozer`. Both `anon` and `authenticated` lack `USAGE` on that schema and have no direct `SELECT` or `INSERT` grants on those tables. No public-schema table without policies was found by this review. The application exposes bounded RPCs from `public` and uses a server-side service client for its private schema. No RLS policies were added.
+- All 379 `public` SECURITY DEFINER functions have function-level `search_path` configuration (zero missing). In `public`, 16 functions are executable by `anon`; the reviewed set consists of public-facing reads and status/lookup helpers with explicit public/published predicates where the data is user content. The 177 authenticated-executable functions comprise 163 with a recognisable identity/session/owner helper and 14 additional `STABLE` read-only functions without mutation statements. No broad EXECUTE revocations were made.
+- The two `snoozer` SECURITY DEFINER routines that report EXECUTE grants to `anon`/`authenticated` remain unreachable through the API roles because neither role has `USAGE` on the `snoozer` schema.
+- `snoozer.admin_actor()` delegates to `verified_user()`, requires a platform-owner identity, and for writes checks AAL2 plus a current session row. `snoozer.privacy_actor()` requires a confirmed email and a current Auth session. `snoozer.verified_user()` validates email confirmation, session validity, enrolled-TOTP AAL2 and account restrictions.
+- The six Storage buckets are all private (`public=false`) with MIME and per-file size limits. `storage.objects` has RLS enabled and no direct policies, so there is no direct browser object policy. Upload actions call `requireAccount()`, use the server-only `storageAdmin()` client, create scoped signed upload tokens, and validate/process/commit files server-side. Public media routes resolve publication visibility via database RPCs before reading private objects using the service role. This is the code-path review; negative unauthenticated Storage acceptance tests and an independent penetration test remain separate assurance work.
+- The single `no_primary_key` notice is on `snoozer.published_profiles`. Its original primary key was intentionally dropped in `20261110005100_profile_scoped_constraints.sql` during the move to profile-scoped snapshot relationships. The table retains a UNIQUE `(profile_id, revision)` key referenced by five foreign keys, and staging contains 23 rows with 23 distinct non-null pairs. Replacing that unique key with a primary key would require coordinated dependency changes and is not a meaningful scale optimisation at current table size; leave it unchanged.
+- The leaked-password protection warning still requires verification in Supabase Auth settings. The available project/database connector does not expose this Auth setting for read or write.
+
+## Render drift and remaining performance evidence
+
+The active Render service still has an empty `healthCheckPath`, while the checked-in Blueprint declares `/health/live`. The service tracks `main` with commit-triggered auto-deploy, and no deployment or service setting was changed. Reconcile this configuration only as a separately reviewed release operation.
+
+The current Render metric endpoint continues to return no HTTP request count, p95 latency or instance-count series. Route-level Lighthouse/Web Vitals and authenticated Studio/Discover profiling have not yet been collected. Therefore this audit does not claim a proven LCP/INP improvement or a measured page-speed percentage. The completed CSS and optional-widget splitting reduce global stylesheet and initial optional widget loading scope, but route-level before/after browser measurements remain outstanding.
