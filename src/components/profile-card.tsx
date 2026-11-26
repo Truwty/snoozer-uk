@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
-import dynamic from "next/dynamic";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
-import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
-import { youtubeVideoId } from "@/lib/youtube";
 
-import { spotifyResource } from "@/lib/spotify";
-import { SpotifyWidget } from "./spotify-widget";
-
-import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 
 
 import { ProfileEffectsLayer } from "./profile-effects";
@@ -27,16 +20,8 @@ import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
-/*
- * Optional profile widgets are split into independent chunks. They are only
- * requested when a published profile actually uses the corresponding widget.
- * SSR remains enabled so public profile HTML and layout are preserved.
- */
-const YouTubeWidget = dynamic(() => import("./youtube-widget").then((module) => module.YouTubeWidget));
-const PublicMetadataWidget = dynamic(() => import("./public-metadata-widget").then((module) => module.PublicMetadataWidget));
-const TwitchWidget = dynamic(() => import("./twitch-widget").then((module) => module.TwitchWidget));
 
-type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
+type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string; iconImage?: string };
 
 const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
 
@@ -460,131 +445,63 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
   }
 
-  function renderLinkList(links: { label: string; url: string; index: number }[], socialIconsAlreadyVisible = false) {
-    if (links.length === 0) return null;
-    return <ul className="profile-links" style={linkStyle}>
-      {links.map(({ label, url, index }) => {
-        const video = youtubeVideoId(url);
-        const metadata = metadataWidget(url);
-        const channel = twitchChannel(url);
-        const place = robloxPlace(url);
-        const spotify = spotifyResource(url);
-        const provider = socialProviderForUrl(url);
-        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify" && !place;
-        return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
-          {spotify
-            ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
-                analyticsUsername={preview ? undefined : profile.username}
-                analyticsPosition={preview ? undefined : index + 1} />
-            : iconAlreadyLinksToProvider ? null : <a href={url} rel="ugc nofollow noreferrer"
-                data-analytics-profile={preview ? undefined : profile.username}
-                data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
-          {video && <YouTubeWidget key={video} videoId={video} label={label} />}
-          {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
-            : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
-          {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
-        </li>;
-      })}
-    </ul>;
-  }
-
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
-    if (valid.length === 0) return null;
 
-    const hasProviderEmbed = (url: string) => Boolean(
-      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
-    );
-
-    if (entryExperience) {
-      const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
-        const provider = socialProviderForUrl(url);
-        // Game/place links stay as descriptive links in More instead of
-        // being hidden behind a generic Roblox social icon.
-        return provider && provider.id !== "spotify" && !robloxPlace(url)
-          ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
-          : [];
-      });
-      const audioTracks = valid.flatMap(({ label, url }) => {
-        const src = directAudioSource(url);
-        if (!src) return [];
-        const info = audioMetadata(label, profile.display_name);
-        return [{ src, title: info.title, artist: info.artist }];
-      });
-      const spotifyTrack = audioTracks.length ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
-      const spotifyTrackResource = spotifyTrack ? spotifyResource(spotifyTrack.url) : null;
-      const cover = profile.gallery[0] && galleryBase
-        ? galleryBase + "/" + profile.gallery[0].id
-        : avatarSrc;
-
-      return <>
-        {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
-            rel="ugc nofollow noreferrer" title={label} aria-label={label}
-            data-analytics-profile={preview ? undefined : profile.username}
-            data-analytics-position={preview ? undefined : index + 1}>
-            <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
-          </a>)}
-        </nav>}
-        {audioTracks.length > 0
-          ? <ProfileAudioPlayer tracks={audioTracks} cover={cover}
-              volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
-          : spotifyTrack && spotifyTrackResource
-            ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
-                resource={spotifyTrackResource} label={spotifyTrack.label} compact
-                analyticsUsername={profile.username} analyticsPosition={spotifyTrack.index + 1} />
-            : null}
-      </>;
-    }
-
-    const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
-      const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }] : [];
+    const social: SocialLink[] = valid.flatMap((item) => {
+      if (item.mode === "text") return [];
+      const provider = socialProviderForUrl(item.url);
+      const customIcon = item.iconImage && profile.gallery.some((image) => image.id === item.iconImage);
+      if (!provider && !customIcon) return [];
+      return [{
+        label: item.label,
+        url: item.url,
+        index: item.index,
+        providerId: provider?.id ?? "website",
+        providerLabel: provider?.label ?? "Website",
+        ...(customIcon ? { iconImage: item.iconImage } : {}),
+      }];
     });
-    const regular = valid.filter(({ url }) => !socialProviderForUrl(url) || hasProviderEmbed(url));
+    const iconIndexes = new Set(social.map((item) => item.index));
+    const textLinks = valid.filter((item) => item.mode === "text" || !iconIndexes.has(item.index));
+    const audioTracks = entryExperience ? valid.flatMap(({ label, url }) => {
+      const src = directAudioSource(url);
+      if (!src) return [];
+      const info = audioMetadata(label, profile.display_name);
+      return [{ src, title: info.title, artist: info.artist }];
+    }) : [];
+    const cover = profile.gallery[0] && galleryBase
+      ? galleryBase + "/" + profile.gallery[0].id
+      : avatarSrc;
+
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-        {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
-          rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
-          data-analytics-profile={preview ? undefined : profile.username}
-          data-analytics-position={preview ? undefined : index + 1}>
-          <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
-        </a>)}
+        {social.map(({ label, url, index, providerId, providerLabel, iconImage }) => {
+          const image = iconImage ? profile.gallery.find((item) => item.id === iconImage) : undefined;
+          const imageSrc = image && galleryBase ? galleryBase + "/" + encodeURIComponent(image.id) : undefined;
+          return <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>
+            {imageSrc
+              // Gallery images are already processed and served through the public profile media route.
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img className="profile-social-custom-icon" src={imageSrc} alt="" width={26} height={26} loading="lazy"/>
+              : <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>}
+          </a>;
+        })}
       </nav>}
-      {renderLinkList(regular)}
+      {textLinks.length > 0 && <ul className="profile-links profile-text-links" style={linkStyle}>
+        {textLinks.map(({ label, url, index }) => <li key={url + "-" + index}>
+          <a href={url} rel="ugc nofollow noreferrer"
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>{label} <span aria-hidden="true">↗</span></a>
+        </li>)}
+      </ul>}
+      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={audioTracks} cover={cover}
+        volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />}
     </>;
-  }
-
-  function renderMoreContent() {
-    const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url, hidden }) => safeLink(url) && !hidden);
-    const hasProviderEmbed = (url: string) => Boolean(
-      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
-    );
-    const social = valid.filter(({ url }) => {
-      const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) && provider.id !== "spotify";
-    });
-    const audioTrackIndexes = new Set(valid.filter(({ url }) => directAudioSource(url)).map(({ index }) => index));
-    const spotifyTrack = audioTrackIndexes.size ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
-    const extras = valid.filter((link) =>
-      !social.some((item) => item.index === link.index)
-      && !audioTrackIndexes.has(link.index)
-      && (!spotifyTrack || link.index !== spotifyTrack.index)
-    );
-    const additionalLinks = renderLinkList(extras, true);
-    const additionalItems = layout.items.map((item, index) => item.type === "links"
-      ? null
-      : renderItem(item, index)).filter(Boolean);
-
-    if (!additionalLinks && additionalItems.length === 0) return null;
-
-    return <details className="profile-more-content">
-      <summary>More</summary>
-      {additionalLinks}
-      {additionalItems}
-    </details>;
   }
 
   function renderBlock(id: string) {
@@ -709,7 +626,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {entryExperience ? <>{renderLinks()}{renderMoreContent()}</> : layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
     </section>;

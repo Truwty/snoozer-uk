@@ -46,8 +46,8 @@ describe("compact public bio experience", () => {
     expect(html).toContain("Midnight Drive");
     expect(html).toContain("Demo Artist");
     expect(html).toContain('aria-label="Profile music volume"');
-    expect(html).toContain("profile-more-content");
-    expect(html).toContain("This section is hidden in the compact bio experience.");
+    expect(html).not.toContain("profile-more-content");
+    expect(html).not.toContain("This section is hidden in the compact bio experience.");
     expect(html).not.toContain("guestbook-form");
     expect(html).not.toContain("profile-widgets");
   });
@@ -66,16 +66,35 @@ describe("compact public bio experience", () => {
     expect(html).not.toContain("hidden.mp3");
   });
 
-  it("uses the official compact Spotify track embed instead of a playlist or a false external volume control", () => {
+  it("renders Spotify as a normal provider link instead of an embedded third-party player", () => {
     const profile = profileWith({
-      links: [{ label: "Song on Spotify", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" }],
+      links: [{ label: "Spotify", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" }],
     });
     const html = renderToStaticMarkup(createElement(ProfileCard, { profile, entryExperience: true }));
 
-    expect(html).toContain("spotify-widget--compact");
-    expect(html).toContain("https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
-    expect(html).not.toContain("spotify-widget__header");
-    expect(html).not.toContain("Profile music volume");
+    expect(html).toContain('href="https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"');
+    expect(html).not.toContain("spotify-widget");
+    expect(html).not.toContain("open.spotify.com/embed");
+  });
+
+  it("renders custom icon links and text-mode links without exposing saved extra sections", () => {
+    const imageId = "00000000-0000-4000-8000-000000000011";
+    const profile = profileWith({
+      gallery: [{ id: imageId, alt: "Custom mark", width: 256, height: 256 }],
+      links: [
+        { label: "Custom", url: "https://example.com/custom", iconImage: imageId },
+        { label: "Text only", url: "https://example.com/text", mode: "text" },
+      ],
+    });
+    const html = renderToStaticMarkup(createElement(ProfileCard, {
+      profile, entryExperience: true, galleryBase: "/media/gallery/bio-page-example",
+    }));
+
+    expect(html).toContain("/media/gallery/bio-page-example/" + imageId);
+    expect(html).toContain("profile-text-links");
+    expect(html).toContain("Text only");
+    expect(html).not.toContain("profile-more-content");
+    expect(html).not.toContain("profile-widgets");
   });
 
   it("keeps the existing Studio/profile renderer unchanged when entry experience is disabled", () => {

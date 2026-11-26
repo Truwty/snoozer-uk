@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { kofiProfileUrl } from "@/lib/kofi-link";
-import { spotifyResource, spotifyLink } from "@/lib/spotify";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
@@ -59,10 +57,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
-  const [kofiUrl, setKofiUrl] = useState("");
-  const [kofiError, setKofiError] = useState(false);
-  const [spotifyUrl, setSpotifyUrl] = useState("");
-  const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [providerQuery, setProviderQuery] = useState("");
   const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
@@ -148,33 +142,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
     setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
     focusLink(index);
-  }
-
-  function addKofiLink() {
-    if (content.links.length >= linkLimit) return;
-    const url = kofiProfileUrl(kofiUrl);
-    if (!url) {
-      setKofiError(true);
-      return;
-    }
-    set("links", [...content.links, { label: "Support me", url }]);
-    setKofiUrl("");
-    setKofiError(false);
-    setAnnouncement("Ko-fi support link added.");
-    focusLink(content.links.length);
-  }
-
-  function addSpotifyLink() {
-    if (content.links.length >= linkLimit) return;
-    const resource = spotifyResource(spotifyUrl);
-    const url = resource ? spotifyLink(resource) : null;
-    if (!url || !resource) { setSpotifyError(true); return; }
-    const name = resource.kind === "show" ? "Podcast" : resource.kind[0].toUpperCase() + resource.kind.slice(1);
-    set("links", [...content.links, { label: "Spotify " + name, url }]);
-    setSpotifyUrl("");
-    setSpotifyError(false);
-    setAnnouncement("Added a Spotify " + resource.kind + " link.");
-    focusLink(content.links.length);
   }
 
   function focusLink(index: number) {
@@ -602,6 +569,22 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
           <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
+          <label>Display mode
+            <select value={item.mode ?? "icon"} onChange={(event) => {
+              const mode = event.target.value === "text" ? "text" : "icon";
+              set("links", content.links.map((entry, i) => i === index ? { ...entry, mode } : entry));
+            }}>
+              <option value="icon">Icon link</option>
+              <option value="text">Text link</option>
+            </select>
+          </label>
+          {(item.mode ?? "icon") === "icon" && <label>Custom icon (optional)
+            <select value={item.iconImage ?? ""} onChange={(event) =>
+              set("links", content.links.map((entry, i) => i === index ? { ...entry, iconImage: event.target.value || undefined } : entry))}>
+              <option value="">Use detected platform icon</option>
+              {saved.gallery.map((image) => <option key={image.id} value={image.id}>{image.alt || "Gallery image"}</option>)}
+            </select>
+          </label>
           <details className="row-menu" onClick={(event) => { if (event.target instanceof Element && event.target.closest("button")) event.currentTarget.open = false; }}><summary aria-label={`Actions for link ${index + 1}`}>Actions</summary><div className="actions">
             <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
             <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
@@ -623,33 +606,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             <p className="muted">For the compact public bio player, add a public HTTPS audio-file URL ending in .mp3, .m4a, .ogg, .wav, .aac or .flac as a normal link. Set its label to “Track title — Artist”. The first gallery image is used as artwork, falling back to your avatar. Host the audio file yourself; direct audio uploads are not currently supported.</p>
           </div>
         </details>}
-        {content.links.length < linkLimit && <details>
-          <summary>Add Spotify music or playlist</summary>
-          <div className="stack">
-            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. A track appears in the compact bio player; albums, playlists, artists and podcasts stay under More. No Spotify account connection is required. Spotify controls its embedded playback and volume.</p>
-            <label>Spotify share URL<input type="url" maxLength={2048} value={spotifyUrl}
-              placeholder="https://open.spotify.com/playlist/…"
-              aria-invalid={spotifyError} aria-describedby={spotifyError ? "spotify-url-error" : undefined}
-              onChange={(event) => { setSpotifyUrl(event.target.value); setSpotifyError(false); }}
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSpotifyLink(); } }} /></label>
-            {spotifyError && <p id="spotify-url-error" role="alert">Enter a recognised open.spotify.com track, album, playlist, artist, show or episode link.</p>}
-            <button type="button" className="button small" onClick={addSpotifyLink}>Add Spotify link</button>
-          </div>
-        </details>}
-        {content.links.length < linkLimit && <details>
-          <summary>Add Ko-fi support link</summary>
-          <div className="stack">
-            <label>Ko-fi profile URL<input type="text" inputMode="url" maxLength={100}
-              value={kofiUrl} placeholder="https://ko-fi.com/yourname"
-              aria-invalid={kofiError} aria-describedby={kofiError ? "kofi-url-error" : undefined}
-              onChange={(event) => { setKofiUrl(event.target.value); setKofiError(false); }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") { event.preventDefault(); addKofiLink(); }
-              }} /></label>
-            {kofiError && <p id="kofi-url-error" role="alert">Enter your full Ko-fi profile address.</p>}
-            <button type="button" className="button small" onClick={addKofiLink}>Add support link</button>
-          </div>
-        </details>}
+
       </fieldset>
       </section>
 
