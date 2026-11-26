@@ -100,3 +100,25 @@ The leaked-password-protection advisor warning remains to be checked in Supabase
 ## Branch protection follow-up
 
 GitHub reports branch protection disabled on `main`, with no required status checks. The available GitHub connector exposes read operations for protection/rulesets but not their administration. Before this branch is merged, the repository owner should enable a main-branch rule requiring a pull request and successful aggregate `validate` status, disallowing force pushes and deletions, and requiring the appropriate review policy. This optimisation work does not change repository administration settings.
+
+
+## Scheduled workload interpretation
+
+The cumulative query statistics align with the configured job and worker cadences:
+
+- Publication dispatch: 11,228 calls at a mean of approximately 6.64 ms. The registered `snoozer-publications-v1` cron job runs once per minute and processes at most ten due publications.
+- Domain-request cleanup: 11,150 calls at a mean of approximately 5.00 ms. This cleanup runs alongside the once-per-minute publication job.
+- Analytics retention cleanup: 2,334 calls at a mean of approximately 23.31 ms. The registered analytics cleanup runs every five minutes.
+- Discord subscription reads: 4,379 calls at a mean of approximately 16.33 ms. The Discord worker refreshes subscriptions every 60 seconds; it sends heartbeat updates every 30 seconds.
+
+These counters are cumulative and do not indicate a fault by themselves. At current measured means, the repeated scheduled work is not an optimisation target. Monitor the maximum latency, table growth, lock waits and failed cron runs as volume increases. Do not reduce publication cadence or disable cleanup simply to reduce call counts.
+
+## Index decision at the audited staging scale
+
+The live application tables currently contain only a small number of rows (for example, six profiles and 23 published profile snapshots). The advisor's 82 missing-FK-index notices include retired creator-marketplace/sandbox tables and foreign keys already covered by a different access path. The 25 unused-index notices are not sufficient evidence to remove indexes because staging has low data volume and the observation window is limited.
+
+No index was added or removed during this audit. In particular:
+- Preserve the existing ordered/composite keys used by profile and publication snapshots.
+- Revisit owner/profile composite FK indexes only where query plans or cascade/delete costs demonstrate benefit.
+- Do not drop the duplicate-looking sandbox checkout key/primary-key index before confirming constraints, dependencies and the historical-data retention requirements.
+- Re-run index usage measurement after meaningful traffic or a sustained observation period.
