@@ -102,15 +102,15 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
           {verifiedTotp.map((factor)=><form key={factor.id} action={disableAccountMfa}><input type="hidden" name="factorId" value={factor.id}/><button className="button small studio-danger-button" type="submit">Disable MFA</button></form>)}
         </div>
       </div>
-      <div className="studio-setting-row studio-setting-row--stack">
-        <div><strong>{t("Active sessions")}</strong><p>Review devices currently signed into your account and revoke sessions you do not recognise.</p></div>
+      <details className="studio-setting-row studio-setting-row--stack studio-session-management">
+        <summary><div><strong>Session Management</strong><p>Review devices currently signed into your account and revoke sessions you do not recognise.</p></div><span aria-hidden="true">⌄</span></summary>
         <div className="studio-device-sessions">
           {sessions.success?sessions.data.length?sessions.data.map((session)=><article className="studio-device-session" key={session.session_id}>
             <div><strong>{deviceLabel(session.user_agent)}</strong><p className="muted">{session.is_current?"Current device":"Other device"} · Last active {new Date(session.last_active_at??session.created_at).toLocaleString("en-GB")}</p></div>
             {session.is_current?<span className="studio-setting-status is-good">This device</span>:<form action={revokeDeviceSession}><input type="hidden" name="session" value={session.session_id}/><button className="button small studio-danger-button" type="submit">Revoke session</button></form>}
           </article>):<p>No active sessions were found.</p>:<p role="alert">Active sessions are temporarily unavailable.</p>}
         </div>
-      </div>
+      </details>
     </section>
 
     <section className="studio-dashboard-panel studio-account-settings-section">
@@ -135,17 +135,25 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
     <section className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Email Marketing")}</h2></div>
       {marketing.success?<form action={updateMarketingPreference} className="studio-marketing-preference">
-        <label className="studio-marketing-toggle">{t("Email updates")}<select name="email_opt_in" defaultValue={String(marketing.data.emailOptIn)} aria-label={t("Email updates")}><option value="false">Off</option><option value="true">On</option></select></label>
-        <button className="button small" type="submit">Save email preference</button>
+        <div><strong>{t("Email updates")}</strong><p className="muted">Receive product news and offers by email. Important account, security and billing messages remain enabled.</p></div>
+        <button type="submit" role="switch" aria-checked={marketing.data.emailOptIn}
+          aria-label={marketing.data.emailOptIn?"Turn email marketing off":"Turn email marketing on"}
+          name="email_opt_in" value={String(!marketing.data.emailOptIn)}
+          className={"studio-reference-switch"+(marketing.data.emailOptIn?" is-on":"")}>
+          <span/>
+        </button>
       </form>:<p role="alert">Email marketing preferences are temporarily unavailable.</p>}
     </section>
 
     <section className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Account Actions")}</h2></div>
       <div className="studio-account-action-item"><strong>{t("Regenerate Recovery Codes")}</strong><AccountRecoveryCodes enabled={verifiedTotp.length>0}/></div>
-      <div className="studio-account-action-item"><strong>{t("Change Email")}</strong><EmailChangeForm/></div>
+      <details className="studio-account-action-item studio-account-action-disclosure">
+        <summary>{t("Change Email")} <span aria-hidden="true">↗</span></summary>
+        <EmailChangeForm/>
+      </details>
       <div className="studio-account-action-item"><strong>{t("Change Password")}</strong><p className="muted">Changing your password will sign you out of every device.</p><Link className="button small" href="/forgot-password">{t("Change Password")} ↗</Link></div>
-      <form className="studio-account-action-item" action={signOut}><button className="button studio-danger-button" type="submit">{t("Logout")}</button></form>
+      <form className="studio-account-action-item studio-account-logout" action={signOut}><button className="button studio-danger-button" type="submit">{t("Logout")}</button></form>
       <div className="studio-account-action-item"><Link className="button studio-danger-button" href="/account/data">{t("Delete Account")} ↗</Link><p className="muted">Account deletion starts with a reviewed request. Submitting a request does not immediately remove the account.</p></div>
     </section>
   </main>;

@@ -95,11 +95,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     || Boolean(user?.identities?.some((identity) => identity.provider === "google"));
 
   const completionItems = [
-    { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/customize", selected) },
-    { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/customize", selected) },
-    { label: "Connect Discord", done: discord.success && discord.data.connected, href: studioHref("/studio/account", selected) },
-    { label: "Add a social link", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
-    { label: "Receive 10 profile views", done: viewTotal >= 10, href: studioHref("/studio/analytics", selected) },
+    { label: "Upload Avatar", done: Boolean(draft.avatar), href: studioHref("/studio/customize", selected) },
+    { label: "Add Description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/customize", selected) },
+    { label: "Link Discord Account", done: discord.success && discord.data.connected, href: studioHref("/studio/account", selected) },
+    { label: "Add Socials", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
+    { label: "Reach 10 profile views", done: viewTotal >= 10, href: studioHref("/studio/analytics", selected) },
   ];
   const completed = completionItems.filter((item) => item.done).length;
   const percentage = Math.round(completed / completionItems.length * 100);
@@ -135,10 +135,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         <h1>Account Overview</h1>
         <p className="muted">Your account at a glance.</p>
       </div>
-      <div className="actions studio-overview-actions">
-        {draft.published_revision !== null && <Link className="button small" href={"/" + draft.username} target="_blank" rel="noreferrer">View My Page ↗</Link>}
-        <Link className="button primary" href={studioHref("/studio/customize", selected)}>Edit Profile <span aria-hidden="true">→</span></Link>
-      </div>
+
     </header>
 
     <section className="studio-overview-stats" aria-label="Account overview statistics">
@@ -148,7 +145,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">⌑</span>
-        <div><span className="studio-stat-label">Aliases</span><strong>{aliases.success ? aliases.data.used + " / " + aliases.data.limit : "—"}</strong>
+        <div><span className="studio-stat-label">Alias</span><strong>{aliases.success ? aliases.data.used + " / " + aliases.data.limit : "—"}</strong>
           <small>{aliases.success ? Math.max(0, aliases.data.limit - aliases.data.used) + " available" : "Alias data unavailable"}</small></div>
       </article>
       <article className="studio-stat-card">
@@ -196,10 +193,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         <Link href={studioHref("/studio/account", selected)}><span>⌑</span>Manage Aliases <b>↗</b></Link>
         <Link href={studioHref("/studio/account", selected)}><span>⚙</span>Account Settings <b>↗</b></Link>
         <div className="studio-connection-card">
-          <div><strong>Connections</strong><span>Linked services and profile integrations</span></div>
-          <Link href={studioHref("/studio/account", selected)}>Discord connection and presence settings <b>↗</b></Link>
-          <div className="studio-connection-status"><span>Google account</span><strong>{googleConnected ? "Connected" : "Not connected"}</strong></div>
-          {!googleConnected && <form action={linkGoogleIdentity}><button type="submit">Connect Google</button></form>}
+          <div><strong>Connections</strong><span>Connected accounts and integrations</span></div>
+          <div className="studio-connection-status">
+            <span>Discord account</span><strong>{discord.success && discord.data.connected ? "Connected" : "Not connected"}</strong>
+            <Link href={studioHref("/studio/account",selected)} aria-label="Discord connection settings">⚙</Link>
+          </div>
+          <div className="studio-connection-status">
+            <span>Google account</span><strong>{googleConnected ? "Connected" : "Not connected"}</strong>
+            {googleConnected ? <Link href={studioHref("/studio/account",selected)} aria-label="Google connection settings">⚙</Link>
+              : <form action={linkGoogleIdentity}><button type="submit">Connect Google</button></form>}
+          </div>
+          <Link href={studioHref("/studio/discord",selected)}>Discord Presence settings <b>↗</b></Link>
         </div>
       </aside>
     </div>
@@ -245,9 +249,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </div>
     </section>
 
-    <section className="studio-bottom-note">
-      <div><span>Current plan</span><strong>{plan.success ? plan.data.plan.toUpperCase() : "PLAN DETAILS UNAVAILABLE"}</strong></div>
-      <Link href={studioHref("/studio/plan", selected)}>Manage Premium <span aria-hidden="true">↗</span></Link>
-    </section>
   </main>;
 }
