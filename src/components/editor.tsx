@@ -376,25 +376,22 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <div className="studio-asset-preview studio-asset-audio-preview"><span aria-hidden="true">♫</span><strong>PROFILE AUDIO</strong><small>MP3 · M4A · OGG · WAV · AAC · FLAC</small></div>
               <h3>Audio</h3>
               <p className="muted">Upload audio files, add cover artwork and manage your profile playlist.</p>
-              <details className="studio-asset-manager">
-                <summary className="button small primary">Open Audio Manager</summary>
-                <StudioAudioLibrary
-                  profileId={saved.profile_id}
-                  revision={saved.revision}
-                  gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
-                  onAddTrack={(track) => {
-                    if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
-                    set("links",[...content.links,{
-                      label:track.title+" — "+track.artist,
-                      url:track.url,
-                      mode:"text",
-                      hidden:false,
-                      ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
-                    }]);
-                    setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
-                  }}
-                />
-              </details>
+              <StudioAudioLibrary
+                profileId={saved.profile_id}
+                revision={saved.revision}
+                gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
+                onAddTrack={(track) => {
+                  if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
+                  set("links",[...content.links,{
+                    label:track.title+" — "+track.artist,
+                    url:track.url,
+                    mode:"text",
+                    hidden:false,
+                    ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
+                  }]);
+                  setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+                }}
+              />
             </article>
             <article className="studio-asset-card studio-asset-avatar">
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">◉</span><span className="studio-asset-kind">03 / PROFILE AVATAR</span></div>
