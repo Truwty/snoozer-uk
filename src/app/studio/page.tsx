@@ -203,7 +203,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
             {googleConnected ? <Link href={studioHref("/studio/account",selected)} aria-label="Google connection settings">⚙</Link>
               : <form action={linkGoogleIdentity}><button type="submit">Connect Google</button></form>}
           </div>
-          <Link href={studioHref("/studio/discord",selected)}>Discord Presence settings <b>↗</b></Link>
         </div>
       </aside>
     </div>

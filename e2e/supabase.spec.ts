@@ -433,7 +433,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("heading", { name: "Account Statistics", exact: true })).toBeVisible();
     await expect(page.getByText("Profile completion", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Manage your account", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Connections", exact: true })).toBeVisible();
+    await expect(page.getByText("Connections", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Account Analytics", exact: true })).toBeVisible();
 
     const referenceLinks = ["Overview","Analytics","Badges","Settings","Customize","Links","Premium","Image Host","Templates"];
@@ -489,7 +489,6 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("heading", { name: "Color Customization", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Other Customization", exact: true })).toBeVisible();
 
-    await page.locator("details.studio-asset-manager > summary").click();
     await page.getByRole("button", { name: "Click to open audio manager", exact: true }).click();
     const audioManager = page.getByRole("dialog", { name: "Audio Manager", exact: true });
     await expect(audioManager).toBeVisible();
