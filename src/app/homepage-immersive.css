@@ -958,6 +958,41 @@
     padding-inline: .48rem;
     font-size: .65rem;
   }
+
+  .home-immersive .snoozer-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: .3rem .4rem;
+  }
+  .home-immersive .snoozer-topbar .brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .home-immersive .account-dropdown {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .home-immersive .account-trigger-identity { display: none; }
+  .home-immersive .snoozer-header-links {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: .1rem .3rem;
+    margin-inline-start: 0;
+  }
+  .home-immersive .snoozer-header-links a {
+    min-height: 34px;
+    padding-inline: .25rem;
+    font-size: .72rem;
+  }
   .home-hero { padding-top: 2.8rem; }
   .home-hero-copy { gap: .9rem; }
   .home-hero h1 { max-width: 15ch; font-size: clamp(2.15rem, 9vw, 3.1rem); }
@@ -1017,7 +1052,7 @@
   .home-immersive .snoozer-topbar { gap: .2rem; padding-inline: .48rem .35rem; }
   .home-immersive .snoozer-topbar .brand { font-size: .95rem; }
   .home-immersive .snoozer-header-links { gap: .1rem; }
-  .home-immersive .snoozer-header-links a { font-size: .49rem; padding-inline: .03rem; }
+  .home-immersive .snoozer-header-links a { font-size: .62rem; padding-inline: .12rem; }
   .home-immersive .account-trigger { min-height: 2rem; padding-inline: .34rem; font-size: .58rem; }
   .home-profile-showcase { height: 33rem; }
   .home-profile-showcase-cards { top: 12.6rem; }
