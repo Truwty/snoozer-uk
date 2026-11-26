@@ -103,6 +103,7 @@ test("profile analytics requires consent, counts published link clicks and expor
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
     { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
     { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
+    { label: "Track", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" },
   ];
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
@@ -199,8 +200,10 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(events).toHaveLength(2);
     // Spotify is a visible native iframe, while YouTube still waits for opt-in.
     const spotify = publicPage.getByTitle("Spotify: Playlist");
+    const compactSpotify = publicPage.getByTitle("Spotify: Track");
     await expect(spotify).toHaveCount(1);
-    await expect(publicPage.locator("iframe")).toHaveCount(1);
+    await expect(compactSpotify).toHaveCount(1);
+    await expect(publicPage.locator("iframe")).toHaveCount(2);
     await expect(publicPage.getByRole("button", { name: /Load Spotify player|Hide Spotify player/ })).toHaveCount(0);
     await expect(publicPage.getByText("Learn more about Spotify privacy")).toHaveCount(0);
     let embedRequests = 0;
@@ -210,12 +213,25 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect.poll(() => embedRequests).toBe(1);
     await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
     await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
-    await expect(publicPage.locator("iframe")).toHaveCount(1);
+    await expect(publicPage.locator("iframe")).toHaveCount(2);
     // The compact themed card replaces the former duplicate link and the
     // Spotify player renders automatically, independent of analytics consent.
     await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(spotify).toHaveAttribute("referrerpolicy", "no-referrer");
+    await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+    await expect(spotify).toHaveAttribute("allow", /encrypted-media/);
+    await expect(spotify).not.toHaveAttribute("sandbox");
     await expect(spotify).toHaveAttribute("height", "352");
+    await expect(compactSpotify).toHaveAttribute("src", "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
+    await expect(compactSpotify).toHaveAttribute("height", "152");
+    await expect(compactSpotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+    await expect(compactSpotify).toHaveAttribute("allow", /encrypted-media/);
+    await expect(compactSpotify).not.toHaveAttribute("sandbox");
+    await expect(publicPage.locator(".spotify-widget__compact-open")).toHaveAttribute("href",
+      "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
+    await publicPage.setViewportSize({ width: 320, height: 800 });
+    const compactBox = await compactSpotify.boundingBox();
+    expect(compactBox?.width ?? 0).toBeGreaterThanOrEqual(280);
+    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await expect(publicPage.locator(".spotify-widget__brand")).toContainText("Spotify");
     await expect(publicPage.locator(".spotify-widget__open")).toHaveAttribute("href",
       "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
