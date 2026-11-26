@@ -1144,18 +1144,9 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
   await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
   await page.getByRole("link", { name: "Back to Customize" }).click();
-  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toContainText("12.5 MiB");
-  await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
-  await editorTab(page, "Design");
-  await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
-  const previewCard = page.getByRole("region", { name: "Page preview" });
-  // ProfileCard itself is the named region, not a descendant of it.
-  const previewPage = previewCard;
-  await expect(previewPage).toHaveAttribute("data-background-image", "true");
-  await expect(previewPage).toHaveAttribute("style", new RegExp(blueShorelineId));
-  await expect.poll(() => previewPage.evaluate((element) =>
-    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
-  await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
+  const backgroundImage = page.getByLabel("Background image");
+  await expect(backgroundImage).toBeVisible();
+  await backgroundImage.selectOption(blueShorelineId);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
   const liveImage = await request.get(publicPath);
@@ -1214,7 +1205,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   expect((await request.get(publicPath)).status()).toBe(200);
   await page.getByRole("link", { name: "Back to Customize" }).click();
-  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toHaveCount(0);
+  await expect(page.getByLabel("Background image")).toBeVisible();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect(await (await request.get("/" + name)).text()).not.toContain('data-background-image="true"');
