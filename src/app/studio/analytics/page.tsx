@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { z } from "zod";
 import { AnalyticsChart } from "@/components/analytics-chart";
+import { CountryAnalyticsMap } from "@/components/country-analytics-map";
 import { AnalyticsCampaigns } from "@/components/analytics-campaigns";
 import { TableScroll, Disclosure } from "@/components/ui";
 import {
@@ -238,7 +239,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
         {countryResponse?.error
           ? <Empty title="Country analytics unavailable" description="Country totals could not be loaded. Other analytics continue to work."/>
           : countries.length>0
-            ? <div className="analytics-country-list">{countries.map((row)=><div className="analytics-country-row" key={row.country_code}>
+            ? <><CountryAnalyticsMap countries={countries}/><div className="analytics-country-list">{countries.map((row)=><div className="analytics-country-row" key={row.country_code}>
                 <div className="analytics-country-label"><strong>{row.name}</strong><span>{row.country_code}</span></div>
                 <div className="analytics-country-bar" role="img" aria-label={row.views+" views"}><span style={{width:(row.views/maxCountryViews*100)+"%"}}/></div>
                 <strong className="analytics-country-count">{compact(row.views)}</strong>
