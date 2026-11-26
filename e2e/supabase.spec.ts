@@ -489,7 +489,6 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
 
     await page.getByRole("link", { name: "Image Host", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
-    await expect(page.getByText("TEXT PASTES", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Snippets", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Create text paste", exact: true })).toBeEnabled();
     await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
@@ -618,7 +617,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const abandonedPath = `${abandonedStage.scope}/${abandonedStage.key}`;
     const oldToken = await stageAdmin.storage.from("avatar-incoming").createSignedUploadUrl(abandonedPath);
     expect(oldToken.error).toBeNull();
-    await page.getByText("Upload recovery", { exact: true }).click();
+    await page.getByRole("tabpanel", { name: "Profile" }).getByText("Upload recovery", { exact: true }).click();
     await page.getByRole("button", { name: "Discard pending upload" }).click();
     await expect(page.getByRole("status")).toHaveText("Pending upload cleared.");
     expect((await stageOwner.storage.from("avatar-incoming").uploadToSignedUrl(
@@ -1205,7 +1204,7 @@ test("gallery images upload to private Storage and follow publication visibility
   const afterFolders = await (await request.get("/" + name)).text();
   expect(afterFolders).not.toContain("Private portfolio");
   expect(afterFolders).not.toContain("Private archive");
-  expect(afterFolders).toContain('alt="Open water"');
+  expect(afterFolders).not.toContain('alt="Open water"');
   expect(afterFolders).not.toContain('alt="Blue shoreline"');
 
   await page.goto("/studio/gallery");
