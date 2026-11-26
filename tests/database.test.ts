@@ -3225,6 +3225,33 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   });
 
 
+  it("records only separately consented country totals and suppresses counts below three", async () => {
+    await act("authenticated",alice);
+    await claim("country-analytics");
+    const profile=(await draft() as {profile_id:string}).profile_id;
+    await save(0,"Country profile",[],true);
+    await act("service_role");
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:"service_role"})]);
+    const recordView=async(event:string)=>{
+      await db.query("select public.record_profile_event_with_browser('country-analytics',$1,'view',null,null,null,'direct',null,'desktop',null)",[event]);
+      await db.query("select public.record_profile_country_event('country-analytics',$1,'view','GB')",[event]);
+    };
+    const events=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
+    await recordView(events[0]); await recordView(events[1]);
+    await act("authenticated",alice);
+    expect(await result("select * from public.get_my_profile_country_totals($1,null)",[profile])).toEqual([]);
+    await act("service_role");
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:"service_role"})]);
+    await recordView(events[2]); await recordView(events[2]);
+    await act("authenticated",alice);
+    expect(await result("select * from public.get_my_profile_country_totals($1,null)",[profile]))
+      .toEqual([{country_code:"GB",views:3,clicks:0}]);
+    await expect(db.query("select * from snoozer.profile_country_days")).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select public.record_profile_country_event('country-analytics',$1,'view','US')",[crypto.randomUUID()]))
+      .rejects.toMatchObject({code:"42501"});
+  });
+
+
   it("keeps Image Host text pastes owner-scoped and serves public content as plain text only", async () => {
     await act("authenticated",alice);
     const paste=await result<string>("select public.create_my_image_host_text_paste('Build notes','hello <script>blocked by content type</script>',false) as value");

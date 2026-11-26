@@ -9,6 +9,7 @@ import {
 import { siteUrl } from "@/lib/env";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
+import "./analytics-country.css";
 
 export const metadata = { title: "Analytics", robots: { index: false, follow: false } };
 
@@ -38,13 +39,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const draft = await readStudioDraft(params.profile);
   const client = await sessionClient();
 
-  const [response, linksResponse, campaignResponse, trafficResponse, browserResponse] = draft
+  const [response, linksResponse, campaignResponse, trafficResponse, browserResponse, countryResponse] = draft
     ? await Promise.all([
       client.rpc("get_my_profile_view_days", { p_profile: draft.profile_id }),
       client.rpc("get_my_profile_link_totals", { p_profile: draft.profile_id }),
       client.rpc("get_my_analytics_campaigns", { p_profile: draft.profile_id }),
       client.rpc("get_my_profile_traffic_totals", { p_profile: draft.profile_id }),
       client.rpc("get_my_profile_browser_days", { p_profile: draft.profile_id }),
+      client.rpc("get_my_profile_country_totals", { p_profile: draft.profile_id, p_since: range === "all" ? null : analyticsRangeStart(range) }),
     ])
     : [];
 
@@ -53,12 +55,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   const campaigns = analyticsCampaigns.safeParse(campaignResponse?.data);
   const allTraffic = trafficAnalytics.safeParse(trafficResponse?.data);
   const allBrowsers = browserAnalytics.safeParse(browserResponse?.data);
+  const allCountries = z.array(z.object({country_code:z.string().regex(/^[A-Z]{2}$/),views:z.number().int().nonnegative().safe(),clicks:z.number().int().nonnegative().safe()})).max(300).safeParse(countryResponse?.data);
 
   // Daily records are returned newest first; AnalyticsChart reverses them for its oldest-to-newest plot.
   const rows = allRows.success ? [...inRange(allRows.data, range)] : [];
   const links = allLinks.success ? allLinks.data : [];
   const traffic = allTraffic.success ? allTraffic.data : [];
   const browsers = allBrowsers.success ? inRange(allBrowsers.data, range) : [];
+  const countries = allCountries.success ? allCountries.data.map((row)=>({...row,name:new Intl.DisplayNames(["en-GB"],{type:"region"}).of(row.country_code)??row.country_code})) : [];
+  const maxCountryViews = countries.reduce((maximum,row)=>Math.max(maximum,row.views),0);
   const views = rows.reduce((sum, row) => sum + row.views, 0);
   const clicks = rows.reduce((sum, row) => sum + row.clicks, 0);
   const average = rows.length ? Math.round(views / rows.length) : 0;
@@ -84,7 +89,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
   return <main className="shell studio-shell analytics-page">
     <header className="studio-page-heading">
       <div><p className="eyebrow">ACCOUNT / ANALYTICS</p><h1>Account Analytics</h1>
-        <p className="muted">Track profile views, link activity and broad sources sending visitors to your page.</p></div>
+        <p className="muted">Track profile views, link activity, broad traffic sources and separately consented approximate country totals.</p></div>
       {draft && <Link className="button small" href={"/" + draft.username} target="_blank" rel="noreferrer">View My Page ↗</Link>}
     </header>
 
@@ -233,6 +238,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
           </table>
         </TableScroll>
       </section>}
+
+      <section className="analytics-card stack analytics-country-card">
+        <div className="analytics-card-heading"><div><h2>Top Countries</h2><p>Approximate visitor country; separately opt-in only</p></div><span className="muted">Minimum 3 views</span></div>
+        {countryResponse?.error
+          ? <Empty title="Country analytics unavailable" description="Country totals could not be loaded. Other analytics continue to work."/>
+          : countries.length>0
+            ? <div className="analytics-country-list">{countries.map((row)=><div className="analytics-country-row" key={row.country_code}>
+                <div className="analytics-country-label"><strong>{row.name}</strong><span>{row.country_code}</span></div>
+                <div className="analytics-country-bar" role="img" aria-label={row.views+" views"}><span style={{width:(row.views/maxCountryViews*100)+"%"}}/></div>
+                <strong className="analytics-country-count">{compact(row.views)}</strong>
+              </div>)}</div>
+            : <Empty title="No country totals yet" description="Visitors must separately allow approximate country reporting. Totals appear after at least three consented views from a country."/>}
+        <p className="muted">Country estimates may be wrong for VPNs, relays or mobile networks. Snoozer stores daily country totals only, not raw IP addresses or precise location. Country reporting is unavailable if the hosting edge does not supply a country code.</p>
+      </section>
 
       <p className="muted">Analytics are optional and privacy-conscious. These are not guaranteed to represent unique people, full visitor totals or precise device identities. Daily charts use the selected date range; device, referrer and per-link tables use the current plan’s retention window because those APIs do not return dated rows. “All available time” still means the retention window set by your current plan.</p>
     </>}
