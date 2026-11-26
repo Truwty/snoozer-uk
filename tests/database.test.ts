@@ -3189,7 +3189,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
       .community).toContainEqual(expect.objectContaining({id,usage_count:2}));
     await result("select public.set_my_template_rating($1,4) as value",[id]);
-    expect(await result("select public.get_template_catalogue_metrics($1::text[]) as value",[[id]]))
+    expect(await result("select coalesce(jsonb_agg(to_jsonb(metric)),'[]'::jsonb) as value from public.get_template_catalogue_metrics($1::text[]) as metric",[[id]]))
       .toMatchObject([{template_key:id,uses:2,weekly_uses:2,rating_count:1,rating_average:4,my_rating:4}]);
     await expect(result<{items:Array<{id:string;usage_count:number}>;total:number;page:number;pageCount:number}>(
       "select public.list_community_templates($1,'popular',1) as value",["Community"]
