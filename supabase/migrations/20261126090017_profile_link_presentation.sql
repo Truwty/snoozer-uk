@@ -103,7 +103,7 @@ begin
         item->>'iconImage' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
         or not exists (
           select 1 from snoozer.gallery_items g
-          where g.profile_id=p_profile and g.id=(item->>'iconImage')::uuid and g.blocked_at is null
+          where g.profile_id=p_profile and g.id::text=item->>'iconImage' and g.blocked_at is null
         )
       ))
       or (item->>'audioCoverImage' is not null and (
@@ -111,7 +111,7 @@ begin
         or coalesce(item->>'url','') !~* '\\.(mp3|m4a|ogg|wav|aac|flac)([?#].*)?$'
         or not exists (
           select 1 from snoozer.gallery_items g
-          where g.profile_id=p_profile and g.id=(item->>'audioCoverImage')::uuid and g.blocked_at is null
+          where g.profile_id=p_profile and g.id::text=item->>'audioCoverImage' and g.blocked_at is null
         )
       ))
   ) then
