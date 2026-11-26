@@ -26,3 +26,16 @@ export function saveAnalyticsConsent(storage: ConsentStorage, allowed: boolean) 
     clearBrowserCodes(storage);
   }
 }
+
+export const countryAnalyticsConsentKey = "snoozer-country-analytics-consent-v1";
+
+export function readCountryAnalyticsConsent(storage: ConsentStorage): boolean | null {
+  const choice=storage.getItem(countryAnalyticsConsentKey);
+  return choice==="yes"?true:choice==="no"?false:null;
+}
+
+export function saveCountryAnalyticsConsent(storage: ConsentStorage, allowed: boolean) {
+  const choice=allowed?"yes":"no";
+  storage.setItem(countryAnalyticsConsentKey,choice);
+  if(storage.getItem(countryAnalyticsConsentKey)!==choice)throw new Error("Country analytics preference was not saved.");
+}

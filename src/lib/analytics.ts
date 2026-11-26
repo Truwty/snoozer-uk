@@ -16,7 +16,7 @@ export function analyticsRangeStart(range: Exclude<AnalyticsRange, "all">, now =
   return start.toISOString().slice(0, 10);
 }
 
-const attribution = { version: z.union([z.literal(2), z.literal(3)]).optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional(),
+const attribution = { version: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(), countryConsent: z.boolean().optional(), source: z.enum(trafficSources).optional(), campaign: z.uuid().optional(),
   browser: z.uuidv4().optional(), browserDay: z.iso.date().optional() };
 
 export const analyticsEvent = z.discriminatedUnion("kind", [
