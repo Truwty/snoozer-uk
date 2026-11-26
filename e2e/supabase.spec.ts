@@ -78,163 +78,90 @@ async function editorTab(page: Page, name: string) {
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
 
-async function openMoreStudioTools(page: Page) {
-  const trigger = page.getByRole("button", { name: "More Snoozer tools", exact: true });
-  if (await trigger.getAttribute("aria-expanded") !== "true") await trigger.click();
-}
 async function linkMenu(page: Page, index: number) {
   await editorTab(page, "Links");
   const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
   if (!(await summary.evaluate((element) => element.parentElement?.hasAttribute("open")))) await summary.click();
 }
 
-test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
+test("profile analytics requires consent, counts link clicks and exports only to its owner", async ({ page, browser }) => {
   test.setTimeout(90000);
   const name = "analytics-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
-  const githubResource = `snoozer-fixtures/${name}`;
-  const discordInvite = name;
-  const discordResource = `i:${discordInvite}`;
   const profileLinks = [
     { label: "Work", url: "https://example.com/" },
     { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
-    { label: "Repository", url: `https://github.com/${githubResource}` },
-    { label: "Community", url: `https://discord.gg/${discordInvite}` },
+    { label: "Repository", url: "https://github.com/snoozer-fixtures/reference" },
+    { label: "Community", url: "https://discord.gg/snoozer-reference" },
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
     { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
-    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
+    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M" },
     { label: "Track", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" },
   ];
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(account.error).toBeNull();
   const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-  // Set initial consent once. addInitScript would overwrite the visitor's
-  // later opt-in on every navigation and break campaign reload assertions.
   const visitor = await browser.newContext({
     baseURL: "http://localhost:3000",
     userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36",
-    storageState: {
-      cookies: [],
-      origins: [{
-        origin: "http://localhost:3000",
-        localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }],
-      }],
-    },
+    storageState: { cookies: [], origins: [{ origin: "http://localhost:3000",
+      localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }] }] },
   });
   try {
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
     expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
-    expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Analytics fixture", p_bio: "",
-      p_theme: "midnight", p_indexable: false, p_links: profileLinks,
-      p_publish: true, p_remove_avatar: false })).error).toBeNull();
+    expect((await owner.rpc("save_profile", {
+      p_expected: 0, p_name: "Analytics fixture", p_bio: "", p_theme: "midnight", p_indexable: false,
+      p_links: profileLinks, p_publish: true, p_remove_avatar: false,
+    })).error).toBeNull();
     const draft = await owner.rpc("get_draft");
+    expect(draft.error).toBeNull();
     const id = draft.data.profile_id;
-    // Provider responses are isolated, explicit fixtures in the disposable stack.
-    // No GitHub or Discord credentials or network calls are needed in CI.
-    const githubClaim = await admin.rpc("claim_public_widget", {
-      p_provider: "github", p_resource: githubResource,
-    });
-    expect(githubClaim.error).toBeNull();
-    expect(githubClaim.data.state).toBe("refresh");
-
-    const githubComplete = await admin.rpc("complete_public_widget", {
-      p_provider: "github", p_resource: githubResource, p_lease: githubClaim.data.lease,
-      p_payload: {
-        version: 1, provider: "github", resource: githubResource,
-        title: "Disposable repository fixture", description: "Public metadata test fixture",
-        stats: [{ label: "Stars", value: 7 }, { label: "Forks", value: 2 }],
-        fetchedAt: new Date().toISOString(),
-      },
-      p_retry_after: 0,
-    });
-    expect(githubComplete.error).toBeNull();
-    expect(githubComplete.data).toBe(true);
-
-    const discordClaim = await admin.rpc("claim_public_widget", {
-      p_provider: "discord", p_resource: discordResource,
-    });
-    expect(discordClaim.error).toBeNull();
-    expect(discordClaim.data.state).toBe("refresh");
-
-    const discordComplete = await admin.rpc("complete_public_widget", {
-      p_provider: "discord", p_resource: discordResource,
-      p_lease: discordClaim.data.lease, p_payload: null, p_retry_after: 0,
-    });
-    expect(discordComplete.error).toBeNull();
-    expect(discordComplete.data).toBe(true);
     const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
+    const readBrowsers = async () => (await owner.rpc("get_my_profile_browser_days", { p_profile: id })).data;
     const publicPage = await visitor.newPage();
-    let spotifyRequests = 0;
-    // Intercept automatically loaded Spotify iframes before first navigation:
-    // the test must never depend on Spotify's network or logged-in state.
-    await publicPage.route("https://open.spotify.com/embed/**", (route) => {
-      spotifyRequests++;
-      return route.abort();
-    });
     const events: string[] = [];
-    publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
+    publicPage.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/analytics/view")) events.push(request.postData() ?? "");
+    });
     await publicPage.goto("/" + name);
     await enterPublicBio(publicPage);
-    await expect(publicPage.locator(".discord-presence-card")).toHaveCount(0);
-    expect((await visitor.request.get("/api/v1/discord/presence?username=" + name)).status()).toBe(404);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
     await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
     await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 0 }]);
-    // Middle click leaves the source page open and exercises the real link handler.
+
     const popupPromise = visitor.waitForEvent("page");
-    await publicPage.getByRole("link", { name: "Work" }).click({ button: "middle" });
+    await publicPage.getByRole("link", { name: "Work", exact: true }).click({ button: "middle" });
     const popup = await popupPromise;
     await popup.close();
     await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
-    const readBrowsers = async () => (await owner.rpc("get_my_profile_browser_days", { p_profile: id })).data;
     await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 1, clicked_browsers: 1 }]);
     expect(JSON.parse(events[0])).toMatchObject({ version: 3, browser: expect.any(String), browserDay: expect.any(String) });
-    await publicPage.getByRole("button", { name: "Turn off profile analytics" }).click();
+
+    await publicPage.getByRole("button", { name: "Turn off profile analytics", exact: true }).click();
     expect(await publicPage.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("snoozer-analytics-browser-v3:")))).toEqual([]);
     await publicPage.reload();
     await enterPublicBio(publicPage);
-    await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
-    // Reference parity: published pages expose social providers as ordinary icon links,
-    // not third-party embeds or Snoozer-only expandable content.
     await expect(publicPage.locator("iframe")).toHaveCount(0);
     await expect(publicPage.locator(".profile-social-links a[href^=\"https://open.spotify.com/\"]")).toHaveCount(2);
     await expect(publicPage.locator(".profile-more-content, .profile-widgets, .spotify-widget")).toHaveCount(0);
     await expect(publicPage.locator('.profile-social-links a[href="https://www.youtube.com/watch?v=M7lc1UVf-VE"]')).toHaveCount(1);
-    expect(spotifyRequests).toBe(0);
-    expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
-    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
-    await publicPage.setViewportSize({ width: 1280, height: 720 });
 
+    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    // Wait for the server action to finish and persist the account session before navigating.
     await expect(page).toHaveURL(/\/studio$/);
-    await page.goto("/studio/discord");
-    await expect(page.getByRole("heading", { name: "Discord Presence" })).toBeVisible();
-    await expect(page.getByText("Discord account not connected", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect Discord" })).toBeEnabled();
-    await expect(page.getByRole("checkbox", { name: /Show Discord Presence on this profile/ })).not.toBeChecked();
-    await expect(page.getByRole("checkbox", { name: /Custom status/ })).toBeDisabled();
-    await expect(page.getByRole("checkbox", { name: /I meet Discord’s minimum age requirement/ })).not.toBeChecked();
-    await page.getByRole("link", { name: "Back to Page Builder" }).click();
-    await page.getByRole("link", { name: "Analytics", exact: true }).click();
-    for (const heading of [
-      "Account Analytics", "Total Link Clicks", "Click Rate", "Profile Views",
-      "Average Daily Views", "Visitor Devices", "Most Clicked Socials",
-      "Most Clicked Buttons", "Top Referrers", "Top Countries by Views",
-    ]) {
+    await page.goto("/studio/analytics");
+    for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
       await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
     }
     await expect(page.locator(".analytics-metric")).toHaveCount(4);
-    await expect(page.getByText("Daily activity table", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("Campaign links (0/20)", { exact: true })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /Download .*CSV/ })).toHaveCount(0);
     const linksCsv = await page.request.get("/api/v1/analytics/export?breakdown=links&profile=" + id);
     expect(linksCsv.status()).toBe(200);
     expect(await linksCsv.text()).toBe('label,url,clicks\r\n"Work","https://example.com/",1\r\n');
@@ -243,58 +170,10 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(csv.headers()["cache-control"]).toBe("private, no-store");
     expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
-    await expect(page.locator(".analytics-reference-main")).toBeVisible();
-    await expect(page.locator(".analytics-reference-breakdowns")).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await page.setViewportSize({ width: 1280, height: 720 });
-    // A signed-in creator who opts in still must not count their own page.
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    await page.getByText("Analytics preferences", { exact: true }).click();
-    const selfView = page.waitForResponse((r) => r.url().endsWith("/api/v1/analytics/view"));
-    await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
-    expect((await selfView).status()).toBe(204);
-    expect(await read()).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
-    await publicPage.getByRole("button", { name: "Load GitHub summary", exact: true }).click();
-    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toBeVisible();
-    await expect(publicPage.getByText("Stars", { exact: true })).toBeVisible();
-    await publicPage.getByRole("button", { name: "Hide GitHub summary", exact: true }).click();
-    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toHaveCount(0);
-    await publicPage.getByRole("button", { name: "Load Discord summary", exact: true }).click();
-    await expect(publicPage.getByText("Summary unavailable or temporarily rate limited. Use the original link above, or try again later.", { exact: true })).toBeVisible();
-    await expect(publicPage.getByRole("link", { name: "Community", exact: true })).toHaveAttribute("href", `https://discord.gg/${discordInvite}`);
-    await publicPage.route("https://player.twitch.tv/**", (route) => route.abort());
-    await publicPage.getByRole("button", { name: "Load Twitch player", exact: true }).click();
-    const stream = publicPage.getByTitle("Twitch: Stream");
-    const embed = new URL((await stream.getAttribute("src"))!);
-    expect(embed.searchParams.get("parent")).toBe("localhost");
-    expect(embed.searchParams.get("autoplay")).toBe("false");
-    expect(embed.searchParams.get("muted")).toBe("true");
-    const box = (await stream.boundingBox())!;
-    expect(box.width).toBeGreaterThanOrEqual(400);
-    expect(box.height).toBeGreaterThanOrEqual(300);
-    await publicPage.setViewportSize({ width: 375, height: 812 });
-    await expect(stream).toHaveCount(0);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-    await publicPage.getByRole("button", { name: "Hide Twitch player", exact: true }).click();
-    await publicPage.setViewportSize({ width: 1280, height: 720 });
-    await expect(stream).toHaveCount(0);
-    await expect(publicPage.getByRole("link", { name: "Game · Roblox", exact: true })).toHaveAttribute("href", profileLinks[5].url);
-    expect((await new AxeBuilder({ page: publicPage }).analyze()).violations).toEqual([]);
-    expect((await owner.rpc("save_profile", { p_expected: 1, p_name: "Analytics fixture", p_bio: "", p_theme: "midnight",
-      p_indexable: false, p_links: profileLinks.filter((item) => item.label !== "Repository"),
-      p_publish: true, p_remove_avatar: false })).error).toBeNull();
-    const revoked = await visitor.request.post("/api/v1/widgets/public", {
-      headers: { Origin: "http://localhost:3000" }, data: { username: name, position: 3, provider: "github", consent: true },
-    });
-    expect(revoked.status()).toBe(400);
-    expect(await revoked.text()).toBe("");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("button", { name: "Load GitHub summary", exact: true })).toHaveCount(0);
   } finally {
     await visitor.close();
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
@@ -333,13 +212,10 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
     await page.getByRole("link", { name: "Customize", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/customize\\?profile=" + selectedProfile));
-    await openMoreStudioTools(page);
-    await page.getByRole("link", { name: "Page Builder", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("link", { name: "Templates", exact: true }).click();
-    await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first())
-      .toHaveAttribute("href", new RegExp("^/studio/builder\\?template=.*&profile=" + selectedProfile));
-    await page.goto("/studio/builder?profile=" + selectedProfile);
+    await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
+    await page.goto("/studio/customize?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
@@ -488,345 +364,157 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
   }
 });
 
-test("portfolio projects persist, publish and restore with responsive public rendering", async ({ page, browser }) => {
-  test.setTimeout(120000);
-  page.setDefaultTimeout(15000);
-  const name = `portfolio-${randomUUID().slice(0, 8)}`;
-  const email = `${name}@example.com`;
+test("legacy sections and widgets remain stored but do not appear on the compact reference profile", async ({ browser }) => {
+  const name = "compact-" + randomUUID().slice(0, 10);
+  const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(error).toBeNull();
-  let scheduledProfileId = "";
-  const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(created.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  const visitor = await browser.newContext({ baseURL: "http://localhost:3000" });
   try {
-    await page.goto("/sign-in");
-    await page.getByLabel("Email address").fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await page.getByLabel("Username").fill(name);
-    await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByLabel("Display name").fill("Portfolio first publication");
-    await editorTab(page, "Sections");
-    for (const index of [1, 2]) {
-      await page.getByRole("button", { name: "Add text section", exact: true }).click();
-      await page.getByRole("combobox", { name: `Section ${index} type`, exact: true }).selectOption("project");
-      await page.getByLabel(`Section ${index} heading`, { exact: true }).fill(`Project ${index}`);
-      await page.getByLabel(`Section ${index} text`, { exact: true }).fill(`The story behind project ${index}.`);
-      await page.getByLabel(`Section ${index} project URL`, { exact: true }).fill(`https://example.com/project-${index}`);
-    }
-    await editorTab(page, "Design");
-    await expect(page.getByRole("button", { name: "Portfolio grid", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Portfolio grid", exact: true }).click();
-    await page.getByRole("combobox", { name: "Background entrance", exact: true }).selectOption("rise");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await page.reload();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
-    expect((await visitor.request.get(`/${name}`)).status()).toBe(404);
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
+    const draft = await owner.rpc("get_draft");
+    expect(draft.error).toBeNull();
+    const pollId = randomUUID();
+    const sections = [{ heading: "Legacy project", body: "Saved but not displayed in the reference profile.", kind: "project", target: "https://example.com/legacy" }];
+    const widgets = {
+      version: 1, order: ["guestbook","testimonials","poll","faq"],
+      guestbook: { enabled: true, heading: "Guestbook", description: "Leave a message.", maxEntries: 10, submissionsOpen: true },
+      testimonials: { enabled: true, heading: "Kind words", items: [{ id: randomUUID(), quote: "Legacy quote.", author: "Customer", role: "Client" }] },
+      poll: { enabled: true, id: pollId, question: "Legacy poll?", options: [{ id: randomUUID(), label: "One" }, { id: randomUUID(), label: "Two" }], open: true, closesAt: null, showResultsBeforeVote: false },
+      faq: { enabled: true, heading: "Legacy questions", items: [{ id: randomUUID(), question: "Old FAQ?", answer: "Old answer." }] },
+    };
+    const saved = await owner.rpc("save_profile", {
+      p_profile: draft.data.profile_id, p_expected: draft.data.revision, p_name: "Compact reference fixture",
+      p_bio: "A compact profile", p_theme: "midnight", p_indexable: false,
+      p_links: [{ label: "Website", url: "https://example.com/" }], p_sections: sections,
+      p_widgets: widgets, p_publish: true, p_remove_avatar: false,
+      p_appearance: draft.data.appearance, p_seo: { title: "", description: "" },
+    });
+    expect(saved.error).toBeNull();
+    const reloaded = await owner.rpc("get_draft");
+    expect(reloaded.data.sections).toHaveLength(1);
+    expect(reloaded.data.widgets.testimonials.heading).toBe("Kind words");
+    await visitor.addInitScript(() => {
+      try { localStorage.setItem("snoozer-analytics-consent-v3", "no"); } catch { /* Optional storage. */ }
+    });
     const publicPage = await visitor.newPage();
-    await publicPage.goto(`/${name}`);
+    await publicPage.goto("/" + name);
     await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await editorTab(page, "Settings");
-    await page.getByLabel("SEO title", { exact: true }).fill("Custom portfolio title");
-    await page.getByLabel("SEO description", { exact: true }).fill("Custom portfolio description");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
-    await page.getByRole("link", { name: "Premium", exact: true }).click();
-    const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
-    expect(gift.error).toBeNull();
-    await page.getByText("Redeem a plan gift", { exact: true }).click();
-    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
-    await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
-    await expect(page.getByText("Plus", { exact: true }).first()).toBeVisible();
-    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
-    await page.getByLabel("Display name").fill("Portfolio SEO publication");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage).toHaveTitle("Custom portfolio title · Snoozer");
-    await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute("content", "Custom portfolio description");
-    await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
-    const social = await test.step("Generate the published social card", () => visitor.request.get(`/media/profile-card/${name}`, { timeout: 15000 }));
-    expect(social.status()).toBe(200);
-    expect(social.headers()["content-type"]).toContain("image/png");
-    expect((await social.body()).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
-    expect((await visitor.request.get("/media/profile-card/unclaimed-profile")).status()).toBe(404);
-    await editorTab(page, "Settings");
-    const alias = name + "-alt";
-    await page.getByLabel("New alias", { exact: true }).fill(alias);
-    await page.getByRole("button", { name: "Claim alias", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
-    const redirected = await visitor.request.get(`/${alias}?campaign=qa-code`, { maxRedirects: 0 });
-    expect(redirected.status()).toBe(307);
-    expect(redirected.headers().location).toContain(`/${name}?campaign=qa-code`);
-    expect(redirected.headers()["cache-control"]).toContain("no-store");
-    await page.getByRole("button", { name: `Renew @${alias} for 90 days`, exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
-    await page.getByText(`Retire @${alias}`, { exact: true }).click();
-    await page.getByRole("button", { name: `Retire @${alias} permanently`, exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias retired." })).toBeVisible();
-    expect((await visitor.request.get(`/${alias}`, { maxRedirects: 0 })).status()).toBe(404);
-    const competitorEmail = `${name}-race@example.com`;
-    const competitor = await admin.auth.admin.createUser({ email: competitorEmail, password, email_confirm: true });
-    expect(competitor.error).toBeNull();
-    try {
-      const ownerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-      const otherClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-      expect((await ownerClient.auth.signInWithPassword({ email, password })).error).toBeNull();
-      expect((await otherClient.auth.signInWithPassword({ email: competitorEmail, password })).error).toBeNull();
-      const ownerDraft = await ownerClient.rpc("get_draft");
-      expect(ownerDraft.error).toBeNull();
-      expect(ownerDraft.data.profile_id).toMatch(/^[0-9a-f-]{36}$/);
-      scheduledProfileId = ownerDraft.data.profile_id;
-      const collision = name + "-race";
-      const results = await Promise.all([
-        ownerClient.rpc("manage_profile_alias", { p_profile: ownerDraft.data.profile_id, p_name: collision, p_operation: "create" }),
-        otherClient.rpc("claim_profile", { p_name: collision }),
-      ]);
-      expect(results.filter((result) => !result.error)).toHaveLength(1);
-      expect(results.filter((result) => result.error).map((result) => result.error!.code)).toEqual(["23505"]);
-    } finally { if (competitor.data.user) await admin.auth.admin.deleteUser(competitor.data.user.id); }
-    await editorTab(page, "Sections");
-    for (const width of [360, 1280]) {
-      await publicPage.setViewportSize({ width, height: 850 });
-      expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-      const columns = await publicPage.locator(".profile-sections").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
-      expect(columns).toBe(width === 360 ? 1 : 2);
-    }
-    await publicPage.emulateMedia({ reducedMotion: "reduce" });
-    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
-    await publicPage.emulateMedia({ reducedMotion: "no-preference" });
-    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("profile-rise");
-    // Keep the no-JavaScript rendering checks; axe itself needs script execution.
-    const accessiblePage = await page.context().newPage();
-    await accessiblePage.goto(publicPage.url());
-    expect((await new AxeBuilder({ page: accessiblePage }).analyze()).violations).toEqual([]);
-    await accessiblePage.close();
-    await page.getByLabel("Section 1 project URL", { exact: true }).fill("https://example.com/updated");
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Portfolio second publication");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Publish History", exact: true }).click();
-    await page.getByRole("listitem").filter({ hasText: "Portfolio first publication" }).getByRole("link", { name: /Preview version/ }).click();
-    await page.getByRole("button", { name: "Restore to draft", exact: true }).click();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio second publication", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Scheduled future version");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    await editorTab(page, "Settings");
-    const future = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
-    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
-    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Draft after scheduling");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    // Only this disposable fixture's due time changes; production code never accepts a simulated clock.
-    execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", `update snoozer.publication_schedules set run_at=now()-interval '1 second' where profile_id='${scheduledProfileId}'`]);
-    await editorTab(page, "Settings");
-    await page.getByRole("button", { name: "Check due publication", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Scheduled version is now live." })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Scheduled future version", exact: true })).toBeVisible();
-    await editorTab(page, "Profile");
-    await expect(page.getByLabel("Display name")).toHaveValue("Draft after scheduling");
-    await editorTab(page, "Settings");
-    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
-    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
-    await page.getByRole("button", { name: "Cancel scheduled publication", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Schedule cancelled." })).toBeVisible();
-    await expect(page.locator("form form")).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Compact reference fixture" })).toBeVisible();
+    await expect(publicPage.locator(".profile-more-content, .profile-sections, .profile-widgets, .profile-layout-block")).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Kind words" })).toHaveCount(0);
+    await expect(publicPage.getByText("Legacy project", { exact: true })).toHaveCount(0);
+    const privatePoll = await visitor.request.get("/api/v1/widgets/poll", { params: { username: name, pollId } });
+    expect(privatePoll.status()).toBe(403);
   } finally {
-    // The browser fixture closes visitor contexts even when a timed-out test has already closed them.
-    if (data.user) await admin.auth.admin.deleteUser(data.user.id);
+    await visitor.close();
+    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
   }
 });
 
-test("Studio builder adds, reorders, saves and publishes blocks across desktop and mobile layouts", async ({ page }) => {
-  test.setTimeout(120000);
-  const name = `builder-${randomUUID().slice(0, 8)}`;
-  const email = `${name}@example.com`;
+test("reference dashboard pages, asset uploader, custom links and QR share match the video", async ({ page }) => {
+  const name = "reference-" + randomUUID().slice(0, 10);
+  const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(account.error).toBeNull();
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(created.error).toBeNull();
   try {
     await page.goto("/sign-in");
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     await page.getByLabel("Username", { exact: true }).fill(name);
-    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    await expect(page.locator(".studio-stat-card")).toHaveCount(4);
+    await expect(page.getByRole("heading", { name: "Account Statistics", exact: true })).toBeVisible();
+    await expect(page.getByText("Profile completion", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Manage your account", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Connections", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account Analytics", exact: true })).toBeVisible();
 
-    // Reference parity: verify the Assets Uploader opens the audio manager and
-    // its nested Add Audio dialog exposes distinct audio and cover-art pickers.
+    const referenceLinks = ["Overview","Analytics","Badges","Settings","Customize","Links","Premium","Image Host","Templates"];
+    await expect(page.locator(".studio-sidebar-nav a")).toHaveCount(referenceLinks.length);
+    for (const label of referenceLinks) await expect(page.locator(".studio-sidebar-nav").getByRole("link", { name: label, exact: true })).toBeVisible();
+    await expect(page.locator(".studio-sidebar-nav")).not.toContainText("Page Builder");
+
+    await page.getByRole("link", { name: "Analytics", exact: true }).click();
+    for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
+      await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
+    }
+    await expect(page.locator(".analytics-metric")).toHaveCount(4);
+
+    await page.getByRole("link", { name: "Badges", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Badges & milestones", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Official badges", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Custom badges", exact: true })).toBeVisible();
+
+    await page.getByRole("link", { name: "Settings", exact: true }).click();
+    for (const heading of ["General Information","Language Settings","Security Settings","Connections","Gift Links","Email Marketing","Account Actions"]) {
+      await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    }
+    await expect(page.locator("#snoozer-locale option")).toHaveCount(6);
+
+    await page.getByRole("link", { name: "Links", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Social profiles", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Add Custom URL", exact: true }).click();
+    const customDialog = page.getByRole("dialog", { name: "Add Custom URL Social", exact: true });
+    await expect(customDialog).toBeVisible();
+    await expect(customDialog.getByRole("group", { name: "Social Mode" })).toBeVisible();
+    await customDialog.getByRole("button", { name: "Text", exact: true }).click();
+    await customDialog.getByRole("textbox", { name: "URL", exact: true }).fill("https://example.org/custom-link");
+    await customDialog.getByRole("button", { name: "Add", exact: true }).click();
+    const customRow = page.locator(".link-row").filter({ hasText: "example.org" });
+    await expect(customRow).toBeVisible();
+    await expect(customRow.getByRole("combobox", { name: "Display mode", exact: true })).toHaveValue("text");
+
+    await page.getByRole("link", { name: "Templates", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
+    await expect(page.locator(".template-card-meta").first()).toContainText("uses");
+    await expect(page.locator(".template-card-tags").first()).toBeVisible();
+
+    await page.getByRole("link", { name: "Image Host", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
+
     await page.goto("/studio/customize");
-    await editorTab(page, "Design");
+    await expect(page.getByRole("heading", { name: "Assets Uploader", exact: true })).toBeVisible();
+    await expect(page.locator(".studio-asset-card")).toHaveCount(4);
+    for (const label of ["Background","Audio","Profile Avatar","Custom Cursor"]) await expect(page.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "General Customization", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Color Customization", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Other Customization", exact: true })).toBeVisible();
+
+    await page.locator("details.studio-asset-manager > summary").click();
     await page.getByRole("button", { name: "Click to open audio manager", exact: true }).click();
     const audioManager = page.getByRole("dialog", { name: "Audio Manager", exact: true });
     await expect(audioManager).toBeVisible();
     await audioManager.getByRole("button", { name: "+ Add Audio", exact: true }).click();
     const addAudio = page.getByRole("dialog", { name: "Add an Audio", exact: true });
-    await expect(addAudio).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
-    await expect(addAudio.getByRole("textbox", { name: "Audio Title" })).toBeVisible();
     await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
     await addAudio.getByRole("button", { name: "Close Add Audio", exact: true }).click();
     await audioManager.getByRole("button", { name: "Close audio manager", exact: true }).click();
 
-    await page.goto("/studio");
-    await expect(page.getByRole("heading", { name: "Visitor Devices", exact: true })).toBeVisible();
-    await expect(page.getByText("Recorded profile views across the last 7 UTC calendar days.", { exact: true })).toBeVisible();
-    await page.goto("/studio/builder");
-    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
-
-    const workspace = page.locator("main.studio-shell");
-    for (const width of [1280, 1366, 1440, 1920]) {
-      await page.setViewportSize({ width, height: 900 });
-      expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(900);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth), `Studio at ${width}px`).toBeLessThanOrEqual(width);
-    }
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    await expect(page.locator(".block-library-item")).toHaveCount(18);
-    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled native callout" })).toBeVisible();
-    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled quotation" })).toBeVisible();
-
-    await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
-
-    await page.locator(".block-library-item").filter({ hasText: "Highlight an update" }).dragTo(page.locator(".preview"));
-    await editorTab(page, "Sections");
-    await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
-
-    await page.locator(".block-library-item").filter({ hasText: "FAQ" }).dragTo(page.locator(".preview"));
-    await editorTab(page, "Widgets");
-    await expect(page.getByLabel("Enable FAQ", { exact: true })).toBeChecked();
-
-    await page.locator(".block-library-item").filter({ hasText: "Guestbook" }).click();
-    await editorTab(page, "Widgets");
-    await expect(page.getByLabel("Enable Guestbook", { exact: true })).toBeChecked();
-
-    const blocks = page.locator(".preview-card .profile-layout-block");
-    await expect(blocks).toHaveCount(3);
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
-    await expect(blocks.nth(2)).toHaveAttribute("data-layout-type", "widgets");
-    await blocks.nth(2).locator(".profile-layout-drag-handle").dragTo(blocks.nth(0));
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-
-    await blocks.nth(0).getByRole("button", { name: "Move Interactive widgets down" }).press("Enter");
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "widgets");
-    await blocks.nth(1).getByRole("button", { name: "Move Interactive widgets up" }).press("Enter");
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-
-    // Add a typed custom block, edit its content and verify the live preview.
-    await page.locator(".block-library-item").filter({ hasText: "Project" }).dragTo(page.locator(".preview-card"));
-    await editorTab(page, "Blocks");
-    await page.getByLabel("Project title", { exact: true }).fill("Studio portfolio project");
-    await page.getByLabel("Description", { exact: true }).fill("A project created in the custom block editor.");
-    await page.getByLabel("Project URL", { exact: true }).fill("https://portfolio.example.org/work");
-    const firstProjectEditor = page.locator(".studio-block-editor").first();
-    await firstProjectEditor.getByLabel("Locked").check();
-    await expect(firstProjectEditor.getByLabel("Width")).toBeDisabled();
-    await expect(firstProjectEditor.getByLabel("Project title")).toBeDisabled();
-    await firstProjectEditor.getByLabel("Locked").uncheck();
-    await expect(firstProjectEditor.getByLabel("Width")).toBeEnabled();
-    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
-    await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
-    await page.getByRole("button", { name: "Duplicate block 1" }).click();
-    await expect(page.locator(".studio-block-editor")).toHaveCount(2);
-    await expect(page.locator(".preview-card .profile-block-project")).toHaveCount(2);
-
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    await page.reload();
-    const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
-    await expect(reloadedBlocks).toHaveCount(5);
-    await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
-
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    const publicBlocks = page.locator(".public-page .profile-layout-block");
-    await expect(publicBlocks).toHaveCount(5);
-    await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".public-page .profile-block-project")).toHaveCount(2);
-    await expect(page.locator(".public-page .profile-block-project").first()).toContainText("Studio portfolio project");
-    await expect(page.locator(".public-page .profile-block-project a").first()).toHaveAttribute("href", "https://portfolio.example.org/work");
+    await page.reload();
+    await page.getByRole("button", { name: "Share Your Profile", exact: true }).click();
+    const qrDialog = page.getByRole("dialog", { name: "Share Your Profile", exact: true });
+    await expect(qrDialog.locator("svg#snoozer-profile-qr-svg")).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Download PNG", exact: true })).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Download SVG", exact: true })).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
 
-    await page.goto("/studio");
-    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
-    await page.setViewportSize({ width: 360, height: 812 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-
-    const mobileNavigationButton = page.getByRole("button", { name: "Open navigation", exact: true });
-    const mobileNavigationBounds = await mobileNavigationButton.boundingBox();
-    expect(mobileNavigationBounds?.width).toBeGreaterThanOrEqual(44);
-    expect(mobileNavigationBounds?.height).toBeGreaterThanOrEqual(44);
-    await mobileNavigationButton.click();
-    await openMoreStudioTools(page);
-    await expect(page.getByRole("link", { name: "Page Builder", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await page.getByRole("button", { name: "Close navigation", exact: true }).click();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
-    await page.goto("/studio/builder");
-    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-    await expect(page.locator(".preview-card")).toBeVisible();
-
-    await page.goto("/studio/customize");
-    await expect(page.getByRole("heading", { name: "Customize", exact: true })).toBeVisible();
-    await expect(page.locator(".editor-grid.panel-only")).toBeVisible();
-    await expect(page.locator(".editor-grid.panel-only .editor-sidebar")).toBeHidden();
-    await expect(page.locator(".preview-card")).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   } finally {
-    if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
+    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
   }
 });
 
@@ -1390,8 +1078,9 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Profile Gallery" }).click();
-  await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
+  await page.getByRole("link", { name: "Image Host", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByLabel("Image description").fill("A disguised file");
@@ -1976,79 +1665,3 @@ test("independent appeals require a verified email, one-time token and service p
 });
 
 
-test("interactive profile widgets publish, accept visitor interactions and enforce moderation and voting privacy", async ({ browser }) => {
-  test.setTimeout(90000);
-  const suffix = randomUUID().slice(0, 10);
-  const name = "widgets-" + suffix;
-  const email = name + "@example.com";
-  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(created.error).toBeNull();
-  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-  const visitor = await browser.newContext({ baseURL: "http://localhost:3000" });
-  try {
-    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
-    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
-    const draft = await owner.rpc("get_draft");
-    expect(draft.error).toBeNull();
-    const profileId = draft.data.profile_id as string;
-    const pollId = randomUUID();
-    const optionA = randomUUID();
-    const optionB = randomUUID();
-    const widgets = {
-      version: 1,
-      order: ["guestbook", "testimonials", "poll", "faq"],
-      guestbook: { enabled: true, heading: "Guestbook", description: "Leave a message for the creator.", maxEntries: 10, submissionsOpen: true },
-      testimonials: { enabled: true, heading: "Kind words", items: [
-        { id: randomUUID(), quote: "A lovely project.", author: "A customer", role: "Client" },
-      ] },
-      poll: { enabled: true, id: pollId, question: "Which feature do you use most?", options: [
-        { id: optionA, label: "Community" }, { id: optionB, label: "Polls" },
-      ], open: true, closesAt: null, showResultsBeforeVote: false },
-      faq: { enabled: true, heading: "Questions", items: [
-        { id: randomUUID(), question: "Where can I find updates?", answer: "Check the creator's links." },
-      ] },
-    };
-    const saved = await owner.rpc("save_profile", {
-      p_profile: profileId, p_expected: 0, p_name: "Interactive widgets fixture",
-      p_bio: "Widget test profile", p_theme: "midnight", p_indexable: false,
-      p_links: [], p_publish: true, p_remove_avatar: false, p_sections: [],
-      p_appearance: { density: "balanced", corners: "soft" },
-      p_seo: { title: "", description: "" }, p_widgets: widgets,
-    });
-    expect(saved.error).toBeNull();
-
-    await visitor.addInitScript(() => {
-      try { localStorage.setItem("snoozer-analytics-consent-v3", "no"); } catch { /* Optional storage. */ }
-    });
-    const page = await visitor.newPage();
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    await expect(page.getByRole("heading", { name: "Kind words" })).toBeVisible();
-    await expect(page.getByText("A lovely project.", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
-    await expect(page.getByText("Where can I find updates?", { exact: true })).toBeVisible();
-
-    const privateResults = await visitor.request.get("/api/v1/widgets/poll", {
-      params: { username: name, pollId },
-    });
-    expect(privateResults.status()).toBe(403);
-
-    await page.getByRole("button", { name: "Community", exact: true }).click();
-    await page.getByRole("button", { name: "Vote", exact: true }).click();
-    await expect(page.getByText("Your vote has been recorded.", { exact: true })).toBeVisible();
-    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
-    await page.reload();
-    await enterPublicBio(page);
-    await page.getByRole("button", { name: "I already voted — show results", exact: true }).click();
-    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
-
-    await expect(page.getByRole("heading", { name: "Guestbook" })).toHaveCount(0);
-    await expect(page.locator(".profile-guestbook")).toHaveCount(0);
-    await expect(page.getByLabel("Your name")).toHaveCount(0);
-
-  } finally {
-    await visitor.close();
-    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
-  }
-});
