@@ -219,16 +219,17 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
     await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
     await expect(spotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(spotify).not.toHaveAttribute("sandbox");
+    await expect(spotify).not.toHaveAttribute("sandbox", /.*/);
     await expect(spotify).toHaveAttribute("height", "352");
     await expect(compactSpotify).toHaveAttribute("src", "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
     await expect(compactSpotify).toHaveAttribute("height", "152");
     await expect(compactSpotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
     await expect(compactSpotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(compactSpotify).not.toHaveAttribute("sandbox");
+    await expect(compactSpotify).not.toHaveAttribute("sandbox", /.*/);
     await expect(publicPage.locator(".spotify-widget__compact-open")).toHaveAttribute("href",
       "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
     await publicPage.setViewportSize({ width: 320, height: 800 });
+    await compactSpotify.scrollIntoViewIfNeeded();
     const compactBox = await compactSpotify.boundingBox();
     expect(compactBox?.width ?? 0).toBeGreaterThanOrEqual(280);
     expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
