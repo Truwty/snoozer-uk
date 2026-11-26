@@ -3136,6 +3136,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await result("select public.set_my_template_favorite($1,true) as value",[id]);
     await result("select public.record_my_template_use($1) as value",[id]);
     expect(await result("select public.get_my_template_activity() as value")).toMatchObject({favorites:[id],recent:[id]});
+    expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
+      .community).toContainEqual(expect.objectContaining({id,usage_count:1}));
+    await result("select public.record_my_template_use($1) as value",[id]);
+    expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
+      .community).toContainEqual(expect.objectContaining({id,usage_count:2}));
     await result("select public.report_community_template($1,'Please review this template.') as value",[id]);
     await expect(result("select public.report_community_template($1,'Please review this template.') as value",[id]))
       .rejects.toMatchObject({code:"23505"});

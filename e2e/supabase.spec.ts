@@ -756,6 +756,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    await page.goto("/studio");
     await expect(page.getByRole("heading", { name: "Visitor Devices", exact: true })).toBeVisible();
     await expect(page.getByText("Recorded profile views across the last 7 UTC calendar days.", { exact: true })).toBeVisible();
     await page.goto("/studio/builder");
