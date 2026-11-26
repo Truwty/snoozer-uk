@@ -1,0 +1,5 @@
+/* Controls used by Studio discovery preferences and Owner curation. */
+.discovery-toggle-row { display:flex; align-items:flex-start; gap:.75rem; padding:.85rem; border:1px solid var(--edge); border-radius:8px; }
+.discovery-toggle-row input { margin-top:.2rem; width:18px; height:18px; flex:0 0 auto; }
+.discovery-toggle-row span { display:grid; gap:.2rem; }
+.discovery-toggle-row small { color:var(--text-muted); line-height:1.5; }
