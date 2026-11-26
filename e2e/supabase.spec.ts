@@ -77,6 +77,11 @@ async function editorTab(page: Page, name: string) {
   const tab = page.getByRole("tab", { name, exact: true });
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
+
+async function openMoreStudioTools(page: Page) {
+  const trigger = page.getByRole("button", { name: "More Snoozer tools", exact: true });
+  if (await trigger.getAttribute("aria-expanded") !== "true") await trigger.click();
+}
 async function linkMenu(page: Page, index: number) {
   await editorTab(page, "Links");
   const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
@@ -375,7 +380,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByRole("link", { name: "Premium & Usage" }).click();
+    await page.getByRole("link", { name: "Premium" }).click();
     await expect(page.getByText("Claim another profile", { exact: true })).toHaveCount(0);
     const gift = await admin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -393,6 +398,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
     await page.getByRole("link", { name: "Customize", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/customize\\?profile=" + selectedProfile));
+    await openMoreStudioTools(page);
     await page.getByRole("link", { name: "Page Builder", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("link", { name: "Templates", exact: true }).click();
@@ -403,7 +409,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
     expect((await request.get(`/${second}`)).status()).toBe(200);
-    await page.getByRole("link", { name: "Premium & Usage" }).click();
+    await page.getByRole("link", { name: "Premium" }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
     await expect(preview.getByText(`@${name}`, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
@@ -433,7 +439,7 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await editorTab(page, "Settings");
     await expect(page.getByLabel("Domain hostname", { exact: true })).toBeDisabled();
-    await page.getByRole("link", { name: "Premium & Usage", exact: true }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now()+3600000).toISOString() }).single<{ code: string }>();
     expect(gift.error).toBeNull();
     await page.getByText("Redeem a plan gift", { exact: true }).click();
@@ -599,7 +605,7 @@ test("portfolio projects persist, publish and restore with responsive public ren
     await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
-    await page.getByRole("link", { name: "Premium & Usage", exact: true }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
     expect(gift.error).toBeNull();
     await page.getByText("Redeem a plan gift", { exact: true }).click();
@@ -749,7 +755,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
 
@@ -836,7 +842,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(page.locator(".public-page .profile-block-project a").first()).toHaveAttribute("href", "https://portfolio.example.org/work");
 
     await page.goto("/studio");
-    await expect(page.getByRole("heading", { name: "Account overview", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 360, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 
@@ -845,6 +851,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     expect(mobileNavigationBounds?.width).toBeGreaterThanOrEqual(44);
     expect(mobileNavigationBounds?.height).toBeGreaterThanOrEqual(44);
     await mobileNavigationButton.click();
+    await openMoreStudioTools(page);
     await expect(page.getByRole("link", { name: "Page Builder", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
@@ -898,7 +905,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 1280, height: 720 });
     await checkLighthouse(page, "/studio");
-    await page.getByRole("link", { name: "Premium & Usage" }).click();
+    await page.getByRole("link", { name: "Premium" }).click();
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
@@ -907,8 +914,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const profileHref = (await editProfile.getAttribute("href"))!;
     expect(profileHref).toMatch(/^\/studio\/builder\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
-    await expect(page.getByRole("link", { name: "Gallery & Assets" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
-    await page.getByRole("link", { name: "Premium & Usage" }).click();
+    await expect(page.getByRole("link", { name: "Image Host" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
+    await page.getByRole("link", { name: "Premium" }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -1427,7 +1434,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Gallery & Assets" }).click();
+  await page.getByRole("link", { name: "Image Host" }).click();
   await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
