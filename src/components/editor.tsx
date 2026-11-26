@@ -493,12 +493,22 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
         <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
+        <label className="check"><input type="checkbox" checked={content.appearance.swapBoxColors ?? false}
+          onChange={(event) => set("appearance", { ...content.appearance, swapBoxColors: event.target.checked })}/> Swap profile and content box colours</label>
         <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
         <label className="check"><input type="checkbox" checked={content.appearance.socialGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
         <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow ?? false}
           onChange={(event) => set("appearance", { ...content.appearance, badgeGlow: event.target.checked })}/> Badge glow</label>
+        <label>Location shown on your profile (optional)
+          <input type="text" maxLength={80} autoComplete="off" value={content.appearance.location ?? ""}
+            onChange={(event) => set("appearance", { ...content.appearance, location: event.target.value || undefined })}/>
+        </label>
+        <label className="check"><input type="checkbox" checked={content.appearance.showLocation ?? false}
+          disabled={!content.appearance.location?.trim()}
+          onChange={(event) => set("appearance", { ...content.appearance, showLocation: event.target.checked })}/>
+          Show my location publicly</label>
       </fieldset>
       <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
       <fieldset className="stack">

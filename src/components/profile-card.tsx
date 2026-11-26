@@ -70,6 +70,38 @@ function TypewriterBio({ value, active }: { value: string; active: boolean }) {
   </p>;
 }
 
+function shuffled(value: string) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from(value, (character) => character === " " ? " " : alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+}
+
+function ProfileNameText({ value, effect }: { value: string; effect: string }) {
+  const [frameText, setFrameText] = useState({ value, text: value });
+  useEffect(() => {
+    if (effect !== "shuffle" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frames: number | undefined;
+    let frame = 0;
+    const cycle = window.setInterval(() => {
+      frame = 0;
+      if (frames !== undefined) window.clearInterval(frames);
+      frames = window.setInterval(() => {
+        frame += 1;
+        setFrameText({ value, text: frame < 5 ? shuffled(value) : value });
+        if (frame >= 5 && frames !== undefined) window.clearInterval(frames);
+      }, 70);
+    }, 6000);
+    return () => {
+      window.clearInterval(cycle);
+      if (frames !== undefined) window.clearInterval(frames);
+    };
+  }, [effect, value]);
+
+  const visible = effect === "shuffle" && frameText.value === value ? frameText.text : value;
+  return <><span className={"profile-name-copy" + (effect === "none" ? "" : " profile-name-copy--" + effect)}
+    style={{ "--profile-name-steps": String(Array.from(value).length) } as CSSProperties} aria-hidden="true">{visible}</span>
+    <span className="sr-only">{value}</span></>;
+}
+
 function formatAudioTime(value: number) {
   if (!Number.isFinite(value) || value < 0) return "0:00";
   const minutes = Math.floor(value / 60);
@@ -299,7 +331,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   } as const;
   const appearanceStyle = {
     ...backgroundStyle,
-    ...(colors?.background ? { "--page": colors.background } : {}),
+    ...(colors?.background ? { "--profile-base-page": colors.background } : {}),
     ...(colors?.text ? { "--text": colors.text } : {}),
     ...(colors?.accent ? { "--detail": colors.accent } : {}),
     ...(colors?.effect ? { "--wash": colors.effect } : {}),
@@ -313,6 +345,8 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const discordBadge = !preview && (discordPresence !== null || discordPresenceRetry)
     ? <DiscordPresenceWidget key={profile.username} username={profile.username} initialPresence={discordPresence} />
     : null;
+  const nameTextEffect = effects.enabled ? effects.text : "none";
+  const nameContent = <><ProfileNameText value={profile.display_name} effect={nameTextEffect}/>{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</>;
 
   const identity = <>
     {avatarSrc
@@ -321,14 +355,19 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       ? <img className="avatar" alt="" width={88} height={88} src={avatarSrc} />
       : <div className="avatar avatar-fallback" aria-hidden="true">{Array.from(profile.display_name)[0]?.toUpperCase()}</div>}
     {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
-    {preview ? <h2 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h2> : <h1 className="profile-name-heading">{profile.display_name}{discordBadge}{ownerBadge && <span className="profile-owner-badge" title="Verified Snoozer platform owner"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M7 22h10"/></svg> Owner</span>}</h1>}
+    {preview ? <h2 className="profile-name-heading">{nameContent}</h2> : <h1 className="profile-name-heading">{nameContent}</h1>}
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
       {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
-        <span aria-hidden="true"><BadgeArtwork slug={badge.slug} size={24}/></span>
+        <span aria-hidden="true">{badge.category === "custom" ? badge.image_id
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img className="profile-custom-badge-art" src={`/media/badges/${badge.image_id}`} alt="" width={24} height={24}/>
+          : <span className="profile-custom-badge-icon" style={{ color: badge.color }}>{badge.icon}</span>
+          : <BadgeArtwork slug={badge.slug} size={24}/>}</span>
       </span>)}
       {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
     </nav>}
+    {profile.appearance.showLocation && profile.appearance.location && <p className="profile-location"><span aria-hidden="true">⌖</span>{profile.appearance.location}</p>}
     {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
 
@@ -573,6 +612,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-template-style={profile.appearance.templateStyle ?? "classic"}
     data-background-image={backgroundImage ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
+    data-swap-box-colors={profile.appearance.swapBoxColors ? "true" : undefined}
     data-monochrome-icons={profile.appearance.monochromeIcons ? "true" : undefined}
     data-animated-title={profile.appearance.animatedTitle ? "true" : undefined}
     data-username-glow={profile.appearance.usernameGlow ? "true" : undefined}

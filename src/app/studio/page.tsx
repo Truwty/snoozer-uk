@@ -6,8 +6,9 @@ import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/prof
 import { sessionClient } from "@/lib/supabase";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
 import { aliasInventory } from "@/lib/aliases";
-import { dailyAnalytics, trafficAnalytics } from "@/lib/analytics";
+import { analyticsRangeStart, dailyAnalytics, trafficAnalytics } from "@/lib/analytics";
 import { accountPlan } from "@/lib/entitlements";
+import { discordPresenceSettings } from "@/lib/discord-presence";
 
 export const metadata = { title: "Account Overview", robots: { index: false, follow: false } };
 
@@ -58,22 +59,33 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   const selected = params.profile === undefined ? undefined : draft.profile_id;
   const client = await sessionClient();
-  const [planResponse, aliasesResponse, viewsResponse, trafficResponse, userResponse] = await Promise.all([
+  const [planResponse, aliasesResponse, viewsResponse, trafficResponse, userResponse, uidResponse, discordResponse] = await Promise.all([
     client.rpc("get_my_plan"),
     client.rpc("list_my_aliases", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_view_days", { p_profile: draft.profile_id }),
     client.rpc("get_my_profile_traffic_totals", { p_profile: draft.profile_id }),
     client.auth.getUser(),
+    client.rpc("get_my_profile_uid", { p_profile: draft.profile_id }),
+    client.rpc("discord_presence_get_my_settings", { p_profile: draft.profile_id }),
   ]);
 
   const plan = accountPlan.safeParse(planResponse.data);
   const aliases = aliasInventory.safeParse(aliasesResponse.data);
   const views = dailyAnalytics.safeParse(viewsResponse.data);
   const traffic = trafficAnalytics.safeParse(trafficResponse.data);
+  const discord = discordPresenceSettings.safeParse(discordResponse.data);
   const viewRows = views.success ? views.data : [];
   const viewTotal = viewRows.reduce((sum, row) => sum + row.views, 0);
   const clickTotal = viewRows.reduce((sum, row) => sum + row.clicks, 0);
-  const profileId = draft.profile_id.replace(/-/g, "").slice(0, 8).toUpperCase();
+  const sevenDayStart = analyticsRangeStart("7d");
+  const previousSevenDayStart = new Date(Date.parse(sevenDayStart + "T00:00:00.000Z") - 7 * 86400000).toISOString().slice(0, 10);
+  const sevenDayViews = viewRows.filter((row) => row.day >= sevenDayStart).reduce((sum, row) => sum + row.views, 0);
+  const previousSevenDayViews = viewRows.filter((row) => row.day >= previousSevenDayStart && row.day < sevenDayStart)
+    .reduce((sum, row) => sum + row.views, 0);
+  const canCompareSevenDays = plan.success && plan.data.quotas.analyticsDays >= 14;
+  const sevenDayDelta = sevenDayViews - previousSevenDayViews;
+  const uid = typeof uidResponse.data === "number" && Number.isSafeInteger(uidResponse.data)
+    ? uidResponse.data.toLocaleString("en-GB") : "—";
 
   const user = userResponse.data.user;
   const providers = Array.isArray(user?.app_metadata?.providers)
@@ -85,9 +97,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const completionItems = [
     { label: "Upload a profile avatar", done: Boolean(draft.avatar), href: studioHref("/studio/builder", selected) },
     { label: "Write a short description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/builder", selected) },
+    { label: "Connect Discord", done: discord.success && discord.data.connected, href: studioHref("/studio/discord", selected) },
     { label: "Add a social link", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
-    { label: "Add a content section", done: draft.sections.length > 0, href: studioHref("/studio/builder", selected) },
-    { label: "Publish your profile", done: draft.published_revision !== null, href: studioHref("/studio/builder", selected) },
+    { label: "Receive 10 profile views", done: viewTotal >= 10, href: studioHref("/studio/analytics", selected) },
   ];
   const completed = completionItems.filter((item) => item.done).length;
   const percentage = Math.round(completed / completionItems.length * 100);
@@ -141,12 +153,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">#</span>
-        <div><span className="studio-stat-label">UID</span><strong className="studio-stat-code">{profileId}</strong><small>Unique profile reference</small></div>
+        <div><span className="studio-stat-label">UID</span><strong className="studio-stat-code">{uid}</strong><small>Stable numeric profile reference</small></div>
       </article>
       <article className="studio-stat-card">
         <span className="studio-stat-icon" aria-hidden="true">◉</span>
-        <div><span className="studio-stat-label">Profile Views</span><strong>{viewTotal.toLocaleString("en-GB")}</strong>
-          <small>{clickTotal.toLocaleString("en-GB")} recorded link clicks</small></div>
+        <div><span className="studio-stat-label">Retained Profile Views</span><strong>{viewTotal.toLocaleString("en-GB")}</strong>
+          <small>{clickTotal.toLocaleString("en-GB")} retained link clicks</small>
+          <small>{canCompareSevenDays
+            ? `${sevenDayViews.toLocaleString("en-GB")} in 7 days · ${sevenDayDelta >= 0 ? "+" : ""}${sevenDayDelta.toLocaleString("en-GB")} vs prior 7 days`
+            : `${sevenDayViews.toLocaleString("en-GB")} in 7 days · prior week is outside your analytics retention`}</small></div>
       </article>
     </section>
 

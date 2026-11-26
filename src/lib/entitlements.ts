@@ -6,7 +6,7 @@ export const accountPlan = z.strictObject({
   version: z.number().int().positive(),
   quotas: z.strictObject({
     profiles: quota, links: quota, mediaBytes: quota, domains: quota,
-    aliases: quota, analyticsDays: quota, teamSeats: quota,
+    aliases: quota, analyticsDays: quota, teamSeats: quota, customBadges: quota,
   }),
   capabilities: z.strictObject({
     premiumLayouts: z.boolean(), advancedEffects: z.boolean(), scheduledPublishing: z.boolean(),

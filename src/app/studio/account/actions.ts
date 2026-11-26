@@ -35,10 +35,44 @@ export async function revokeDeviceSession(form:FormData){
  redirect("/studio/account?session=revoked");
 }
 
+export async function unlinkSignInIdentity(form: FormData) {
+ const input=z.object({provider:z.enum(["google","discord"]),confirm:z.literal("on")}).safeParse({
+  provider:form.get("provider"),confirm:form.get("confirm_unlink"),
+ });
+ if(!input.success)redirect("/studio/account?identity=invalid");
+ const {client}=await requireAccount("/studio/account");
+ const {data,error:identityError}=await client.auth.getUserIdentities();
+ if(identityError||!data)redirect("/studio/account?identity=unavailable");
+ const identities=data.identities;
+ const target=identities.find(identity=>identity.provider===input.data.provider);
+ if(!target)redirect("/studio/account?identity=missing");
+ if(identities.length<2)redirect("/studio/account?identity=last");
+ if(input.data.provider==="discord"){
+  const {error}=await client.rpc("discord_presence_disconnect");
+  if(error)redirect("/studio/account?identity=presencefailed");
+ }
+ const {error}=await client.auth.unlinkIdentity(target);
+ if(error)redirect("/studio/account?identity=failed");
+ revalidatePath("/studio/account");
+ revalidatePath("/studio/discord");
+ redirect("/studio/account?identity=unlinked");
+}
+
+export async function updateMarketingPreference(form: FormData) {
+ const enabled=z.enum(["true","false"]).safeParse(form.get("email_opt_in"));
+ if(!enabled.success)redirect("/studio/account?marketing=invalid");
+ const {client}=await requireAccount("/studio/account");
+ const {error}=await client.rpc("set_my_marketing_preference",{p_email_opt_in:enabled.data==="true"});
+ if(error)redirect("/studio/account?marketing=failed");
+ revalidatePath("/studio/account");
+ redirect("/studio/account?marketing=saved");
+}
+
 export type MfaState={error:string;success:string;factorId:string;qr:string;secret:string};
 const emptyMfa:MfaState={error:"",success:"",factorId:"",qr:"",secret:""};
 
 export async function enrollAccountMfa(_:MfaState):Promise<MfaState>{
+ void _;
  const {client}=await requireAccount();
  const listed=await client.auth.mfa.listFactors();
  if(listed.error)return {...emptyMfa,error:"Could not read your authenticator factors."};

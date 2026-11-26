@@ -39,6 +39,20 @@ describe("profile validation", () => {
     expect(profileAppearance.safeParse({ ...defaultAppearance, font: "url(https://example.com)" }).success).toBe(false);
   });
 
+  it("keeps location private by default and validates an optional public visibility choice", () => {
+    const location = profileAppearance.parse({ ...defaultAppearance, location: "Bristol, UK", showLocation: true });
+    expect(location.location).toBe("Bristol, UK");
+    expect(location.showLocation).toBe(true);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, location: "x".repeat(81) }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, location: "Bristol\nUK" }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, showLocation: "yes" }).success).toBe(false);
+  });
+
+  it("accepts only a boolean for the explicit box-colour swap control", () => {
+    expect(profileAppearance.safeParse({ ...defaultAppearance, swapBoxColors: true }).success).toBe(true);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, swapBoxColors: "yes" }).success).toBe(false);
+  });
+
   it("allows a gallery image as the profile background only when that image is in the profile gallery", () => {
     const id = "00000000-0000-4000-8000-000000000011";
     const appearance = profileAppearance.parse({ ...defaultAppearance, backgroundImage: id });

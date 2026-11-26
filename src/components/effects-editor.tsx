@@ -31,7 +31,7 @@ export function EffectsEditor({ value, tier, onChange }: {
     <label>Link animations<select value={effects.links} onChange={(event) => change({ ...effects, links: event.target.value as ProfileEffects["links"], preset: "none" })}>
       {effectLinks.map((v) => <option key={v} value={v}>{label(v)}</option>)}
     </select></label>
-    <label>Typography<select value={effects.text} onChange={(event) => change({ ...effects, text: event.target.value as ProfileEffects["text"], preset: "none" })}>
+    <label>Text / username effect<select value={effects.text} onChange={(event) => change({ ...effects, text: event.target.value as ProfileEffects["text"], preset: "none" })}>
       {effectTexts.map((v) => <option key={v} value={v}>{label(v)}</option>)}
     </select></label>
     <label>Interaction<select value={effects.interaction} onChange={(event) => change({ ...effects, interaction: event.target.value as ProfileEffects["interaction"], preset: "none" })}>

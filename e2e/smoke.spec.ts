@@ -275,7 +275,11 @@ test("restricted-account status route redirects signed-out visitors to authentic
 
 test("private account snapshot denies anonymous downloads", async ({ request }) => {
  const result=await request.get("/api/v1/account/data-snapshot",{maxRedirects:0});
- expect(result.status()).toBe(401);
+ // A configured auth service can establish that this request is anonymous;
+ // without Supabase credentials, the endpoint is unavailable rather than
+ // pretending it authenticated the visitor.
+ const authConfigured=Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+ expect(result.status()).toBe(authConfigured?401:503);
  expect(result.headers()["cache-control"]).toContain("no-store");
  expect(result.headers()["x-content-type-options"]).toBe("nosniff");
 });

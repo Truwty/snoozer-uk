@@ -4,10 +4,14 @@ import { readStudioDraft, studioHref, requireAccount, type StudioProfileQuery } 
 import { z } from "zod";
 import { BadgeArtwork } from "@/components/badge-artwork";
 import { saveBadgeVisibility } from "./actions";
+import { StudioBadgeOrder } from "@/components/studio-badge-order";
+import { StudioCustomBadges } from "@/components/studio-custom-badges";
+import { createCustomBadge } from "./actions";
+import { accountPlan } from "@/lib/entitlements";
 
 export const metadata = { title: "Badges and milestones", robots: { index: false, follow: false } };
 
-export default async function BadgesPage({ searchParams }: { searchParams: Promise<StudioProfileQuery & { visibility?: string }> }) {
+export default async function BadgesPage({ searchParams }: { searchParams: Promise<StudioProfileQuery & { visibility?: string; custom?: string }> }) {
   const params = await searchParams;
   const draft = await readStudioDraft(params.profile);
   if (!draft) redirect("/studio");
@@ -15,6 +19,11 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
 
   const { client } = await requireAccount();
   const response = await client.rpc("get_my_profile_badges", { p_profile: draft.profile_id });
+  const customResponse = await client.rpc("list_my_custom_badges", { p_profile: draft.profile_id });
+  const planResponse = await client.rpc("get_my_plan");
+  const customBadges = z.array(z.object({ id:z.uuid(),title:z.string(),description:z.string(),icon:z.string(),color:z.string(),image_id:z.uuid().nullable(),is_public:z.boolean(),display_order:z.number() })).safeParse(customResponse.data);
+  const plan = accountPlan.safeParse(planResponse.data);
+  const customLimit = plan.success ? plan.data.quotas.customBadges : 0;
   const badgeData = z.object({
     earned: z.array(z.object({ id:z.uuid(), slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), source:z.string(), awarded_at:z.string(), award_reason:z.string().nullable(), is_public:z.boolean() })),
     catalogue: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), award_mode:z.string(), enabled:z.boolean(), earned:z.boolean() })),
@@ -53,7 +62,7 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
     <section className="studio-dashboard-panel studio-official-badges">
       <div className="studio-panel-heading">
         <div><p className="eyebrow">SNOOZER RECOGNITION</p><h2>Official badges</h2>
-          <p className="muted">Choose which of your earned badges appear on your public profile. Unchecked badges stay in your collection, but are hidden from visitors.</p></div>
+          <p className="muted">Choose which earned badges appear publicly. Use the arrows to set their display order; hidden badges stay in your collection.</p></div>
         {badgeData.success && <strong className="studio-badge-count">{badgeData.data.earned.length} earned</strong>}
       </div>
       {params.visibility === "saved" && <p className="studio-badge-status" role="status">Your public badge display has been updated.</p>}
@@ -62,19 +71,10 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
       {!badgeData.success ? <p role="alert">Your official badge collection is temporarily unavailable.</p> : <>
         <form action={saveBadgeVisibility} className="studio-badge-visibility-form">
           <input type="hidden" name="profile" value={draft.profile_id}/>
-          {badgeData.data.earned.length ? <div className="studio-official-badge-grid" aria-label="Choose public badges">
-            {badgeData.data.earned.map((badge) => <label className={"studio-official-badge rarity-" + badge.rarity + (badge.is_public ? " is-public" : "")} key={badge.id}>
-              <input type="checkbox" name="badge" value={badge.slug} defaultChecked={badge.is_public}/>
-              <BadgeArtwork slug={badge.slug} size={40}/>
-              <span className="studio-badge-card-copy">
-                <strong>{badge.name}</strong><p>{badge.description}</p>
-                <small>{badge.rarity.toUpperCase()} · {badge.source === "owner" ? "Owner awarded" : "Automatically earned"} · {badge.is_public ? "Shown publicly" : "Hidden"}</small>
-              </span>
-            </label>)}
-          </div> : <p>No official badges have been earned yet. Complete profile milestones to unlock your first one.</p>}
+          {badgeData.data.earned.length ? <StudioBadgeOrder badges={badgeData.data.earned}/> : <p>No official badges have been earned yet. Complete profile milestones to unlock your first one.</p>}
           {badgeData.data.earned.length > 0 && <div className="studio-badge-save-row">
             <button className="button primary" type="submit">Save public badge selection</button>
-            <span className="muted">Hiding a badge never removes it from your collection.</span>
+            <span className="muted">Hiding a badge never removes it from your collection. Only verified Snoozer awards can appear as official badges.</span>
           </div>}
         </form>
         <details className="studio-future-badge-catalogue">
@@ -90,6 +90,28 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
         <Link className="button small" href="/help">Read the Help Centre</Link>
         <Link className="button small" href={studioHref("/studio/plan", selected)}>View Premium and usage</Link>
       </div>
+    </section>
+    <section className="studio-dashboard-panel studio-custom-badge-designer">
+      <div className="studio-panel-heading"><div><p className="eyebrow">YOUR DESIGNS</p><h2>Custom badges</h2>
+        <p className="muted">Create a personal badge using a text symbol and colour. Custom badges are visibly separate from official Snoozer awards.</p></div>
+        <strong className="studio-badge-count">{customBadges.success ? customBadges.data.length : "—"} / {customLimit}</strong></div>
+      {params.custom === "saved" && <p role="status" className="studio-badge-status">Custom badge changes saved.</p>}
+      {params.custom === "limit" && <p role="alert" className="message error">Your current plan has reached its custom badge limit.</p>}
+      {(params.custom === "failed" || params.custom === "invalid") && <p role="alert" className="message error">We could not save the custom badge. Check the fields and try again.</p>}
+      {!customBadges.success ? <p role="alert">Custom badges could not be loaded right now.</p> : <>
+        {customBadges.data.length > 0 && <StudioCustomBadges profile={draft.profile_id} badges={customBadges.data}/>}
+        {customBadges.data.length >= customLimit ? <p className="muted">You have used all custom badge slots available on your plan.</p> : <form action={createCustomBadge} className="studio-custom-badge-create">
+          <input type="hidden" name="profile" value={draft.profile_id}/>
+          <label>Badge title<input name="title" required minLength={2} maxLength={40}/></label>
+          <label>Description (optional)<input name="description" maxLength={160}/></label>
+          <label>Symbol<input name="icon" required maxLength={8} defaultValue="✦" aria-describedby="custom-badge-symbol-help"/></label>
+          <p id="custom-badge-symbol-help" className="muted">Use a short emoji or text symbol. Uploaded artwork is not supported in this first version.</p>
+          <label>Badge colour<input name="color" type="color" defaultValue="#73e3bd"/></label>
+          <label>Artwork (optional)<input name="artwork" type="file" accept="image/jpeg,image/png,image/webp"/></label>
+          <p className="muted">Artwork is decoded and re-encoded as WebP, then stored privately. Maximum upload size: 2 MB.</p>
+          <button className="button primary" type="submit">Create custom badge</button>
+        </form>}
+      </>}
     </section>
   </main>;
 }

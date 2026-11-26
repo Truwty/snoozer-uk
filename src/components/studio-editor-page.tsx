@@ -6,6 +6,7 @@ import { publicationScheduleStatus } from "@/lib/publication-schedule";
 import { aliasInventory } from "@/lib/aliases";
 import { ProfileAliases } from "@/components/profile-aliases";
 import { ProfileDomains } from "@/components/profile-domains";
+import { ProfileUsernameChange } from "@/components/profile-username-change";
 import { DeleteProfile } from "@/components/delete-profile";
 import { Editor } from "@/components/editor";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -24,7 +25,7 @@ const modeConfig: Record<Mode, { title: string; eyebrow: string; description: st
   customize: { title: "Customize", eyebrow: "DESIGN / APPEARANCE", description: "Fine-tune your profile's visual identity and effects.", tab: "Design", panelOnly: true },
   links: { title: "Links", eyebrow: "CONTENT / SOCIAL LINKS", description: "Manage the destinations visitors can open from your profile.", tab: "Links", panelOnly: true },
   widgets: { title: "Widgets", eyebrow: "CONTENT / INTERACTIVE WIDGETS", description: "Configure the visitor interactions shown on your published profile.", tab: "Widgets", panelOnly: true },
-  settings: { title: "Profile settings", eyebrow: "PROFILE / SETTINGS", description: "Manage search visibility, aliases, custom domains and profile lifecycle.", tab: "Settings", panelOnly: true },
+  settings: { title: "Profile settings", eyebrow: "PROFILE / SETTINGS", description: "Manage your username, search visibility, aliases, custom domains and profile lifecycle.", tab: "Settings", panelOnly: true },
 };
 
 export async function StudioEditorPage({ searchParams, mode }: { searchParams: Promise<Search>; mode: Mode }) {
@@ -67,6 +68,7 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
         : undefined}
       avatar={<AvatarUpload profileId={draft.profile_id} revision={draft.revision}/>}
       settings={<>
+        <ProfileUsernameChange profileId={draft.profile_id} username={draft.username}/>
         {aliases.success && !aliasResponse.error ? <ProfileAliases profileId={draft.profile_id} inventory={aliases.data}/>
           : <p role="alert">Aliases are unavailable. Reload to try again.</p>}
         {domains.success && !domainResponse.error ? <ProfileDomains profileId={draft.profile_id} inventory={domains.data}
