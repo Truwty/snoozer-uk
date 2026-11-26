@@ -949,7 +949,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
         expect(response?.status()).toBe(path === "/studio/billing-diagnostics" ? 404 : 200);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(360);
       }
-      await responsivePage.goto(profileHref);
+      const builderHref = profileHref.replace("/studio/customize?", "/studio/builder?");
+      await responsivePage.goto(builderHref);
       for (const tab of ["Profile", "Design", "Links", "Sections", "Settings"]) {
         await editorTab(responsivePage, tab);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), tab).toBeLessThanOrEqual(360);
