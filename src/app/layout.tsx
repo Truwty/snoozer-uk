@@ -5,6 +5,8 @@ import { browserThemeColour } from "@/lib/tokens";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./styles.css";
 
+export const dynamic = "force-dynamic";
+
 
 export const metadata: Metadata = {
   metadataBase: siteUrl(),

@@ -135,3 +135,10 @@ A direct read-only query of `cron.job_run_details` at 26 November 2026 04:35 UTC
 | Publications | Every minute | 10,080 | 10,080 | 0 | 46.99 ms |
 
 All three jobs were active and the latest completed runs were on 26 November. This is a healthy seven-day sample. No schedule frequency changes or job rewrites are justified by the current data. Preserve these values as the baseline and monitor failure rate, run duration and backlog as traffic grows.
+
+
+## Follow-up correction after browser regression review
+
+The initial removal of the root `force-dynamic` rendering override was reverted on the optimisation branch after the full Playwright run exposed a Server Action origin failure in the profile/password-reset lifecycle flow. The safer baseline is retained until that interaction can be isolated in a focused test. No claim is made that global request-time rendering has been optimised yet.
+
+A route-specific tablet/mobile header layout is now being added for non-homepage pages. It moves the shared navigation into its own second row at tablet widths and allows links to wrap on smaller screens; the homepage retains its separate art-directed header. The homepage stylesheet cascade is also kept in its original order: the rules formerly in root styles.css remain before the dedicated homepage stylesheet rules.
