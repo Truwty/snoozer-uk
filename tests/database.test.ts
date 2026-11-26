@@ -33,6 +33,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       create table storage.objects(bucket_id text, name text, created_at timestamptz);
       alter table storage.objects add column metadata jsonb;
+      -- Supabase grants object-table operations to API roles; RLS policies are
+      -- the actual access boundary for browser clients.
+      grant usage on schema storage to anon, authenticated;
+      grant select, insert, update, delete on storage.objects to anon, authenticated;
+      alter table storage.objects enable row level security;
       insert into auth.users(id,email_confirmed_at) values ('${alice}', now()), ('${bob}', now()), ('${unverified}', null);
     `);
     const migrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
@@ -99,6 +104,44 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(result("select public.reserve_creator_sandbox_account($1,'acct_test','GB') as value", [alice])).rejects.toMatchObject({ code: "42501" });
     const live = await result<{checkoutEnabled:boolean;approvedOffers:number}>("select public.premium_live_preflight() as value");
     expect(live).toMatchObject({ checkoutEnabled: false, approvedOffers: 0 });
+  });
+
+  it("keeps private Snoozer tables and Storage objects inaccessible to browser roles", async () => {
+    await db.exec("reset role");
+    expect(await result("select has_schema_privilege('anon','snoozer','USAGE') as value")).toBe(false);
+    expect(await result("select has_schema_privilege('authenticated','snoozer','USAGE') as value")).toBe(false);
+    expect(await result<number>(`
+      select count(*)::integer as value
+      from pg_class c join pg_namespace n on n.oid=c.relnamespace
+      where n.nspname='snoozer' and c.relkind in ('r','p')
+        and (
+          has_table_privilege('anon',c.oid,'SELECT')
+          or has_table_privilege('anon',c.oid,'INSERT')
+          or has_table_privilege('anon',c.oid,'UPDATE')
+          or has_table_privilege('anon',c.oid,'DELETE')
+          or has_table_privilege('authenticated',c.oid,'SELECT')
+          or has_table_privilege('authenticated',c.oid,'INSERT')
+          or has_table_privilege('authenticated',c.oid,'UPDATE')
+          or has_table_privilege('authenticated',c.oid,'DELETE')
+        )
+    `)).toBe(0);
+
+    expect(await result("select relrowsecurity as value from pg_class where oid='storage.objects'::regclass")).toBe(true);
+    expect(await result<number>("select count(*)::integer as value from pg_policies where schemaname='storage' and tablename='objects'")).toBe(0);
+
+    await db.query("insert into storage.objects(bucket_id,name,created_at) values ('avatar-images','private/fixture.webp',now())");
+    await act("anon");
+    expect(await result<number>("select count(*)::integer as value from storage.objects")).toBe(0);
+    await expect(db.query("insert into storage.objects(bucket_id,name,created_at) values ('avatar-images','anon-write.webp',now())"))
+      .rejects.toMatchObject({ code: "42501" });
+
+    await act("authenticated", alice);
+    expect(await result<number>("select count(*)::integer as value from storage.objects")).toBe(0);
+    await expect(db.query("insert into storage.objects(bucket_id,name,created_at) values ('avatar-images','user-write.webp',now())"))
+      .rejects.toMatchObject({ code: "42501" });
+
+    await db.exec("reset role");
+    expect(await result<number>("select count(*)::integer as value from storage.objects")).toBe(1);
   });
 
   async function domainFixture(name: string, owner = alice, host = name + ".example.com") {
