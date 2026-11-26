@@ -84,3 +84,19 @@ The Render metrics sample did not expose HTTP request counts or latency. Perform
 No changes from this optimisation branch have been merged into main. No Render deployment has been manually triggered. The connected Render service tracks main and auto-deploys main commits; keep implementation on this branch until the owner reviews the final PR.
 
 The connected Supabase target inspected for migration reconciliation is the staging project. Do not apply these changes to another database without separately verifying its identity, current migration history and release approval.
+
+
+## Security advisory triage detail
+
+A second read-only SQL pass after the migrations established:
+
+- All 379 public-schema SECURITY DEFINER functions have a function-level `search_path` setting; none of the inspected public functions is missing it.
+- The 116 RLS-enabled tables reported without policies have no direct SELECT or INSERT privilege granted to either `anon` or `authenticated` (zero tables with either privilege). Their policy-free state is consistent with private/service-only access, not a demonstrated public-table exposure.
+- The 16 anonymous-executable SECURITY DEFINER functions are primarily deliberate public reads (published profile, leaderboard, profile existence/address resolution, published styling tier, sitemap, maintenance/effects state, username availability, public community template, public badge artwork and public text paste). Verify returned columns and owner/public visibility predicates rather than revoking these wholesale.
+- Of the authenticated-executable functions, 22 did not match a simple source-code identity-helper pattern. Manual inspection found that the account privacy and notification routines use `snoozer.privacy_actor()`, which requires a verified account and active auth session; public-read functions are intentionally exposed; remaining owner operations use the dedicated owner guard. This heuristic is not a substitute for reviewing every function body, so the review remains tracked.
+
+The leaked-password-protection advisor warning remains to be checked in Supabase Auth settings. The current connector provides read-only project/database controls but does not expose this Auth setting as a supported mutation.
+
+## Branch protection follow-up
+
+GitHub reports branch protection disabled on `main`, with no required status checks. The available GitHub connector exposes read operations for protection/rulesets but not their administration. Before this branch is merged, the repository owner should enable a main-branch rule requiring a pull request and successful aggregate `validate` status, disallowing force pushes and deletions, and requiring the appropriate review policy. This optimisation work does not change repository administration settings.
