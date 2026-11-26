@@ -584,7 +584,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <option value="">Use detected platform icon</option>
               {saved.gallery.map((image) => <option key={image.id} value={image.id}>{image.alt || "Gallery image"}</option>)}
             </select>
-          </label>
+          </label>}
           <details className="row-menu" onClick={(event) => { if (event.target instanceof Element && event.target.closest("button")) event.currentTarget.open = false; }}><summary aria-label={`Actions for link ${index + 1}`}>Actions</summary><div className="actions">
             <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
             <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>

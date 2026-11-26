@@ -39,4 +39,4 @@ describe("Studio navigation", () => {
       .toContain("/studio/badges");
     expect(filterStudioNavigation("not-a-real-feature")).toEqual([]);
   });
-}
+});
