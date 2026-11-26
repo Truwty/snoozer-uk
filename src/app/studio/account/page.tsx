@@ -27,7 +27,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
   const draft = await readStudioDraft(undefined);
   const [planResponse, sessionResponse, factorResponse, marketingResponse, aliasResponse] = await Promise.all([
     client.rpc("get_my_plan"), client.rpc("list_my_device_sessions"), client.auth.mfa.listFactors(), client.rpc("get_my_marketing_preference"),
-    draft ? client.rpc("list_my_aliases", { p_profile: draft.profile_id }) : Promise.resolve({ data: null }),
+    draft ? client.rpc("list_my_aliases", { p_profile: draft.profile_id }) : Promise.resolve({ data: null, error: null }),
   ]);
   const plan = accountPlan.safeParse(planResponse.data);
   const appMetadata = user.app_metadata as Record<string, unknown>;

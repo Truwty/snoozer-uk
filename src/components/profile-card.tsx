@@ -125,7 +125,7 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume]);
+  }, [audioRef, volume]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -139,7 +139,7 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
       resumeAfterChange.current = false;
       void audio.play().catch(() => setPlaying(false));
     }
-  }, [trackIndex]);
+  }, [audioRef, trackIndex]);
 
   function changeTrack(next: number, resume = playing) {
     if (tracks.length < 2) return;
