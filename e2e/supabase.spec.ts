@@ -368,7 +368,7 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
   }
 });
 
-test("legacy sections and widgets remain stored but do not appear on the compact reference profile", async ({ browser }) => {
+test("legacy sections and widgets remain hidden until the visitor enters the compact reference profile", async ({ browser }) => {
   const name = "compact-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
@@ -406,12 +406,14 @@ test("legacy sections and widgets remain stored but do not appear on the compact
     });
     const publicPage = await visitor.newPage();
     await publicPage.goto("/" + name);
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Compact reference fixture" })).toBeVisible();
+    await expect(publicPage.locator(".profile-entry-overlay")).toBeVisible();
     await expect(publicPage.locator(".profile-more-content, .profile-widgets, .profile-layout-block")).toHaveCount(0);
-    await expect(publicPage.locator(".profile-sections > .profile-layout-block")).toHaveCount(0);
     await expect(publicPage.getByRole("heading", { name: "Kind words" })).toHaveCount(0);
     await expect(publicPage.getByText("Legacy project", { exact: true })).toHaveCount(0);
+    await enterPublicBio(publicPage);
+    await expect(publicPage.getByRole("heading", { name: "Compact reference fixture" })).toBeVisible();
+    await expect(publicPage.getByText("Legacy project", { exact: true })).toBeVisible();
+    await expect(publicPage.getByRole("heading", { name: "Kind words" })).toBeVisible();
     const privatePoll = await visitor.request.get("/api/v1/widgets/poll", { params: { username: name, pollId } });
     expect(privatePoll.status()).toBe(403);
   } finally {
@@ -637,9 +639,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.goto("/templates?q=terminal&category=cyber&palette=nocturne");
     await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(1);
     await page.locator('a[href="/studio/builder?template=terminal-nocturne"]').click();
-    await expect(page.getByLabel("Preview a design")).toHaveValue("terminal-nocturne");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("");
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "whoami", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Apply template design", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toHaveCount(0);
 
     await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Snoozer Creator");
@@ -672,24 +676,26 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Design");
     await page.getByText("Copy or paste appearance", { exact: true }).click();
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("terminal-nocturne");
-    await expect(page.getByRole("heading", { name: "whoami" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
-    await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply design with sample sections" }).click();
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("midnight");
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("whoami");
+    await editorTab(page, "Sections");
+    await page.getByRole("button", { name: "Add text section", exact: true }).click();
+    await page.getByLabel("Section 1 heading").fill("whoami");
+    await page.getByLabel("Section 1 text").fill("About this creator.");
+    await page.getByRole("button", { name: "Add text section", exact: true }).click();
+    await page.getByLabel("Section 2 heading").fill("Projects");
+    await page.getByLabel("Section 2 text").fill("Project summary.");
     await editorTab(page, "Sections");
     await page.getByLabel("Section 1 text").fill("First line.\nLiteral <em>markup</em>.");
     await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Move up (section 2)" }).press("Enter");
     await expect(page.getByLabel("Section 1 heading")).toBeFocused();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Draft saved.");
+    await page.goto("/studio/builder?template=forest-glacier");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("forest-glacier");
-    await expect(page.getByRole("button", { name: "Apply design with sample sections" })).toHaveCount(0);
-    await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply template design" }).click();
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Apply template design", exact: true }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
     await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
     await editorTab(page, "Design");
