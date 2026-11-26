@@ -691,6 +691,24 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+
+    // Reference parity: verify the Assets Uploader opens the audio manager and
+    // its nested Add Audio dialog exposes distinct audio and cover-art pickers.
+    await page.goto("/studio/customize");
+    await editorTab(page, "Design");
+    await page.getByRole("button", { name: "Click to open audio manager", exact: true }).click();
+    const audioManager = page.getByRole("dialog", { name: "Audio Manager", exact: true });
+    await expect(audioManager).toBeVisible();
+    await audioManager.getByRole("button", { name: "+ Add Audio", exact: true }).click();
+    const addAudio = page.getByRole("dialog", { name: "Add an Audio", exact: true });
+    await expect(addAudio).toBeVisible();
+    await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
+    await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
+    await expect(addAudio.getByRole("textbox", { name: "Audio Title" })).toBeVisible();
+    await expect(addAudio.getByRole("textbox", { name: /Artist/ })).toBeVisible();
+    await addAudio.getByRole("button", { name: "Close Add Audio", exact: true }).click();
+    await audioManager.getByRole("button", { name: "Close audio manager", exact: true }).click();
+
     await page.goto("/studio");
     await expect(page.getByRole("heading", { name: "Visitor Devices", exact: true })).toBeVisible();
     await expect(page.getByText("Recorded profile views across the last 7 UTC calendar days.", { exact: true })).toBeVisible();
