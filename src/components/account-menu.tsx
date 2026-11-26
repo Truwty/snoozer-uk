@@ -33,7 +33,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
   };
   return <>
     <details id="studio-account-menu" className="account-dropdown" ref={menu}>
-      <summary className="account-trigger" aria-label={`${current?.username ? "@" + current.username : active} ${current ? "YOUR ACCOUNT" : "Sign in"}`}>
+      <summary className="account-trigger">
         <Avatar name={active} src={current?.avatar}/>
         <span className="account-trigger-identity">
           <strong>{current?.username ? "@" + current.username : active}</strong>
