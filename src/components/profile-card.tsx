@@ -107,7 +107,7 @@ function formatAudioTime(value: number) {
   return minutes + ":" + String(seconds).padStart(2, "0");
 }
 
-type ProfileAudioTrack = { src: string; title: string; artist: string };
+type ProfileAudioTrack = { src: string; title: string; artist: string; cover?: string };
 
 function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
   tracks: ProfileAudioTrack[];
@@ -450,7 +450,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
 
     const social: SocialLink[] = valid.flatMap((item) => {
-      if (item.mode === "text") return [];
+      if (item.mode === "text" || audioIndexes.has(item.index)) return [];
       const provider = socialProviderForUrl(item.url);
       const customIcon = item.iconImage && profile.gallery.some((image) => image.id === item.iconImage);
       if (!provider && !customIcon) return [];
@@ -464,13 +464,18 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       }];
     });
     const iconIndexes = new Set(social.map((item) => item.index));
-    const textLinks = valid.filter((item) => item.mode === "text" || !iconIndexes.has(item.index));
-    const audioTracks = entryExperience ? valid.flatMap(({ label, url }) => {
+    const textLinks = valid.filter((item) => !audioIndexes.has(item.index) && (item.mode === "text" || !iconIndexes.has(item.index)));
+    const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
       const src = directAudioSource(url);
       if (!src) return [];
       const info = audioMetadata(label, profile.display_name);
-      return [{ src, title: info.title, artist: info.artist }];
+      const artwork = audioCoverImage ? profile.gallery.find((image) => image.id === audioCoverImage) : undefined;
+      const trackCover = artwork && galleryBase
+        ? galleryBase + "/" + encodeURIComponent(artwork.id)
+        : undefined;
+      return [{ src, title: info.title, artist: info.artist, cover: trackCover, sourceIndex: index }];
     }) : [];
+    const audioIndexes = new Set(audioTracks.map((track) => track.sourceIndex));
     const cover = profile.gallery[0] && galleryBase
       ? galleryBase + "/" + profile.gallery[0].id
       : avatarSrc;
@@ -499,7 +504,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             data-analytics-position={preview ? undefined : index + 1}>{label} <span aria-hidden="true">↗</span></a>
         </li>)}
       </ul>}
-      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={audioTracks} cover={cover}
+      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={audioTracks.map(({sourceIndex: _sourceIndex, ...track})=>track)} cover={cover}
         volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />}
     </>;
   }

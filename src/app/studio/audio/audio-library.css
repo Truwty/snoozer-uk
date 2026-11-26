@@ -1,0 +1,13 @@
+.studio-audio-library{gap:1rem}
+.studio-audio-upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;align-items:end}
+.studio-audio-upload-grid label,.studio-audio-track label{display:grid;gap:.35rem;font-size:.8rem}
+.studio-audio-upload-grid input,.studio-audio-track select{width:100%;min-width:0}
+.studio-audio-file small{color:var(--studio-muted,#a1a59e)}
+.studio-audio-track-list{display:grid;gap:.65rem}
+.studio-audio-list-heading{display:flex;justify-content:space-between;align-items:center}
+.studio-audio-list-heading span,.studio-audio-track-copy small{color:var(--studio-muted,#a1a59e);font-size:.72rem}
+.studio-audio-track{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,.8fr) auto;align-items:center;gap:.75rem;padding:.75rem;border:1px solid var(--studio-line,rgba(255,255,255,.1));background:var(--studio-panel,#111315)}
+.studio-audio-track-copy{display:grid;gap:.15rem;min-width:0}
+.studio-audio-track-copy strong,.studio-audio-track-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-audio-track-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+@media(max-width:720px){.studio-audio-upload-grid,.studio-audio-track{grid-template-columns:1fr}.studio-audio-track-actions>*{flex:1}}

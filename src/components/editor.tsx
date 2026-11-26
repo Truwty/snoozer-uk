@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { StudioAudioLibrary } from "@/components/studio-audio-library";
 import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
@@ -390,6 +391,26 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
           </div>
         </fieldset>
         <fieldset className="stack">
+          <legend className="section-title">Profile audio library</legend>
+          <p className="muted">Upload MP3, M4A, OGG, WAV, AAC or FLAC audio. Files are private until you add a track to your profile and publish it.</p>
+          <StudioAudioLibrary
+            profileId={saved.profile_id}
+            revision={saved.revision}
+            gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
+            onAddTrack={(track) => {
+              if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
+              set("links",[...content.links,{
+                label:track.title+" — "+track.artist,
+                url:track.url,
+                mode:"text",
+                hidden:false,
+                ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
+              }]);
+              setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+            }}
+          />
+        </fieldset>
+        <fieldset className="stack">
           <legend className="section-title">Custom cursor</legend>
           <p className="muted">Choose a small PNG or WebP image from your gallery. The image is used as the pointer on your published profile; other Snoozer pages are unchanged.</p>
           <label>Cursor image
@@ -605,7 +626,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         {content.links.length < linkLimit && <details>
           <summary>Add a hosted audio track</summary>
           <div className="stack">
-            <p className="muted">For the compact public bio player, add a public HTTPS audio-file URL ending in .mp3, .m4a, .ogg, .wav, .aac or .flac as a normal link. Set its label to “Track title — Artist”. The first gallery image is used as artwork, falling back to your avatar. Host the audio file yourself; direct audio uploads are not currently supported.</p>
+            <p className="muted">Upload audio in Customize → Profile audio library. Add the uploaded track to your profile from there; it will appear after you save and publish.</p>
           </div>
         </details>}
 
