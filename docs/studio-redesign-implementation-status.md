@@ -17,7 +17,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - Account/security: username rename uses an atomic RPC, retains the previous URL as a permanent redirect, enforces a 30-day cooldown, and does not consume alias quota. Google/Discord unlink is confirmed, refuses to remove the last sign-in identity, and disconnects Discord Presence before unlinking. Marketing opt-in is explicit, persistent, and owner-scoped. Existing verified email change, MFA, device/session revocation, aliases, and gift-code claim flows remain.
 - Badges: official badge display ordering is user controlled; added plan-version-backed custom badge quotas (Free 0 / Plus 3 / Pro 8 / Studio 20), owner-scoped custom badge CRUD, private storage, safe image processing, public visibility controls, and archive coverage. Custom badges remain outside official system/owner award flows.
 - Profile editor: added rainbow/fuzzy/shuffle username effects, explicit location/visibility, and a persisted Swap Box Colours control with schema validation and a focused appearance test. Existing profile appearance/editor remains in use.
-- Image Host: added `/studio/image-host` and retained `/studio/gallery`; the new screen reuses the existing private gallery upload/folder infrastructure.
+- Image Host: added `/studio/image-host` and retained `/studio/gallery`; the new screen reuses the existing private gallery upload/folder infrastructure and includes account-owned plain-text snippets with private/public modes, edit/delete, 16 KB content validation, a 25-item quota, and a `text/plain` public route.
 - Templates: added favorites, last-used history, user uploads/create, community tab, reporting, declarative config validation, and an MFA-gated owner moderation queue. Community templates remain free and cannot contain executable code or arbitrary CSS/HTML.
 - Auth fallback: when Supabase credentials are absent, protected account pages redirect to sign-in; the private account snapshot reports service unavailability rather than presenting it as an authenticated response. Added regression coverage for both cases.
 
@@ -26,13 +26,13 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 | Plan area | Status | Evidence / outstanding work |
 | --- | --- | --- |
 | Repository and architecture audit | Partial | Branch, PR, migrations, RLS, entitlements, actions, routes and tests inspected. A fresh connected-provider/production-schema audit still requires a configured Supabase project. |
-| Shared foundations | Partial | Migrations `20261126090000`–`20261126090009` add username history, consent, export coverage, appearance fields, badge order/custom badges, community templates, and Swap Box Colours. No common audio/cursor/custom-domain asset foundation yet. |
+| Shared foundations | Partial | Migrations `20261126090000`–`20261126090010` add username history, consent, export coverage, appearance fields, badge order/custom badges, community templates, Swap Box Colours, and private/public text pastes. No common audio/cursor/custom-domain asset foundation yet. |
 | Account settings/security | Partial | Rename, email change, aliases, identity unlink, MFA, sessions and marketing preference work. Locale translations/persistence are absent. Gift purchase is still sandbox-only under the current Stripe gift implementation; no production gift purchase or buyer inventory is provided. |
 | Account overview | Partial | Numeric UID, milestones, honest retained-data metrics and conditional 7-day delta exist. Percentile is intentionally omitted because the app has no suitable comparable population dataset. |
 | Analytics | Partial | 3/7/30/all-time controls and existing reports/exports remain. No country report is produced because the privacy model has no consent-aware coarse-country aggregate. Full dashboard metric/date-range parity still needs authenticated E2E verification. |
 | Badges | Partial | Official ordering/visibility and secure custom badge CRUD/quota are implemented. No styling/recolouring for official badges (to protect award integrity), and no full earned/locked/future catalogue redesign. |
 | Profile customisation | Partial | Username effects, explicit location, and Swap Box Colours are added. Existing controls are retained. Discord avatar/decoration settings are absent because no authorized avatar-decoration data path exists. Complete reference layout comparison remains. |
-| Asset uploader / Audio / Image Host | Partial | Dedicated Image Host route uses existing gallery storage/folders. It does not yet provide independent asset URL management, snippets/pastes, custom domains/DNS/TLS, usage analytics, audio library/multiple tracks, or custom cursor. |
+| Asset uploader / Audio / Image Host | Partial | Dedicated Image Host route uses existing gallery storage/folders and now supports secured text pastes. It does not yet provide standalone binary asset URL management, custom domains/DNS/TLS, usage analytics, audio library/multiple tracks, or custom cursor. |
 | Community templates | Partial | Favorites, recents, user submissions, report controls and owner moderation exist. Missing covers/creator profiles, tags/categories, marketplace search/sort/pagination, real usage ranking, and real ratings. Trending/ratings were not fabricated. |
 | Navigation / interaction / responsive fidelity | Partial | Main Snoozer destinations are preserved and command palette behavior is implemented. Dashboard screenshot parity and keyboard/accessibility checks at all requested widths (especially 1440, 1280, 768, 375, 320) are not complete. |
 | Regression / release readiness | Partial | Unit/database, static checks, build and unauthenticated browser suite pass locally; Supabase-backed flows and latest GitHub Actions for a new commit remain outstanding. |
@@ -49,6 +49,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 - `supabase/migrations/20261126090007_archive_custom_badges.sql`
 - `supabase/migrations/20261126090008_community_template_hub.sql`
 - `supabase/migrations/20261126090009_swap_profile_box_colours.sql`
+- `supabase/migrations/20261126090010_image_host_text_pastes.sql`
 
 Migrations are covered by the repository's PGlite migration tests. Applying them to a live Supabase project and validating deployed RLS/storage behavior was not done.
 
@@ -56,12 +57,12 @@ Migrations are covered by the repository's PGlite migration tests. Applying them
 
 Latest results after the final code change in this follow-up:
 
-- `npm test`: passed — 48 Vitest files / 359 tests, plus 10 Node tests.
+- `npm test`: passed — 48 Vitest files / 360 tests, plus 10 Node tests.
 - `npm run typecheck`: passed.
 - `npm run lint`: passed with 0 errors and 6 warnings (existing unused imports/variables and an existing effect dependency warning; see command output).
 - `npm run audit`: passed — zero dependency vulnerabilities.
 - `npm run build`: passed — production Next.js build.
-- `npm run test:e2e`: passed — 60 passed, 30 skipped; no failures. Supabase-dependent tests are skipped because this checkout has no `.env.local` or configured Supabase test project. Discord worker configuration is also absent and the app correctly starts without that worker.
+- `npm run test:e2e`: passed — 61 passed, 30 skipped; no failures. Supabase-dependent tests are skipped because this checkout has no `.env.local` or configured Supabase test project. Discord worker configuration is also absent and the app correctly starts without that worker.
 - Focused auth regression E2E: 4 passed after the fail-closed fallback change.
 - Secret scanning and final GitHub Actions checks are not yet recorded; run them after staging/pushing the final commit.
 
@@ -71,5 +72,5 @@ Latest results after the final code change in this follow-up:
 - Production gift checkout and purchased-link inventory are not supported by the current sandbox-only gift product path; production selling remains disabled rather than exposing a fake purchase control.
 - The app has no locale translation architecture; a locale selector without translated pages would misrepresent functionality.
 - There is no stored consent-aware country aggregate, authorized Discord avatar-decoration path, or reliable population dataset for percentile claims.
-- Audio library/multi-track shuffle, custom cursor, richer Image Host (snippets, public URLs, custom domains, usage analytics), complete community marketplace metadata/filtering, and full reference visual parity remain to be implemented.
+- Audio library/multi-track shuffle, custom cursor, richer Image Host (standalone binary URLs, custom domains, usage analytics), complete community marketplace metadata/filtering, and full reference visual parity remain to be implemented.
 - Full CI completion depends on the final branch commit being pushed and the resulting GitHub Actions run finishing successfully.

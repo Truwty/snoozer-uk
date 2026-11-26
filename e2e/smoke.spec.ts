@@ -284,6 +284,14 @@ test("private account snapshot denies anonymous downloads", async ({ request }) 
  expect(result.headers()["x-content-type-options"]).toBe("nosniff");
 });
 
+test("public Image Host text-paste route rejects malformed identifiers safely",async({request})=>{
+ const response=await request.get("/paste/not-a-uuid");
+ expect(response.status()).toBe(404);
+ expect(response.headers()["content-security-policy"]).toContain("default-src 'none'");
+ expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+ expect(response.headers()["cache-control"]).toContain("no-store");
+});
+
 test("internal account notice dispatcher rejects public requests",async({request})=>{
  const response=await request.post("/api/internal/owner-notices/dispatch",{data:""});
  expect(response.status()).toBe(404);

@@ -39,8 +39,9 @@ export async function proxy(request: NextRequest) {
   }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
+  const plainTextPaste = /^\/paste\/[^/]+\/?$/.test(request.nextUrl.pathname);
   const storage = supabaseUrl ? new URL(supabaseUrl).origin : "";
-  const csp = [
+  const csp = plainTextPaste ? "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; sandbox" : [
     "default-src 'self'", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'",
     "form-action 'self'", `script-src 'self' 'nonce-${nonce}'${development ? " 'unsafe-eval'" : ""}`,
     `script-src-elem 'self' 'nonce-${nonce}'`,

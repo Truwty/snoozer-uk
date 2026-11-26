@@ -3139,4 +3139,25 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       .rejects.toMatchObject({code:"23505"});
   });
 
+  it("keeps Image Host text pastes owner-scoped and serves public content as plain text only", async () => {
+    await act("authenticated",alice);
+    const paste=await result<string>("select public.create_my_image_host_text_paste('Build notes','hello <script>blocked by content type</script>',false) as value");
+    expect(await result("select public.list_my_image_host_text_pastes() as value")).toMatchObject([
+      expect.objectContaining({id:paste,title:"Build notes",is_public:false}),
+    ]);
+    await expect(result("select public.create_my_image_host_text_paste('Too large',$1,false) as value",["x".repeat(16385)]))
+      .rejects.toMatchObject({code:"22023"});
+    await act("authenticated",bob);
+    expect(await result("select public.update_my_image_host_text_paste($1,'Hijack','no',true) as value",[paste])).toBe(false);
+    expect(await result("select public.delete_my_image_host_text_paste($1) as value",[paste])).toBe(false);
+    await act("authenticated",alice);
+    await result("select public.update_my_image_host_text_paste($1,'Build notes','plain content',true) as value",[paste]);
+    await act("anon");
+    expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toMatchObject({title:"Build notes",body:"plain content"});
+    await act("authenticated",alice);
+    await result("select public.delete_my_image_host_text_paste($1) as value",[paste]);
+    await act("anon");
+    expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toBeNull();
+  });
+
 });

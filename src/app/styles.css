@@ -3566,4 +3566,8 @@ tr[data-rank="3"] .leaderboard-rank { color: #e8a982; }
 .studio-template-create-form { display:grid; gap:.8rem; max-width:42rem; }
 .studio-template-create-form label { display:grid; gap:.4rem; }
 .studio-template-create-form p { margin:0; }
+.studio-template-create-form textarea { min-height:9rem; width:100%; resize:vertical; padding:.7rem; border:1px solid var(--studio-line); border-radius:.55rem; background:var(--studio-panel); color:inherit; font:inherit; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+.studio-image-pastes { display:grid; gap:1rem; padding:0; list-style:none; }
+.studio-image-pastes > li { display:grid; gap:1rem; }
+.studio-image-pastes code { overflow-wrap:anywhere; }
 @media (max-width:600px) { .studio-custom-badge-create { grid-template-columns:1fr; } .studio-custom-badge-row { flex-wrap:wrap; } }

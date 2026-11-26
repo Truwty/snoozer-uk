@@ -35,6 +35,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
   const active=Boolean(filters.q||filters.theme!=="all"||filters.layout!=="all"||filters.category!=="all"||filters.palette!=="all");
   const layoutLabels={centred:"Centred card",editorial:"Editorial",portfolio:"Portfolio grid"};
   const profileQuery=selected?"&profile="+encodeURIComponent(selected):"";
+  const templateHref=(id:string)=>"/studio/builder?template="+encodeURIComponent(id)+profileQuery;
   const clearHref=selected?"/studio/templates?tab="+tab+"&profile="+encodeURIComponent(selected):"/studio/templates?tab="+tab;
   const queryForPage=(next:number)=>{
     const query=new URLSearchParams({tab}); if(filters.q)query.set("q",filters.q);
@@ -76,7 +77,8 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
       <ul className="template-grid">{visible.map((template)=><li className="template-item stack" key={template.id}>
         <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
         <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={{seo:{title:"",description:""},username:"snoozer-preview",display_name:"Your name",bio:"A little space on the internet that feels like you.",theme:template.theme,indexable:false,avatar:null,appearance:template.appearance,blocks:[],pageLayout:{version:1,items:[]},gallery:[],badges:[],widgets:defaultProfileWidgets,links:[{label:"Your website",url:"https://example.com/"}],sections:template.sections}}/></div>
-        <div className="studio-template-card-actions"><form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template ↗</button></form>
+        <div className="studio-template-card-actions"><Link className="button primary" href={templateHref(template.id)}>Customise this design <span aria-hidden="true">↗</span></Link>
+          <form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button" type="submit">Use Template</button></form>
           <form action={setTemplateFavorite}><input type="hidden" name="template" value={template.id}/><input type="hidden" name="favorite" value={favorites.includes(template.id)?"false":"true"}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button small" type="submit">{favorites.includes(template.id)?"★ Favourite":"☆ Favourite"}</button></form></div>
       </li>)}</ul>
       {pageCount>1&&<nav className="template-pagination" aria-label="Template pages"><Link className={"button"+(page===1?" is-disabled":"")} aria-disabled={page===1} tabIndex={page===1?-1:undefined} href={queryForPage(Math.max(1,page-1))}>Previous</Link><span className="muted">Page {page} / {pageCount}</span><Link className={"button"+(page===pageCount?" is-disabled":"")} aria-disabled={page===pageCount} tabIndex={page===pageCount?-1:undefined} href={queryForPage(Math.min(pageCount,page+1))}>Next</Link></nav>}
