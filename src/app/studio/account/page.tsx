@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
-import { requireAccount } from "@/lib/profiles-server";
+import { readStudioDraft, requireAccount } from "@/lib/profiles-server";
+import { aliasInventory } from "@/lib/aliases";
+import { ProfileAliases } from "@/components/profile-aliases";
+import { ProfileUsernameChange } from "@/components/profile-username-change";
 import { accountPlan } from "@/lib/entitlements";
 import { z } from "zod";
 import { AccountSecurityMfa } from "@/components/account-security-mfa";
@@ -21,8 +24,10 @@ function maskEmail(value: string) {
 export default async function AccountSettings({ searchParams }: { searchParams: Promise<{ email?: string; google?: string; session?: string; mfa?: string; identity?: string; marketing?: string }> }) {
   const status = await searchParams;
   const { client, user } = await requireAccount();
-  const [planResponse, sessionResponse, factorResponse, marketingResponse] = await Promise.all([
+  const draft = await readStudioDraft(undefined);
+  const [planResponse, sessionResponse, factorResponse, marketingResponse, aliasResponse] = await Promise.all([
     client.rpc("get_my_plan"), client.rpc("list_my_device_sessions"), client.auth.mfa.listFactors(), client.rpc("get_my_marketing_preference"),
+    draft ? client.rpc("list_my_aliases", { p_profile: draft.profile_id }) : Promise.resolve({ data: null }),
   ]);
   const plan = accountPlan.safeParse(planResponse.data);
   const appMetadata = user.app_metadata as Record<string, unknown>;
@@ -33,6 +38,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
   const discordSignIn = configuredProviders.includes("discord") || identities.some((identity) => identity.provider === "discord");
   const googleSignIn = configuredProviders.includes("google") || identities.some((identity) => identity.provider === "google");
   const verifiedTotp = factorResponse.data?.totp?.filter((factor) => factor.status === "verified") ?? [];
+  const aliases = aliasInventory.safeParse(aliasResponse.data);
   const deviceSessions = z.array(z.object({
     session_id: z.uuid(), created_at: z.string(), refreshed_at: z.string().nullable(), last_active_at: z.string().nullable(),
     user_agent: z.string().nullable(), tag: z.string().nullable(), aal: z.string(), is_current: z.boolean(), expires_at: z.string().nullable(),
@@ -77,6 +83,22 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         <div><strong>Account ID</strong><p className="studio-account-id">{user.id}</p></div>
         <span className="studio-setting-caption">Private reference</span>
       </div>
+      {draft&&<div className="studio-setting-row">
+        <div><strong>Username</strong><p>@{draft.username}</p></div>
+        <ProfileUsernameChange profileId={draft.profile_id} username={draft.username}/>
+      </div>}
+      <div className="studio-setting-row">
+        <div><strong>Display name and description</strong><p>Update the name and biography shown on your public profile.</p></div>
+        <Link className="button small" href="/studio/builder">Edit profile details ↗</Link>
+      </div>
+      {draft&&aliases.success&&!aliasResponse.error&&<div className="studio-setting-row studio-setting-row--stack">
+        <div><strong>Profile aliases</strong><p>{aliases.data.used} of {aliases.data.limit} alias slots used.</p></div>
+        <ProfileAliases profileId={draft.profile_id} inventory={aliases.data}/>
+      </div>}
+      <div className="studio-setting-row">
+        <div><strong>Language</strong><p>English (United Kingdom). Additional dashboard languages are not available yet.</p></div>
+        <span className="studio-setting-status">English (UK)</span>
+      </div>
       <details className="studio-email-change"><summary>Change email address</summary>
         <EmailChangeForm/>
       </details>
@@ -91,7 +113,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
       <div className="studio-setting-row studio-setting-row--stack">
         <div><strong>Authenticator MFA</strong><p>Use a time-based one-time password from an authenticator app. Snoozer asks for a code when you sign in and protects Owner-level operations with AAL2.</p></div>
         <div className="studio-account-security-control">
-          <AccountSecurityMfa verifiedFactorId={verifiedTotp[0]?.id}/>
+          <AccountSecurityMfa verifiedFactorIds={verifiedTotp.map((factor) => factor.id)}/>
           {verifiedTotp.map((factor) => <form key={factor.id} action={disableAccountMfa}>
             <input type="hidden" name="factorId" value={factor.id}/>
             <button className="button small studio-danger-button" type="submit">Remove authenticator</button>
@@ -136,18 +158,10 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         <div><strong>Discord Presence</strong><p>Control the live Discord activity that may appear on your public profile. This is not the same as account sign-in.</p></div>
         <Link className="button small" href="/studio/discord">Presence settings ↗</Link>
       </div>
-      <div className="studio-setting-row">
-        <div><strong>Spotify embeds</strong><p>Add official Spotify players to your profile without connecting a Spotify account.</p></div>
-        <Link className="button small" href="/studio/spotify">Embed guide ↗</Link>
-      </div>
     </section>
 
     <section className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><div><p className="eyebrow">PREFERENCES</p><h2>Notifications and your data</h2><p className="muted">Manage important notices and privacy requests.</p></div></div>
-      <div className="studio-setting-row">
-        <div><strong>Account notifications</strong><p>Read important notices about actions affecting your Snoozer account.</p></div>
-        <Link className="button small" href="/account/notifications">Open notifications ↗</Link>
-      </div>
       <div className="studio-setting-row">
         <div><strong>Personal data</strong><p>Request an export of your account data or submit an account deletion request.</p></div>
         <Link className="button small" href="/account/data">Manage your data ↗</Link>

@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { accountPlan, can } from "../src/lib/entitlements";
@@ -67,7 +68,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
+    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.account_mfa_recovery_codes, snoozer.account_mfa_recovery_attempts, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -3193,6 +3194,36 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(result("select public.report_community_template($1,'Please review this template.') as value",[id]))
       .rejects.toMatchObject({code:"23505"});
   });
+
+  it("stores only hashed MFA recovery codes, requires AAL2 to replace them and consumes each code once", async () => {
+    const rawCodes = Array.from({length:10},(_,index)=>("A1B2C3D4E5F6"+index.toString(16).toUpperCase().padStart(8,"0")).slice(0,20));
+    const hashes = rawCodes.map((code)=>createHash("sha256").update(code).digest("hex"));
+
+    await act("authenticated",alice);
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal1"})]);
+    await expect(result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[hashes]))
+      .rejects.toMatchObject({code:"42501"});
+
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal2"})]);
+    expect(await result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[hashes])).toBe(10);
+    expect(await result("select count(*)::integer as value from snoozer.account_mfa_recovery_codes")).toBe(10);
+
+    await act("authenticated",bob);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(false);
+    await act("authenticated",alice);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(true);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(false);
+
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal2"})]);
+    const replacementCodes = Array.from({length:10},(_,index)=>("B2C3D4E5F6A7"+index.toString(16).toUpperCase().padStart(8,"0")).slice(0,20));
+    const replacementHashes = replacementCodes.map((code)=>createHash("sha256").update(code).digest("hex"));
+    expect(await result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[replacementHashes])).toBe(10);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[1]])).toBe(false);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[replacementHashes[1]])).toBe(true);
+
+    await expect(db.query("select * from snoozer.account_mfa_recovery_codes")).rejects.toMatchObject({code:"42501"});
+  });
+
 
   it("keeps Image Host text pastes owner-scoped and serves public content as plain text only", async () => {
     await act("authenticated",alice);

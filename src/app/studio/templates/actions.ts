@@ -27,7 +27,7 @@ export async function useStudioTemplate(form: FormData) {
   const {client}=await requireAccount();
   const {error:historyError}=await client.rpc("record_my_template_use",{p_key:template.data});
   if(historyError) redirect("/studio/templates?error=save");
-  if(studioTemplates.some((item)=>item.id===template.data)) redirect(studioHref("/studio/builder?template="+encodeURIComponent(template.data),profile.data??undefined));
+  if(studioTemplates.some((item)=>item.id===template.data)) redirect(studioHref("/studio/customize?template="+encodeURIComponent(template.data),profile.data??undefined));
   const id=uuid.safeParse(template.data); if(!id.success) redirect("/studio/templates?error=missing");
   const {data,error}=await client.rpc("get_community_template",{p_id:id.data});
   const parsed=z.object({config:z.strictObject({theme:z.enum(themes),appearance:profileAppearance,sections:textSections})}).safeParse(data);

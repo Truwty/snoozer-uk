@@ -8,6 +8,7 @@ import { requireAccount } from "@/lib/profiles-server";
 import { siteUrl } from "@/lib/env";
 import { safeNextPath } from "@/lib/account-security";
 import { sessionClient } from "@/lib/supabase";
+import { createHash, randomBytes } from "node:crypto";
 
 const fail=(message:string):ActionState=>({status:"error",message});
 const ok=(message:string):ActionState=>({status:"success",message});
@@ -76,11 +77,12 @@ export async function enrollAccountMfa(_:MfaState):Promise<MfaState>{
  const {client}=await requireAccount();
  const listed=await client.auth.mfa.listFactors();
  if(listed.error)return {...emptyMfa,error:"Could not read your authenticator factors."};
- const verified=listed.data?.totp?.find(f=>f.status==="verified");
- if(verified)return {...emptyMfa,success:"Authenticator MFA is already enabled."};
- for(const pending of listed.data?.all?.filter(f=>f.factor_type==="totp"&&f.status==="unverified")??[]){
+ const allFactors=listed.data?.all??[];
+ for(const pending of allFactors.filter(f=>f.factor_type==="totp"&&f.status==="unverified")){
   await client.auth.mfa.unenroll({factorId:pending.id});
  }
+ const remaining=await client.auth.mfa.listFactors();
+ if(remaining.error||(remaining.data?.all??[]).length>=10)return {...emptyMfa,error:"This account has reached the maximum of ten authenticator factors."};
  const {data,error}=await client.auth.mfa.enroll({factorType:"totp",friendlyName:"Snoozer account"});
  if(error||!data?.totp?.qr_code||!data.totp.secret)return {...emptyMfa,error:"Could not start authenticator enrolment."};
  return {...emptyMfa,factorId:data.id,qr:data.totp.qr_code,secret:data.totp.secret};
@@ -111,20 +113,33 @@ export async function disableAccountMfa(form:FormData){
 }
 
 export async function verifyLoginMfa(form:FormData){
+ const raw=z.string().trim().max(32).safeParse(form.get("code"));
  const factor=z.uuid().safeParse(form.get("factorId"));
- const code=z.string().regex(/^\d{6}$/).safeParse(form.get("code"));
  const next=safeNextPath(form.get("next"));
- if(!factor.success||!code.success)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+ if(!raw.success)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
  const client=await sessionClient();
  const user=await client.auth.getUser();
  if(!user.data.user?.email_confirmed_at)redirect("/sign-in");
- const listed=await client.auth.mfa.listFactors();
- const valid=listed.data?.totp?.some(item=>item.id===factor.data&&item.status==="verified");
- if(!valid)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
- const {error}=await client.auth.mfa.challengeAndVerify({factorId:factor.data,code:code.data});
- if(error)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
- await client.rpc("refresh_my_profile_badges");
- redirect(next);
+
+ if(/^\\d{6}$/.test(raw.data)){
+  if(!factor.success)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+  const listed=await client.auth.mfa.listFactors();
+  const valid=listed.data?.totp?.some(item=>item.id===factor.data&&item.status==="verified");
+  if(!valid)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+  const {error}=await client.auth.mfa.challengeAndVerify({factorId:factor.data,code:raw.data});
+  if(error)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+  await client.rpc("refresh_my_profile_badges");
+  redirect(next);
+ }
+
+ const normalised=raw.data.toUpperCase().replaceAll("-","");
+ if(!/^[A-F0-9]{20}$/.test(normalised))redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+ const hash=createHash("sha256").update(normalised).digest("hex");
+ const {data,error}=await client.rpc("consume_my_mfa_recovery_code",{p_hash:hash});
+ if(error||data!==true)redirect("/auth/mfa?failed=1&next="+encodeURIComponent(next));
+ // Recovery restores only password-verified AAL1 access. Do not continue to a
+ // protected destination until the user registers and verifies a new TOTP.
+ redirect("/studio/account?mfa=recovered");
 }
 
 export async function claimGiftLink(_:ActionState,form:FormData):Promise<ActionState>{
@@ -140,4 +155,23 @@ export async function claimGiftLink(_:ActionState,form:FormData):Promise<ActionS
  revalidatePath("/studio/plan");
  revalidatePath("/studio/badges");
  return ok(details.data.plan.toUpperCase()+" has been added to your account for "+details.data.duration_days+" days.");
+}
+
+export type RecoveryCodesState={error:string;codes:string[]};
+
+export async function regenerateMfaRecoveryCodes(_:RecoveryCodesState):Promise<RecoveryCodesState>{
+ void _;
+ const {client}=await requireAccount("/studio/account");
+ const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+ if(assurance.error||assurance.data?.currentLevel!=="aal2")
+  return {error:"Complete authenticator verification before generating recovery codes.",codes:[]};
+ const factors=await client.auth.mfa.listFactors();
+ if(factors.error||!(factors.data?.totp?.some((factor)=>factor.status==="verified")))
+  return {error:"Set up and verify an authenticator before generating recovery codes.",codes:[]};
+ const codes=Array.from({length:10},()=>randomBytes(10).toString("hex").toUpperCase().match(/.{1,4}/g)!.join("-"));
+ const hashes=codes.map((code)=>createHash("sha256").update(code.replaceAll("-","")).digest("hex"));
+ const {data,error}=await client.rpc("replace_my_mfa_recovery_codes",{p_hashes:hashes});
+ if(error||data!==10)return {error:"Recovery codes could not be saved. Your previous set has not been replaced.",codes:[]};
+ revalidatePath("/studio/account");
+ return {error:"",codes};
 }

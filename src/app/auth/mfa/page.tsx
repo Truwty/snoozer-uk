@@ -23,17 +23,17 @@ export default async function VerifyMfa({searchParams}:{searchParams:Promise<{ne
  return <main className="shell stack">
   <section className="panel stack" style={{maxWidth:"32rem",margin:"3rem auto"}}>
    <p className="eyebrow">ACCOUNT SECURITY</p><h1>Verify it’s you</h1>
-   <p>Enter the six-digit code from your authenticator app to finish signing in to Snoozer.</p>
+   <p>Enter a six-digit authenticator code or a single-use recovery code to finish signing in to Snoozer.</p>
    {params.failed==="1"&&<p role="alert">That code was not accepted. Check your authenticator app and try again.</p>}
    {verified.map((factor,index)=><form key={factor.id} action={verifyLoginMfa} className="stack">
     <input type="hidden" name="factorId" value={factor.id}/>
     <input type="hidden" name="next" value={next}/>
-    <label htmlFor={"mfa-code-"+index}>Authenticator code</label>
-    <input id={"mfa-code-"+index} name="code" type="text" inputMode="numeric" autoComplete="one-time-code"
-      pattern="[0-9]{6}" minLength={6} maxLength={6} required/>
+    <label htmlFor={"mfa-code-"+index}>Authenticator or recovery code</label>
+    <input id={"mfa-code-"+index} name="code" type="text" autoComplete="one-time-code" spellCheck={false}
+      placeholder="123456 or XXXX-XXXX-XXXX-XXXX-XXXX" maxLength={24} required/>
     <button className="button primary" type="submit">Verify and continue</button>
    </form>)}
-   <p className="muted">Trouble accessing your authenticator? Contact Snoozer support before attempting to recover the account.</p>
+   <p className="muted">A recovery code restores sign-in only. You will need to register and verify a new authenticator before carrying out actions that require full multi-factor assurance.</p>
    <Link href="/sign-in">Back to sign in</Link>
   </section>
  </main>;
