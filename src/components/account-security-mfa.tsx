@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { enrollAccountMfa, regenerateMfaRecoveryCodes, verifyAccountMfa, type MfaState, type RecoveryCodesState } from "@/app/studio/account/actions";
+import { enrollAccountMfa, verifyAccountMfa, type MfaState } from "@/app/studio/account/actions";
 
 const initial:MfaState={error:"",success:"",factorId:"",qr:"",secret:""};
-const recoveryInitial:RecoveryCodesState={error:"",codes:[]};
 
 export function AccountSecurityMfa({verifiedFactorIds}:{verifiedFactorIds:string[]}){
  const [enrollment,begin,pending]=useActionState(enrollAccountMfa,initial);
@@ -36,21 +35,6 @@ export function AccountSecurityMfa({verifiedFactorIds}:{verifiedFactorIds:string
   </section>}
   {verification.error&&<p role="alert">{verification.error}</p>}
   {verification.success&&<p role="status">{verification.success}</p>}
-  {verifiedFactorIds.length>0&&<section className="studio-mfa-recovery stack">
-    <p className="muted">Recovery codes are single-use. You can use one to restore a sign-in session if you lose your authenticator. That session remains at AAL1 until you enrol and verify a new authenticator.</p>
-    <form action={recover}>
-      <button className="button small" type="submit" disabled={regenerating}>{regenerating?"Generating…":"Generate / replace recovery codes"}</button>
-    </form>
-    {recovery.error&&<p role="alert">{recovery.error}</p>}
-    {recovery.codes.length>0&&<>
-      <p role="alert">Save these codes now. They are shown once here. Generating a replacement set invalidates every previous code.</p>
-      <textarea readOnly rows={6} value={recovery.codes.join("\n")} aria-label="Single-use recovery codes"/>
-      <button className="button small" type="button" onClick={()=>{
-        void navigator.clipboard.writeText(recovery.codes.join("\n")).then(()=>setCopied(true)).catch(()=>setCopied(false));
-      }}>{copied?"Copied":"Copy recovery codes"}</button>
-      <p className="muted">Store these somewhere private and offline. Anyone with a code can use it once to restore sign-in to this account.</p>
-    </>}
-  </section>}
   <p className="muted">Keep access to your authenticator app. Add a second authenticator on another trusted device as a backup before changing phones.</p>
  </div>;
 }

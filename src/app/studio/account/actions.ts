@@ -175,3 +175,16 @@ export async function regenerateMfaRecoveryCodes(_:RecoveryCodesState):Promise<R
  revalidatePath("/studio/account");
  return {error:"",codes};
 }
+
+export async function updateLanguagePreference(form: FormData) {
+ const locale=z.enum(["en-US","es-ES","pt-BR","fr-FR","de-DE","tr-TR"]).safeParse(form.get("locale"));
+ if(!locale.success)redirect("/studio/account?language=invalid");
+ const {client,user}=await requireAccount("/studio/account");
+ const metadata=user.user_metadata && typeof user.user_metadata==="object" && !Array.isArray(user.user_metadata)
+   ? user.user_metadata as Record<string,unknown> : {};
+ const {error}=await client.auth.updateUser({data:{...metadata,snoozer_locale:locale.data}});
+ if(error)redirect("/studio/account?language=failed");
+ revalidatePath("/studio/account");
+ revalidatePath("/studio");
+ redirect("/studio/account?language=saved");
+}
