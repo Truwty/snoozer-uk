@@ -2056,16 +2056,18 @@ body:has(> .public-page[data-background-image="true"]) {
   outline: 1px solid rgb(255 255 255 / 80%);
   outline-offset: 3px;
 }
-.profile-card--bio-experience .spotify-widget--compact {
+.profile-card--bio-experience .spotify-widget {
+  min-width: 0;
   width: min(100%, 31rem);
-  min-width: 280px;
+}
+.profile-card--bio-experience .spotify-widget--compact {
   padding: 0;
   border: 0;
   border-radius: .85rem;
   background: transparent;
   box-shadow: none;
 }
-.profile-card--bio-experience .spotify-widget--compact .spotify-widget__player {
+.profile-card--bio-experience .spotify-widget .spotify-widget__player {
   min-width: 280px;
   border-radius: .8rem;
 }
@@ -2256,7 +2258,7 @@ body:has(> .public-page[data-background-image="true"]) {
   text-decoration: underline;
 }
 @media (max-width: 40rem) {
-  .profile-card--bio-experience .spotify-widget--compact {
+  .profile-card--bio-experience .spotify-widget {
     width: min(31rem, calc(100% + 2.1rem));
     margin-inline: -1.05rem;
   }
