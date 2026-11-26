@@ -75,7 +75,7 @@ describe("compact public bio experience", () => {
     expect(html).toContain("spotify-widget--compact");
     expect(html).toContain("https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
     expect(html).toContain('allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"');
-    expect(html).toContain('referrerpolicy="strict-origin-when-cross-origin"');
+    expect(html.toLowerCase()).toContain('referrerpolicy="strict-origin-when-cross-origin"');
     expect(html).toContain("spotify-widget__compact-open");
     expect(html).toContain("Open in Spotify");
     expect(html).not.toContain("sandbox=");
