@@ -12,7 +12,7 @@ describe("profile audio validation",()=>{
     expect(profileAudioExtension("audio/webm")).toBeNull();
   });
   it("checks file signatures rather than trusting the extension",()=>{
-    expect(validProfileAudioBytes(new TextEncoder().encode("ID3xxxx"),"mp3")).toBe(true);
+    expect(validProfileAudioBytes(new TextEncoder().encode("ID3xxxxx"),"mp3")).toBe(true);
     expect(validProfileAudioBytes(new TextEncoder().encode("0000ftypM4A "), "m4a")).toBe(true);
     expect(validProfileAudioBytes(new TextEncoder().encode("OggSxxxx"),"ogg")).toBe(true);
     expect(validProfileAudioBytes(new TextEncoder().encode("RIFFxxxxWAVE"),"wav")).toBe(true);

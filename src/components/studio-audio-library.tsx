@@ -49,7 +49,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     setBusy(true);setError("");setMessage("");
     try{
       const started=await startProfileAudioUpload(profileId,revision,title,artist,file.type,file.size);
-      if("error" in started){setError(started.error);return;}
+      if("error" in started){setError(started.error ?? "Could not prepare the audio upload. Try again.");return;}
       const config=supabaseConfig();
       const browser=createBrowserClient(config.url,config.key);
       const {error:uploadError}=await browser.storage.from(profileAudioIncoming)
