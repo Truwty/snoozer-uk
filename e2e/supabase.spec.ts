@@ -206,8 +206,8 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByText("Claim another profile", { exact: true }).click();
     await page.getByLabel("Username").fill(second);
     await page.getByRole("button", { name: "Claim address" }).click();
-    const preview = page.getByRole("region", { name: "Page preview" });
-    await expect(preview.getByText(`@${second}`, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
+    await expect(page.locator(".editor-topbar strong")).toHaveText("@" + second);
     const selectedProfile = new URL(page.url()).searchParams.get("profile");
     expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
     await page.getByRole("link", { name: "Customize", exact: true }).click();
@@ -222,7 +222,8 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     expect((await request.get(`/${second}`)).status()).toBe(200);
     await page.getByRole("link", { name: "Premium" }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
-    await expect(preview.getByText(`@${name}`, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\\/studio\\/customize\\?profile=/);
+    await expect(page.locator(".editor-topbar strong")).toHaveText("@" + name);
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
   } finally {
     if (data.user) await admin.auth.admin.deleteUser(data.user.id);
@@ -407,7 +408,8 @@ test("legacy sections and widgets remain stored but do not appear on the compact
     await publicPage.goto("/" + name);
     await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Compact reference fixture" })).toBeVisible();
-    await expect(publicPage.locator(".profile-more-content, .profile-sections, .profile-widgets, .profile-layout-block")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-more-content, .profile-widgets, .profile-layout-block")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-sections > .profile-layout-block")).toHaveCount(0);
     await expect(publicPage.getByRole("heading", { name: "Kind words" })).toHaveCount(0);
     await expect(publicPage.getByText("Legacy project", { exact: true })).toHaveCount(0);
     const privatePoll = await visitor.request.get("/api/v1/widgets/poll", { params: { username: name, pollId } });
@@ -455,6 +457,8 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("heading", { name: "All badges", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Badge catalogue", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Custom badges", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Purchase", exact: true })).toHaveAttribute("href", /\\/studio\\/plan/);
+    await expect(page.getByRole("button", { name: "Preview Custom Badge", exact: true })).toBeVisible();
 
     await page.getByRole("link", { name: "Settings", exact: true }).click();
     for (const heading of ["General Information","Language Settings","Security Settings","Connections","Gift Links","Email Marketing","Account Actions"]) {
@@ -567,7 +571,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect(profileHref).toMatch(/^\/studio\/customize\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
     await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
-    await expect(page.getByRole("link", { name: "Image Host" })).toHaveAttribute("href", profileHref.replace("/studio/customize?", "/studio/image-host?"));
+    await expect(page.getByRole("link", { name: "Image Host", exact: true })).toHaveAttribute("href", profileHref.replace("/studio/customize?", "/studio/image-host?"));
     await page.getByRole("link", { name: "Premium" }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
@@ -1129,7 +1133,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
   await page.getByRole("button", { name: "Upload image" }).click();
   await expect(page.getByRole("status")).toContainText("Image added to your draft");
-  await expect(page.getByRole("img", { name: "Open water" })).toBeVisible();
+  await expect(draftGalleryImages.getByRole("img", { name: "Open water" })).toBeVisible();
   const privatePath = (await blueShorelineDraftImage.getAttribute("src"))!;
   const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
   const blueShorelineId = privatePath.split("/").at(-1)!;

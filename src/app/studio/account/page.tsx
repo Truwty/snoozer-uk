@@ -8,7 +8,8 @@ import { z } from "zod";
 import { AccountSecurityMfa } from "@/components/account-security-mfa";
 import { AccountRecoveryCodes } from "@/components/account-recovery-codes";
 import { EmailChangeForm } from "@/components/email-change-form";
-import { disableAccountMfa, unlinkSignInIdentity, updateMarketingPreference, updateLanguagePreference, revokeDeviceSession } from "./actions";
+import { disableAccountMfa, unlinkSignInIdentity, updateMarketingPreference, revokeDeviceSession } from "./actions";
+import { AccountLanguageSelect } from "@/components/account-language-select";
 import { accountLocale, accountLocales, accountLabel } from "@/lib/account-locale";
 import { deviceLabel } from "@/lib/account-security";
 
@@ -85,12 +86,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
     <section className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Language Settings")}</h2></div>
       <p className="muted">{t("Choose language")}</p>
-      <form action={updateLanguagePreference} className="studio-language-form">
-        <label htmlFor="snoozer-locale">{t("Language")}</label>
-        <select id="snoozer-locale" name="locale" defaultValue={locale} onChange={(event)=>event.currentTarget.form?.requestSubmit()}>
-          {accountLocales.map((item)=><option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-      </form>
+      <AccountLanguageSelect locale={locale} label={t("Language")} options={accountLocales}/>
     </section>
 
     <section className="studio-dashboard-panel studio-account-settings-section">
