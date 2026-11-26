@@ -96,8 +96,6 @@ const palettes: readonly Palette[] = [
   }
 ];
 export const templatePalettes = palettes.map(({ id, name }) => ({ id, label: name }));
-export const templatePaletteThemes = Object.fromEntries(palettes.map(({id,theme})=>[id,theme])) as Record<string, typeof themes[number]>;
-export const templateStyleCategories = Object.fromEntries(compositions.map(({style,category})=>[style,category])) as Record<ProfileTemplateStyle, TemplateCategory>;
 
 
 type Composition = {
@@ -139,6 +137,9 @@ const compositions: readonly Composition[] = [
   { style: "goldline", name: "Goldline", category: "luxe", description: "Fine gold detailing, editorial alignment and an elegant profile presentation.", layout: "editorial", density: "balanced", corners: "square", font: "serif", gradient: false, monochrome: true, animatedTitle: false, usernameGlow: false, socialGlow: false, badgeGlow: true, sectionOne: "Profile", sectionTwo: "Selected links" },
   { style: "velvet", name: "Velvet Room", category: "luxe", description: "Rich velvet tones, soft gradients and a spacious, lounge-like profile card.", layout: "portfolio", density: "airy", corners: "round", font: "serif", gradient: true, monochrome: false, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true, sectionOne: "The room", sectionTwo: "Curated favourites" }
 ];
+
+export const templatePaletteThemes = Object.fromEntries(palettes.map(({id,theme})=>[id,theme])) as Record<string, typeof themes[number]>;
+export const templateStyleCategories = Object.fromEntries(compositions.map(({style,category})=>[style,category])) as Record<ProfileTemplateStyle, TemplateCategory>;
 
 export type StudioTemplate = {
   id: string; name: string; description: string; category: TemplateCategory; categoryLabel: string;
