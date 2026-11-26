@@ -74,7 +74,7 @@ export function StudioCommandPalette() {
   if (!open) return <button type="button" className="studio-command-trigger" onClick={() => {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setOpen(true);
-  }} aria-label="Search Studio Ctrl K"><span aria-hidden="true">⌕</span> <span>Search Studio</span><kbd aria-hidden="true">Ctrl K</kbd></button>;
+  }} title="Search Studio (Ctrl K)"><span aria-hidden="true">⌕</span> <span>Search Studio</span><kbd>Ctrl K</kbd></button>;
 
   return <div className="studio-command-backdrop" onMouseDown={(event) => {
     if (event.target === event.currentTarget) closePalette();
