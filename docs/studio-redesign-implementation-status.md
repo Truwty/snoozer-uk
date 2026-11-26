@@ -4,18 +4,17 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 
 ## Current release state — 26 November 2026
 
-- Main commit: c57d68733f5e3ebccd3ebc495b84788f406175db.
-- PR #112 (dashboard video redesign) and PR #113 (Studio feature expansion) are merged.
-- The 14 migrations 20261126090000–20261126090013 are applied to connected Supabase project edgptbiwswcdmmxzwhxv. The migration registry was verified to end at 20261126090013.
-- The connected staging Render service srv-dbts6jon74is73en2rjg auto-deployed commit c57d687 on 26 November; the deploy dep-dc3r2b8ae00c73cqmg7g reached live.
-- Staging schema and merged Studio features are now aligned. The remaining requirements below are genuine follow-up work, not a claim that PR #113 is still unmerged.
-- Current follow-up optimisation is tracked on branch optimization/full-platform-hardening and draft PR #114. No merge to main or manual Render deployment is part of that work.
+- Main commit at the start of this follow-up: `09df799a636195433355404eda253ff3c7b0bd82`.
+- Dashboard video redesign PR #112, Studio expansion PR #113 and platform optimisation PR #114 are merged.
+- The 14 migrations `20261126090000`–`20261126090013` were applied to the connected staging Supabase project. The migration registry was previously verified through `20261126090013`.
+- Current follow-up branch: `feature/remove-profile-badges-fix-music`. It contains the temporary achievement-badge UI removal and Spotify/native-audio profile-player fixes.
+- No merge or Render deployment has been performed for this follow-up branch. The live Premium payment gates, Stripe configuration and six LIVE offers are outside this change and remain untouched.
 
 ## Branch and release state
 
-- Branch: `feature/dashboard-video-fidelity`.
-- Current follow-up is tracked in draft PR [#113](https://github.com/Truwty/snoozer-uk/pull/113), on `feature/dashboard-video-fidelity`.
-- No merge to `main` and no Render deployment were performed.
+- Working branch: `feature/remove-profile-badges-fix-music`, based on main commit `09df799a636195433355404eda253ff3c7b0bd82`.
+- A review PR for this follow-up will be opened after full CI verification.
+- Keep this branch isolated until the owner reviews and explicitly approves a release.
 
 ## Implemented in this follow-up
 
@@ -39,7 +38,7 @@ This tracker records the current implementation against `Snoozer_Codex_Implement
 | Account settings/security | Partial | Rename, email change, aliases, identity unlink, MFA, sessions and marketing preference work. Locale translations/persistence are absent. Gift purchase is still sandbox-only under the current Stripe gift implementation; no production gift purchase or buyer inventory is provided. |
 | Account overview | Partial | Numeric UID, milestones, honest retained-data metrics and conditional 7-day delta exist. Percentile is intentionally omitted because the app has no suitable comparable population dataset. |
 | Analytics | Partial | 3/7/30/all-time controls and existing reports/exports remain. No country report is produced because the privacy model has no consent-aware coarse-country aggregate. Full dashboard metric/date-range parity still needs authenticated E2E verification. |
-| Badges | Partial | Official ordering/visibility and secure custom badge CRUD/quota are implemented. No styling/recolouring for official badges (to protect award integrity), and no full earned/locked/future catalogue redesign. |
+| Badges | Temporarily disabled | Public badge rendering, Studio navigation/management and Owner badge management redirect to their dashboards. Catalogue, awards, private images and migration history are retained; no award data is deleted. |
 | Profile customisation | Partial | Username effects, explicit location, and Swap Box Colours are added. Existing controls are retained. Discord avatar/decoration settings are absent because no authorized avatar-decoration data path exists. Complete reference layout comparison remains. |
 | Asset uploader / Audio / Image Host | Partial | Dedicated Image Host route uses existing gallery storage/folders and now supports secured text pastes. It does not yet provide standalone binary asset URL management, custom domains/DNS/TLS, usage analytics, audio library/multiple tracks, or custom cursor. |
 | Community templates | Partial | Favorites, recents, user submissions, report controls, owner moderation, real aggregate use counts, and server-side title/description search, newest/popular sorting, and pagination exist. Missing covers/creator profiles, tags, and real ratings. No trending or rating claims are fabricated. |
