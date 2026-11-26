@@ -705,7 +705,7 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("textbox", { name: "Audio Title" })).toBeVisible();
-    await expect(addAudio.getByRole("textbox", { name: /Artist/ })).toBeVisible();
+    await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
     await addAudio.getByRole("button", { name: "Close Add Audio", exact: true }).click();
     await audioManager.getByRole("button", { name: "Close audio manager", exact: true }).click();
 
