@@ -54,3 +54,8 @@
 .studio-sidebar-search .studio-command-trigger:hover {
   border-color:rgba(216,251,134,.25); background:#171a17; color:#f0f3ef;
 }
+
+.profile-social-custom-icon {
+  display:block; width:26px; height:26px; object-fit:contain; border-radius:4px;
+}
+.profile-text-links { margin-top:.8rem; }
