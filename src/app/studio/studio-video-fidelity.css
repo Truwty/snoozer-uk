@@ -358,3 +358,12 @@
   .studio-sidebar-footer { display:none; max-height:34vh; overflow-y:auto; }
   .studio-sidebar.is-mobile-open .studio-sidebar-footer { display:flex; }
 }
+
+@media (max-width:820px) {
+  .studio-sidebar .studio-mobile-menu {
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+  }
+}
