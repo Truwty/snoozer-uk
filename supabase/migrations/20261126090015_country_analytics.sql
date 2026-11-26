@@ -22,16 +22,16 @@ revoke all on snoozer.profile_country_receipts from public,anon,authenticated,se
 create function public.record_profile_country_event(p_username text,p_event uuid,p_kind text,p_country text)
 returns void language plpgsql security definer set search_path = ''
 as $$
-declare target uuid; owner_id uuid; keep_days integer; utc_day date := (now() at time zone 'UTC')::date;
+declare target uuid; profile_owner uuid; keep_days integer; utc_day date := (now() at time zone 'UTC')::date;
 begin
   if coalesce(auth.jwt()->>'role','') <> 'service_role' then
     raise exception 'Service role required' using errcode='42501';
   end if;
   if p_event is null or p_kind not in ('view','click') or p_country !~ '^[A-Z]{2}$' then return; end if;
-  select id,owner_id into target,owner_id from snoozer.profiles
-    where username=p_username and published_revision is not null;
+  select p.id,p.owner_id into target,profile_owner from snoozer.profiles p
+    where p.username=p_username and p.published_revision is not null;
   if target is null then return; end if;
-  select (e.plan).analytics_days into keep_days from snoozer.effective_plan(owner_id) e;
+  select (e.plan).analytics_days into keep_days from snoozer.effective_plan(profile_owner) e;
   if keep_days is null or keep_days<=0 then return; end if;
   if not exists(select 1 from snoozer.profile_view_receipts
     where profile_id=target and day=utc_day and event_id=p_event and kind=p_kind) then return; end if;

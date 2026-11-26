@@ -10,7 +10,6 @@ import {
 import { siteUrl } from "@/lib/env";
 import { readStudioDraft, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { sessionClient } from "@/lib/supabase";
-import "./analytics-country.css";
 
 export const metadata = { title: "Analytics", robots: { index: false, follow: false } };
 
@@ -170,12 +169,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Que
           </ul> : <Empty title="No browser data yet" description="Only visitors who allow the latest analytics scope and have browser storage available are included."/>}
           {browserResponse?.error && <p className="message error">Browser reports are temporarily unavailable.</p>}
         </article>
-      </section>
-
-      <section className="analytics-card analytics-country-panel">
-        <div className="analytics-card-heading"><div><h2>Top Countries by Views</h2><p>Geographic reporting</p></div></div>
-        <div className="analytics-country-art"><span aria-hidden="true">◎</span>
-          <p>Country-level visitor location is not collected by Snoozer analytics. No country ranking or world map is available.</p></div>
       </section>
 
       <section className="analytics-card stack">
