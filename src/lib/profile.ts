@@ -75,6 +75,7 @@ export const link = z.object({
   hidden: z.boolean().optional(),
   mode: z.enum(["icon", "text"]).optional(),
   iconImage: z.uuid().optional(),
+  audioCoverImage: z.uuid().optional(),
 });
 
 export const textSectionLimits = { count: 6, heading: 80, body: 800 };
