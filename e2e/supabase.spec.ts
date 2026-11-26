@@ -244,6 +244,9 @@ test("profile analytics requires consent, counts published link clicks and expor
     await expect.poll(() => spotifyRequests).toBeGreaterThan(0);
     expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
     expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
+    // Restore the desktop viewport after the 320px embed-width regression check.
+    // Later in this test the Twitch player is intentionally available only at desktop widths.
+    await publicPage.setViewportSize({ width: 1280, height: 720 });
 
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
