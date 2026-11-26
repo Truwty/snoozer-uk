@@ -36,8 +36,8 @@ export async function useStudioTemplate(form: FormData) {
   if(!draft) redirect("/studio");
   const result=await save({profileId:draft.profile_id,revision:draft.revision,content:{...draft,theme:parsed.data.config.theme,appearance:parsed.data.config.appearance,sections:parsed.data.config.sections},intent:"draft",removeAvatar:false});
   if(result.status!=="success") redirect("/studio/templates?error=apply");
-  revalidatePath("/studio/builder"); revalidatePath("/studio");
-  redirect(studioHref("/studio/builder",draft.profile_id));
+  revalidatePath("/studio/customize"); revalidatePath("/studio");
+  redirect(studioHref("/studio/customize",draft.profile_id));
 }
 
 export async function submitCommunityTemplate(form: FormData) {
