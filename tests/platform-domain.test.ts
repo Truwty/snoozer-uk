@@ -45,7 +45,10 @@ it("removes the entire creator marketplace while keeping Snoozer Premium billing
     ["/api/v1/billing/stripe/live-webhook","POST"],
   ]) {
     const response=await proxy(request("snoozer.uk",path,method));
-    expect(response.headers.get("x-middleware-next"),path).toBe("1");
+    if(path.startsWith("/studio/")) {
+      // Protected Studio routes fail closed when this test has no Supabase config.
+      expect(response.headers.get("location"),path).toContain("/sign-in?next=");
+    } else expect(response.headers.get("x-middleware-next"),path).toBe("1");
   }
 });
 it("does not trust similar hosts or a forged forwarded hostname as a platform alias",async()=>{

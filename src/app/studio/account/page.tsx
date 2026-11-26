@@ -6,7 +6,7 @@ import { z } from "zod";
 import { AccountSecurityMfa } from "@/components/account-security-mfa";
 import { EmailChangeForm } from "@/components/email-change-form";
 import { linkGoogleIdentity } from "@/app/auth/actions";
-import { revokeDeviceSession, disableAccountMfa } from "./actions";
+import { revokeDeviceSession, disableAccountMfa, unlinkSignInIdentity, updateMarketingPreference } from "./actions";
 import { deviceLabel } from "@/lib/account-security";
 
 export const metadata = { title: "Account Settings", robots: { index: false, follow: false } };
@@ -18,11 +18,11 @@ function maskEmail(value: string) {
   return visible + "•".repeat(Math.max(5, Math.min(12, local.length + 2))) + "@" + domain;
 }
 
-export default async function AccountSettings({ searchParams }: { searchParams: Promise<{ email?: string; google?: string; session?: string; mfa?: string }> }) {
+export default async function AccountSettings({ searchParams }: { searchParams: Promise<{ email?: string; google?: string; session?: string; mfa?: string; identity?: string; marketing?: string }> }) {
   const status = await searchParams;
   const { client, user } = await requireAccount();
-  const [planResponse, sessionResponse, factorResponse] = await Promise.all([
-    client.rpc("get_my_plan"), client.rpc("list_my_device_sessions"), client.auth.mfa.listFactors(),
+  const [planResponse, sessionResponse, factorResponse, marketingResponse] = await Promise.all([
+    client.rpc("get_my_plan"), client.rpc("list_my_device_sessions"), client.auth.mfa.listFactors(), client.rpc("get_my_marketing_preference"),
   ]);
   const plan = accountPlan.safeParse(planResponse.data);
   const appMetadata = user.app_metadata as Record<string, unknown>;
@@ -38,6 +38,8 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
     user_agent: z.string().nullable(), tag: z.string().nullable(), aal: z.string(), is_current: z.boolean(), expires_at: z.string().nullable(),
   })).safeParse(sessionResponse.data);
   const maskedEmail = user.email ? maskEmail(user.email) : "No email on file";
+  const marketing = z.object({ emailOptIn: z.boolean(), consentUpdatedAt: z.iso.datetime({ offset: true }).nullable() })
+    .safeParse(marketingResponse.data);
 
   return <main className="shell studio-shell studio-account-page">
     {status.email === "confirmation" && <p role="status">An email-change confirmation has been recorded. With secure email change enabled, Supabase may require verification from both your current and new inboxes. Check the email shown above after completing all requested confirmations.</p>}
@@ -49,6 +51,12 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
     {status.session === "failed" && <p role="alert">That session could not be revoked. Refresh the list and try again.</p>}
     {status.mfa === "disabled" && <p role="status">Authenticator MFA has been removed.</p>}
     {status.mfa === "failed" && <p role="alert">MFA could not be removed.</p>}
+    {status.identity === "unlinked" && <p role="status">The selected sign-in identity has been unlinked.</p>}
+    {status.identity === "last" && <p role="alert">Keep at least one other sign-in identity connected before unlinking this one.</p>}
+    {status.identity === "presencefailed" && <p role="alert">Discord presence could not be disconnected, so the Discord identity was left linked.</p>}
+    {status.identity && !["unlinked", "last", "presencefailed"].includes(status.identity) && <p role="alert">The sign-in identity could not be unlinked. It may already be disconnected or require account-provider configuration.</p>}
+    {status.marketing === "saved" && <p role="status">Your marketing email preference has been saved.</p>}
+    {status.marketing && status.marketing !== "saved" && <p role="alert">Your marketing preference could not be updated. Refresh and try again.</p>}
     <header className="studio-page-heading">
       <div><p className="eyebrow">ACCOUNT / SETTINGS</p><h1>Account Settings</h1>
         <p className="muted">Manage your Snoozer sign-in details, security options and account preferences.</p></div>
@@ -111,11 +119,18 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
       <div className="studio-panel-heading"><div><p className="eyebrow">CONNECTED SERVICES</p><h2>Connections</h2><p className="muted">Sign-in identities and profile integrations are separate permissions.</p></div></div>
       <div className="studio-setting-row">
         <div><strong>Discord sign-in</strong><p>{discordSignIn ? "Discord is listed as a sign-in provider for this Snoozer account." : "This Snoozer account is not currently using Discord sign-in."}</p></div>
-        <span className={"studio-setting-status" + (discordSignIn ? " is-good" : "")}>{discordSignIn ? "Connected" : "Not linked"}</span>
+        {discordSignIn && identities.length > 1 ? <form action={unlinkSignInIdentity} className="stack">
+          <input type="hidden" name="provider" value="discord"/><label className="check"><input type="checkbox" name="confirm_unlink" required/> I understand I will no longer sign in with Discord.</label>
+          <button className="button small studio-danger-button" type="submit">Unlink Discord sign-in</button>
+        </form> : <span className={"studio-setting-status" + (discordSignIn ? " is-good" : "")}>{discordSignIn ? identities.length < 2 ? "Keep as only sign-in" : "Connected" : "Not linked"}</span>}
       </div>
       <div className="studio-setting-row">
         <div><strong>Google sign-in</strong><p>{googleSignIn ? "Google is linked to this Snoozer account. You can use either sign-in method." : "Link a Google identity to sign in without changing your Snoozer account or profile."}</p></div>
-        {googleSignIn ? <span className="studio-setting-status is-good">Connected</span> : <form action={linkGoogleIdentity}><button className="button small" type="submit">Link Google account</button></form>}
+        {googleSignIn && identities.length > 1 ? <form action={unlinkSignInIdentity} className="stack">
+          <input type="hidden" name="provider" value="google"/><label className="check"><input type="checkbox" name="confirm_unlink" required/> I understand I will no longer sign in with Google.</label>
+          <button className="button small studio-danger-button" type="submit">Unlink Google sign-in</button>
+        </form> : googleSignIn ? <span className="studio-setting-status is-good">Keep as only sign-in</span>
+          : <form action={linkGoogleIdentity}><button className="button small" type="submit">Link Google account</button></form>}
       </div>
       <div className="studio-setting-row">
         <div><strong>Discord Presence</strong><p>Control the live Discord activity that may appear on your public profile. This is not the same as account sign-in.</p></div>
@@ -137,9 +152,17 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         <div><strong>Personal data</strong><p>Request an export of your account data or submit an account deletion request.</p></div>
         <Link className="button small" href="/account/data">Manage your data ↗</Link>
       </div>
-      <div className="studio-setting-row">
-        <div><strong>Email marketing</strong><p>Optional marketing preference controls are not currently available in the account dashboard.</p></div>
-        <span className="studio-setting-status">Not available</span>
+      <div className="studio-setting-row studio-setting-row--stack">
+        <div><strong>Email marketing</strong><p>Choose whether Snoozer may email you product news and offers. Account, security and billing messages are unaffected.</p></div>
+        {marketing.success ? <form action={updateMarketingPreference} className="studio-marketing-preference">
+          <label>Email me product news and offers
+            <select name="email_opt_in" defaultValue={String(marketing.data.emailOptIn)} aria-label="Marketing email preference">
+              <option value="false">Off</option><option value="true">On</option>
+            </select>
+          </label>
+          <button className="button small" type="submit">Save preference</button>
+          {marketing.data.consentUpdatedAt && <small className="muted">Last changed {new Date(marketing.data.consentUpdatedAt).toLocaleString("en-GB")}</small>}
+        </form> : <p role="alert">Marketing preferences are temporarily unavailable.</p>}
       </div>
     </section>
 

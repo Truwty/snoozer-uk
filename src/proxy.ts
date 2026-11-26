@@ -39,8 +39,9 @@ export async function proxy(request: NextRequest) {
   }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
+  const plainTextPaste = /^\/paste\/[^/]+\/?$/.test(request.nextUrl.pathname);
   const storage = supabaseUrl ? new URL(supabaseUrl).origin : "";
-  const csp = [
+  const csp = plainTextPaste ? "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; sandbox" : [
     "default-src 'self'", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'",
     "form-action 'self'", `script-src 'self' 'nonce-${nonce}'${development ? " 'unsafe-eval'" : ""}`,
     `script-src-elem 'self' 'nonce-${nonce}'`,
@@ -102,6 +103,24 @@ export async function proxy(request: NextRequest) {
         if (request.nextUrl.pathname === "/") domainTarget = name.data;
       }
     }
+  }
+  // A deployment without Supabase credentials cannot authenticate anyone.
+  // Fail closed before protected Server Components try to construct a client.
+  const protectedPage = request.nextUrl.pathname === "/studio"
+    || request.nextUrl.pathname.startsWith("/studio/")
+    || request.nextUrl.pathname === "/owner"
+    || request.nextUrl.pathname.startsWith("/owner/")
+    || request.nextUrl.pathname === "/account-restricted"
+    || request.nextUrl.pathname === "/account/data"
+    || request.nextUrl.pathname === "/account/notifications";
+  if (!custom && protectedPage && (!supabaseUrl || !supabaseKey)) {
+    const next = request.nextUrl.pathname + request.nextUrl.search;
+    const signIn = new URL("/sign-in", request.url);
+    signIn.searchParams.set("next", next);
+    const response = NextResponse.redirect(signIn);
+    response.headers.set("Cache-Control", "private, no-store");
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    return response;
   }
   const slug = request.nextUrl.pathname.match(/^\/([a-zA-Z0-9-]+)\/?$/)?.[1];
   let missing = false;

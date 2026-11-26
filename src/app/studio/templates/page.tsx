@@ -4,111 +4,95 @@ import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { profileLayouts } from "@/lib/profile";
 import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
-import { readStudioDraft, type StudioProfileQuery } from "@/lib/profiles-server";
+import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
+import { reportCommunityTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
+import { z } from "zod";
 
 export const metadata = { title: "Template Library", robots: { index: false, follow: false } };
-
-type Search = StudioProfileQuery & {
-  q?: string | string[];
-  theme?: string | string[];
-  layout?: string | string[];
-  category?: string | string[];
-  palette?: string | string[];
-  page?: string | string[];
-};
+type Search = StudioProfileQuery & { q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[]; palette?:string|string[]; page?:string|string[]; tab?:string|string[]; community_q?:string|string[]; community_sort?:string|string[]; community_page?:string|string[]; submitted?:string|string[]; error?:string|string[]; reported?:string|string[] };
 
 export default async function StudioTemplates({ searchParams }: { searchParams: Promise<Search> }) {
-  const params = await searchParams;
-  const draft = await readStudioDraft(params.profile);
-  const filters = templateFilters(params);
-  const selected = params.profile === undefined ? undefined : draft?.profile_id;
-  const templates = findTemplates(filters);
-  const { page, pageCount, start } = getTemplatePage(params.page, templates.length);
-  const visibleTemplates = templates.slice(start, start + templatePageSize);
-  const active = Boolean(filters.q || filters.theme !== "all" || filters.layout !== "all"
-    || filters.category !== "all" || filters.palette !== "all");
-  const layoutLabels = { centred: "Centred card", editorial: "Editorial", portfolio: "Portfolio grid" };
-  const profileQuery = selected ? "&profile=" + encodeURIComponent(selected) : "";
-  const templateHref = (id: string) => "/studio/builder?template=" + encodeURIComponent(id) + profileQuery;
-  const clearHref = selected ? "/studio/templates?profile=" + encodeURIComponent(selected) : "/studio/templates";
-  const queryForPage = (nextPage: number) => {
-    const query = new URLSearchParams();
-    if (filters.q) query.set("q", filters.q);
-    if (filters.theme !== "all") query.set("theme", filters.theme);
-    if (filters.layout !== "all") query.set("layout", filters.layout);
-    if (filters.category !== "all") query.set("category", filters.category);
-    if (filters.palette !== "all") query.set("palette", filters.palette);
-    if (selected) query.set("profile", selected);
-    if (nextPage > 1) query.set("page", String(nextPage));
-    const queryString = query.toString();
-    return "/studio/templates" + (queryString ? "?" + queryString : "");
+  const params=await searchParams;
+  const draft=await readStudioDraft(params.profile);
+  const selected=params.profile===undefined?undefined:draft?.profile_id;
+  const {client}=await requireAccount();
+  const communityQuery=(typeof params.community_q==="string"?params.community_q:" ").trim().slice(0,80);
+  const communitySort=params.community_sort==="popular"?"popular":"newest";
+  const requestedCommunityPage=Number.parseInt(typeof params.community_page==="string"?params.community_page:"1",10);
+  const communityPageInput=Number.isFinite(requestedCommunityPage)?Math.min(Math.max(requestedCommunityPage,1),100000):1;
+  const [{data:activityData},{data:communityData}]=await Promise.all([
+    client.rpc("get_my_template_activity"),
+    params.tab==="community"?client.rpc("list_community_templates",{p_query:communityQuery,p_sort:communitySort,p_page:communityPageInput}):Promise.resolve({data:null}),
+  ]);
+  const activity=z.object({favorites:z.array(z.string()),recent:z.array(z.string()),uploads:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),status:z.enum(["pending","approved","rejected"]),created_at:z.string()})),community:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()}))}).safeParse(activityData);
+  const communityListing=z.object({items:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()})).max(12),total:z.number().int().nonnegative(),page:z.number().int().positive(),pageCount:z.number().int().positive()}).safeParse(communityData);
+  const favorites=activity.success?activity.data.favorites:[];
+  const recent=activity.success?activity.data.recent:[];
+  const uploads=activity.success?activity.data.uploads:[];
+  const community=activity.success?activity.data.community:[];
+  const communityPage=communityListing.success?communityListing.data.page:1;
+  const communityPageCount=communityListing.success?communityListing.data.pageCount:1;
+  const communityVisible=communityListing.success?communityListing.data.items:[];
+  const tabs=["library","favorites","recent","uploads","community","create"] as const;
+  const requestedTab=typeof params.tab==="string"?params.tab:"library";
+  const tab=(tabs as readonly string[]).includes(requestedTab)?requestedTab:"library";
+  const filters=templateFilters(params);
+  const allTemplates=findTemplates(filters);
+  const templates=tab==="favorites"?allTemplates.filter((item)=>favorites.includes(item.id))
+    :tab==="recent"?recent.flatMap((id)=>allTemplates.filter((item)=>item.id===id)):allTemplates;
+  const communityActivity=community.filter((item)=>tab==="favorites"?favorites.includes(item.id):tab==="recent"?recent.includes(item.id):false);
+  const {page,pageCount,start}=getTemplatePage(params.page,templates.length);
+  const visible=templates.slice(start,start+templatePageSize);
+  const active=Boolean(filters.q||filters.theme!=="all"||filters.layout!=="all"||filters.category!=="all"||filters.palette!=="all");
+  const layoutLabels={centred:"Centred card",editorial:"Editorial",portfolio:"Portfolio grid"};
+  const profileQuery=selected?"&profile="+encodeURIComponent(selected):"";
+  const templateHref=(id:string)=>"/studio/builder?template="+encodeURIComponent(id)+profileQuery;
+  const clearHref=selected?"/studio/templates?tab="+tab+"&profile="+encodeURIComponent(selected):"/studio/templates?tab="+tab;
+  const queryForPage=(next:number)=>{
+    const query=new URLSearchParams({tab}); if(filters.q)query.set("q",filters.q);
+    if(filters.theme!=="all")query.set("theme",filters.theme); if(filters.layout!=="all")query.set("layout",filters.layout);
+    if(filters.category!=="all")query.set("category",filters.category); if(filters.palette!=="all")query.set("palette",filters.palette);
+    if(selected)query.set("profile",selected); if(next>1)query.set("page",String(next)); return "/studio/templates?"+query.toString();
   };
-
   return <main className="shell studio-shell studio-template-page template-library">
-    <header className="studio-page-heading">
-      <div>
-        <p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p>
-        <h1>Find your profile style.</h1>
-        <p className="muted">120 original designs across ten categories. Choose a complete composition, then make it yours in the Page Builder.</p>
-        <div className="template-library-stats" aria-label="Template library contents">
-          <span><strong>120</strong> designs</span>
-          <span><strong>30</strong> compositions</span>
-          <span><strong>10</strong> categories</span>
-          <span><strong>4</strong> colour treatments</span>
-        </div>
-      </div>
-      <Link className="button primary" href={selected ? "/studio/builder?profile=" + encodeURIComponent(selected) : "/studio/builder"}>Open Page Builder ↗</Link>
-    </header>
-
-    <form key={JSON.stringify(filters)} action="/studio/templates" method="get" className="template-filters">
-      {selected && <input type="hidden" name="profile" value={selected}/>}
-      <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, terminal..."/></label>
-      <label>Category<select name="category" defaultValue={filters.category}>
-        <option value="all">All categories</option>{templateCategories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
-      </select></label>
-      <label>Colour treatment<select name="palette" defaultValue={filters.palette}>
-        <option value="all">All treatments</option>{templatePalettes.map((palette) => <option key={palette.id} value={palette.id}>{palette.label}</option>)}
-      </select></label>
-      <label>Composition<select name="layout" defaultValue={filters.layout}>
-        <option value="all">All compositions</option>{profileLayouts.map((layout) => <option key={layout} value={layout}>{layoutLabels[layout]}</option>)}
-      </select></label>
-      <button className="button" type="submit">Filter templates</button>
-      {active && <Link className="text-link" href={clearHref}>Clear filters</Link>}
-    </form>
-
-    <div className="template-results-heading">
-      <p className="muted" role="status">Showing {templates.length ? start + 1 : 0}–{Math.min(start + templatePageSize, templates.length)} of {templates.length} matching designs</p>
-      <p className="muted">Page {page} of {pageCount}</p>
-    </div>
-    {templates.length === 0 && <EmptyState title="No matching designs" description="Try another search or remove one of your filters.">
-      <Link className="button" href={clearHref}>Browse all templates</Link>
-    </EmptyState>}
-
-    <ul className="template-grid">
-      {visibleTemplates.map((template) => <li className="template-item stack" key={template.id}>
-        <div className="template-item-heading">
-          <p className="eyebrow">{template.categoryLabel} · {template.palette}</p>
-          <h2>{template.name}</h2>
-          <p className="muted">{template.description}</p>
-        </div>
-        <div className="template-preview-frame">
-          <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{
-            seo: { title: "", description: "" }, username: "snoozer-preview", display_name: "Your name",
-            bio: "A little space on the internet that feels like you.", theme: template.theme,
-            indexable: false, avatar: null, appearance: template.appearance, blocks: [],
-            pageLayout: { version: 1, items: [] }, gallery: [], badges: [], widgets: defaultProfileWidgets,
-            links: [{ label: "Your website", url: "https://example.com/" }], sections: template.sections,
-          }}/>
-        </div>
-        <Link className="button primary" href={templateHref(template.id)}>Customise this design <span aria-hidden="true">↗</span></Link>
-      </li>)}
-    </ul>
-    {pageCount > 1 && <nav className="template-pagination" aria-label="Template pages">
-      <Link className={"button" + (page === 1 ? " is-disabled" : "")} aria-disabled={page === 1}
-        tabIndex={page === 1 ? -1 : undefined} href={queryForPage(Math.max(1, page - 1))}>Previous</Link>
-      <span className="muted">Page {page} / {pageCount}</span>
-      <Link className={"button" + (page === pageCount ? " is-disabled" : "")} aria-disabled={page === pageCount}
-        tabIndex={page === pageCount ? -1 : undefined} href={queryForPage(Math.min(pageCount, page + 1))}>Next</Link>
-    </nav>}
+    <header className="studio-page-heading"><div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
+      <p className="muted">Browse Snoozer’s original designs, manage favourites and recent use, or submit a safe community template.</p>
+      <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{community.length}</strong> approved community designs</span></div></div>
+      <Link className="button primary" href={selected?"/studio/builder?profile="+encodeURIComponent(selected):"/studio/builder"}>Open Page Builder ↗</Link></header>
+    <nav className="studio-template-tabs" aria-label="Template sections">{[["library","Template Library"],["favorites","Favourite Templates"],["recent","Last Used"],["uploads","My Uploads"],["community","Community"],["create","Create Template"]].map(([id,label])=><Link key={id} aria-current={tab===id?"page":undefined} className={"button small"+(tab===id?" is-active":"")} href={`/studio/templates?tab=${id}${profileQuery}`}>{label}</Link>)}</nav>
+    {params.submitted==="1"&&<p className="message" role="status">Your template was submitted for moderation. It will appear in Community after approval.</p>}
+    {params.reported==="1"&&<p className="message" role="status">Your report was submitted for review.</p>}
+    {params.error&&<p className="message error" role="alert">We couldn’t complete that template action. Refresh and try again.</p>}
+    {tab==="uploads"&&<section className="studio-dashboard-panel"><h2>My submissions</h2>{uploads.length?<ul>{uploads.map((item)=><li key={item.id}><strong>{item.title}</strong> · {item.status} <span className="muted">{item.description}</span></li>)}</ul>:<p className="muted">You have not submitted any community templates yet.</p>}</section>}
+    {tab==="community"&&<section className="studio-dashboard-panel"><h2>Community templates</h2><form action="/studio/templates" method="get" className="studio-template-search"><input type="hidden" name="tab" value="community"/>{selected&&<input type="hidden" name="profile" value={selected}/>}<label>Search community designs<input type="search" name="community_q" maxLength={80} defaultValue={communityQuery} placeholder="Search titles and descriptions"/></label><label>Sort by<select name="community_sort" defaultValue={communitySort}><option value="newest">Newest</option><option value="popular">Most used</option></select></label><button className="button small" type="submit">Search</button></form>{communityVisible.length?<div className="studio-community-template-grid">{communityVisible.map((item)=><article className="studio-community-template" key={item.id}>
+      <p className="eyebrow">COMMUNITY · MODERATED</p><h3>{item.title}</h3><p className="muted">{item.description}</p><small className="muted">{item.usage_count.toLocaleString("en-GB")} uses</small>
+      <form action={useStudioTemplate}><input type="hidden" name="template" value={item.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form>
+      <form action={setTemplateFavorite}><input type="hidden" name="template" value={item.id}/><input type="hidden" name="favorite" value={favorites.includes(item.id)?"false":"true"}/><button className="button small" type="submit">{favorites.includes(item.id)?"★ Favourite":"☆ Favourite"}</button></form>
+      <details><summary>Report this template</summary><form action={reportCommunityTemplate}><input type="hidden" name="template" value={item.id}/><label>Reason<input name="reason" required minLength={8} maxLength={500}/></label><button className="button small" type="submit">Send report</button></form></details>
+    </article>)}</div>:<p className="muted">{communityListing.success?(communityListing.data.total>0?"No templates on this page.":communityQuery?"No community templates match this search.":"No community templates have been approved yet. Submissions are checked before they appear here."):"Community templates could not be loaded right now."}</p>}{communityListing.success&&communityPageCount>1&&<nav className="template-pagination" aria-label="Community template pages">{communityPage>1&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage-1}`}>Previous</Link>}<span className="muted">Page {communityPage} of {communityPageCount}</span>{communityPage<communityPageCount&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage+1}`}>Next</Link>}</nav>}</section>}
+    {tab==="create"&&<section className="studio-dashboard-panel"><h2>Create a community template</h2>{!selected?<p className="muted">Choose a profile first, then save its design settings as a template.</p>:<form action={submitCommunityTemplate} className="studio-template-create-form">
+      <input type="hidden" name="profile" value={selected}/><p className="muted">Only theme, appearance, and sections are shared. Your name, bio, links, avatar, gallery, widgets, embeds, and private data stay out of the template. Community templates are free and reviewed before publication.</p>
+      <label>Title<input name="title" required minLength={2} maxLength={60}/></label><label>Description<input name="description" maxLength={280}/></label><button className="button primary" type="submit">Submit for review</button>
+    </form>}</section>}
+    {(tab==="library"||tab==="favorites"||tab==="recent")&&<>
+      <form key={JSON.stringify(filters)+tab} action="/studio/templates" method="get" className="template-filters"><input type="hidden" name="tab" value={tab}/>{selected&&<input type="hidden" name="profile" value={selected}/>}
+        <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, terminal..."/></label>
+        <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map((c)=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+        <label>Colour treatment<select name="palette" defaultValue={filters.palette}><option value="all">All treatments</option>{templatePalettes.map((p)=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
+        <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map((l)=><option key={l} value={l}>{layoutLabels[l]}</option>)}</select></label>
+        <button className="button" type="submit">Filter templates</button>{active&&<Link className="text-link" href={clearHref}>Clear filters</Link>}
+      </form>
+      {communityActivity.length>0&&<section className="studio-dashboard-panel"><h2>Community designs</h2><div className="studio-community-template-grid">{communityActivity.map((item)=><article className="studio-community-template" key={item.id}><p className="eyebrow">COMMUNITY</p><h3>{item.title}</h3><p className="muted">{item.description}</p><small className="muted">{item.usage_count.toLocaleString("en-GB")} uses</small><form action={useStudioTemplate}><input type="hidden" name="template" value={item.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form></article>)}</div></section>}
+      <div className="template-results-heading"><p className="muted" role="status">Showing {templates.length?start+1:0}–{Math.min(start+templatePageSize,templates.length)} of {templates.length} matching designs</p><p className="muted">Page {page} of {pageCount}</p></div>
+      {templates.length===0&&communityActivity.length===0&&<EmptyState title={tab==="favorites"?"No favourite templates yet":tab==="recent"?"No recently used templates":"No matching designs"} description={tab==="library"?"Try another search or remove one of your filters.":"Save or use a design to see it here."}><Link className="button" href={clearHref}>Browse designs</Link></EmptyState>}
+      <ul className="template-grid">{visible.map((template)=><li className="template-item stack" key={template.id}>
+        <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
+        <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={{seo:{title:"",description:""},username:"snoozer-preview",display_name:"Your name",bio:"A little space on the internet that feels like you.",theme:template.theme,indexable:false,avatar:null,appearance:template.appearance,blocks:[],pageLayout:{version:1,items:[]},gallery:[],badges:[],widgets:defaultProfileWidgets,links:[{label:"Your website",url:"https://example.com/"}],sections:template.sections}}/></div>
+        <div className="studio-template-card-actions"><Link className="button primary" href={templateHref(template.id)}>Customise this design <span aria-hidden="true">↗</span></Link>
+          <form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button" type="submit">Use Template</button></form>
+          <form action={setTemplateFavorite}><input type="hidden" name="template" value={template.id}/><input type="hidden" name="favorite" value={favorites.includes(template.id)?"false":"true"}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button small" type="submit">{favorites.includes(template.id)?"★ Favourite":"☆ Favourite"}</button></form></div>
+      </li>)}</ul>
+      {pageCount>1&&<nav className="template-pagination" aria-label="Template pages"><Link className={"button"+(page===1?" is-disabled":"")} aria-disabled={page===1} tabIndex={page===1?-1:undefined} href={queryForPage(Math.max(1,page-1))}>Previous</Link><span className="muted">Page {page} / {pageCount}</span><Link className={"button"+(page===pageCount?" is-disabled":"")} aria-disabled={page===pageCount} tabIndex={page===pageCount?-1:undefined} href={queryForPage(Math.min(pageCount,page+1))}>Next</Link></nav>}
+    </>}
   </main>;
 }

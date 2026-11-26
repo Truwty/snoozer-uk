@@ -62,7 +62,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
+    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -371,6 +371,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       { campaign, label: "Newsletter", source: "email", device: "mobile", views: 1, clicks: 0 },
       { campaign: null, label: "No campaign", source: "email", device: "mobile", views: 1, clicks: 0 },
     ]));
+    expect((await db.query("select * from public.get_my_profile_device_views_7d($1)", [profile])).rows)
+      .toEqual([{ device: "mobile", views: 2 }]);
     await db.query("select public.set_analytics_campaign_active($1,$2,false)", [profile, campaign]);
     await act("service_role");
     await record(campaign!, alice);
@@ -1941,7 +1943,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
         effect: "#22d3ee", gradientStart: "#111827", gradientEnd: "#4c1d95",
       },
       font: "mono", gradientEnabled: true, opacity: 65, blur: 14,
-      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true,
+      monochromeIcons: true, animatedTitle: true, usernameGlow: true, socialGlow: true, badgeGlow: true, swapBoxColors: true,
     };
     await write(5, false, custom);
     expect(await draft()).toMatchObject({ appearance: custom });
@@ -1949,6 +1951,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     expect(await published("appearance-alice")).toMatchObject({ appearance: custom });
     await expect(write(7, false, { ...custom, colors: { background: "red" } })).rejects.toMatchObject({ code: "22023" });
     await expect(write(7, false, { ...custom, blur: 25 })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(7, false, { ...custom, swapBoxColors: "yes" })).rejects.toMatchObject({ code: "22023" });
 
     const templated = { ...custom, templateStyle: "terminal" };
     await write(7, false, templated);
@@ -1959,6 +1962,13 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       .rejects.toMatchObject({ code: "22023" });
     await expect(write(9, false, { ...templated, templateStyle: { injected: true } }))
       .rejects.toMatchObject({ code: "22023" });
+    const location = { ...templated, location: "Bristol, UK", showLocation: true };
+    await write(9, false, location);
+    expect(await draft()).toMatchObject({ appearance: location });
+    await write(10, true, location);
+    expect(await published("appearance-alice")).toMatchObject({ appearance: location });
+    await expect(write(11, false, { ...location, location: "Bristol\nUK" })).rejects.toMatchObject({ code: "22023" });
+    await expect(write(11, false, { ...location, location: "x".repeat(81) })).rejects.toMatchObject({ code: "22023" });
   });
 
   it("publishes a selected gallery background and restores it with its gallery image", async () => {
@@ -2315,11 +2325,66 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("anon");
     expect(await result("select public.resolve_profile_alias('second-alias') as value")).toBeNull();
     await act("authenticated", alice);
-    expect(await result("select public.list_my_aliases($1) as value", [id])).toMatchObject({ limit: 0, used: 1, items: expect.arrayContaining([{ name: "second-alias", expiresAt: expect.any(String), state: "plan-limit" }]) });
+    expect(await result("select public.list_my_aliases($1) as value", [id])).toMatchObject({ limit: 0, used: 1, items: expect.arrayContaining([{ name: "second-alias", expiresAt: expect.any(String), isUsernameRedirect: false, state: "plan-limit" }]) });
     await db.query("select public.delete_profile($1,1,'alias-alice')", [id]);
     expect(await result("select public.username_available('second-alias') as value")).toBe(false);
     await db.exec("reset role");
     expect(await result("select profile_id is null and retired_at is not null as value from snoozer.profile_aliases where name='second-alias'")).toBe(true);
+  });
+
+  it("renames a profile transactionally and keeps its former public address as a permanent redirect", async () => {
+    await act("authenticated", alice);
+    await claim("name-before");
+    const id = (await draft() as { profile_id: string }).profile_id;
+    const uid = await result<number>("select public.get_my_profile_uid($1) as value", [id]);
+    expect(uid).toBeGreaterThan(0);
+    await expect(db.query("select public.get_my_profile_uid($1)", ["00000000-0000-4000-8000-000000000002"]))
+      .rejects.toMatchObject({ code: "42501" });
+    await save(0, "Renamed profile", [], true);
+    const rename = (profile: string, name: string) => result("select public.rename_my_profile($1,$2) as value", [profile, name]);
+    await expect(rename(id, "bad_name")).rejects.toMatchObject({ code: "22023" });
+    await expect(rename("00000000-0000-4000-8000-000000000002", "name-other")).rejects.toMatchObject({ code: "42501" });
+    await expect(rename(id, "studio")).rejects.toMatchObject({ code: "23505" });
+
+    expect(await rename(id, "name-after")).toEqual({ oldUsername: "name-before", username: "name-after" });
+    expect(await result("select public.get_my_profile_uid($1) as value", [id])).toBe(uid);
+    expect(await result("select public.username_available('name-before') as value")).toBe(false);
+    expect(await result("select public.username_available('name-after') as value")).toBe(false);
+    await act("anon");
+    expect(await result("select public.resolve_public_address('name-before') as value")).toBe("name-after");
+    expect(await result("select public.published_profile_exists('name-before') as value")).toBe(true);
+    expect(await published("name-before")).toMatchObject({ username: "name-after", display_name: "Renamed profile" });
+    await act("authenticated", alice);
+    expect(await result("select public.list_my_aliases($1) as value", [id])).toMatchObject({
+      used: 0, items: expect.arrayContaining([{ name: "name-before", expiresAt: expect.any(String), isUsernameRedirect: true, state: "redirect" }]),
+    });
+    await expect(db.query("select public.manage_profile_alias($1,'name-before','retire')", [id]))
+      .rejects.toMatchObject({ code: "42501" });
+    await expect(rename(id, "name-again")).rejects.toMatchObject({ code: "P1009" });
+    expect(await result("select public.username_available('name-again') as value")).toBe(true);
+  });
+
+  it("stores marketing email consent behind verified owner-only RPCs", async () => {
+    await act("authenticated", alice);
+    expect(await result("select public.get_my_marketing_preference() as value")).toMatchObject({ emailOptIn: false, consentUpdatedAt: null });
+    expect(await result("select public.set_my_marketing_preference(true) is not null as value")).toBe(true);
+    expect(await result("select public.get_my_marketing_preference() as value")).toMatchObject({ emailOptIn: true, consentUpdatedAt: expect.any(String) });
+    const sessionId = "00000000-0000-4000-8000-000000000099";
+    await db.exec("reset role");
+    await db.query("insert into auth.sessions(id,user_id) values ($1,$2)", [sessionId, alice]);
+    await act("authenticated", alice);
+    await db.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ session_id: sessionId })]);
+    expect(await result("select public.my_extended_account_archive() as value")).toMatchObject({
+      profiles: [], profile_aliases: [], custom_profile_badges: [], marketing_preferences: { email_opt_in: true, consent_updated_at: expect.any(String) },
+    });
+    await expect(db.query("select * from snoozer.account_marketing_preferences")).rejects.toMatchObject({ code: "42501" });
+    await act("anon");
+    await expect(result("select public.get_my_marketing_preference() as value")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", unverified);
+    await expect(result("select public.set_my_marketing_preference(false) as value")).rejects.toMatchObject({ code: "42501" });
+    await act("authenticated", alice);
+    expect(await result("select public.set_my_marketing_preference(false) is not null as value")).toBe(true);
+    expect(await result("select public.get_my_marketing_preference() as value")).toMatchObject({ emailOptIn: false });
   });
 
   it("activates only the frozen scheduled version, retaining newer drafts and idempotent due processing", async () => {
@@ -2491,6 +2556,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const appearance = (effects: unknown) => JSON.stringify({ density: "balanced", corners: "soft", effects });
     await db.exec("reset role");
     expect(await result("select snoozer.valid_profile_effects($1::jsonb) as value", [JSON.stringify(effect)])).toBe(true);
+    for (const text of ["typewriter", "rainbow", "fuzzy", "shuffle"]) {
+      expect(await result("select snoozer.valid_profile_effects($1::jsonb) as value", [JSON.stringify({ ...effect, text })])).toBe(true);
+    }
     expect(await result("select snoozer.valid_profile_effects($1::jsonb) as value", [JSON.stringify({ ...effect, script: "alert(1)" })])).toBe(false);
     await act("authenticated", alice);
     await claim("effect-sql-check");
@@ -2507,6 +2575,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await db.query("insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at) values ($1,'plus',1,'staff','effects-plus',now()-interval '1 minute',now()+interval '1 day')", [alice]);
     await act("authenticated", alice);
     await saveEffects(1, effect);
+    await saveEffects(2, { ...effect, background: "none", border: "none", text: "rainbow" });
     expect(await result("select public.published_effect_tier($1) as value", ["effect-sql-check"])).toBe("plus");
 
     await db.exec("reset role");
@@ -2946,6 +3015,8 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     `);
 
     await db.query("insert into snoozer.platform_owners(owner_id) values($1)", [alice]);
+    await db.query(`insert into snoozer.entitlement_grants(owner_id,plan,plan_version,source,source_ref,starts_at,expires_at)
+      values($1,'plus',1,'staff','custom-badge-test',now(),now()+interval '2 hours')`, [alice]);
 
     // Verify that assigning the Owner role grants the catalogue immediately,
     // before the account calls the badge RPC or opens the badge manager.
@@ -2987,11 +3058,46 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const publicProfile = await published("owner-badge-visibility");
     expect((publicProfile as { badges: Array<{ slug: string }> }).badges.map((badge) => badge.slug)).toEqual(["profile-claimed"]);
 
+    await act("authenticated", alice);
+    await result(
+      "select public.set_my_profile_badge_visibility($1,array['one-of-one','profile-claimed']::text[]) as value",
+      [ownerProfile],
+    );
+    await act("anon");
+    const orderedProfile = await published("owner-badge-visibility");
+    expect((orderedProfile as { badges: Array<{ slug: string }> }).badges.map((badge) => badge.slug)).toEqual(["one-of-one", "profile-claimed"]);
+
+    await act("authenticated", alice);
+    expect((await result<{ quotas:{customBadges:number} }>("select public.get_my_plan() as value")).quotas.customBadges).toBe(20);
+    const customIds = [] as string[];
+    for (let index=0; index<20; index++) {
+      const title = index===0 ? "My star" : index===1 ? "My wave" : index===2 ? "My spark" : `Badge ${index+1}`;
+      customIds.push(await result<string>("select public.create_my_custom_badge($1,$2,'Personal badge','✹','#73e3bd') as value", [ownerProfile,title]));
+    }
+    await expect(result("select public.create_my_custom_badge($1,'Too many','','✹','#73e3bd') as value", [ownerProfile]))
+      .rejects.toMatchObject({ code: "P1104" });
+    await result("select public.update_my_custom_badge($1,$2,'Star badge','Updated details','✹','#e5ab51') as value", [ownerProfile,customIds[0]]);
+    await expect(result("select public.list_my_custom_badges($1) as value", [ownerProfile]))
+      .resolves.toHaveLength(20);
+    await result("select public.set_my_custom_badge_visibility($1,$2::uuid[]) as value", [ownerProfile,[customIds[1],customIds[0]]]);
+    const customImageId = "70000000-0000-4000-8000-000000000007";
+    await result("select public.set_my_custom_badge_artwork($1,$2,$3) as value", [ownerProfile,customIds[0],customImageId]);
+    await act("anon");
+    expect(await result("select public.profile_badge_artwork($1) as value", [customIds[0]])).toBe(`${alice}/${customImageId}.webp`);
+    const customPublic = await published("owner-badge-visibility");
+    expect((customPublic as { badges: Array<{ slug:string;category:string;icon:string;name:string;color:string }> }).badges.filter((badge) => badge.category === "custom")).toEqual([
+      expect.objectContaining({ slug:`custom-${customIds[1]}`,category:"custom",icon:"✹",name:"My wave" }),
+      expect.objectContaining({ slug:`custom-${customIds[0]}`,category:"custom",icon:"✹",name:"Star badge",color:"#e5ab51" }),
+    ]);
+
     await act("authenticated", bob);
+    expect(await result("select public.profile_badge_artwork($1) as value", [customIds[2]])).toBeNull();
     await expect(result(
       "select public.set_my_profile_badge_visibility($1,array['profile-claimed']::text[]) as value",
       [ownerProfile],
     )).rejects.toMatchObject({ code: "P0002" });
+    await expect(result("select public.delete_my_custom_badge($1,$2) as value", [ownerProfile,customIds[0]]))
+      .rejects.toMatchObject({ code: "P0002" });
 
     await db.exec("reset role");
     await db.query(`
@@ -3003,6 +3109,67 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       "select public.get_my_profile_badges($1) as value", [ownerProfile],
     );
     expect(refreshed?.earned.map((badge) => badge.slug)).toContain("owner-catalog-trigger");
+  });
+
+  it("keeps template favourites and history private and gates community templates behind moderation", async () => {
+    await act("authenticated", alice);
+    await claim("template-owner");
+    const profile=(await draft() as {profile_id:string}).profile_id;
+    const key="obsidian-nocturne";
+    await result("select public.set_my_template_favorite($1,true) as value",[key]);
+    await result("select public.record_my_template_use($1) as value",[key]);
+    expect(await result("select public.get_my_template_activity() as value")).toMatchObject({favorites:[key],recent:[key],uploads:[],community:[]});
+    await expect(result("select public.record_my_template_use('not-a-template') as value"))
+      .rejects.toMatchObject({code:"P0002"});
+    const config={theme:"lagoon",appearance:{layout:"centred"},sections:[]};
+    await expect(db.query("select public.submit_community_template($1,'Invalid','', $2::jsonb)",[profile,JSON.stringify({...config,script:"alert(1)"})]))
+      .rejects.toMatchObject({code:"22023"});
+    const id=await result<string>("select public.submit_community_template($1,'Community design','A safe declarative profile design.',$2::jsonb) as value",[profile,JSON.stringify(config)]);
+    expect(await result("select public.get_community_template($1) as value",[id])).toMatchObject({status:"pending",config});
+    await act("authenticated",bob);
+    expect(await result("select public.get_community_template($1) as value",[id])).toBeNull();
+    await db.exec("reset role");
+    await db.query("update snoozer.community_templates set status='approved',reviewed_at=now() where id=$1",[id]);
+    await act("anon");
+    expect(await result("select public.get_community_template($1) as value",[id])).toMatchObject({status:"approved",config});
+    await act("authenticated",bob);
+    await result("select public.set_my_template_favorite($1,true) as value",[id]);
+    await result("select public.record_my_template_use($1) as value",[id]);
+    expect(await result("select public.get_my_template_activity() as value")).toMatchObject({favorites:[id],recent:[id]});
+    expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
+      .community).toContainEqual(expect.objectContaining({id,usage_count:1}));
+    await result("select public.record_my_template_use($1) as value",[id]);
+    expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
+      .community).toContainEqual(expect.objectContaining({id,usage_count:2}));
+    await expect(result<{items:Array<{id:string;usage_count:number}>;total:number;page:number;pageCount:number}>(
+      "select public.list_community_templates($1,'popular',1) as value",["Community"]
+    )).resolves.toMatchObject({total:1,page:1,pageCount:1,items:[expect.objectContaining({id,usage_count:2})]});
+    await expect(result("select public.list_community_templates('', 'invalid', 1) as value"))
+      .rejects.toMatchObject({code:"22023"});
+    await result("select public.report_community_template($1,'Please review this template.') as value",[id]);
+    await expect(result("select public.report_community_template($1,'Please review this template.') as value",[id]))
+      .rejects.toMatchObject({code:"23505"});
+  });
+
+  it("keeps Image Host text pastes owner-scoped and serves public content as plain text only", async () => {
+    await act("authenticated",alice);
+    const paste=await result<string>("select public.create_my_image_host_text_paste('Build notes','hello <script>blocked by content type</script>',false) as value");
+    expect(await result("select public.list_my_image_host_text_pastes() as value")).toMatchObject([
+      expect.objectContaining({id:paste,title:"Build notes",is_public:false}),
+    ]);
+    await expect(result("select public.create_my_image_host_text_paste('Too large',$1,false) as value",["x".repeat(16385)]))
+      .rejects.toMatchObject({code:"22023"});
+    await act("authenticated",bob);
+    expect(await result("select public.update_my_image_host_text_paste($1,'Hijack','no',true) as value",[paste])).toBe(false);
+    expect(await result("select public.delete_my_image_host_text_paste($1) as value",[paste])).toBe(false);
+    await act("authenticated",alice);
+    await result("select public.update_my_image_host_text_paste($1,'Build notes','plain content',true) as value",[paste]);
+    await act("anon");
+    expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toMatchObject({title:"Build notes",body:"plain content"});
+    await act("authenticated",alice);
+    await result("select public.delete_my_image_host_text_paste($1) as value",[paste]);
+    await act("anon");
+    expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toBeNull();
   });
 
 });

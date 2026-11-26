@@ -9,7 +9,7 @@ describe("Studio navigation", () => {
     ]);
     expect(studioNavigationGroups[1].label).toBe("Main");
     expect(studioNavigationGroups[1].items.map((item) => item.label)).toEqual([
-      "Customize", "Links", "Premium", "Image Host", "Templates",
+      "Customize", "Links", "Premium", "Image Host", "Profile Gallery", "Templates",
     ]);
   });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyticsCsv, dailyAnalytics, linkAnalytics, linkAnalyticsCsv, receiveAnalytics } from "../src/lib/analytics";
+import { analyticsCsv, analyticsRangeStart, dailyAnalytics, linkAnalytics, linkAnalyticsCsv, parseAnalyticsRange, receiveAnalytics } from "../src/lib/analytics";
 
 const origin = "https://snoozer.uk";
 const event = { username: "creator", kind: "view", consent: true, id: "00000000-0000-4000-8000-000000000011" };
@@ -9,6 +9,14 @@ function request(body: unknown = event, headers: Record<string, string> = {}) {
 }
 
 describe("consent-aware analytics boundary", () => {
+  it("parses supported dashboard ranges and uses inclusive UTC date windows", () => {
+    expect(parseAnalyticsRange(["3d", "all"])).toBe("3d");
+    expect(parseAnalyticsRange("unsupported")).toBe("7d");
+    const now = new Date("2026-11-26T23:45:00.000Z");
+    expect(analyticsRangeStart("3d", now)).toBe("2026-11-24");
+    expect(analyticsRangeStart("7d", now)).toBe("2026-11-20");
+    expect(analyticsRangeStart("30d", now)).toBe("2026-10-28");
+  });
   it("binds creator-host events to the profile served on that host", async () => {
     const record = vi.fn();
     expect((await receiveAnalytics(request(), origin, record, "another-creator")).status).toBe(403);

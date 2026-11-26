@@ -5,7 +5,7 @@ export const effectBackgrounds = ["none", "gradient", "aurora", "stars", "snow",
 export const effectParticles = ["none", "dust", "fireflies", "sparkles"] as const;
 export const effectLinks = ["none", "lift", "shine", "glow"] as const;
 export const effectBorders = ["none", "glow", "neon", "gradient"] as const;
-export const effectTexts = ["none", "typewriter", "shimmer", "glitch"] as const;
+export const effectTexts = ["none", "typewriter", "shimmer", "glitch", "rainbow", "fuzzy", "shuffle"] as const;
 export const effectInteractions = ["none", "tilt", "spotlight", "trail"] as const;
 export const effectPresets = ["none", "lagoon-dream", "night-sky", "frost", "cyber", "studio-nebula"] as const;
 

@@ -756,6 +756,9 @@ test("Studio builder adds, reorders, saves and publishes blocks across desktop a
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    await page.goto("/studio");
+    await expect(page.getByRole("heading", { name: "Visitor Devices", exact: true })).toBeVisible();
+    await expect(page.getByText("Recorded profile views across the last 7 UTC calendar days.", { exact: true })).toBeVisible();
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
 
@@ -914,7 +917,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const profileHref = (await editProfile.getAttribute("href"))!;
     expect(profileHref).toMatch(/^\/studio\/builder\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
-    await expect(page.getByRole("link", { name: "Image Host" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/gallery?"));
+    await expect(page.getByRole("link", { name: "Image Host" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/image-host?"));
     await page.getByRole("link", { name: "Premium" }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
@@ -1434,7 +1437,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Image Host" }).click();
+  await page.getByRole("link", { name: "Profile Gallery" }).click();
   await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 

@@ -15,6 +15,14 @@ describe("profile effects", () => {
     ]) expect(profileEffects.safeParse(tampered).success).toBe(false);
   });
 
+  it("allows the named typewriter, rainbow, fuzzy and shuffle title treatments", () => {
+    for (const text of ["typewriter", "rainbow", "fuzzy", "shuffle"] as const) {
+      const effect = { ...defaultEffects, enabled: true, text };
+      expect(profileEffects.safeParse(effect).success).toBe(true);
+      expect(effectsAllowed(effect, "plus")).toBe(true);
+    }
+  });
+
   it("respects free, Plus, Pro and Studio effect limits", () => {
     const gradient = { ...defaultEffects, enabled: true, background: "gradient" } as const;
     expect(effectsAllowed(gradient, "free")).toBe(true);

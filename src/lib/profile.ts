@@ -32,7 +32,7 @@ const profileCustomColours = z.strictObject({
 export const defaultAppearance = {
   density: "balanced", corners: "soft", layout: "centred", accent: "theme", entrance: "none",
   font: "system", gradientEnabled: false, opacity: 100, blur: 0,
-  monochromeIcons: false, animatedTitle: false, usernameGlow: false, socialGlow: false, badgeGlow: false,
+  monochromeIcons: false, animatedTitle: false, usernameGlow: false, socialGlow: false, badgeGlow: false, swapBoxColors: false,
 } as const;
 export const profileAppearance = z.strictObject({
   density: z.enum(profileDensities),
@@ -53,6 +53,9 @@ export const profileAppearance = z.strictObject({
   usernameGlow: z.boolean().optional(),
   socialGlow: z.boolean().optional(),
   badgeGlow: z.boolean().optional(),
+  swapBoxColors: z.boolean().optional(),
+  location: z.string().trim().max(80).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Location contains unsupported control characters.").optional(),
+  showLocation: z.boolean().optional(),
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 
@@ -119,7 +122,7 @@ export const publishedProfile = profileContent.extend({
   username,
   avatar: z.uuid().nullable(),
   gallery: z.array(galleryItem).max(galleryLimit).default([]),
-  badges: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), awarded_at:z.string() })).default([]),
+  badges: z.array(z.object({ slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), awarded_at:z.string(), color:z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), image_id:z.uuid().nullable().optional() })).default([]),
 });
 
 export const draftProfile = publishedProfile.extend({

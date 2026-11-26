@@ -2,11 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { StudioSidebar } from "@/components/studio-sidebar";
 import { StudioAccountControl } from "@/components/studio-account-control";
+import { StudioCommandPalette } from "@/components/studio-command-palette";
 import { readStudioDraft } from "@/lib/profiles-server";
 import "./studio-dashboard.css";
 import "./studio-dashboard-extra.css";
 import "./studio-video-fidelity.css";
 import "./studio-video-screens.css";
+import "./studio-command-palette.css";
 
 export default async function StudioLayout({ children }: { children: ReactNode }) {
   const draft = await readStudioDraft(undefined);
@@ -28,6 +30,7 @@ export default async function StudioLayout({ children }: { children: ReactNode }
           <strong>Snoozer Studio</strong>
         </div>
         <div className="studio-topbar-actions">
+          <StudioCommandPalette/>
           <span className={"studio-profile-state" + (published ? " is-live" : "")}>
             <i aria-hidden="true"/>{status}
           </span>
