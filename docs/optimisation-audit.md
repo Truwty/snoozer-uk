@@ -122,3 +122,16 @@ No index was added or removed during this audit. In particular:
 - Revisit owner/profile composite FK indexes only where query plans or cascade/delete costs demonstrate benefit.
 - Do not drop the duplicate-looking sandbox checkout key/primary-key index before confirming constraints, dependencies and the historical-data retention requirements.
 - Re-run index usage measurement after meaningful traffic or a sustained observation period.
+
+
+## Seven-day scheduled job reliability sample
+
+A direct read-only query of `cron.job_run_details` at 26 November 2026 04:35 UTC returned the following results:
+
+| Job | Schedule | Runs in last 7 days | Successful | Other statuses | Mean run duration |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Analytics cleanup | Every 5 minutes | 2,016 | 2,016 | 0 | 64.25 ms |
+| Creator retention | At :17 and :47 each hour | 305 | 305 | 0 | 35.54 ms |
+| Publications | Every minute | 10,080 | 10,080 | 0 | 46.99 ms |
+
+All three jobs were active and the latest completed runs were on 26 November. This is a healthy seven-day sample. No schedule frequency changes or job rewrites are justified by the current data. Preserve these values as the baseline and monitor failure rate, run duration and backlog as traffic grows.
