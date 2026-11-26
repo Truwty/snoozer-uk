@@ -479,6 +479,9 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
 
     await page.getByRole("link", { name: "Image Host", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
+    await expect(page.getByText("TEXT PASTES", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Snippets", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create text paste", exact: true })).toBeEnabled();
     await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
 
     await page.goto("/studio/customize");
