@@ -2450,7 +2450,6 @@ body:has(> .public-page[data-background-image="true"]) {
 }
 
 
-/* Achievement badge UI is temporarily disabled. */
 .owner-gifts-page { display:grid; align-content:start; gap:1rem; }
 .owner-gift-list { display:grid; gap:.6rem; }
 .owner-gift-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem; border:1px solid var(--line); background:rgba(255,255,255,.025); color:inherit; text-decoration:none; }
