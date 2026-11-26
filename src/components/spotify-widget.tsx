@@ -49,6 +49,7 @@ export function SpotifyWidget({
         loading="lazy"
         width="100%"
         height={isCompact ? 152 : 352}
+        referrerPolicy="strict-origin-when-cross-origin"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         allowFullScreen
       />
