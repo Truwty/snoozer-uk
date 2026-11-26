@@ -3,8 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { filterStudioNavigation } from "@/lib/studio-navigation";
+import { useEffect, useState } from "react";
+import { StudioCommandPalette } from "@/components/studio-command-palette";
+import { studioNavigationGroups } from "@/lib/studio-navigation";
 
 type Props = { pageHref?: string; pagePublished: boolean; accountFooter?: ReactNode };
 
@@ -12,22 +13,9 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedProfile = searchParams.get("profile");
-  const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [accountExpanded, setAccountExpanded] = useState(true);
-  const [moreExpanded, setMoreExpanded] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
-  const groups = useMemo(() => filterStudioNavigation(query), [query]);
-  const accountGroup = groups.find((group) => group.label === "Account");
-  const mainGroup = groups.find((group) => group.label === "Main");
-  const moreGroup = groups.find((group) => group.label === "More Snoozer tools");
-  const accountItems = accountGroup?.items ?? [];
-  const mainItems = mainGroup?.items ?? [];
-  const moreItems = moreGroup?.items ?? [];
-  const hasResults = Boolean(accountItems.length || mainItems.length || moreItems.length);
-  const moreActive = moreItems.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
-  const showMore = moreExpanded || moreActive || Boolean(query.trim());
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -44,6 +32,8 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
     ? pathname === "/studio"
     : pathname === href || pathname.startsWith(href + "/");
   const linkClass = (href: string) => "studio-sidebar-link" + (isActive(href) ? " is-active" : "");
+  const accountItems = studioNavigationGroups[0].items;
+  const mainItems = studioNavigationGroups[1].items;
 
   async function shareProfile() {
     if (!pageHref) return;
@@ -55,7 +45,7 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
     }
   }
 
-  function renderLink(item: (typeof moreItems)[number] | (typeof mainItems)[number] | (typeof accountItems)[number]) {
+  function renderLink(item: (typeof mainItems)[number] | (typeof accountItems)[number]) {
     return <Link key={item.href} href={hrefFor(item.href)} title={item.label}
       className={linkClass(item.href)} aria-current={isActive(item.href) ? "page" : undefined}
       onClick={() => setMobileOpen(false)}>
@@ -64,35 +54,23 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
     </Link>;
   }
 
-  return <aside className={"studio-sidebar" + (mobileOpen ? " is-mobile-open" : "") + (collapsed ? " is-collapsed" : "")}
+  return <aside className={"studio-sidebar" + (mobileOpen ? " is-mobile-open" : "")}
     aria-label="Studio navigation">
     <div className="studio-sidebar-brand-row">
       <Link href={hrefFor("/studio")} className="studio-sidebar-brand">
         <span className="studio-brand-mark" aria-hidden="true">☾</span>
         <span className="studio-brand-word">snoozer<small>STUDIO</small></span>
       </Link>
-      <div className="studio-sidebar-tools">
-        <button type="button" className="studio-collapse-menu" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-pressed={collapsed} onClick={() => setCollapsed((value) => !value)} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          <span aria-hidden="true">{collapsed ? "›" : "‹"}</span>
-        </button>
-        <button type="button" className="studio-mobile-menu" aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
-          aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)}>
-          {mobileOpen ? "×" : "☰"}
-        </button>
-      </div>
+      <button type="button" className="studio-mobile-menu" aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)}>
+        {mobileOpen ? "×" : "☰"}
+      </button>
     </div>
 
-    <label className="studio-sidebar-search">
-      <span aria-hidden="true">⌕</span>
-      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search features…" aria-label="Search Studio features" />
-      <kbd>Filter</kbd>
-    </label>
+    <div className="studio-sidebar-search"><StudioCommandPalette/></div>
 
     <nav className="studio-sidebar-nav" aria-label="Dashboard sections">
-      {!hasResults && <p className="studio-search-empty">No matching features.</p>}
-      {accountItems.length > 0 && <section className="studio-sidebar-group">
+      <section className="studio-sidebar-group">
         <button type="button" className={"studio-sidebar-group-trigger" + (accountExpanded ? " is-open" : "")}
           aria-expanded={accountExpanded} onClick={() => setAccountExpanded((open) => !open)}>
           <span className="studio-sidebar-icon" aria-hidden="true">◉</span>
@@ -100,17 +78,8 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
           <span className="studio-sidebar-chevron" aria-hidden="true">{accountExpanded ? "⌃" : "⌄"}</span>
         </button>
         {accountExpanded && <div className="studio-sidebar-subnav">{accountItems.map(renderLink)}</div>}
-      </section>}
-
+      </section>
       {mainItems.map(renderLink)}
-
-      {moreItems.length > 0 && <section className="studio-sidebar-group studio-sidebar-more-group">
-        <button type="button" className="studio-sidebar-more-toggle" aria-expanded={showMore}
-          onClick={() => setMoreExpanded((open) => !open)}>
-          <span>More Snoozer tools</span><span aria-hidden="true">{showMore ? "⌃" : "⌄"}</span>
-        </button>
-        {showMore && <div className="studio-sidebar-more-list">{moreItems.map(renderLink)}</div>}
-      </section>}
     </nav>
 
     <div className="studio-sidebar-footer">
@@ -125,8 +94,8 @@ export function StudioSidebar({ pageHref, pagePublished, accountFooter }: Props)
         {pageHref && pagePublished
           ? <Link className="studio-sidebar-page-button" href={pageHref} target="_blank" rel="noreferrer">
               <span aria-hidden="true">↗</span><span className="studio-nav-copy">My Page</span></Link>
-          : <Link className="studio-sidebar-page-button" href={hrefFor("/studio/builder")}>
-              <span aria-hidden="true">＋</span><span className="studio-nav-copy">Publish your page</span></Link>}
+          : <Link className="studio-sidebar-page-button" href={hrefFor("/studio/customize")}>
+              <span aria-hidden="true">＋</span><span className="studio-nav-copy">Customise your page</span></Link>}
         {pageHref && pagePublished && <button type="button" className="studio-sidebar-share-button" onClick={shareProfile}>
           <span aria-hidden="true">⌯</span><span className="studio-nav-copy">Share Your Profile</span></button>}
         {copyMessage && <span className="studio-sidebar-copy-message" role="status">{copyMessage}</span>}
