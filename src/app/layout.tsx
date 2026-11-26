@@ -4,10 +4,7 @@ import { siteUrl } from "@/lib/env";
 import { browserThemeColour } from "@/lib/tokens";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./styles.css";
-import "./homepage-immersive.css";
-import "./help-centre.css";
 
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: siteUrl(),
