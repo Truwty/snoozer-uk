@@ -5,7 +5,7 @@ Published profile pages use a focused, centred bio-page presentation. Studio pre
 ## Public presentation
 
 - A 576px maximum-width glass card with a translucent dark surface, 20px backdrop blur, rounded corners and a thin border.
-- Centred avatar, display name, existing owner/Discord badges, and a short typewriter-style bio. The typewriter effect respects reduced-motion preferences.
+- Centred avatar, display name, owner-verification and Discord-presence indicators, and a short typewriter-style bio. The typewriter effect respects reduced-motion preferences.
 - Recognised profile links appear as monochrome SVG brand icons with a subtle hover glow.
 - Sections, content blocks, non-Guestbook interactive widgets, the gallery and additional non-social links are tucked behind a minimal collapsed **More** disclosure. The first screen stays compact; the saved content remains available to visitors when expanded. The Guestbook is intentionally not rendered on public bio pages.
 - The public Report profile route remains available as a small fixed link.
