@@ -520,7 +520,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         </label>
         <p><Link className="text-link" href="/templates">Browse the full library of 120 templates ↗</Link></p>
         {template && <>
-          <p className="muted">{template.categoryLabel} · {template.description} Your links, widgets, badges, gallery and existing sections stay yours.</p>
+          <p className="muted">{template.categoryLabel} · {template.description} Your links, widgets, gallery and existing sections stay yours.</p>
           <div className="actions">
             <button type="button" className="button small primary" onClick={() => applyTemplate(false)}>Apply template design</button>
             {content.sections.length === 0 && <button type="button" className="button small"
