@@ -2753,3 +2753,27 @@ body:has(> .public-page[data-background-image="true"]) {
   .auth-password-reveal,.auth-password-reveal.is-visible { transition:none; transform:none; }
 }
 
+/* User-selected profile clips sit behind the profile content and never capture input. */
+.profile-card[data-background-video="true"] { background-image:none; }
+.profile-background-video {
+  position:absolute;
+  z-index:0;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  pointer-events:none;
+}
+.profile-card[data-background-video="true"]::after {
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  background:linear-gradient(160deg,rgba(5,8,12,.48),rgba(5,8,12,.62));
+  pointer-events:none;
+}
+.profile-inner { position:relative; z-index:2; }
+.profile-card[data-background-video="true"] .profile-effects-toggle { z-index:3; }
+
