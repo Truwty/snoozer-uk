@@ -537,7 +537,8 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
               <StudioAudioLibrary
                 profileId={saved.profile_id}
                 revision={saved.revision}
-                gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
+                gallery={previewGallery.map(({id,alt})=>({id,alt}))}
+                onAssetsChanged={refreshSaved}
                 onAddTrack={(track) => {
                   if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
                   set("links",[...content.links,{
