@@ -71,7 +71,15 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
   }
 
   function beginTouchDrag(event: TouchEvent<HTMLSpanElement>) {
-    if (drag.current || event.touches.length === 0) return;
+    if (event.touches.length === 0) return;
+    // Some touch emulators dispatch pointerdown before touchstart. Transfer
+    // the gesture to the TouchEvent path so pointercancel/lostcapture cannot
+    // discard the drop before touchend.
+    if (drag.current) {
+      window.cancelAnimationFrame(drag.current.frame);
+      drag.current = null;
+      setDropIndex(null);
+    }
     const touch = event.touches[0];
     const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
     const index = Number(card?.dataset.reorderIndex);
@@ -110,7 +118,7 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
 
   function finishDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
     const active = drag.current;
-    if (!active || active.pointer !== event.pointerId) return;
+    if (!active || active.pointerType === "touch" || active.pointer !== event.pointerId) return;
     finishActiveDrag(active, commit);
   }
 
