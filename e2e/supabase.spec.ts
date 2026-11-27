@@ -864,7 +864,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
     await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
-    const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
+    const kofiLink = publicPage.getByRole("link", { name: "Support my projects · Ko-fi", exact: true });
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
 
