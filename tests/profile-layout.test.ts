@@ -29,7 +29,6 @@ describe("profile page layout", () => {
       { type: "section", index: 1 },
       { type: "links" },
       { type: "widgets" },
-      { type: "gallery" },
     ]);
   });
 
@@ -41,7 +40,6 @@ describe("profile page layout", () => {
       { type: "section", index: 0 },
       { type: "section", index: 1 },
       { type: "links" },
-      { type: "gallery" },
     ]);
   });
 
@@ -68,6 +66,23 @@ describe("profile page layout", () => {
       { type: "links" },
       { type: "widgets" },
       { type: "gallery" },
+    ]);
+  });
+
+  it("removes the legacy Gallery block from saved layouts", () => {
+    const legacy = normalizeProfilePageLayout({
+      version: 1,
+      items: [
+        { type: "section", index: 0 },
+        { type: "gallery" },
+        { type: "links" },
+      ],
+    }, content());
+    expect(legacy.items).toEqual([
+      { type: "section", index: 0 },
+      { type: "links" },
+      { type: "section", index: 1 },
+      { type: "widgets" },
     ]);
   });
 
