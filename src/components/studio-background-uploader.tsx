@@ -81,7 +81,7 @@ export function StudioBackgroundUploader({
         return;
       }
       const completed = await finishGalleryUpload(profileId, revision, started.id);
-      if ("error" in completed || !("image" in completed)) {
+      if ("error" in completed) {
         await discardGalleryUpload(profileId, revision, started.id);
         stagedId = undefined;
         setError(completed.error ?? "The background image could not be saved.");
