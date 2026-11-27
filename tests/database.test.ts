@@ -3307,10 +3307,18 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
       "update snoozer.image_host_purchases set status='active',verified_at=now() where id=$1",
       [purchase],
     );
-    expect(await result<number>(
-      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
-      [profile],
-    )).toBe(1);
+    const awardState=await result<{
+      activePurchases:number;catalogueEntries:number;ownerProfiles:number;triggerCount:number;earnedRows:number;
+    }>(`select jsonb_build_object(
+      'activePurchases',(select count(*)::integer from snoozer.image_host_purchases where owner_id=$1 and status='active' and verified_at is not null),
+      'catalogueEntries',(select count(*)::integer from snoozer.badge_catalog where slug='image-host-owner' and enabled),
+      'ownerProfiles',(select count(*)::integer from snoozer.profiles where owner_id=$1),
+      'triggerCount',(select count(*)::integer from pg_trigger where tgrelid='snoozer.image_host_purchases'::regclass and tgname='image_host_purchase_badges_refresh' and not tgisinternal),
+      'earnedRows',(select count(*)::integer from snoozer.profile_badges where profile_id=$2 and slug='image-host-owner' and revoked_at is null)
+    ) as value`,[alice,profile]);
+    expect(awardState).toMatchObject({
+      activePurchases:1,catalogueEntries:1,ownerProfiles:1,triggerCount:1,earnedRows:1,
+    });
 
     await db.query(
       "update snoozer.image_host_purchases set status='refunded' where id=$1",
