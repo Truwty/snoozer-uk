@@ -15,6 +15,8 @@ import { sessionClient } from "@/lib/supabase";
 import { accountPlan } from "@/lib/entitlements";
 import { freeProfileLinkLimit, maximumProfileLinkLimit } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
+import { imageHostLiveOffers } from "@/lib/image-host-live-service";
+import { z } from "zod";
 
 type Mode = "builder" | "customize" | "links" | "widgets" | "settings";
 type Search = StudioProfileQuery & { template?: string; restored?: string };
@@ -34,11 +36,13 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
   if (!draft) redirect("/studio");
   const selected = params.profile === undefined ? undefined : draft.profile_id;
   const client = await sessionClient();
-  const [response, aliasResponse, scheduleResponse, domainResponse] = await Promise.all([
+  const [response, aliasResponse, scheduleResponse, domainResponse,imageHostStatusResponse,imageHostOffers] = await Promise.all([
     client.rpc("get_my_plan"),
     client.rpc("list_my_aliases", { p_profile: draft.profile_id }),
     client.rpc("get_my_publication_schedule", { p_profile: draft.profile_id }),
     client.rpc("list_my_domains", { p_profile: draft.profile_id }),
+    client.rpc("get_my_image_host_status"),
+    imageHostLiveOffers(),
   ]);
   const aliases = aliasInventory.safeParse(aliasResponse.data);
   const domains = domainInventory.safeParse(domainResponse.data);
@@ -49,6 +53,9 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
   const config = modeConfig[mode];
   const galleryHref = studioHref("/studio/gallery", selected);
   const domainConfig = domainProviderConfig();
+  const imageHostAccess = z.object({active:z.boolean()}).safeParse(imageHostStatusResponse.data);
+  const imageHostActive = !imageHostStatusResponse.error&&imageHostAccess.success&&imageHostAccess.data.active;
+  const imageHostOffer = imageHostOffers[0]??null;
 
   return <main className="shell studio-shell studio-editor-page">
     <header className="studio-page-heading">
@@ -62,6 +69,7 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
     <Editor key={draft.profile_id + ":" + mode} draft={draft}
       effectTier={plan.success ? plan.data.plan : "free"}
       linkLimit={linkLimit} galleryHref={galleryHref}
+      imageHostOffer={imageHostOffer} imageHostActive={imageHostActive}
       initialTemplateId={template?.id ?? ""} initialTab={config.tab} panelOnly={config.panelOnly}
       schedule={schedule.success && !scheduleResponse.error
         ? { current: schedule.data.schedule, automatic: schedule.data.automatic, enabled: plan.success && plan.data.capabilities.scheduledPublishing }
