@@ -5,6 +5,17 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { studioNavigationGroups } from "@/lib/studio-navigation";
 
+const accountActions = [
+  { label:"Change display name", href:"/studio/builder", icon:"✎", keywords:"profile name edit", group:"Profile" },
+  { label:"Open Alias Manager", href:"/studio/account#account-aliases", icon:"⌁", keywords:"alias manager username alternate names", group:"Account" },
+  { label:"Email", href:"/studio/account#account-email", icon:"✉", keywords:"email address change mail", group:"Account" },
+  { label:"Multi-factor authentication", href:"/studio/account#account-mfa", icon:"◇", keywords:"MFA authenticator two factor security", group:"Security" },
+  { label:"Session Management", href:"/studio/account#account-sessions", icon:"▣", keywords:"devices sign out revoke sessions security", group:"Security" },
+  { label:"Login with Google", href:"/studio/account#account-google", icon:"G", keywords:"connect link unlink identity provider", group:"Connections" },
+  { label:"Login with Discord", href:"/studio/account#account-discord", icon:"◉", keywords:"connect link unlink identity provider discord", group:"Connections" },
+  { label:"Email Marketing", href:"/studio/account#account-email-marketing", icon:"✉", keywords:"marketing newsletter product updates preference", group:"Account" },
+] as const;
+
 export function StudioCommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -22,7 +33,8 @@ export function StudioCommandPalette() {
   }
   const items = useMemo(() => {
     const words = query.trim().toLocaleLowerCase("en-GB").split(/\s+/).filter(Boolean);
-    return studioNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label })))
+    const destinations=studioNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label })));
+    return [...destinations,...accountActions]
       .filter((item) => {
         const content = `${item.label} ${item.href} ${item.keywords} ${item.group}`.toLocaleLowerCase("en-GB");
         return words.every((word) => content.includes(word));
@@ -68,8 +80,14 @@ export function StudioCommandPalette() {
     }
   }
 
-  const hrefFor = (href: string) => profile && href.startsWith("/studio")
-    ? `${href}?profile=${encodeURIComponent(profile)}` : href;
+  const hrefFor = (href: string) => {
+    if(!profile||!href.startsWith("/studio"))return href;
+    const hashIndex=href.indexOf("#");
+    const base=hashIndex>=0?href.slice(0,hashIndex):href;
+    const hash=hashIndex>=0?href.slice(hashIndex):"";
+    const query=base.includes("?")?"&":"?";
+    return `${base}${query}profile=${encodeURIComponent(profile)}${hash}`;
+  };
 
   if (!open) return <button type="button" className="studio-command-trigger" onClick={() => {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
