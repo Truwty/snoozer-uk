@@ -6,14 +6,14 @@ import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
 import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
-import { rateStudioTemplate, setTemplateFavorite, useStudioTemplate } from "./actions";
+import { rateStudioTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
 import { z } from "zod";
 
 export const metadata = { title: "Template Library", robots: { index: false, follow: false } };
 type Search = StudioProfileQuery & {
   q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[];
   palette?:string|string[]; page?:string|string[]; tab?:string|string[]; error?:string|string[];
-  sort?:string|string[]; rated?:string;
+  sort?:string|string[]; rated?:string; submitted?:string;
 };
 const templateMetricSchema=z.array(z.object({
   template_key:z.string(),uses:z.coerce.number().int().nonnegative(),weekly_uses:z.coerce.number().int().nonnegative(),
@@ -49,16 +49,26 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
   const selected=params.profile===undefined?undefined:draft?.profile_id;
   const {client}=await requireAccount();
   const activityResponse=await client.rpc("get_my_template_activity");
-  const activity=z.object({favorites:z.array(z.string()),recent:z.array(z.string())}).safeParse(activityResponse.data);
+  const activity=z.object({
+    favorites:z.array(z.string()),
+    recent:z.array(z.string()),
+    uploads:z.array(z.object({
+      id:z.uuid(),title:z.string(),description:z.string(),
+      status:z.enum(["pending","approved","rejected"]),created_at:z.string(),
+    })),
+  }).safeParse(activityResponse.data);
   const favorites=activity.success?activity.data.favorites:[];
   const recent=activity.success?activity.data.recent:[];
-  const tabs=["library","favorites","recent"] as const;
+  const uploads=activity.success?activity.data.uploads:[];
+  const tabs=["library","favorites","recent","uploads","create"] as const;
   const requestedTab=typeof params.tab==="string"?params.tab:"library";
   const tab=(tabs as readonly string[]).includes(requestedTab)?requestedTab:"library";
+  const actionProfile=draft?.profile_id;
   const filters=templateFilters(params);
   const allTemplates=findTemplates(filters);
   const templates=tab==="favorites"?allTemplates.filter(item=>favorites.includes(item.id))
-    :tab==="recent"?recent.flatMap(id=>allTemplates.filter(item=>item.id===id)):allTemplates;
+    :tab==="recent"?recent.flatMap(id=>allTemplates.filter(item=>item.id===id))
+    :tab==="uploads"||tab==="create"?[]:allTemplates;
   const {page,pageCount,start}=getTemplatePage(params.page,templates.length);
   const visible=templates.slice(start,start+templatePageSize);
   const active=Boolean(filters.q||filters.theme!=="all"||filters.layout!=="all"||filters.category!=="all"||filters.palette!=="all");
@@ -102,18 +112,22 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     <header className="studio-page-heading">
       <div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
         <p className="muted">Browse profile designs, save favourites, rate templates and return to your recent choices.</p>
-        <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span></div>
+        <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
       </div>
-      <Link className="button primary" href={selected?"/studio/customize?profile="+encodeURIComponent(selected):"/studio/customize"}>Customise profile ↗</Link>
+      <div className="actions">
+        <Link className="button" href={"/studio/templates?tab=uploads"+profileQuery}>My Uploads</Link>
+        <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
+      </div>
     </header>
     <nav className="studio-template-tabs" aria-label="Template sections">
-      {[["library","Discover"],["favorites","Favourites"],["recent","Last Used"]].map(([id,label])=>
+      {[["library","Template Library"],["favorites","Favourite Templates"],["recent","Last Used Templates"],["uploads","My Uploads"]].map(([id,label])=>
         <Link key={id} aria-current={tab===id?"page":undefined} className={"button small"+(tab===id?" is-active":"")}
           href={"/studio/templates?tab="+id+profileQuery}>{label}</Link>)}
     </nav>
     {params.error&&<p className="message error" role="alert">We couldn’t complete that template action. Refresh and try again.</p>}
     {params.rated==="1"&&<p className="message" role="status">Your template rating has been saved.</p>}
-    <form key={JSON.stringify(filters)+tab} action="/studio/templates" method="get" className="template-filters">
+    {params.submitted==="1"&&<p className="message" role="status">Your template was submitted for review. It will appear in the community library after approval.</p>}
+    {tab!=="uploads"&&tab!=="create"&&<form key={JSON.stringify(filters)+tab} action="/studio/templates" method="get" className="template-filters">
       <input type="hidden" name="tab" value={tab}/>{selected&&<input type="hidden" name="profile" value={selected}/>}
       <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, terminal..."/></label>
       <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -121,8 +135,31 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
       <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map(item=><option key={item} value={item}>{layoutLabels[item]}</option>)}</select></label>
       <label>Sort<select name="sort" defaultValue={params.sort==="newest"?"newest":"popular"}><option value="popular">Popular</option><option value="newest">Newest</option></select></label>
       <button className="button" type="submit">Filter templates</button>{active&&<Link className="text-link" href={clearHref}>Clear filters</Link>}
-    </form>
+    </form>}
 
+    {tab==="uploads"&&<section className="template-community-section stack" aria-labelledby="my-template-uploads-title">
+      <div className="template-results-heading"><div><h2 id="my-template-uploads-title">My Uploads</h2><p className="muted">Templates you have submitted to the Snoozer community.</p></div><span className="muted">{uploads.length} / 10 submissions</span></div>
+      {uploads.length===0?<EmptyState title="No template uploads yet" description="Create a template from your current profile appearance and sections. Your private profile details are never included."><Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>Create Template</Link></EmptyState>
+      :<ul className="studio-template-upload-list">{uploads.map(item=><li className="studio-dashboard-panel" key={item.id}>
+        <div><h3>{item.title}</h3><p className="muted">{item.description||"No description provided."}</p><small>Submitted {new Date(item.created_at).toLocaleDateString("en-GB")}</small></div>
+        <div className="actions"><span className={"studio-template-review-status is-"+item.status}>{item.status==="pending"?"Pending review":item.status==="approved"?"Approved":"Not approved"}</span>
+          {item.status==="approved"&&<Link className="button small" href={"/studio/templates/preview?template="+encodeURIComponent(item.id)}>Preview</Link>}</div>
+      </li>)}</ul>}
+    </section>}
+
+    {tab==="create"&&<section className="studio-dashboard-panel studio-template-submit-panel">
+      <div className="studio-panel-heading"><div><p className="eyebrow">COMMUNITY / CREATOR UPLOAD</p><h2>Create Template</h2><p className="muted">Share your profile design with other Snoozer creators.</p></div></div>
+      {actionProfile?<form action={submitCommunityTemplate} className="studio-template-create-form">
+        <input type="hidden" name="profile" value={actionProfile}/>
+        <p className="muted">Only your theme, appearance and text-section structure are shared. Your username, display name, biography, links, avatar, gallery, widgets, music and private account data stay private. Submissions are free and reviewed before appearing in the public library.</p>
+        <label>Template name<input name="title" required minLength={2} maxLength={60} placeholder="Give your design a name"/></label>
+        <label>Description<input name="description" maxLength={280} placeholder="What makes this design different?"/></label>
+        <button className="button primary" type="submit" disabled={uploads.length>=10}>Submit Template for Review</button>
+        {uploads.length>=10&&<p role="alert">You have reached the limit of 10 template submissions.</p>}
+      </form>:<EmptyState title="A profile is required" description="Claim a profile before creating a community template."><Link className="button" href="/studio">Open Studio</Link></EmptyState>}
+    </section>}
+
+    {tab!=="uploads"&&tab!=="create"&&<>
     <div className="template-results-heading">
       <p className="muted" role="status">Showing {templates.length?start+1:0}–{Math.min(start+templatePageSize,templates.length)} of {templates.length} matching designs</p>
       <p className="muted">Page {page} of {pageCount}</p>
@@ -166,7 +203,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
       <Link className={"button"+(page===pageCount?" is-disabled":"")} aria-disabled={page===pageCount} tabIndex={page===pageCount?-1:undefined} href={queryForPage(Math.min(pageCount,page+1))}>Next</Link>
     </nav>}
 
-    {community.length>0&&<section className="template-community-section stack">
+    {tab!=="uploads"&&tab!=="create"&&community.length>0&&<section className="template-community-section stack">
       <div className="template-results-heading"><div><h2>Community Templates</h2><p className="muted">Approved profile designs shared by Snoozer creators.</p></div>
         <span className="muted">{communityParsed.success?communityParsed.data.total:0} approved designs</span></div>
       <ul className="template-grid" aria-label="Community templates">
@@ -199,5 +236,6 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
         })}
       </ul>
     </section>}
+    </>}
   </main>;
 }
