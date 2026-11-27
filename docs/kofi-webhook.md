@@ -6,7 +6,7 @@ Snoozer stores only the message and transaction IDs, timestamps and amount in in
 
 ## Creator and platform support links
 
-In Studio, open Add Ko-fi support link, paste the direct HTTPS address for your Ko-fi profile and add it. Edit the link label and order in the Links section. The link follows the same draft, undo, publish and history workflow as other links. Visitors see Ko-fi in the link label and navigate there to make a payment. Set KOFI_PLATFORM_PROFILE_URL on the server to enable the separate platform support link in the home page footer.
+In Studio, open the profile editor and select **Links**. Under **Social profiles**, choose the **Support** category and select **Ko-fi**. Snoozer adds a normal profile link with the Ko-fi address prefilled; replace it with your direct profile URL and edit the link label as needed. Save the draft and publish it when ready. The link follows the same draft, undo, publish and history workflow as other profile links. Visitors navigate directly to the creator's Ko-fi page; creator payments do not pass through Snoozer. Set `KOFI_PLATFORM_PROFILE_URL` on the server to enable the separate platform support link in the home page footer.
 
 Creator links do not route payments through Snoozer. The platform donation webhook remains separate. Unclaimed platform donations can be queued for manual review below.
 
