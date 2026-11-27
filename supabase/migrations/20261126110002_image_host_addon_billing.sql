@@ -291,7 +291,7 @@ begin
     select 1 from snoozer.image_host_purchases
     where owner_id=p_owner and status='active' and verified_at is not null
   ) then
-    insert into snoozer.profile_badges(
+    insert into snoozer.profile_badges as existing(
       profile_id,slug,name,description,icon,category,rarity,source,award_reason
     )
     select p.id,badge.slug,badge.name,badge.description,badge.icon,
@@ -303,7 +303,7 @@ begin
       set revoked_at=null,awarded_at=now(),name=excluded.name,
           description=excluded.description,icon=excluded.icon,
           category=excluded.category,rarity=excluded.rarity
-      where snoozer.profile_badges.revoked_at is not null;
+      where existing.revoked_at is not null;
   else
     update snoozer.profile_badges b
       set revoked_at=coalesce(b.revoked_at,now())
@@ -333,7 +333,7 @@ end
 $function$;
 
 create trigger image_host_purchase_badges_refresh
-  after insert or update of status on snoozer.image_host_purchases
+  after insert or update on snoozer.image_host_purchases
   for each row execute function snoozer.refresh_image_host_badges_after_change();
 
 create trigger image_host_new_profile_badge_refresh
