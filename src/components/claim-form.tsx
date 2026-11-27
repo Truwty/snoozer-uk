@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useId, useState } from "react";
 import { claim, claimAdditional } from "@/app/studio/actions";
 import { initialState } from "@/lib/actions";
 import { canonicalUsername, username } from "@/lib/profile";
 import { ActionMessage } from "./action-message";
 
 export function ClaimForm({ additional = false, hero = false }: { additional?: boolean; hero?: boolean }) {
+  const usernameId = useId().replace(/:/g, "");
   const [state, submit, pending] = useActionState(additional ? claimAdditional : claim, initialState);
   const [name, setName] = useState("");
   const [availability, setAvailability] = useState<{ name: string; message: string }>();
@@ -39,16 +40,16 @@ export function ClaimForm({ additional = false, hero = false }: { additional?: b
   }, [hero, name, check]);
 
   return <form action={submit} className={hero ? "stack hero-claim" : "stack"}>
-    <label htmlFor="username">Username</label>
+    <label htmlFor={usernameId} className={hero ? "home-claim-label" : undefined}>Username</label>
     <div className="address">
       <span>snoozer.uk/</span>
-      <input id="username" name="username" autoComplete="off" autoCapitalize="none" spellCheck={false}
+      <input id={usernameId} name="username" autoComplete="off" autoCapitalize="none" spellCheck={false}
         minLength={3} maxLength={30} value={name} onChange={(event) => setName(event.target.value)} required />
     </div>
     {availability?.name === name && <p className="message" role="status">{availability.message}</p>}
     <div className="actions">
       {!hero && <button className="button" type="button" disabled={checking || pending} onClick={() => void check()}>{checking ? "Checking…" : "Check availability"}</button>}
-      <button className="button primary" disabled={pending}>{pending ? "Claiming…" : hero ? "Claim it" : "Claim address"}</button>
+      <button className="button primary" disabled={pending}>{pending ? "Claiming…" : hero ? "Claim now" : "Claim address"}</button>
     </div>
     <ActionMessage state={state} />
   </form>;
