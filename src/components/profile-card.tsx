@@ -17,7 +17,6 @@ import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
 import { profileAudioCanShuffle } from "@/lib/profile-audio";
-import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
@@ -431,16 +430,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {preview ? <h2 className="profile-name-heading">{nameContent}</h2> : <h1 className="profile-name-heading">{nameContent}</h1>}
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
-    {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
-      {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
-        <span aria-hidden="true">{badge.category === "custom" ? badge.image_id
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img className="profile-custom-badge-art" src={`/media/badges/${badge.image_id}`} alt="" width={24} height={24}/>
-          : <span className="profile-custom-badge-icon" style={{ color: badge.color }}>{badge.icon}</span>
-          : <BadgeArtwork slug={badge.slug} size={24}/>}</span>
-      </span>)}
-      {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
-    </nav>}
     {profile.appearance.showLocation && profile.appearance.location && <p className="profile-location"><span aria-hidden="true">⌖</span>{profile.appearance.location}</p>}
     {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
