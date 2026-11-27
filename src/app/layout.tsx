@@ -35,8 +35,9 @@ export const viewport: Viewport = { themeColor: browserThemeColour, viewportFit:
 
 export default async function Layout({ children }: { children: ReactNode }) {
   const jar = await cookies();
-  let locale = accountLocale(jar.get("snoozer_locale")?.value);
-  if (supabaseUrl && supabaseKey) {
+  const savedLocale = jar.get("snoozer_locale")?.value;
+  let locale = accountLocale(savedLocale);
+  if (!savedLocale && supabaseUrl && supabaseKey) {
     try {
       const client = await sessionClient();
       const { data } = await client.auth.getUser();
