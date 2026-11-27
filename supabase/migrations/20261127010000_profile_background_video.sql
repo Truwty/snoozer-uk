@@ -243,7 +243,7 @@ begin
   select v.* into asset
     from snoozer.profile_background_videos v
     join snoozer.profiles p on p.id=v.profile_id and p.owner_id=v.owner_id
-    where v.id=p_id and v.owner_id=p_owner and p_owner=auth.uid() and v.state='ready'
+    where v.id=p_id and v.owner_id=p_owner and v.state='ready'
     limit 1;
   if not found then return null; end if;
   return jsonb_build_object('scope',asset.media_scope,'id',asset.id,'extension',asset.extension,
