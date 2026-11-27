@@ -504,7 +504,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             data-analytics-profile={preview ? undefined : profile.username}
             data-analytics-position={preview ? undefined : index + 1}>
             {imageSrc
-              // Gallery images are already processed and served through the public profile media route.
+              // Uploaded image assets are processed and served through the published profile media route.
               // eslint-disable-next-line @next/next/no-img-element
               ? <img className="profile-social-custom-icon" src={imageSrc} alt="" width={26} height={26} loading="lazy"/>
               : <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>}
