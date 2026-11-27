@@ -33,6 +33,24 @@ test("Discord sign-in is available on account entry pages", async ({ page }) => 
   }
 });
 
+test("login reveals the password field after an email is entered", async ({ page }) => {
+  await page.goto("/sign-in");
+  await expect(page.getByRole("heading", { name: "Log in to your account" })).toBeVisible();
+  const email = page.getByLabel("Email address");
+  const password = page.getByLabel("Password", { exact: true });
+  const login = page.getByRole("button", { name: "Log in", exact: true });
+  await expect(password).toBeDisabled();
+  await expect(password).toBeHidden();
+  await expect(login).toBeDisabled();
+  await email.fill("creator@example.com");
+  await expect(page.locator(".auth-password-reveal")).toHaveClass(/is-visible/);
+  await expect(password).toBeVisible();
+  await expect(password).toBeEnabled();
+  await expect(login).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Discord" })).toBeVisible();
+});
+
 test("homepage leaderboard link opens both Top 50 period tabs", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" })
