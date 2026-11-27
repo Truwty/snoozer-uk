@@ -953,7 +953,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator(".profile-text-section")).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
-    await page.getByRole("link", { name: "Publish History", exact: true }).click();
+    // Publication history remains available as a route, but it is not a
+    // sidebar destination in the reference-matched dashboard navigation.
+    await page.goto(profileHref.replace("/studio/customize?", "/studio/history?"));
     await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
     const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
     const historyPreviewHref = (await firstVersion.getByRole("link", { name: /Preview version/ }).getAttribute("href"))!;
