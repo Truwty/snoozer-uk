@@ -51,18 +51,19 @@ export function ImageHostPurchase({offer,active}:Props){
     </ul>
     {active
       ?<p className="studio-image-host-active-note">This account already has permanent Image Host access.</p>
-      :offer
-       ?<form action={startImageHostLifetimeCheckout}>
-         <input type="hidden" name="price" value={offer.price_id}/>
-         <div className="studio-image-host-checkout-actions">
-          <button type="submit" className="button primary studio-image-host-purchase-button">Purchase</button>
-          <button type="button" className="studio-image-host-gift-button" disabled aria-label="Gift Image Host is not available yet" title="Image Host gifting is not configured yet">♔</button>
-         </div>
-        </form>
-       :<div className="studio-image-host-checkout-locked" role="status">
-         <strong>Checkout is not available yet</strong>
-         <p>The lifetime offer is waiting for Stripe product, tax and legal review. No payment can be started from this screen yet.</p>
-        </div>}
+      :<div className="studio-image-host-checkout-actions">
+        {offer
+          ?<form action={startImageHostLifetimeCheckout}>
+            <input type="hidden" name="price" value={offer.price_id}/>
+            <button type="submit" className="button primary studio-image-host-purchase-button">Purchase</button>
+           </form>
+          :<button type="button" className="button primary studio-image-host-purchase-button" disabled title="Checkout is not available yet">Purchase</button>}
+        <button type="button" className="studio-image-host-gift-button" disabled aria-label="Gift Image Host is not available yet" title="Image Host gifting is not configured yet">♔</button>
+       </div>}
+    {!active&&!offer&&<div className="studio-image-host-checkout-locked" role="status">
+      <strong>Checkout is not available yet</strong>
+      <p>The lifetime offer is waiting for feature readiness and separate Stripe product, tax and legal review. No payment can be started from this screen yet.</p>
+     </div>}
     <p className="studio-image-host-small-print">One-time payment. Access is activated only after Snoozer verifies the completed live Stripe payment.</p>
    </section>
   </div>}
