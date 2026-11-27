@@ -813,8 +813,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       const from = { x: bottomBox.x + bottomBox.width / 2, y: bottomBox.y + bottomBox.height / 2 };
       const to = { x: topBox.x + topBox.width / 2, y: topBox.y + topBox.height / 2 };
       const targets = await page.evaluate(({ from, to }) => ({
-        from: document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle") !== null,
-        to: document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle") !== null,
+        from: Boolean(document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle")),
+        to: Boolean(document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle")),
       }), { from, to });
       expect(targets).toEqual({ from: true, to: true });
       await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
