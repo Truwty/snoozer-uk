@@ -155,7 +155,7 @@ test("profile analytics requires consent, counts link clicks and exports only to
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/analytics");
     for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
@@ -191,7 +191,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
     await page.getByRole("link", { name: "Premium", exact: true }).click();
@@ -264,7 +264,7 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
@@ -450,7 +450,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await page.goto("/sign-in");
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
@@ -1062,7 +1062,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("password has been updated");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
@@ -1184,7 +1184,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
   await page.getByRole("link", { name: "Image Host", exact: true }).click();
@@ -1351,7 +1351,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
   await page.goto("/studio/builder");
@@ -1474,7 +1474,7 @@ test("sign-ins persist across navigation and independent accounts switch without
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(emailA);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio/);
     await page.goto("/pricing");
     await page.reload();
