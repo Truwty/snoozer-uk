@@ -10,6 +10,8 @@ import { createCustomBadge } from "./actions";
 import { accountPlan } from "@/lib/entitlements";
 import { discordPresenceInviteUrl } from "@/lib/env";
 import { StudioCustomBadgePreview } from "@/components/studio-custom-badge-preview";
+import { ImageHostPurchase } from "@/components/image-host-purchase";
+import { imageHostLiveOffers } from "@/lib/image-host-live-service";
 
 export const metadata = { title: "Badges", robots: { index: false, follow: false } };
 
@@ -63,12 +65,19 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
   const selected = params.profile === undefined ? undefined : draft.profile_id;
 
   const { client } = await requireAccount();
-  const response = await client.rpc("get_my_profile_badges", { p_profile: draft.profile_id });
-  const customResponse = await client.rpc("list_my_custom_badges", { p_profile: draft.profile_id });
-  const planResponse = await client.rpc("get_my_plan");
+  const [response,customResponse,planResponse,imageHostStatusResponse,imageHostOffers] = await Promise.all([
+    client.rpc("get_my_profile_badges", { p_profile: draft.profile_id }),
+    client.rpc("list_my_custom_badges", { p_profile: draft.profile_id }),
+    client.rpc("get_my_plan"),
+    client.rpc("get_my_image_host_status"),
+    imageHostLiveOffers(),
+  ]);
   const customBadges = z.array(z.object({ id:z.uuid(),title:z.string(),description:z.string(),icon:z.string(),color:z.string(),image_id:z.uuid().nullable(),is_public:z.boolean(),display_order:z.number() })).safeParse(customResponse.data);
   const plan = accountPlan.safeParse(planResponse.data);
   const customLimit = plan.success ? plan.data.quotas.customBadges : 0;
+  const imageHostAccess = z.object({active:z.boolean()}).safeParse(imageHostStatusResponse.data);
+  const imageHostActive = !imageHostStatusResponse.error&&imageHostAccess.success&&imageHostAccess.data.active;
+  const imageHostOffer = imageHostOffers[0]??null;
   const discordInvite = discordPresenceInviteUrl();
   const badgeData = z.object({
     earned: z.array(z.object({ id:z.uuid(), slug:z.string(), name:z.string(), description:z.string(), icon:z.string(), category:z.string(), rarity:z.string(), source:z.string(), awarded_at:z.string(), award_reason:z.string().nullable(), is_public:z.boolean() })),
@@ -100,7 +109,12 @@ export default async function BadgesPage({ searchParams }: { searchParams: Promi
         </form>
         <section className="studio-future-badge-catalogue">
           <div className="studio-panel-heading"><h3>Badge catalogue</h3><span>{badgeData.data.catalogue.length} badges</span></div>
-          <div className="studio-future-badge-grid">{badgeData.data.catalogue.map((badge) => {
+          <div className="studio-future-badge-grid">
+            <article className="studio-future-badge studio-image-host-badge">
+              <span className="studio-image-host-badge-mark" aria-hidden="true">▧</span>
+              <div className="studio-badge-card-copy"><strong>Image Host</strong><p>Lifetime access to custom image hosting and advanced media tools.</p><small>4,99€ · Lifetime</small></div>
+              <ImageHostPurchase offer={imageHostOffer} active={imageHostActive}/>
+            </article>{badgeData.data.catalogue.map((badge) => {
             const action = catalogueAction(badge, selected, discordInvite);
             return <article className={"studio-future-badge" + (badge.earned ? " is-earned" : "")} key={badge.slug}>
               <BadgeArtwork slug={badge.slug} size={38}/>
