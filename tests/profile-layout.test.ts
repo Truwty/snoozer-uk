@@ -65,7 +65,6 @@ describe("profile page layout", () => {
       { type: "section", index: 0 },
       { type: "links" },
       { type: "widgets" },
-      { type: "gallery" },
     ]);
   });
 
@@ -98,7 +97,6 @@ describe("profile page layout", () => {
       { type: "block", id: second },
       { type: "links" },
       { type: "widgets" },
-      { type: "gallery" },
     ]);
     expect(profilePageLayout.safeParse(normalized).success).toBe(true);
     expect(profilePageLayout.safeParse({
@@ -123,7 +121,6 @@ describe("profile page layout", () => {
       { type: "links" },
       { type: "section", index: 0 },
       { type: "widgets" },
-      { type: "gallery" },
     ]);
   });
 });
