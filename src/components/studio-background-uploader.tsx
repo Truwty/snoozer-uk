@@ -163,7 +163,7 @@ export function StudioBackgroundUploader({
       </button>
     </div>
 
-    <label>Choose an uploaded image
+    <label>Background image
       <select value={backgroundImage ?? ""} disabled={busy !== null}
         onChange={(event) => onSelectImage(event.target.value || undefined)}>
         <option value="">No image background</option>
