@@ -148,6 +148,13 @@ export async function completeImageHostLifetimePurchase(stripe:Stripe,rawSession
   const linePrice=lineItems.data[0].price;
   const linePriceId=typeof linePrice==="string"?linePrice:linePrice?.id;
   if(!linePriceId)throw new Error("Image Host Price identity is missing.");
+  const price=await stripe.prices.retrieve(linePriceId);
+  const productId=typeof price.product==="string"?price.product:price.product.id;
+  const product=await stripe.products.retrieve(productId);
+  if(!price.livemode||!price.active||price.type!=="one_time"
+    ||price.currency!=="eur"||price.unit_amount!==499
+    ||!product.livemode||!product.active||product.metadata.snoozer_image_host!=="true"
+    ||pi.customer!==session.customer)throw new Error("Image Host Stripe Price and Product proof does not match.");
   const completed=await admin.rpc("complete_image_host_purchase",{
     p_owner:owner,p_attempt:attempt,p_session:id,p_payment_intent:paymentIntent,
     p_price:linePriceId,p_currency:"eur",p_amount:499,p_paid:true,
