@@ -850,6 +850,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 3 URL")).toHaveValue("https://ko-fi.com/");
     await page.getByLabel("Link 3 URL").fill("https://ko-fi.com/creator");
     await page.getByLabel("Link 3 label").fill("Support my projects");
+    await page.getByRole("button", { name: "Developer", exact: true }).click();
+    await page.getByRole("button", { name: "GitHub", exact: true }).click();
+    await page.getByLabel("Link 4 label").fill("Developer notes");
+    await page.getByLabel("Link 4 URL").fill("https://github.com/example");
+    await page.locator(".link-row").nth(3).getByLabel("Display mode").selectOption("text");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -863,7 +868,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.goto(`/${name}`);
     await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗", "Developer notes ↗"]);
     const kofiLink = publicPage.getByRole("link", { name: "Support my projects · Ko-fi", exact: true });
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
