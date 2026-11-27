@@ -44,6 +44,7 @@ export function ImageHostPurchase({offer,active}:Props){
      <strong>4,99€</strong><span>/ Lifetime</span>
     </div>
     <p className="studio-image-host-tagline">Pay once. Keep it forever.</p>
+    <p className="studio-image-host-intro">Upload and share images instantly with custom domains and an advanced image gallery.</p>
     {active?<p className="message" role="status">Lifetime access is active on this Snoozer account.</p>:null}
     <ul className="studio-image-host-feature-list">
      {included.map(item=><li key={item}><span aria-hidden="true">✓</span>{item}</li>)}
@@ -53,7 +54,10 @@ export function ImageHostPurchase({offer,active}:Props){
       :offer
        ?<form action={startImageHostLifetimeCheckout}>
          <input type="hidden" name="price" value={offer.price_id}/>
-         <button type="submit" className="button primary studio-image-host-purchase-button">Purchase Image Host · 4,99€</button>
+         <div className="studio-image-host-checkout-actions">
+          <button type="submit" className="button primary studio-image-host-purchase-button">Purchase</button>
+          <button type="button" className="studio-image-host-gift-button" disabled aria-label="Gift Image Host is not available yet" title="Image Host gifting is not configured yet">♔</button>
+         </div>
         </form>
        :<div className="studio-image-host-checkout-locked" role="status">
          <strong>Checkout is not available yet</strong>
