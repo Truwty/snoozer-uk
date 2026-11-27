@@ -72,12 +72,21 @@ export function canonicalUsername(value: string) {
 }
 
 export { safeLink } from "./safe-link";
+
+const profileAudioMediaPath = /^\/media\/audio\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
+
+/** Allows public HTTPS links and only the exact same-origin route for uploaded profile audio. */
+export function safeProfileLink(value: string) {
+  const candidate = value.trim();
+  return safeLink(candidate) || profileAudioMediaPath.test(candidate);
+}
+
 export const freeProfileLinkLimit = 20;
 export const maximumProfileLinkLimit = 2000;
 
 export const link = z.object({
   label: z.string().trim().min(1, "Give each link a label.").max(80),
-  url: z.string().trim().max(2048).refine(safeLink, "Enter an HTTP or HTTPS address with a public domain."),
+  url: z.string().trim().max(2048).refine(safeProfileLink, "Enter an HTTP or HTTPS address with a public domain, or use a valid Snoozer audio upload."),
   hidden: z.boolean().optional(),
   mode: z.enum(["icon", "text"]).optional(),
   iconImage: z.uuid().optional(),
