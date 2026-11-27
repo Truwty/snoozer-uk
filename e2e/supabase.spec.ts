@@ -799,44 +799,30 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const topLink = links.locator('[data-reorder-index="0"] .reorder-handle');
     const bottomLink = links.locator('[data-reorder-index="1"] .reorder-handle');
     await topLink.evaluate((handle) => handle.scrollIntoView({ block: "center" }));
+    // Keep both drag endpoints inside the viewport. Scrolling only the first
+    // handle can leave the second handle below the viewport on a phone, causing
+    // CDP to dispatch touch events to <html> instead of the reorder handle.
+    await bottomLink.scrollIntoViewIfNeeded();
+    await expect(topLink).toBeInViewport();
+    await expect(bottomLink).toBeInViewport();
     const topBox = (await topLink.boundingBox())!;
     const bottomBox = (await bottomLink.boundingBox())!;
     const touch = await page.context().newCDPSession(page);
-    await page.evaluate(() => {
-      const targetWindow = window as Window & { __snoozerTouchDiagnostics?: unknown[] };
-      targetWindow.__snoozerTouchDiagnostics = [];
-      for (const type of ["touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel"]) {
-        document.addEventListener(type, (event) => {
-          const touchEvent = event as TouchEvent;
-          const pointerEvent = event as PointerEvent;
-          const element = event.target instanceof Element ? event.target : null;
-          targetWindow.__snoozerTouchDiagnostics?.push({
-            type,
-            target: element?.outerHTML.slice(0, 180),
-            handle: Boolean(element?.closest(".reorder-handle")),
-            touches: "touches" in event ? touchEvent.touches.length : undefined,
-            changed: "changedTouches" in event ? touchEvent.changedTouches.length : undefined,
-            pointerType: "pointerType" in event ? pointerEvent.pointerType : undefined,
-            x: "clientX" in event ? pointerEvent.clientX : undefined,
-            y: "clientY" in event ? pointerEvent.clientY : undefined,
-          });
-        }, true);
-      }
-    });
     try {
       await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
-      const from = { x: bottomBox.x + 15, y: bottomBox.y + 20 };
-      const to = { x: topBox.x + 15, y: topBox.y + 20 };
-      const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.outerHTML.slice(0, 240), from);
-      console.log("SNOOZER_TOUCH_HIT", JSON.stringify({ from, to, hit, boxes: { topBox, bottomBox } }));
+      const from = { x: bottomBox.x + bottomBox.width / 2, y: bottomBox.y + bottomBox.height / 2 };
+      const to = { x: topBox.x + topBox.width / 2, y: topBox.y + topBox.height / 2 };
+      const targets = await page.evaluate(({ from, to }) => ({
+        from: document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle") !== null,
+        to: document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle") !== null,
+      }), { from, to });
+      expect(targets).toEqual({ from: true, to: true });
       await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
       for (let step = 1; step <= 8; step++) {
         const y = from.y + (to.y - from.y) * step / 8;
         await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: to.x, y }] });
       }
       await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-      const diagnostics = await page.evaluate(() => (window as Window & { __snoozerTouchDiagnostics?: unknown[] }).__snoozerTouchDiagnostics ?? []);
-      console.log("SNOOZER_TOUCH_EVENTS", JSON.stringify(diagnostics));
     } finally {
       await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
       await touch.detach();
