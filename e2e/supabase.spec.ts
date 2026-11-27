@@ -873,9 +873,17 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
 
-    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["whoami", "Projects", "Launch"]);
-    await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
-    await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
+    // The reference-style public page intentionally suppresses the creator's
+    // extra sections, custom blocks and interactive widgets. Their data remains
+    // in Studio drafts and publication history, verified below after restore.
+    await expect(publicPage.locator(".profile-text-section")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-content-block")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-widgets")).toHaveCount(0);
+    await expect(publicPage.locator(".countdown time")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-callout")).toHaveCount(0);
+    await expect(publicPage.locator("blockquote")).toHaveCount(0);
+    await expect(publicPage.locator("figcaption")).toHaveCount(0);
+    await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toHaveCount(0);
     const bioCard = publicPage.locator(".profile-card");
     await expect(bioCard).toHaveClass(/profile-card--bio-experience/);
     await expect(bioCard).toHaveAttribute("data-layout", "centred");
@@ -938,7 +946,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await lock.uncheck();
     await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
     await expect(preview.getByRole("heading", { name: "Projects" })).toHaveCount(0);
-    await expect(publicPage.getByRole("heading", { name: "Projects" })).toBeVisible();
+    // Public reference layout keeps extra section content out of the page even
+    // when an earlier publication still contains the unhidden section.
+    await expect(publicPage.locator(".profile-text-section")).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
     await page.getByRole("link", { name: "Publish History", exact: true }).click();
