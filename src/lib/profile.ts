@@ -58,7 +58,8 @@ export const profileAppearance = z.strictObject({
   swapBoxColors: z.boolean().optional(),
   location: z.string().trim().max(80).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Location contains unsupported control characters.").optional(),
   showLocation: z.boolean().optional(),
-}).superRefine((appearance, context) => {
+});
+export const profileAppearanceWithBackgroundValidation = profileAppearance.superRefine((appearance, context) => {
   if (appearance.backgroundImage && appearance.backgroundVideo) {
     context.addIssue({ code: "custom", path: ["backgroundVideo"], message: "Choose either a background image or a background video, not both." });
   }
@@ -116,7 +117,7 @@ export const profileContent = z.object({
   display_name: z.string().trim().min(1, "Enter a display name.").max(60),
   bio: z.string().trim().max(280),
   theme: z.enum(themes),
-  appearance: profileAppearance.default(defaultAppearance),
+  appearance: profileAppearanceWithBackgroundValidation.default(defaultAppearance),
   indexable: z.boolean(),
   links: z.array(link).max(maximumProfileLinkLimit),
   sections: textSections.default([]),
