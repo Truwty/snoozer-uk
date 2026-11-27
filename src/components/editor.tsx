@@ -358,7 +358,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
 
   return <div className="studio-workspace" onPointerMove={trackBlockPointerDrag} onPointerUp={finishBlockPointerDrag} onPointerCancel={cancelBlockPointerDrag}>
     <header className="editor-topbar">
-      <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Draft only · Not live yet" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p><p className="editor-publish-hint">Drafts save privately. Publish page to update the profile visitors see.</p></div>
+      <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p><p className="editor-publish-hint">Drafts save privately. Publish page to update the profile visitors see.</p></div>
       <div className="actions">
         {saved.published_revision !== null && <><Link className="button small" href={`/${saved.username}`}>View live page ↗</Link><CopyLink path={`/${saved.username}`} /></>}
         <div className="actions" aria-label="Editing history" role="group">
