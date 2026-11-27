@@ -1082,7 +1082,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect(replacementSignInError).toBeNull();
     const { data: newDraft, error: newDraftError } = await replacementOwnerClient.rpc("get_draft");
     expect(newDraftError).toBeNull();
-    expect(newDraft).toMatchObject({ username: replacement, revision: 2 });
+    expect(newDraft).toMatchObject({ username: replacement, revision: oldDraft.revision + 1 });
     const { data: newScope, error: newScopeError } = await replacementOwnerClient.rpc("draft_media_scope", { p_expected: newDraft!.revision });
     expect(newScopeError).toBeNull();
     expect(newScope).toMatch(/^[0-9a-f-]{36}$/);
