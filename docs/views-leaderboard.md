@@ -1,5 +1,7 @@
 # Views Leaderboard
 
+**Reviewed:** 27 November 2026. The route exposes All Time Views and Monthly Top Views using consented event counts; it does not claim unique visitors.
+
 The public \`/leaderboard\` route has **All Time Views** and **Monthly Top Views** tabs. Each ranks the top 50 published profiles with the independent Views Leaderboard preference enabled by *recorded view events*, with live public avatar/name/handle links.
 
 ## What is counted?

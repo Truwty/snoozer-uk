@@ -1,6 +1,6 @@
 # Campaigns and coarse traffic reports
 
-Stage 4 increment, 17 November 2026. Migration 20261110005700.
+**Reviewed:** 27 November 2026. Original migration: `20261110005700_analytics_campaigns`.
 
 ## Creator workflow
 

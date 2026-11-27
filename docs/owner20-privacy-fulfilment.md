@@ -1,10 +1,12 @@
 # Owner #20: appeal and GDPR fulfilment runbook
 
+**Reviewed:** 27 November 2026. The Owner administration and notification workflows have been accepted by the owner. This runbook preserves the provider, privacy and evidence gates for individual cases.
+
 ## External appeal and provider ban acceptance
 
 The signed-out /appeal/external route implements 256-bit single-use challenges, expiry, non-enumeration, and service-only RPCs. Disposable Supabase integration tests cover rate limiting, token replay denial, Auth ban/unban and Owner AAL2.
 
-**Real external email acceptance remains outstanding.** Before enabling provider-wide bans:
+**Provider-ban actions remain gated by an independently available appeal and recovery channel.** Before enabling provider-wide bans or using the provider action on a real account:
 1. Create an isolated verified non-Owner, non-customer account with a mailbox you control.
 2. In the actual Owner AAL2 browser, create an actioned moderation case and internal ban.
 3. From a signed-out browser, request an external appeal for that exact case/email. Confirm the Zoho HTTPS message actually arrives in the controlled mailbox.

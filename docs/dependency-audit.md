@@ -1,9 +1,43 @@
-# Dependency audit review — 17 November 2026
+# Dependency security policy
 
-The [GitHub-reviewed picomatch advisory](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) was updated on 17 November 2026 and lists no patched version. The full npm audit reports 16 high findings through the same root advisory and development dependency chains. `npm audit --omit=dev` reports zero vulnerabilities in this lockfile.
+**Reviewed:** 27 November 2026
 
-Exposure: malicious single-branch repeated extglob patterns can cause regex denial of service. Snoozer uses these packages through Vitest, Vite and ESLint tooling, with repository-controlled patterns, not visitor-submitted patterns. Do not enable a network-exposed Vite/Vitest development server or feed profile fields into glob tooling. This review does not claim the dependency is fixed.
+## Audit contract
 
-CI runs `npm run audit`, which performs both full and production JSON audits. It fails for any production advisory, any additional root advisory, invalid/unavailable audit responses and this exception on or after **1 December 2026 UTC**. Only GHSA-fc5q-39xc-vjpf in picomatch is temporarily accepted through development dependency chains. Tests exercise unknown advisories, production exposure, response failure and expiry.
+CI runs `npm run audit`, which executes two independent npm audit reports:
 
-Check the upstream advisory for a supported patched release, update the lockfile, run the full regression suite and remove the exception. Do not use npm's proposed forced Vitest downgrade as evidence of a security fix: the advisory lists no patched picomatch.
+1. The complete dependency tree, including development tooling.
+2. The production dependency tree with development packages omitted.
+
+Both reports must be valid npm audit JSON and must contain **zero vulnerabilities**. An unavailable, malformed or incomplete audit response fails closed. There are no standing advisory exceptions.
+
+Run locally after changing dependencies:
+
+```bash
+npm ci
+npm run audit
+npm ls --all
+```
+
+Regenerate `package-lock.json` using npm; do not hand-edit dependency resolutions. Review direct and transitive changes before committing.
+
+## Previously reviewed picomatch advisory
+
+GitHub Advisory `GHSA-fc5q-39xc-vjpf` for picomatch was **withdrawn on 18 November 2026**. The GitHub Advisory Database now identifies it as a withdrawn advisory, not an outstanding vulnerability. The old time-boxed exception in the audit script and its expiry test are therefore obsolete and are removed in this security update.
+
+Sources:
+- [GitHub Advisory — withdrawal notice](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+- [Picomatch upstream discussion](https://github.com/micromatch/picomatch/issues/247)
+
+A withdrawn advisory does not mean npm audit can be skipped. The policy remains strict: any current advisory in either the full or production tree must be investigated and fixed or explicitly resolved through an updated authoritative advisory record before release.
+
+## Dependency update procedure
+
+1. Identify the direct dependency and every lockfile path affected.
+2. Check the advisory against the upstream maintainer and package registry.
+3. Update the direct dependency or approved override; regenerate the lockfile with npm.
+4. Run `npm run audit`, lint, typecheck, tests and production build.
+5. Confirm the production dependency tree separately.
+6. Record any residual exposure in [the security audit](security-audit.md).
+
+Never force a downgrade simply to make an audit command return zero. Do not hide current findings behind a blanket ignore or a long-lived waiver.

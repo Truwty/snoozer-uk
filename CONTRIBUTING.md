@@ -1,135 +1,93 @@
 # Contributing to Snoozer.uk
 
-Thank you for your interest in contributing to **Snoozer.uk**! Whether you are fixing a typo, adding a new Studio block, writing Playwright tests, or refining database migrations, your contributions help build a better, privacy-first publishing platform.
+Thanks for considering a contribution. This guide describes the development and review process for the current Next.js and Supabase application.
 
----
+## Before you start
 
-## 📋 Table of Contents
+Use:
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Database Migrations](#database-migrations)
-- [Quality Gates & Testing](#quality-gates--testing)
-- [Pull Request Process](#pull-request-process)
-- [Reporting Issues & Security](#reporting-issues--security)
+- Node.js 24, as pinned in `.node-version`
+- npm (install exactly from `package-lock.json` with `npm ci`)
+- Docker for the disposable local Supabase stack
+- Git and a GitHub account
 
----
+Read the [architecture decisions](docs/architecture-decisions.md), [threat model](docs/threat-model.md) and [security policy](SECURITY.md) before changing authentication, database, storage, billing or deployment code.
 
-## 🤝 Code of Conduct
-
-We are committed to fostering an open, welcoming, and respectful community. Please be constructive in code reviews, discussions, and issue threads. Harassment or exclusionary behaviour of any kind is not tolerated.
-
----
-
-## 🛠 Getting Started
-
-Ensure you have **Node.js 24 LTS**, `npm`, and **Docker** installed before setting up the repository locally.
-
-1. **Fork & Clone the Repository**
-   ```bash
-   git clone https://github.com<your-username>/snoozer-uk.git
-   cd snoozer-uk
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   npm ci
-   ```
-
-3. **Start the Local Supabase Stack**
-   ```bash
-   npx --yes supabase@3.1.0 start
-   ```
-
-4. **Configure Local Environment Variables**
-   ```bash
-   cp .env.example .env.local
-   npx --yes supabase@3.1.0 status
-   ```
-   Copy the local `API URL`, `anon key`, and `service_role key` into `.env.local`. **Never commit `.env.local` or expose service credentials.**
-
-5. **Run the Development Server**
-   ```bash
-   npm run dev
-   ```
-
----
-
-## 🌿 Development Workflow
-
-1. **Sync with `main`**: Always branch off the latest `main` branch.
-   ```bash
-   git checkout main
-   git pull origin main
-   ```
-
-2. **Create a Feature or Fix Branch**: Use clear, descriptive branch names:
-   * `feat/<short-description>` (e.g., `feat/custom-theme-tokens`)
-   * `fix/<short-description>` (e.g., `fix/studio-draft-preview`)
-   * `docs/<short-description>` (e.g., `docs/update-setup-guide`)
-   * `test/<short-description>` (e.g., `test/auth-e2e-coverage`)
-
-3. **Keep Changes Focused**: Submit small, atomic pull requests that address a single bug, feature, or improvement.
-
-4. **Follow Commit Conventions**: Use clear, imperative commit messages (e.g., `feat: add markdown support to bio section` or `fix: enforce RLS policy on draft media`).
-
----
-
-## 🗄 Database Migrations
-
-All schema changes must be managed through declarative SQL migrations in `supabase/migrations/`.
-
-* **Never modify production schemas manually.**
-* Create a new migration file for schema, index, or Row-Level Security (RLS) policy updates.
-* Test your migrations from scratch by resetting your local database:
-  ```bash
-  npx --yes supabase@3.1.0 db reset
-  ```
-* Verify that all RLS policies strictly separate **authenticated creator mutations** from **unauthenticated public reads**.
-
----
-
-## 🧪 Quality Gates & Testing
-
-Before opening a pull request, ensure every check in our verification pipeline passes locally:
+## Local setup
 
 ```bash
-# 1. Linting & Strict Type Checking
+git clone https://github.com/Truwty/snoozer-uk.git
+cd snoozer-uk
+npm ci
+npx --yes supabase@3.1.0 start
+cp .env.example .env.local
+npx --yes supabase@3.1.0 status
+npm run dev
+```
+
+Populate `.env.local` from the disposable local Supabase output. Never copy production keys or live Stripe credentials into a development environment.
+
+## Branches and commits
+
+Create a focused branch from the latest `main`:
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c fix/short-description
+```
+
+Use descriptive branch prefixes such as `fix/`, `feat/`, `docs/` and `test/`. Keep each pull request focused. Use imperative commit messages, for example `fix: restrict private media export to its owner`.
+
+## Database changes
+
+- Add a new, timestamped SQL migration under `supabase/migrations/`.
+- Do not rewrite a migration already applied to a shared or hosted project.
+- Prefer additive, reversible changes; document any unavoidable data migration.
+- Explicitly review grants, RLS, function ownership, `SECURITY DEFINER` and `search_path`.
+- Test the migration chain on a disposable local database.
+- Never run `db reset` against a hosted project or manually edit production data as part of a code change.
+
+## Security-sensitive changes
+
+For authentication, Owner permissions, private data, storage and billing:
+
+- Validate identities with Supabase Auth on the server; never trust a browser-supplied user ID as proof of ownership.
+- Enforce ownership and business invariants in the database as well as the application.
+- Keep service-role credentials in server-only runtime configuration.
+- Bound request bodies, validate schemas and use non-overwriting private upload paths.
+- Verify webhook signatures before processing and make event handling idempotent.
+- Add regression tests for unauthorised, cross-account and replay attempts.
+
+Do not weaken payment gates, rotate production payment credentials or change live subscription prices in a general feature pull request.
+
+## Required local checks
+
+```bash
+npm run audit
 npm run lint
 npm run typecheck
-
-# 2. Security Vulnerability Audit
-npm audit
-
-# 3. Unit & Integration Tests
 npm test
-
-# 4. Production Build Check
 npm run build
+```
 
-# 5. End-to-End Browser Smoke Tests
+For browser changes:
+
+```bash
 npx playwright install chromium
 npm run test:e2e
 ```
 
-*If you are modifying authentication or storage flows, run the full provider E2E suite by exporting your local Supabase environment variables and setting `SNOOZER_TEST_LOCAL_SUPABASE=1` before running Playwright.*
+Provider tests must use disposable local Supabase and test credentials. Never point an automated test at customer accounts or live payment methods.
 
----
+## Pull request checklist
 
-## 🚀 Pull Request Process
+- [ ] The change is narrowly scoped and has a clear rationale.
+- [ ] Tests cover expected behaviour and relevant negative/authorization cases.
+- [ ] Database changes use a new migration and pass migration replay.
+- [ ] Environment variables and documentation are updated.
+- [ ] No credentials, personal data, production logs or generated artifacts are committed.
+- [ ] CI passes on the exact pull-request head.
+- [ ] User-visible behaviour and operational impact are described.
 
-1. **Update Documentation**: If your change alters environment variables, CLI commands, or architecture, update `README.md`, `.env.example`, or `docs/` accordingly.
-2. **Add Test Coverage**: New features should include Vitest unit tests (`tests/`) and, where applicable, Playwright E2E coverage (`e2e/`).
-3. **Open a Pull Request**:
-   * Provide a clear summary of **what** changed and **why**.
-   * Link any relevant issues or roadmap items from `PROGRESS.md`.
-   * Include screenshots or screen recordings for UI changes in Studio or public profiles.
-4. **CI Verification**: Ensure all GitHub Actions checks pass before requesting a review.
-
----
-
-## 🐛 Reporting Issues & Security
-
-* **Bugs & Feature Requests**: Open a GitHub Issue with reproduction steps, expected behaviour, and environment details.
-* **Security Vulnerabilities**: **Do not open a public issue for security flaws.** Follow the private reporting instructions in [`SECURITY.md`](SECURITY.md).
+Do not merge or deploy on behalf of the repository owner unless they explicitly ask for that action.

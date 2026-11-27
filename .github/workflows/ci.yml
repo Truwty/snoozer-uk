@@ -71,6 +71,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -79,8 +80,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Scan source for secrets
-        run: docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --redact --no-banner --verbose
+      - name: Scan complete Git history for secrets
+        run: docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact --no-banner --verbose
 
       - name: Run dependency and policy audit
         run: npm run audit

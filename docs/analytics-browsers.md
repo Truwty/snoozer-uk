@@ -1,5 +1,7 @@
 # Daily browser observations and CTR
 
+**Reviewed:** 27 November 2026. This document describes the current opt-in V3 browser-observation methodology.
+
 Migration 59 adds daily browser counts and clicked-browser CTR. A browser counts only after a recorded view. It becomes a clicked browser after at least one valid published-link click on the same UTC day. Click-before-view delivery is handled atomically: the later view increments both metrics. Replays and subsequent reloads/clicks do not increment the browser metrics again. Event totals still count each accepted event.
 
 These are approximate browser observations, never unique people. Different devices, private browsing, cleared storage or renewed consent may count again. Counts cannot be summed across days as unique visitors. CTR is clicked browsers / daily browsers × 100, bounded by database invariants. No denominator renders an em dash and exports an empty percentage. Historical counts are not backfilled. Daily totals include some events without browser codes, so coverage differs.

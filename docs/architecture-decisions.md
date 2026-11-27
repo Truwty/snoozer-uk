@@ -1,17 +1,49 @@
 # Architecture decisions
 
-- Daily browser metrics require a fresh V3 consent scope. Use independent profile/UTC-day random localStorage codes, hash before persistence and retain only minimal daily deduplication flags. Never infer people, sum daily counts as period uniques or silently upgrade older consent. Use native bounded database maintenance without external keep-alive calls.
+**Reviewed:** 27 November 2026
 
-- Public provider summaries are optional, origin-checked and bound to current published links. Fetch fixed provider API hosts without credentials/visitor headers, retain only versioned minimal projections, and use PostgreSQL refresh leases, hourly budgets and provider backoff. Keep provider failure independent of outbound navigation. Twitch players require a real parent hostname and 400×300 space; smaller views keep the outbound link.
+These decisions apply across the current Snoozer application. New designs should preserve the security boundary and extend existing patterns rather than introduce a second source of truth.
 
-- Analytics starts with consented anonymous event totals, never fingerprinted visitors. Use daily PostgreSQL aggregates with expiring per-event receipts and service-only writes. Exclude owners with server-validated Auth; owner-scoped RPCs and CSV exports enforce plan retention. Keep direct link navigation independent of analytics availability. Do not label event ratios as CTR or event IDs as unique people.
+## Application and data
 
-- Start from an empty workspace. Use one stateless Next.js App Router service with React, strict TypeScript, Tailwind and npm. Organise server modules by domain as the application expands.
-- Use Supabase Auth and Storage and PostgreSQL through the Supabase Data API. Versioned SQL owns constraints, RLS and transactional RPCs. Avoid a second ORM migration history or persistent application-side connection pool.
-- Keep drafts owner-only. Store immutable snapshots separately and publish by switching a pointer in the same transaction. Check expected revision under a row lock and use a unique canonical username constraint. Public reads return only published fields.
-- Begin with one profile and 20 ordered links. Add entitlements centrally before expanding quotas. Defer aliases and username changes until names can be reserved across all routes.
-- Use private upload staging and server-validated raster derivatives for avatars and galleries. Plan durable jobs in Postgres for cleanup and provider reconciliation. No runtime disk, paid worker or Redis required.
-- Build for private GitHub and Render Free. Keep migrations under explicit release control. Launch checks must capture cold starts, project pauses, quota pressure and webhook recovery.
-- Keep media folder organisation independent of the draft revision and publication snapshots. Folder mutations use an owner scope, separate revision and a profile row lock. Images remain governed by draft and history reachability.
-- Share one profile renderer between Studio previews, history and live pages. Persist named appearance choices, validate them in both TypeScript and PostgreSQL, and snapshot them with content. Keep raw CSS and script outside the editor.
-- Check published profile existence in the proxy. Missing profiles return a real HTML 404 even with JavaScript disabled. Live profile rendering adds one indexed lookup before loading published content.
+- Use a stateless Next.js App Router application with React and strict TypeScript. The main web service runs on Render's Node runtime.
+- Use Supabase Auth, PostgreSQL and Storage through the Data API. SQL migrations own schema, grants, RLS and transactional invariants; do not introduce a second migration history or application-side direct database pool.
+- Keep private application tables in the unexposed `snoozer` schema. Use narrowly scoped RPCs and database-enforced ownership; do not add broad policies just to clear RLS advisor notices.
+- All `SECURITY DEFINER` functions must use a locked search path and schema-qualified references. Review execution grants for `anon`, `authenticated` and SQL `PUBLIC` whenever a function is created or changed.
+- Draft state remains private. Publish immutable snapshots and switch the published revision atomically after checking expected revision under a row lock.
+- Centralise plan entitlements and quotas in database-backed policy rather than trusting UI controls or browser-supplied plan values.
+
+## Identity and authorization
+
+- Validate the current identity with Supabase Auth on the server. User IDs, profile IDs and account selector cookies supplied by the browser are not proof of ownership.
+- Use verified session/identity helper functions for authenticated database mutations. Owner writes additionally require an active AAL2 session.
+- Use server-initiated OAuth with PKCE. Identity linking must bind the callback to the account that started the flow.
+- Keep service-role credentials server-only. Never place secrets in `NEXT_PUBLIC_*`, client components, source files or logs.
+
+## Media and external integrations
+
+- Use private Storage buckets and server-generated UUID paths. Signed uploads must not overwrite existing objects.
+- Bound uploads and request bodies, validate file signatures, re-encode images and keep a database record of ownership/publication state.
+- Public provider widgets may call only fixed, allow-listed provider APIs. Deny redirects, omit visitor credentials/headers, use short timeouts and bounded response bodies.
+- Custom domains require a DNS challenge, verified provider association, safe public IPs and a pinned HTTPS challenge request.
+- External embeds remain under provider control. Do not simulate player controls or imply provider availability that has not been checked.
+
+## Analytics and privacy
+
+- Use explicit consent for first-party analytics. Do not infer people or fingerprint visitors; do not add third-party analytics trackers without a separate privacy assessment.
+- Retain only bounded aggregates and deduplication data. Label UTC periods and methodology accurately; event counts are not unique people.
+- Privacy exports must clearly state their scope. A limited self-service archive must not be described as a complete statutory export.
+
+## Billing
+
+- Only Snoozer-owned Plus, Pro and Studio subscriptions are active products. Do not rebuild creator marketplace or Stripe Connect features.
+- Verify webhook signatures against the raw bounded body before storing or processing events.
+- Use idempotent receipts, provider read-back and reconciliation. Browser success pages do not grant entitlements.
+- Keep live payment configuration and existing customer records unchanged in unrelated code/documentation work.
+
+## Delivery and operations
+
+- GitHub Actions CI is the quality gate for pull requests. Pin third-party actions to commit SHAs and grant only the minimum workflow permissions.
+- The main Render service deploys from `main`; feature branches should not be deployed to production.
+- Use a disposable local Supabase project for migration replay and provider tests. Never run destructive reset commands against hosted projects.
+- Record what was tested, on which commit, and whether it was local, CI, hosted or operator-confirmed.

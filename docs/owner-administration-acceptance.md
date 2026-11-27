@@ -1,34 +1,43 @@
-# Feature #20 — Owner administration acceptance
+# Feature #20 — Owner Control Centre acceptance
 
-Last reviewed: 22 November 2026.
+**Reviewed:** 27 November 2026  
+**Operator acceptance:** The owner tested the delivered administration panel and confirmed that the final privacy/deletion, notification and security fixes work as expected.
 
-## Implemented and deployed
-- Owner registry and visible Owner badge; database-authorised access under `/owner`.
-- AAL2 MFA for audited privileged mutations, plus settings revision checks.
-- User and profile search with full paginated inventory; case-linked moderation.
-- Suspension/ban *within Snoozer*, reinstatement, profile/media quarantine, appeals, session revocation, and Owner Premium entitlements.
-- Paginated audit log, internal notes, daily aggregate analytics and database operational counts.
-- Email registration flag (email-password only), global public-effects setting, visitor-facing maintenance mode (default off).
-- Privacy request **intake**, Owner review, in-app notices (PR #48).
-- Maintenance mode recovery access for privacy/notification pages (PR #49).
+## Delivered capabilities
 
-## Outstanding acceptance and capability boundaries
-1. **Auth-provider enforcement**: account restrictions are enforced within Snoozer. Do not set Supabase `ban_duration` until an independent identity-verified appeal/recovery path works for Auth-banned users; Auth bans would otherwise prevent current sign-in-dependent appeals.
-2. **User notifications**: the in-app inbox is operational. Sending email from the platform's SMTP provider for these Owner events, delivery tracking and retries are not yet built.
-3. **Personal-data requests**: intake and human review are operational. Actual complete export packages, safe processing of deletions across Auth, profiles, storage, domains and Stripe, retention/legal holds, and fulfilment evidence must be built and independently reviewed. Never mark an automated erasure as done based only on a queue status.
-4. **Provider and platform health**: aggregate database metrics and payment diagnostics exist. Read-only external public status (PR #50) is deployed. Project-specific uptime/latency, incident alert routing and provider auth state are not automatically monitored.
-5. **Production acceptance**: test a real Owner logged in with TOTP AAL2 at `https://www.snoozer.uk/owner/security`, then a harmless audited setting round-trip; confirm ordinary user denied; check report/appeal creation; verify restricted user still accesses privacy and appeal forms; confirm live Stripe Checkout, webhook verification and Billing Portal independently. Do not use or record actual OTPs in test logs.
-6. **OAuth sign-up shutdown**: registration flag does not block first-time Discord OAuth accounts; separate controls and callback checks are needed for a true all-provider registration switch.
+- Database-authorised Owner access with verified identity and AAL2 for privileged mutations.
+- User/profile search, paginated inventories, account restrictions, internal bans, provider-ban operations, external appeal challenges, reinstatement and session revocation.
+- Case-linked moderation, report triage, gallery takedowns, appeal review and permanent audit history.
+- Owner notes, global settings, maintenance mode, registration controls, Premium entitlements and gift-link management.
+- Account inbox notices and queued Zoho email delivery with retry state and queue-health checks.
+- Privacy request intake/review, account snapshots and archives, private-media export, billing export and evidence-based fulfilment.
+- Privacy-erasure preparation/execution path with database evidence checks and explicit irreversible-action safeguards.
+- Aggregate Owner analytics, billing diagnostics and system health summaries.
 
-## Security release requirements
-Every new admin read/write must enforce verified Owner identity in the database or a properly authenticated server boundary; privileged writes must verify AAL2 and be appended to audit history. Reject owner self-ban, cross-user IDOR and refresh-token-only trust. Do not expose Supabase service role, Render keys, Stripe keys, raw passwords, full email bodies or user PII through public routes. Preserve paid entitlements and processor evidence through privacy review.
+## Authorization requirements
 
-## Verification sources
-- [PR #44](https://github.com/Truwty/snoozer-uk/pull/44), [PR #45](https://github.com/Truwty/snoozer-uk/pull/45), [PR #46](https://github.com/Truwty/snoozer-uk/pull/46).
-- [PR #47](https://github.com/Truwty/snoozer-uk/pull/47), [PR #48](https://github.com/Truwty/snoozer-uk/pull/48), [PR #49](https://github.com/Truwty/snoozer-uk/pull/49), [PR #50](https://github.com/Truwty/snoozer-uk/pull/50).
-- CI run IDs and Render deploy IDs are tracked in `docs/PROGRESS.md` and `docs/CONTINUE.md`.
+Every Owner read/write must be protected by the database or an authenticated server boundary. Sensitive mutations require an active verified Owner AAL2 session. Database helper `snoozer.admin_actor()` checks the Owner registry and active Auth session; it is not enough for a caller to hide a UI button.
 
-## Monitoring addition — pending CI and merge
+Do not expose service-role credentials, live Stripe keys, Zoho tokens, recovery tokens, OTPs, raw archives, private notes, full email contents or unnecessary personal data in logs or public responses.
 
-A scheduled GitHub Actions workflow `.github/workflows/production-health.yml` checks production `/health/live` (app process), `/health/ready` (Supabase RPC and private Storage readiness), `/sign-in`, and `/appeal/external`. It retries transient probe failures three times, opens or updates a GitHub issue titled **Snoozer production health alert** on failure, and closes it on recovery. No provider credentials or raw response bodies are written into incident issues. This is external black-box readiness monitoring, **not** direct Render/Stripe/Supabase private API telemetry, uptime SLA evidence, or a proven notification-delivery test. Scheduled runs require GitHub Actions enabled; verify the automatic main-branch push probe after merge (or run `workflow_dispatch`) and confirm issue notifications are subscribed.
+## Important operational safeguards
 
+- Snoozer's internal account restrictions and Supabase provider-wide bans are separate controls. The provider-ban workflow requires a safe external appeal/recovery path; do not set `SNOOZER_ENABLE_AUTH_BANS` without verifying the external email challenge and restore journey on an isolated account.
+- Privacy erasure is deliberately narrower than a blanket automatic deletion. The irreversible action is gated by `SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE`, an eligible reviewed request, AAL2, explicit confirmation and database evidence. Storage objects, processor records, legal holds and financial retention must be handled independently.
+- An account archive or snapshot is not necessarily a complete statutory export. The UI must preserve its stated scope and direct users to a reviewed full export for missing processors/records.
+- Email delivery is queued and retryable. A queued notice is not the same as a provider-confirmed delivery; use the outbox and queue-health status for operational verification.
+- Scheduled public health probes are black-box HTTP monitoring, not a complete Render/Supabase/Stripe telemetry system or an uptime SLA.
+
+## Verification
+
+The repository CI runs static checks, dependency/security checks, database tests and browser tests for the Owner workflows. The current latest main CI run before this security branch is [run #1312](https://github.com/Truwty/snoozer-uk/actions/runs/46021425902). This new branch must pass its own latest-head CI before release.
+
+The owner has confirmed the final Owner panel fixes as working. This operator acceptance is distinct from the automated test evidence and does not mean every provider outage, external mail failure or legal fulfilment case has been simulated.
+
+## References
+
+- [Owner bans and appeals](owner-auth-bans-and-appeals.md)
+- [Owner notification delivery](owner-notification-email.md)
+- [Privacy fulfilment runbook](owner20-privacy-fulfilment.md)
+- [Safe erasure safeguards](owner20-safe-erasure.md)
+- [Security audit](security-audit.md)

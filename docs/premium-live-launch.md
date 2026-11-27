@@ -1,8 +1,8 @@
 # Snoozer Premium — only paid product
 
-## Current operating state — 26 November 2026
+## Current operating state — 27 November 2026
 
-**Live Premium Checkout is intentionally enabled.** The owner has explicitly confirmed that the live payment configuration is valid and payments are meant to be accepted. This is the current operating instruction and supersedes older notes in this document that described Checkout as OFF or instructed developers to keep activation gates disabled.
+**Live Premium Checkout is intentionally enabled.** The owner has explicitly confirmed that live payments and subscriptions are working. This is the current operating instruction and supersedes older notes in this document that described Checkout as OFF or instructed developers to keep activation gates disabled. The sampled database preflight figures below are a point-in-time view of the configured Snoozer mapping records; they must not be used to contradict the owner's confirmation or to infer that live subscriptions are unavailable.
 
 Do not disable Checkout, switch the Stripe mode, change the payment gates, rotate the live API key or webhook secret, alter prices, or modify billing settings as part of general optimisation. Payment changes require a specific payment-related instruction from the owner.
 

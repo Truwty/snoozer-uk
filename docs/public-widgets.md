@@ -1,6 +1,6 @@
 # Public provider widgets
 
-Stage 4 increment, 17 November 2026. Migration 20261110005800.
+**Reviewed:** 27 November 2026. The implementation uses published-link lookups, fixed upstream hosts, bounded responses and service-only caching. Original migration: `20261110005800_public_widget_cache`.
 
 ## Supported behaviour
 
