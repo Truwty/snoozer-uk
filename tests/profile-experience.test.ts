@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { ProfileCard } from "../src/components/profile-card";
 import { defaultAppearance, publishedProfile } from "../src/lib/profile";
 import { defaultProfileWidgets } from "../src/lib/profile-widgets";
@@ -28,6 +29,22 @@ function profileWith(overrides: Record<string, unknown> = {}) {
 }
 
 describe("compact public bio experience", () => {
+  it("keeps bio profile social icons horizontal and inner content cards compact", () => {
+    const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
+    const socialStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-social-links {");
+    const compactCardStart = styles.indexOf(".public-page .profile-card--bio-experience :is(.profile-text-section, .profile-content-block) {");
+    const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\n}", socialStart));
+    const compactCardRule = compactCardStart < 0 ? "" : styles.slice(compactCardStart, styles.indexOf("\n}", compactCardStart));
+
+    expect(socialRule).toContain("display: flex;");
+    expect(socialRule).toContain("flex-direction: row;");
+    expect(socialRule).toContain("justify-content: center;");
+    expect(socialRule).toContain("gap: 12px;");
+    expect(socialRule).toContain("height: auto;");
+    expect(compactCardRule).toContain("min-height: 0;");
+    expect(compactCardRule).toContain("padding: .55rem .7rem;");
+  });
+
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
     const profile = profileWith();
     const html = renderToStaticMarkup(createElement(ProfileCard, {
