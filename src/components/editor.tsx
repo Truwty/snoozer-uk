@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
+import { StudioBackgroundUploader } from "@/components/studio-background-uploader";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
+import { galleryIncoming, galleryMaxBytes, galleryTypes, type GalleryItem } from "@/lib/gallery";
 import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
 import { supabaseConfig } from "@/lib/env";
 import { safeLink } from "@/lib/safe-link";
@@ -73,6 +74,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
   const [customUrlError, setCustomUrlError] = useState("");
   const customIconInput = useRef<HTMLInputElement>(null);
   const [dropActive, setDropActive] = useState(false);
+  const [uploadedBackgroundImages, setUploadedBackgroundImages] = useState<GalleryItem[]>([]);
   const pointerBlockDrag = useRef<{ pointerId: number; kind: BuilderBlock; x: number; y: number; active: boolean } | null>(null);
   const suppressBlockClick = useRef(false);
   const linkLabels = useRef<Record<number, HTMLInputElement | null>>({});
@@ -80,6 +82,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
   const customColours = content.appearance.colors ?? {};
+  const previewGallery = [...saved.gallery, ...uploadedBackgroundImages.filter((image) => !saved.gallery.some((savedImage) => savedImage.id === image.id))];
   const galleryWarning = galleryMemoryWarning(saved.gallery);
   const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
@@ -114,6 +117,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
           ...current.content.appearance,
           ...template.appearance,
           ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}),
+          ...(current.content.appearance.backgroundVideo ? { backgroundVideo: current.content.appearance.backgroundVideo } : {}),
           ...(current.content.appearance.effects ? { effects: current.content.appearance.effects } : {}),
         },
         sections: includeSections && current.content.sections.length === 0 ? template.sections : current.content.sections,
@@ -132,7 +136,21 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
   function setBackgroundImage(id?: string) {
     const appearance = { ...content.appearance };
     delete appearance.backgroundImage;
-    set("appearance", id ? { ...content.appearance, backgroundImage: id } : appearance);
+    if (id) {
+      delete appearance.backgroundVideo;
+      appearance.backgroundImage = id;
+    }
+    set("appearance", appearance);
+  }
+
+  function setBackgroundVideo(id?: string) {
+    const appearance = { ...content.appearance };
+    delete appearance.backgroundVideo;
+    if (id) {
+      delete appearance.backgroundImage;
+      appearance.backgroundVideo = id;
+    }
+    set("appearance", appearance);
   }
 
   function move(from: number, to: number) {
@@ -495,20 +513,19 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
           <div className="studio-assets-grid">
             <article className="studio-asset-card studio-asset-background">
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">▧</span><span className="studio-asset-kind">01 / BACKGROUND</span></div>
-              <div className="studio-asset-preview">
-                {content.appearance.backgroundImage && saved.gallery.some((image)=>image.id===content.appearance.backgroundImage)
-                  ? <img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/>
-                  : <div className="studio-asset-placeholder"><span aria-hidden="true">▧</span><strong>No background selected</strong></div>}
-              </div>
               <h3>Background</h3>
-              <p className="muted">Choose the image shown behind your profile card.</p>
-              <label>Background image
-                <select value={content.appearance.backgroundImage??""} onChange={(event)=>setBackgroundImage(event.target.value||undefined)}>
-                  <option value="">No background image</option>
-                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
-                </select>
-              </label>
-              <Link className="button small" href={galleryHref}>Upload background</Link>
+              <p className="muted">Upload a still image or a silent looping video clip. Use the buttons to choose files directly—there is no separate image drop zone.</p>
+              <StudioBackgroundUploader
+                profileId={saved.profile_id}
+                revision={saved.revision}
+                gallery={previewGallery}
+                backgroundImage={content.appearance.backgroundImage}
+                backgroundVideo={content.appearance.backgroundVideo}
+                onSelectImage={setBackgroundImage}
+                onSelectVideo={setBackgroundVideo}
+                onImageAdded={(image) => setUploadedBackgroundImages((current) =>
+                  [...current.filter((item) => item.id !== image.id), image])}
+              />
             </article>
             <article className="studio-asset-card studio-asset-audio">
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">♫</span><span className="studio-asset-kind">02 / AUDIO</span></div>
@@ -855,9 +872,9 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
       </section>}
       <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
-          ...saved, ...content, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
+          ...saved, ...content, gallery: previewGallery, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
           sections: content.sections.length ? content.sections : template.sections,
-        } : { ...saved, ...content }}
+        } : { ...saved, ...content, gallery: previewGallery }}
           avatarSrc={saved.avatar && !removeAvatar ? `/studio/avatar/${saved.avatar}` : undefined}
           onMoveLayoutItem={(from, to) => set("pageLayout", moveProfilePageElement(pageLayout, from, to, { ...content, gallery: saved.gallery }))}
           onSelectLayoutItem={(item: ProfilePageLayoutItem) => {
