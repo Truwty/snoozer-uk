@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type TouchEvent } from "react";
 
 type PointerDrag = {
   pointer: number;
+  pointerType: string;
   from: number;
   order: string;
   startY: number;
@@ -33,19 +34,6 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     return card && list.current?.contains(card) ? Number(card.dataset.reorderIndex) : null;
   }
 
-  function beginDrag(event: PointerEvent<HTMLSpanElement>) {
-    const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
-    const index = Number(card?.dataset.reorderIndex);
-    if (!items[index]) return;
-    if (event.button !== 0 || !event.isPrimary || drag.current) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = {
-      pointer: event.pointerId, from: index, order: orderOf(items),
-      startY: event.clientY, x: event.clientX, y: event.clientY, active: false, frame: 0,
-    };
-  }
-
   function updateDrop(active: PointerDrag) {
     setDropIndex(sectionAt(active.x, active.y));
     const edge = 56;
@@ -56,26 +44,81 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     if (window.scrollY !== previousScroll) active.frame = window.requestAnimationFrame(() => updateDrop(active));
   }
 
-  function moveDrag(event: PointerEvent<HTMLSpanElement>) {
-    const active = drag.current;
-    if (!active || active.pointer !== event.pointerId) return;
-    active.x = event.clientX;
-    active.y = event.clientY;
+  function updatePosition(active: PointerDrag, x: number, y: number) {
+    active.x = x;
+    active.y = y;
     if (!active.active && Math.abs(active.y - active.startY) < 6) return;
     active.active = true;
     window.cancelAnimationFrame(active.frame);
     updateDrop(active);
   }
 
-  function finishDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
+  function beginDrag(event: PointerEvent<HTMLSpanElement>) {
+    const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
+    const index = Number(card?.dataset.reorderIndex);
+    if (!items[index]) return;
+    if (event.button !== 0 || !event.isPrimary || drag.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = {
+      pointer: event.pointerId, pointerType: event.pointerType, from: index, order: orderOf(items),
+      startY: event.clientY, x: event.clientX, y: event.clientY, active: false, frame: 0,
+    };
+  }
+
+  function beginTouchDrag(event: TouchEvent<HTMLSpanElement>) {
+    if (drag.current || event.touches.length === 0) return;
+    const touch = event.touches[0];
+    const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
+    const index = Number(card?.dataset.reorderIndex);
+    if (!items[index]) return;
+    event.preventDefault();
+    drag.current = {
+      pointer: -1, pointerType: "touch", from: index, order: orderOf(items),
+      startY: touch.clientY, x: touch.clientX, y: touch.clientY, active: false, frame: 0,
+    };
+  }
+
+  function moveDrag(event: PointerEvent<HTMLSpanElement>) {
     const active = drag.current;
     if (!active || active.pointer !== event.pointerId) return;
+    updatePosition(active, event.clientX, event.clientY);
+  }
+
+  function moveTouchDrag(event: TouchEvent<HTMLSpanElement>) {
+    const active = drag.current;
+    const touch = event.touches[0];
+    if (!active || active.pointerType !== "touch" || !touch) return;
+    event.preventDefault();
+    updatePosition(active, touch.clientX, touch.clientY);
+  }
+
+  function finishActiveDrag(active: PointerDrag, commit: boolean) {
     drag.current = null;
     window.cancelAnimationFrame(active.frame);
     setDropIndex(null);
     if (!commit || !active.active || orderOf(items) !== active.order) return;
+    // Use the last tracked move position. Touch pointer-up can report stale or
+    // zero coordinates while pointer capture is active.
     const destination = sectionAt(active.x, active.y);
     if (destination !== null) move(active.from, destination);
+  }
+
+  function finishDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
+    const active = drag.current;
+    if (!active || active.pointer !== event.pointerId) return;
+    finishActiveDrag(active, commit);
+  }
+
+  function finishTouchDrag(event: TouchEvent<HTMLSpanElement>, commit: boolean) {
+    const active = drag.current;
+    if (!active || active.pointerType !== "touch") return;
+    const touch = event.changedTouches[0];
+    if (touch) {
+      active.x = touch.clientX;
+      active.y = touch.clientY;
+    }
+    finishActiveDrag(active, commit);
   }
 
   const handle = {
@@ -84,6 +127,10 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     onPointerUp: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, true),
     onPointerCancel: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, false),
     onLostPointerCapture: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, false),
+    onTouchStart: beginTouchDrag,
+    onTouchMove: moveTouchDrag,
+    onTouchEnd: (event: TouchEvent<HTMLSpanElement>) => finishTouchDrag(event, true),
+    onTouchCancel: (event: TouchEvent<HTMLSpanElement>) => finishTouchDrag(event, false),
   };
 
   return { list, dropIndex, handle };
