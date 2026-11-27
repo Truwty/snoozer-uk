@@ -1090,8 +1090,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await replacementOwnerClient.storage.from("avatar-incoming").uploadToSignedUrl(
       `${oldScope}/pending`, lateUpload!.token, image, { contentType: "image/png" },
     )).error).toBeNull();
-    expect((await replacementOwnerClient.storage.from("avatar-incoming").upload(
-      `${newScope}/pending`, image, { contentType: "image/png" },
+    const { data: newUpload, error: newSigningError } = await incoming.createSignedUploadUrl(`${newScope}/pending`);
+    expect(newSigningError).toBeNull();
+    expect((await replacementOwnerClient.storage.from("avatar-incoming").uploadToSignedUrl(
+      `${newScope}/pending`, newUpload!.token, image, { contentType: "image/png" },
     )).error).toBeNull();
 
     // Move the clock forward for this one test job in the disposable Docker database.
