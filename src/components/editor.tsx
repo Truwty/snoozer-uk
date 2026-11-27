@@ -131,14 +131,20 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
     setTemplateId("");
   }
 
-  function setBackgroundImage(id?: string) {
-    const appearance = { ...content.appearance };
-    delete appearance.backgroundImage;
-    if (id) {
-      delete appearance.backgroundVideo;
-      appearance.backgroundImage = id;
-    }
-    set("appearance", appearance);
+  function setBackgroundImage(id?: string, revisionOverride?: number) {
+    edit((current) => {
+      const appearance = { ...current.content.appearance };
+      delete appearance.backgroundImage;
+      if (id) {
+        delete appearance.backgroundVideo;
+        appearance.backgroundImage = id;
+      }
+      return {
+        ...current,
+        ...(typeof revisionOverride === "number" ? { revision: revisionOverride } : {}),
+        content: { ...current.content, appearance },
+      };
+    });
   }
 
   function setBackgroundVideo(id?: string) {
@@ -525,7 +531,8 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
                   setUploadedBackgroundImages((current) =>
                     [...current.filter((item) => item.id !== image.id), image]);
                   // Image processing increments the profile revision; refresh before autosaving its background selection.
-                  await refreshSaved();
+                  const latest = await refreshSaved();
+                  return latest.revision;
                 }}
               />
             </article>
