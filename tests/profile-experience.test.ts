@@ -31,8 +31,10 @@ function profileWith(overrides: Record<string, unknown> = {}) {
 describe("compact public bio experience", () => {
   it("uses the same social icon row styling as the Creator Studio preview", () => {
     const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
-    const socialRule = styles.match(/\\.profile-social-links\\s*\\{([^}]*)\\}/)?.[1] ?? "";
-    const iconRule = styles.match(/\\.profile-social-link\\s*\\{([^}]*)\\}/)?.[1] ?? "";
+    const socialStart = styles.indexOf(".profile-social-links {");
+    const iconStart = styles.indexOf(".profile-social-link {");
+    const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\n}", socialStart));
+    const iconRule = iconStart < 0 ? "" : styles.slice(iconStart, styles.indexOf("\n}", iconStart));
 
     expect(socialRule).toContain("display: flex;");
     expect(socialRule).toContain("justify-content: center;");
