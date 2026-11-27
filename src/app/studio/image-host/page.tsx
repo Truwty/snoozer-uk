@@ -5,24 +5,28 @@ import { mediaLibrary } from "@/lib/media-folders";
 import { pendingGalleryItem } from "@/lib/gallery";
 import { readStudioDraft, requireAccount, studioHref, type StudioProfileQuery } from "@/lib/profiles-server";
 import { createTextPaste, deleteTextPaste, updateTextPaste } from "./actions";
+import { ImageHostPurchase } from "@/components/image-host-purchase";
+import { imageHostLiveOffers } from "@/lib/image-host-live-service";
 import { z } from "zod";
 
 export const metadata = { title: "Image Host", robots: { index: false, follow: false } };
 
-type Search=StudioProfileQuery&{paste?:string|string[]};
+type Search=StudioProfileQuery&{paste?:string|string[];purchase?:string|string[]};
 const pastesSchema=z.array(z.object({
   id:z.uuid(),title:z.string(),body:z.string(),is_public:z.boolean(),created_at:z.string(),updated_at:z.string(),
 }));
 
 export default async function ImageHostPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const {profile,paste}=await searchParams;
+  const {profile,paste,purchase}=await searchParams;
   const draft=await readStudioDraft(profile);
   const {client}=await requireAccount();
-  const [{data:pastesData,error:pastesError},{data:pendingData,error:pendingError},{data:libraryData,error:libraryError},{data:planData}] = await Promise.all([
+  const [{data:pastesData,error:pastesError},{data:pendingData,error:pendingError},{data:libraryData,error:libraryError},{data:planData},{data:imageHostStatusData,error:imageHostStatusError},offers] = await Promise.all([
     client.rpc("list_my_image_host_text_pastes"),
     draft?client.rpc("pending_gallery_upload",{p_profile:draft.profile_id}):Promise.resolve({data:null,error:null}),
     draft?client.rpc("get_media_folders",{p_profile:draft.profile_id}):Promise.resolve({data:null,error:null}),
     client.rpc("get_my_plan"),
+    client.rpc("get_my_image_host_status"),
+    imageHostLiveOffers(),
   ]);
   if(pastesError)throw new Error("Couldn’t load your text pastes.");
   if(draft&&(pendingError||libraryError||!libraryData))throw new Error("Couldn’t load your media library.");
@@ -31,6 +35,15 @@ export default async function ImageHostPage({ searchParams }: { searchParams: Pr
   const library=libraryData?mediaLibrary.parse(libraryData):null;
   const selected=draft&&profile!==undefined?draft.profile_id:undefined;
   const pasteStatus=typeof paste==="string"?paste:"";
+  const purchaseStatus=typeof purchase==="string"?purchase:"";
+  const imageHostAccess=z.object({
+    active:z.boolean(),
+    status:z.enum(["reserved","pending","active","expired","refunded","disputed","fraud"]).nullable(),
+    verifiedAt:z.string().nullable(),
+    paymentIntent:z.string().nullable(),
+  }).safeParse(imageHostStatusData);
+  const imageHostActive=!imageHostStatusError&&imageHostAccess.success&&imageHostAccess.data.active;
+  const approvedOffer=offers[0]??null;
 
   return <main className="shell studio-shell studio-image-host">
     <header className="studio-page-heading">
@@ -39,9 +52,23 @@ export default async function ImageHostPage({ searchParams }: { searchParams: Pr
       {draft&&<Link className="button small" href={studioHref("/studio/customize",selected)}>Back to Customize</Link>}
     </header>
 
+    {purchaseStatus==="processing"&&<p className="message" role="status">Stripe returned you to Snoozer. Image Host access activates only after the one-time payment has been verified.</p>}
+    {purchaseStatus==="cancelled"&&<p className="message" role="status">Checkout was cancelled. No Image Host payment was confirmed.</p>}
+    {purchaseStatus==="unavailable"&&<p className="message error" role="alert">Image Host Checkout could not be started. No payment was initiated by this attempt.</p>}
+    {!imageHostStatusError&&!imageHostAccess.success&&<p className="message error" role="alert">Image Host purchase status could not be verified. Existing profile storage remains available.</p>}
     {pasteStatus&&<p className="message" role={pasteStatus==="failed"||pasteStatus==="invalid"?"alert":"status"}>
       {({created:"Text paste created.",saved:"Text paste updated.",deleted:"Text paste deleted.",limit:"You can save up to 25 text pastes.",invalid:"Check the title and keep the paste under 16 KB.",failed:"Couldn’t save that paste. Refresh and try again."} as Record<string,string>)[pasteStatus]??""}
     </p>}
+
+    <section className="studio-dashboard-panel studio-image-host-offer-panel">
+      <div className="studio-panel-heading">
+        <div><p className="eyebrow">LIFETIME ADD-ON</p><h2>Image Host</h2>
+          <p className="muted">One purchase for lifetime access to the Image Host add-on.</p></div>
+        <ImageHostPurchase offer={approvedOffer} active={imageHostActive}/>
+      </div>
+      {imageHostActive&&<p className="studio-image-host-entitlement" role="status">Lifetime Image Host access is active on this Snoozer account.</p>}
+      {!imageHostActive&&<p className="studio-image-host-gate-note">The offer appears as €4.99 lifetime. Checkout stays locked until its live Stripe Price and separate tax/legal review are approved.</p>}
+    </section>
 
     <section className="studio-dashboard-panel">
       <div className="studio-panel-heading">
