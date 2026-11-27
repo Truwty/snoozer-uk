@@ -2776,3 +2776,51 @@ body:has(> .public-page[data-background-image="true"]) {
 .public-page .profile-card--bio-experience .profile-audio-player {
   padding: .8rem .85rem;
 }
+
+
+/* Compact the public music player and keep a clear break after social links. */
+.public-page .profile-card--bio-experience .profile-audio-player {
+  margin-block-start: .85rem;
+  padding: .6rem .7rem;
+  gap: .5rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-main {
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: .7rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-cover {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-transport {
+  min-height: 2.35rem;
+  gap: .45rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-step {
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-toggle {
+  width: 2.4rem;
+  height: 2.4rem;
+  min-height: 2.4rem;
+}
+.public-page .profile-card--bio-experience .profile-audio-timeline {
+  grid-template-columns: 2.1rem minmax(0, 1fr) 2.1rem;
+  gap: .45rem;
+}
+@media (max-width: 22rem) {
+  .public-page .profile-card--bio-experience .profile-audio-player {
+    margin-block-start: .7rem;
+    padding: .5rem .55rem;
+  }
+  .public-page .profile-card--bio-experience .profile-audio-main {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: .55rem;
+  }
+  .public-page .profile-card--bio-experience .profile-audio-cover {
+    width: 3rem;
+    height: 3rem;
+  }
+}
