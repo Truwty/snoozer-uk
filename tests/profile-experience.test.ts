@@ -44,7 +44,7 @@ describe("compact public bio experience", () => {
     expect(html).toContain("profile-audio-main");
     expect(html).toContain("profile-audio-transport");
     expect(html).toContain("profile-audio-timeline");
-    expect(html).toContain("autoplay");
+    expect(html).toContain('autoPlay=""');
     expect(html).toContain('aria-label="Profile music player"');
     expect(html).toContain('src="https://cdn.example.com/audio/midnight-drive.mp3"');
     expect(html).toContain("Midnight Drive");
