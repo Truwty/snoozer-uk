@@ -14,7 +14,7 @@ test("public status page shows real service checks and incident history", async 
   await expect(services).toHaveCount(5);
   await expect(services.nth(0)).toContainText("Snoozer website");
   await expect(services.nth(1)).toContainText("Database & media storage");
-  await expect(page.getByRole("link", { name: "Help centre" })).toHaveAttribute("href", "/help");
+  await expect(page.getByRole("link", { name: "Help centre", exact: true })).toHaveAttribute("href", "/help");
 
   await page.setViewportSize({ width: 320, height: 820 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
