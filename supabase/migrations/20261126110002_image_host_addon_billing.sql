@@ -8,6 +8,7 @@ create table snoozer.image_host_policy (
   tax_reviewed boolean not null default false,
   legal_reviewed boolean not null default false,
   automatic_tax_enabled boolean not null default false,
+  features_ready boolean not null default false,
   reviewed_at timestamptz
 );
 insert into snoozer.image_host_policy(singleton) values(true);
@@ -70,7 +71,7 @@ as $function$
   select p.price_id,p.product_id,p.currency,p.unit_amount,k.automatic_tax_enabled
   from snoozer.image_host_prices p
   join snoozer.image_host_policy k on k.singleton=true
-  where k.checkout_enabled and k.tax_reviewed and k.legal_reviewed
+  where k.checkout_enabled and k.tax_reviewed and k.legal_reviewed and k.features_ready
     and p.retired_at is null
   order by p.price_id
 $function$;
@@ -89,7 +90,7 @@ begin
     raise exception 'Verified account required' using errcode='42501';
   end if;
   if not exists(select 1 from snoozer.image_host_policy
-    where singleton and checkout_enabled and tax_reviewed and legal_reviewed) then
+    where singleton and checkout_enabled and tax_reviewed and legal_reviewed and features_ready) then
     return null;
   end if;
 
@@ -236,6 +237,7 @@ as $function$
     'checkoutEnabled',k.checkout_enabled,
     'taxReviewed',k.tax_reviewed,
     'legalReviewed',k.legal_reviewed,
+    'featuresReady',k.features_ready,
     'automaticTaxEnabled',k.automatic_tax_enabled,
     'approvedOffers',(select count(*) from snoozer.image_host_prices where retired_at is null),
     'activePurchases',(select count(*) from snoozer.image_host_purchases where status='active'),
