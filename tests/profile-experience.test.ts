@@ -41,6 +41,10 @@ describe("compact public bio experience", () => {
     expect(html).toContain("click to enter...");
     expect(html).toContain("profile-social-links");
     expect(html).toContain("<svg");
+    expect(html).toContain("profile-audio-main");
+    expect(html).toContain("profile-audio-transport");
+    expect(html).toContain("profile-audio-timeline");
+    expect(html).toContain('autoPlay=""');
     expect(html).toContain('aria-label="Profile music player"');
     expect(html).toContain('src="https://cdn.example.com/audio/midnight-drive.mp3"');
     expect(html).toContain("Midnight Drive");
@@ -50,6 +54,24 @@ describe("compact public bio experience", () => {
     expect(html).not.toContain("This section is hidden in the compact bio experience.");
     expect(html).not.toContain("guestbook-form");
     expect(html).not.toContain("profile-widgets");
+  });
+
+  it("renders a selected public background video as a viewport layer, separate from the profile card", () => {
+    const videoId = "00000000-0000-4000-8000-000000000041";
+    const profile = profileWith({
+      appearance: { ...defaultAppearance, backgroundVideo: videoId },
+    });
+    const html = renderToStaticMarkup(createElement(ProfileCard, {
+      profile, entryExperience: true,
+      avatarSrc: "/media/avatar/bio-page-example/avatar.png",
+    }));
+    const viewportLayer = html.indexOf('class="profile-page-background"');
+    const entryShell = html.indexOf('class="profile-entry-shell"');
+    expect(viewportLayer).toBeGreaterThanOrEqual(0);
+    expect(entryShell).toBeGreaterThan(viewportLayer);
+    expect(html.slice(viewportLayer, entryShell)).toContain("profile-background-video--viewport");
+    expect(html.slice(entryShell)).not.toContain("profile-background-video--viewport");
+    expect(html).toContain('data-background-video="true"');
   });
 
   it("does not render a volume control or player for a hidden audio link", () => {
