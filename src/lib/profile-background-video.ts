@@ -10,8 +10,9 @@ export const profileBackgroundVideoFormats = {
 export type ProfileBackgroundVideoExtension = keyof typeof profileBackgroundVideoFormats;
 
 export function profileBackgroundVideoExtension(value: string): ProfileBackgroundVideoExtension | null {
-  return (Object.entries(profileBackgroundVideoFormats).find(([, format]) => format.contentType === value)?.[0]
-    as ProfileBackgroundVideoExtension | undefined) ?? null;
+  if (value === "video/mp4") return "mp4";
+  if (value === "video/webm") return "webm";
+  return null;
 }
 
 export function validProfileBackgroundVideoBytes(bytes: Uint8Array, extension: ProfileBackgroundVideoExtension) {
