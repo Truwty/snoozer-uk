@@ -27,7 +27,7 @@ type Props = {
   backgroundVideo?: string;
   onSelectImage: (id?: string) => void;
   onSelectVideo: (id?: string) => void;
-  onImageAdded: (image: GalleryItem) => void;
+  onImageAdded: (image: GalleryItem) => void | Promise<void>;
 };
 
 const videoAccept = ".mp4,.m4v,.webm,video/mp4,video/webm";
@@ -88,7 +88,7 @@ export function StudioBackgroundUploader({
         return;
       }
       stagedId = undefined;
-      onImageAdded(completed.image);
+      await onImageAdded(completed.image);
       onSelectImage(completed.image.id);
       setMessage("Background image added to your draft. Publish to make it visible.");
     } catch {
