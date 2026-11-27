@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ActionState } from "@/lib/actions";
@@ -184,6 +185,8 @@ export async function updateLanguagePreference(form: FormData) {
    ? user.user_metadata as Record<string,unknown> : {};
  const {error}=await client.auth.updateUser({data:{...metadata,snoozer_locale:locale.data}});
  if(error)redirect("/studio/account?language=failed");
+ const jar=await cookies();
+ jar.set("snoozer_locale",locale.data,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:60*60*24*365});
  revalidatePath("/studio/account");
  revalidatePath("/studio");
  redirect("/studio/account?language=saved");

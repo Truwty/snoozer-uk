@@ -53,3 +53,35 @@ test("homepage product preview keeps the real profile renderer and real social i
   await expect(page.locator(".home-profile-preview .profile-social-mark svg").first()).toBeAttached();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
+
+
+test("homepage topbar account control is icon-only and keeps its menu", async ({ page }) => {
+  await page.goto("/");
+  const trigger = page.locator(".home-immersive .account-trigger");
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-label", /Open .* menu/);
+  await expect(trigger.locator(".account-trigger-identity, .account-chevron")).toHaveCount(0);
+  await trigger.click();
+  await expect(page.locator(".home-immersive .account-popover")).toBeVisible();
+});
+
+test("homepage footer language menu opens upward and lists supported locales", async ({ page }) => {
+  await page.goto("/");
+  const picker = page.locator(".home-footer-language");
+  await expect(picker).toBeVisible();
+  await expect(picker.locator("summary").getByText(/English \(United States\)/)).toBeVisible();
+  await picker.locator("summary").click();
+  await expect(picker.locator(".home-language-menu button")).toHaveCount(6);
+  await expect(picker.getByRole("button", { name: /Español/ })).toBeVisible();
+  await expect(picker.getByRole("button", { name: /Türkçe/ })).toBeVisible();
+});
+
+
+test("homepage footer language selection is saved for the current browser", async ({ page }) => {
+  await page.goto("/");
+  const picker = page.locator(".home-footer-language");
+  await picker.locator("summary").click();
+  await picker.getByRole("button", { name: /Español/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "es-ES");
+  await expect(picker).toContainText("Español (España)");
+});
