@@ -740,6 +740,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Theme").selectOption("daybreak");
     await expect(designPreview).toHaveClass(/theme-daybreak/);
     await page.getByLabel("Link colour").selectOption("mint");
+    const minimalMp4 = Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
+    await page.locator('input[type="file"][accept*="video/mp4"]').setInputFiles({
+      name: "profile-background.mp4", mimeType: "video/mp4", buffer: minimalMp4,
+    });
+    await expect(designPreview).toHaveAttribute("data-background-video", "true");
+    await expect(designPreview.locator("video.profile-background-video")).toHaveAttribute("src", /\/studio\/background-video\//);
     await page.getByLabel("Background Effects").selectOption("gradient");
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
