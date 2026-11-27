@@ -9,7 +9,7 @@ import { anonymousClient } from "@/lib/supabase";
 import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge } from "@/lib/account-sessions";
 import { canonicalUsername, username } from "@/lib/profile";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "discover", "pricing", "help", "legal", "owner", "appeal", "report", "account-restricted", "maintenance", "status"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "discover", "pricing", "legal", "owner", "appeal", "report", "account-restricted", "maintenance"]);
 // Creator marketplace removed. Keep Snoozer-owned Premium subscriptions under /studio/plan
 // and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
 // is intentionally disabled. Never reopen seller onboarding.
@@ -37,6 +37,17 @@ export async function proxy(request: NextRequest) {
       "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
     } });
   }
+  const pathname = request.nextUrl.pathname;
+  const localTestHost = ["localhost", "127.0.0.1"].includes(request.nextUrl.hostname);
+  if (!localTestHost && (pathname === "/status" || pathname === "/status/")) {
+    return NextResponse.redirect(new URL("https://status.snoozer.uk/"), { status: 308 });
+  }
+  if (!localTestHost && (pathname === "/help" || pathname.startsWith("/help/"))) {
+    const path = pathname === "/help" ? "/" : pathname.slice("/help".length);
+    const destination = new URL(path, "https://help.snoozer.uk");
+    destination.search = request.nextUrl.search;
+    return NextResponse.redirect(destination, { status: 308 });
+  }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
   const plainTextPaste = /^\/paste\/[^/]+\/?$/.test(request.nextUrl.pathname);
@@ -57,8 +68,7 @@ export async function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", csp);
   headers.delete(domainHostHeader); headers.delete(domainUserHeader);
   const host = (request.headers.get("host") ?? request.nextUrl.host).toLowerCase();
-  const statusDomain = host === "status.snoozer.uk";
-  if (!statusDomain && !isMaintenanceExempt(request.nextUrl.pathname, request.method) && supabaseUrl && supabaseKey) {
+  if (!isMaintenanceExempt(request.nextUrl.pathname, request.method) && supabaseUrl && supabaseKey) {
     // A provider outage must never make the Owner recovery route inaccessible.
     // A transient RPC failure fails open, while a confirmed maintenance flag
     // rewrites public pages to a real 503 (never caches successful content).
@@ -76,17 +86,7 @@ export async function proxy(request: NextRequest) {
     }
   }
   const deploymentAlias = host !== siteUrl().host.toLowerCase() && host === process.env.RENDER_EXTERNAL_HOSTNAME?.toLowerCase();
-  const custom = host !== siteUrl().host.toLowerCase() && !deploymentAlias && !statusDomain;
-  const method = request.method;
-  const statusDomainAllowedMethod = (
-    (["/", "/status", "/api/status", "/icon.svg", "/favicon.ico", "/robots.txt"].includes(request.nextUrl.pathname)
-      && ["GET", "HEAD"].includes(method))
-    || (request.nextUrl.pathname === "/api/status/bugs" && method === "POST")
-    || (request.nextUrl.pathname.startsWith("/_next/") && ["GET", "HEAD"].includes(method))
-  );
-  const statusDomainRoot = statusDomain && request.nextUrl.pathname === "/" && ["GET", "HEAD"].includes(method);
-  const statusDomainRedirect = statusDomain && !statusDomainAllowedMethod && ["GET", "HEAD"].includes(method);
-  const statusDomainBlocked = statusDomain && !statusDomainAllowedMethod && !["GET", "HEAD"].includes(method);
+  const custom = host !== siteUrl().host.toLowerCase() && !deploymentAlias;
   let domainTarget: string | undefined;
   let domainFailure: 404 | 503 | undefined;
   const marker = request.nextUrl.pathname === "/.well-known/snoozer-domain" && ["GET", "HEAD"].includes(request.method);
@@ -124,7 +124,7 @@ export async function proxy(request: NextRequest) {
     || request.nextUrl.pathname === "/account-restricted"
     || request.nextUrl.pathname === "/account/data"
     || request.nextUrl.pathname === "/account/notifications";
-  if (!custom && !statusDomain && protectedPage && (!supabaseUrl || !supabaseKey)) {
+  if (!custom && protectedPage && (!supabaseUrl || !supabaseKey)) {
     const next = request.nextUrl.pathname + request.nextUrl.search;
     const signIn = new URL("/sign-in", request.url);
     signIn.searchParams.set("next", next);
@@ -137,7 +137,7 @@ export async function proxy(request: NextRequest) {
   let missing = false;
   let destination: URL | undefined;
   let redirectStatus: 307 | 308 = 307;
-  if (!custom && !statusDomain && !canonicalTarget && slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
+  if (!custom && !canonicalTarget && slug && !topLevelPages.has(slug) && username.safeParse(canonicalUsername(slug)).success
     && supabaseUrl && supabaseKey && ["GET", "HEAD"].includes(request.method)) {
     // Next's async dynamic notFound fallback can be blank without JavaScript.
     const { data, error } = await anonymousClient().rpc("resolve_public_address", { p_name: canonicalUsername(slug) });
@@ -149,11 +149,7 @@ export async function proxy(request: NextRequest) {
       redirectStatus = target.data === canonicalUsername(slug) ? 308 : 307;
     }
   }
-  const statusCanonicalTarget = statusDomainRedirect ? new URL(request.nextUrl.pathname + request.nextUrl.search, siteUrl()) : undefined;
-  const response = statusDomainBlocked ? new NextResponse("Not found.", { status: 404 })
-    : statusCanonicalTarget ? NextResponse.redirect(statusCanonicalTarget, { status: 308 })
-    : statusDomainRoot ? NextResponse.rewrite(new URL("/status" + request.nextUrl.search, request.url), { request: { headers } })
-    : canonicalTarget ? NextResponse.redirect(canonicalTarget, { status: 308 })
+  const response = canonicalTarget ? NextResponse.redirect(canonicalTarget, { status: 308 })
     : domainFailure ? new NextResponse(domainFailure === 503 ? "This profile domain is temporarily unavailable." : "Page not found.", { status: domainFailure })
     : domainTarget ? NextResponse.rewrite(new URL(`/${domainTarget}${request.nextUrl.search}`, request.url), { request: { headers } })
     : destination ? NextResponse.redirect(destination, { status: redirectStatus }) : missing
@@ -173,7 +169,7 @@ export async function proxy(request: NextRequest) {
     && !request.nextUrl.pathname.startsWith("/media/")
     && !request.nextUrl.pathname.startsWith("/auth/callback")
     && !request.nextUrl.pathname.startsWith("/auth/confirm");
-  if (!custom && !statusDomain && !canonicalTarget && sessionPage && supabaseUrl && supabaseKey) {
+  if (!custom && !canonicalTarget && sessionPage && supabaseUrl && supabaseKey) {
     const accounts = readSavedAccounts(request.cookies.get(accountListCookie)?.value);
     const slot = selectedAccountSlot(request.cookies.get(activeAccountCookie)?.value, accounts);
     const name = sessionStorageName(slot);
