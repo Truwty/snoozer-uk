@@ -5,12 +5,26 @@ import {noticeDeliveryConfigured} from "@/lib/owner/notification-delivery";
 import {providerStatuses} from "@/lib/owner/provider-status";
 import {z} from "zod";
 import {requireOwner} from "@/lib/owner/auth";
+import {storageAdmin} from "@/lib/supabase";
+import {updateStatusBugReport} from "./actions";
 const schema=z.object({active_sessions:z.number(),verified_accounts:z.number(),new_accounts_24h:z.number(),
  active_restrictions:z.number(),open_cases:z.number(),latest_admin_action:z.string().nullable()});
-export default async function OwnerSystem({searchParams}:{searchParams:Promise<{mail?:string;sent?:string;failed?:string;test?:string}>}) {
+const bugsSchema=z.array(z.object({
+ id:z.uuid(),category:z.string(),title:z.string(),description:z.string(),steps:z.string(),
+ page_path:z.string(),browser_info:z.string(),contact_email:z.string().nullable(),
+ status:z.enum(["new","reviewing","resolved","ignored"]),created_at:z.string(),updated_at:z.string()
+}));
+export default async function OwnerSystem({searchParams}:{searchParams:Promise<{mail?:string;sent?:string;failed?:string;test?:string;bugs?:string}>}) {
  const mailParams=await searchParams;
  const {client}=await requireOwner();
- const [{data,error},providers]=await Promise.all([client.rpc("owner_system_health"),providerStatuses()]);
+ const [{data,error},providers,bugReportsResult]=await Promise.all([
+  client.rpc("owner_system_health"),
+  providerStatuses(),
+  storageAdmin().from("status_bug_reports")
+   .select("id,category,title,description,steps,page_path,browser_info,contact_email,status,created_at,updated_at")
+   .order("created_at",{ascending:false}).limit(40)
+ ]);
+ const bugReports=bugsSchema.safeParse(bugReportsResult.data);
  const result=schema.safeParse(data);
  const mail=mailReadiness();
  return <main className="stack"><h1>Platform operations</h1>
@@ -55,6 +69,30 @@ export default async function OwnerSystem({searchParams}:{searchParams:Promise<{
   <form action={runOwnerNoticeDelivery}><button className="button" disabled={!noticeDeliveryConfigured()}>Send pending account notices (MFA required)</button></form>
  </div>
  <p className="muted">Both actions require verified Owner MFA. The test email goes only to your own confirmed account address and does not grant Premium or create a moderation case.</p>
+ </section>
+ <section className="panel stack" aria-labelledby="status-bug-reports-title">
+ <h2 id="status-bug-reports-title">Public status-page bug reports</h2>
+ <p className="muted">Private reports submitted by visitors at status.snoozer.uk. Status changes require verified Owner MFA.</p>
+ {(await searchParams).bugs==="updated"&&<p role="status">Bug report status updated.</p>}
+ {(await searchParams).bugs==="mfa-required"&&<p role="alert">Verified Owner MFA (AAL2) is required.</p>}
+ {(await searchParams).bugs==="failed"&&<p role="alert">The bug report could not be updated.</p>}
+ {bugReportsResult.error||!bugReports.success?<p role="alert">Bug reports are unavailable. Apply the status bug-report database migration first.</p>
+  :bugReports.data.length===0?<p>No bug reports have been submitted.</p>
+  :bugReports.data.map(report=><article className="panel stack" key={report.id}>
+    <div className="actions"><strong>{report.title}</strong><span className="muted">{report.category} · {report.status}</span></div>
+    <p>{report.description}</p>
+    {report.steps&&<p><strong>Steps:</strong> {report.steps}</p>}
+    <p className="muted">Page: {report.page_path} · {new Date(report.created_at).toLocaleString("en-GB")}</p>
+    <p className="muted">Browser: {report.browser_info||"Not supplied"}{report.contact_email?" · Follow-up: "+report.contact_email:""}</p>
+    <form action={updateStatusBugReport} className="actions">
+     <input type="hidden" name="id" value={report.id}/>
+     <label>Status <select name="status" defaultValue={report.status}>
+      <option value="new">New</option><option value="reviewing">Reviewing</option>
+      <option value="resolved">Resolved</option><option value="ignored">Ignored</option>
+     </select></label>
+     <button className="button">Save status</button>
+    </form>
+   </article>)}
  </section>
  <section className="panel stack"><h2>Operational safeguards</h2><p>Changes to production secrets, deployment configuration and Stripe account settings require separate provider access. This page never exposes credentials.</p></section>
  </main>;
