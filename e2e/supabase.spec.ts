@@ -577,8 +577,8 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     expect(publishedProfile.status()).toBe(200);
     const publishedHtml = await publishedProfile.text();
     expect(publishedHtml).toContain("Snoozer upload test");
-    const audioSrc = publishedHtml.match(/src="(\\/media\\/audio\\/[^"]+\\.mp3)"/)?.[1];
-    expect(audioSrc).toMatch(/^\\/media\\/audio\\/[0-9a-f-]{36}\\.mp3$/);
+    const audioSrc = publishedHtml.match(/src="([^"]+\.mp3)"/)?.[1];
+    expect(audioSrc).toMatch(/^\/media\/audio\/[0-9a-f-]{36}\.mp3$/);
     const audioResponse = await page.request.get("http://localhost:3000" + audioSrc!, { maxRedirects: 0 });
     expect(audioResponse.status()).toBe(307);
     await page.reload();
