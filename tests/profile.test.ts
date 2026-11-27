@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, link, profileAppearance, profileBackgroundImage, profileBackgroundVideoId, profileContent, profileTemplateStyles, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, link, profileAppearance, profileAppearanceWithBackgroundValidation, profileBackgroundImage, profileBackgroundVideoId, profileContent, profileTemplateStyles, safeLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
   it("accepts only registered first-party template style tokens and leaves older profiles valid", () => {
@@ -68,7 +68,7 @@ describe("profile validation", () => {
     expect(profileBackgroundVideoId({ appearance })).toBe(id);
     expect(profileBackgroundVideoId({ appearance: defaultAppearance })).toBeNull();
     expect(profileAppearance.safeParse({ ...defaultAppearance, backgroundVideo: "not-an-id" }).success).toBe(false);
-    expect(profileAppearance.safeParse({ ...defaultAppearance, backgroundImage: id, backgroundVideo: id }).success).toBe(false);
+    expect(profileAppearanceWithBackgroundValidation.safeParse({ ...defaultAppearance, backgroundImage: id, backgroundVideo: id }).success).toBe(false);
   });
 
   it("defaults new profile links to visible and validates visibility as a boolean", () => {
