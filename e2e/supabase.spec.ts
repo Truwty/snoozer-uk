@@ -938,7 +938,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(preview.locator(".countdown-remaining")).toHaveText("Countdown finished.");
     await editorTab(page, "Design");
     await page.getByLabel("Background Effects").selectOption("none");
-    await page.getByLabel("Location").fill("Studio East");
+    await page.getByRole("textbox", { name: "Location" }).fill("Studio East");
     await page.getByRole("checkbox", { name: "Show location on my profile" }).uncheck();
     await page.getByRole("checkbox", { name: "Monochrome Icons" }).uncheck();
     await page.getByRole("checkbox", { name: "Animated Title" }).uncheck();
@@ -964,7 +964,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
     await expect(page.getByLabel("Section 2 heading")).toHaveValue("Projects");
     await editorTab(page, "Design");
-    await expect(page.getByLabel("Location")).toHaveValue("Studio North");
+    await expect(page.getByRole("textbox", { name: "Location" })).toHaveValue("Studio North");
     await expect(page.getByRole("checkbox", { name: "Show location on my profile" })).toBeChecked();
     await expect(page.getByLabel("Background Effects")).toHaveValue("gradient");
     await expect(page.getByRole("checkbox", { name: "Monochrome Icons" })).toBeChecked();
