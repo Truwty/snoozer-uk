@@ -6,7 +6,7 @@ import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
-import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
+import { profileBackgroundImage, profileBackgroundVideoId, safeLink, type PublishedProfile } from "@/lib/profile";
 
 
 
@@ -385,6 +385,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundImage = background && galleryBase
     ? `url("${galleryBase}/${encodeURIComponent(background.id)}")`
     : undefined;
+  const backgroundVideoId = profileBackgroundVideoId(profile);
+  const backgroundVideoSrc = backgroundVideoId
+    ? `${preview ? "/studio/background-video" : "/media/background-video"}/${encodeURIComponent(backgroundVideoId)}`
+    : undefined;
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage }
     : {};
@@ -617,6 +621,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-template-style={profile.appearance.templateStyle ?? "classic"}
     data-background-image={backgroundImage ? "true" : undefined}
+    data-background-video={backgroundVideoSrc ? "true" : undefined}
     data-custom-cursor={customCursor ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
     data-swap-box-colors={profile.appearance.swapBoxColors ? "true" : undefined}
@@ -631,6 +636,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-text={effects.enabled ? effects.text : "none"}
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
+    {backgroundVideoSrc && <video className="profile-background-video" src={backgroundVideoSrc} muted autoPlay loop playsInline preload="metadata" aria-hidden="true" tabIndex={-1} />}
     <ProfileEffectsLayer effects={effects} />
     {effects.enabled && !entryExperience && <label className="profile-effects-toggle">
       <input type="checkbox" aria-label="Disable profile effects" />
