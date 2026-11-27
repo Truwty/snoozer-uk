@@ -470,6 +470,16 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
 
     await page.getByRole("link", { name: "Links", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Social profiles", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Purchase Image Host", exact: true }).click();
+    const imageHostDialog = page.getByRole("dialog", { name: "Image Host", exact: true });
+    await expect(imageHostDialog.getByText("4,99€", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText("Pay once. Keep it forever.", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText("Add Custom Image Host Domain", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText("Upload Analytics", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText("Checkout is not available yet", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByRole("button", { name: "Gift Image Host is not available yet" })).toBeDisabled();
+    await imageHostDialog.getByRole("button", { name: "Close Image Host purchase" }).click();
+
     await page.getByRole("button", { name: "Add Custom URL", exact: true }).click();
     const customDialog = page.getByRole("dialog", { name: "Add Custom URL Social", exact: true });
     await expect(customDialog).toBeVisible();
@@ -488,6 +498,19 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
     await expect(page.locator(".template-card-meta").first()).toContainText("uses");
     await expect(page.locator(".template-card-tags").first()).toBeVisible();
+    for (const label of ["Template Library","Favourite Templates","Last Used Templates","My Uploads"]) {
+      await expect(page.getByRole("link", { name: label, exact: true })).toBeVisible();
+    }
+    await page.getByRole("button", { name: "Create Template", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Create Template", exact: true })).toBeVisible();
+    await expect(page.getByText(/Only your theme, appearance and text-section structure are shared/)).toBeVisible();
+    await page.getByLabel("Template name", { exact: true }).fill("Reference creator template");
+    await page.getByLabel("Description", { exact: true }).fill("A free creator-submitted design.");
+    await page.getByRole("button", { name: "Submit Template for Review", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("submitted for review");
+    await expect(page.getByRole("heading", { name: "My Uploads", exact: true })).toBeVisible();
+    await expect(page.getByText("Reference creator template", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pending review", { exact: true })).toBeVisible();
 
     await page.getByRole("link", { name: "Image Host", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
