@@ -136,7 +136,7 @@ export default async function Home() {
           </div>
           <div className="home-footer-column">
             <h2>{copy.footer.general}</h2>
-            <nav aria-label={copy.footer.general}>
+            <nav aria-label="General links">
               <Link href="/sign-in">{copy.footer.login}</Link>
               <Link href="/sign-up">{copy.footer.signup}</Link>
               <Link href="/pricing">{copy.footer.pricing}</Link>
@@ -145,7 +145,7 @@ export default async function Home() {
           </div>
           <div className="home-footer-column">
             <h2>{copy.footer.resources}</h2>
-            <nav aria-label={copy.footer.resources}>
+            <nav aria-label="Resource links">
               <Link href="/help">{copy.footer.help}</Link>
               <Link href="/templates">{copy.footer.templates}</Link>
               <Link href="/discover">{copy.footer.discover}</Link>
@@ -153,14 +153,14 @@ export default async function Home() {
           </div>
           <div className="home-footer-column">
             <h2>{copy.footer.contact}</h2>
-            <nav aria-label={copy.footer.contact}>
+            <nav aria-label="Contact links">
               <Link href="/help">{copy.footer.support}</Link>
               <a href="mailto:snoozersupport@snoozer.uk">{copy.footer.supportEmail}</a>
             </nav>
           </div>
           <div className="home-footer-column">
             <h2>{copy.footer.legal}</h2>
-            <nav aria-label={copy.footer.legal}>
+            <nav aria-label="Legal links">
               <Link href="/terms">{copy.footer.terms}</Link>
               <Link href="/privacy">{copy.footer.privacy}</Link>
               <Link href="/legal">{copy.footer.legalInfo}</Link>
