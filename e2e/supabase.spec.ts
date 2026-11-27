@@ -737,7 +737,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Background Color")).toBeVisible();
     await editorTab(page, "Design");
     await page.getByLabel("Theme").selectOption("daybreak");
-    await expect(designPreview.locator(".profile-card")).toHaveClass(/theme-daybreak/);
+    await expect(designPreview).toHaveClass(/theme-daybreak/);
     await page.getByLabel("Link colour").selectOption("mint");
     await page.getByLabel("Background Effects").selectOption("gradient");
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
