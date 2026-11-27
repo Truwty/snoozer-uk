@@ -73,7 +73,7 @@ export function StudioBackgroundUploader({
       const config = supabaseConfig();
       const browser = createBrowserClient(config.url, config.key);
       const { error: uploadError } = await browser.storage.from(galleryIncoming)
-        .uploadToSignedUrl(started.path, started.token, file, { contentType: started.contentType, upsert: false });
+        .uploadToSignedUrl(started.path, started.token, file, { contentType: file.type, upsert: false });
       if (uploadError) {
         await discardGalleryUpload(profileId, revision, started.id);
         stagedId = undefined;
@@ -122,7 +122,7 @@ export function StudioBackgroundUploader({
       const config = supabaseConfig();
       const browser = createBrowserClient(config.url, config.key);
       const { error: uploadError } = await browser.storage.from("profile-background-incoming")
-        .uploadToSignedUrl(started.path, started.token, file, { contentType: file.type, upsert: false });
+        .uploadToSignedUrl(started.path, started.token, file, { contentType: started.contentType, upsert: false });
       if (uploadError) {
         await discardProfileBackgroundVideoUpload(profileId, revision, started.id);
         stagedId = undefined;
