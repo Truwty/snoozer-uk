@@ -47,7 +47,7 @@ export function ImageHostPurchase({offer,active}:Props){
     <p className="studio-image-host-intro">Upload and share images instantly with custom domains and an advanced image gallery.</p>
     {active?<p className="message" role="status">Lifetime access is active on this Snoozer account.</p>:null}
     <ul className="studio-image-host-feature-list">
-     {included.map(item=><li key={item}><span aria-hidden="true">✓</span>{item}</li>)}
+     {included.map(item=><li key={item}><span aria-hidden="true">✓</span><span>{item}</span></li>)}
     </ul>
     {active
       ?<p className="studio-image-host-active-note">This account already has permanent Image Host access.</p>
