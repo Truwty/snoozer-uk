@@ -1436,7 +1436,8 @@ test("sign-ins persist across navigation and independent accounts switch without
     await first.locator(".account-row-actions > summary").click();
     await first.getByRole("button", { name: "Switch to account" }).click();
     await expect(page).toHaveURL(/\/studio/);
-    await page.goto("/help");
+    // Help Centre is now a separate site; test the authenticated session on a main-site route.
+    await page.goto("/pricing");
     await page.reload();
     await page.locator(".account-dropdown > summary").click();
     await expect(page.locator(".account-popover").getByText(nameA, { exact: true })).toBeVisible();

@@ -38,10 +38,11 @@ export async function proxy(request: NextRequest) {
     } });
   }
   const pathname = request.nextUrl.pathname;
-  if (pathname === "/status" || pathname === "/status/") {
+  const localTestHost = ["localhost", "127.0.0.1"].includes(request.nextUrl.hostname);
+  if (!localTestHost && (pathname === "/status" || pathname === "/status/")) {
     return NextResponse.redirect(new URL("https://status.snoozer.uk/"), { status: 308 });
   }
-  if (pathname === "/help" || pathname.startsWith("/help/")) {
+  if (!localTestHost && (pathname === "/help" || pathname.startsWith("/help/"))) {
     const path = pathname === "/help" ? "/" : pathname.slice("/help".length);
     const destination = new URL(path, "https://help.snoozer.uk");
     destination.search = request.nextUrl.search;

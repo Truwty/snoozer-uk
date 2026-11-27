@@ -220,7 +220,7 @@ test("unbound custom hosts cannot expose account routes and marker contains only
   expect(marker.headers()["content-type"]).toContain("text/plain");
 });
 
-test("the Snoozer topbar routes to real Help Center guides and approved Premium pricing", async ({ page }) => {
+test("the Snoozer topbar links to the standalone Help Centre and approved Premium pricing", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 820 });
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
@@ -232,13 +232,9 @@ test("the Snoozer topbar routes to real Help Center guides and approved Premium 
   await expect(page.getByText("£3", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: /Yearly/ }).click();
   await expect(page.getByText("£30", { exact: true })).toBeVisible();
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" }).click();
-  await expect(page.getByRole("heading", { name: /How can we/ })).toBeVisible();
-  await page.getByRole("searchbox", { name: "Search documentation" }).fill("account");
-  await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByRole("link", { name: /Stay signed in and switch accounts/ })).toBeVisible();
-  await page.getByRole("link", { name: /Stay signed in and switch accounts/ }).click();
-  await expect(page.getByRole("heading", { name: "Stay signed in and switch accounts" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" })
+  ).toHaveAttribute("href", "https://help.snoozer.uk/");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
