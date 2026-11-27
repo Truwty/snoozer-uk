@@ -31,15 +31,18 @@ function profileWith(overrides: Record<string, unknown> = {}) {
 describe("compact public bio experience", () => {
   it("keeps bio profile social icons horizontal and inner content cards compact", () => {
     const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
-    const socialRule = styles.match(/\.public-page \.profile-card--bio-experience \.profile-social-links\\s*\\{([^}]*)\\}/)?.[1] ?? "";
-    const compactCardRule = styles.match(/\.public-page \.profile-card--bio-experience :is\\(\.profile-text-section, \.profile-content-block\\)\\s*\\{([^}]*)\\}/)?.[1] ?? "";
+    const socialStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-social-links {");
+    const compactCardStart = styles.indexOf(".public-page .profile-card--bio-experience :is(.profile-text-section, .profile-content-block) {");
+    const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\\n}", socialStart));
+    const compactCardRule = compactCardStart < 0 ? "" : styles.slice(compactCardStart, styles.indexOf("\\n}", compactCardStart));
 
-    expect(socialRule).toMatch(/display:\\s*flex/);
-    expect(socialRule).toMatch(/flex-direction:\\s*row/);
-    expect(socialRule).toMatch(/justify-content:\\s*center/);
-    expect(socialRule).toMatch(/gap:\\s*12px/);
-    expect(socialRule).toMatch(/height:\\s*auto/);
-    expect(compactCardRule).toMatch(/min-height:\\s*0/);
+    expect(socialRule).toContain("display: flex;");
+    expect(socialRule).toContain("flex-direction: row;");
+    expect(socialRule).toContain("justify-content: center;");
+    expect(socialRule).toContain("gap: 12px;");
+    expect(socialRule).toContain("height: auto;");
+    expect(compactCardRule).toContain("min-height: 0;");
+    expect(compactCardRule).toContain("padding: .55rem .7rem;");
     expect(compactCardRule).toMatch(/padding:\\s*\.55rem \.7rem/);
   });
 
