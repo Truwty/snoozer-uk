@@ -6,14 +6,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { studioNavigationGroups } from "@/lib/studio-navigation";
 
 const accountActions = [
-  { label:"Change display name", href:"/studio/builder", icon:"✎", keywords:"profile name edit", group:"Profile" },
-  { label:"Open Alias Manager", href:"/studio/account#account-aliases", icon:"⌁", keywords:"alias manager username alternate names", group:"Account" },
-  { label:"Email", href:"/studio/account#account-email", icon:"✉", keywords:"email address change mail", group:"Account" },
-  { label:"Multi-factor authentication", href:"/studio/account#account-mfa", icon:"◇", keywords:"MFA authenticator two factor security", group:"Security" },
-  { label:"Session Management", href:"/studio/account#account-sessions", icon:"▣", keywords:"devices sign out revoke sessions security", group:"Security" },
-  { label:"Login with Google", href:"/studio/account#account-google", icon:"G", keywords:"connect link unlink identity provider", group:"Connections" },
-  { label:"Login with Discord", href:"/studio/account#account-discord", icon:"◉", keywords:"connect link unlink identity provider discord", group:"Connections" },
-  { label:"Email Marketing", href:"/studio/account#account-email-marketing", icon:"✉", keywords:"marketing newsletter product updates preference", group:"Account" },
+  { label:"Change display name", href:"/studio/builder", icon:"✎", keywords:"profile name edit", description:"Change the display name shown on your profile.", group:"Profile" },
+  { label:"Open Alias Manager", href:"/studio/account#account-aliases", icon:"⌁", keywords:"alias manager username alternate names", description:"Manage alternate profile aliases.", group:"Account" },
+  { label:"Email", href:"/studio/account#account-email", icon:"✉", keywords:"email address change mail", description:"View or change your account email.", group:"Account" },
+  { label:"Multi-factor authentication", href:"/studio/account#account-mfa", icon:"◇", keywords:"MFA authenticator two factor security", description:"Enable or disable multi-factor authentication.", group:"Security Settings" },
+  { label:"Session Management", href:"/studio/account#account-sessions", icon:"▣", keywords:"devices sign out revoke sessions security", description:"Review active sessions and invalidate devices you do not recognise.", group:"Security Settings" },
+  { label:"Login with Google", href:"/studio/account#account-google", icon:"G", keywords:"connect link unlink identity provider", description:"Control whether Google can be used to log in.", group:"Connections" },
+  { label:"Login with Discord", href:"/studio/account#account-discord", icon:"◉", keywords:"connect link unlink identity provider discord", description:"Control whether Discord can be used to log in.", group:"Connections" },
+  { label:"Email Marketing", href:"/studio/account#account-email-marketing", icon:"✉", keywords:"marketing newsletter product updates preference", description:"Manage product updates and email preferences.", group:"Email Marketing" },
 ] as const;
 
 export function StudioCommandPalette() {
@@ -100,14 +100,14 @@ export function StudioCommandPalette() {
     <div ref={dialogRef} className="studio-command-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-command-title" onKeyDown={onDialogKeyDown}>
       <h2 id="studio-command-title" className="sr-only">Search Studio</h2>
       <label className="studio-command-search"><span aria-hidden="true">⌕</span>
-        <input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActive(0); }} placeholder="Search pages and tools…" aria-label="Search Studio pages and tools" aria-controls="studio-command-results" aria-activedescendant={items[active] ? `studio-command-${active}` : undefined}
+        <input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActive(0); }} placeholder="Search features, pages, and actions…" aria-label="Search Studio features, pages, and actions" aria-controls="studio-command-results" aria-activedescendant={items[active] ? `studio-command-${active}` : undefined}
           onKeyDown={(event) => { if (event.key === "Enter" && items[active]) (document.getElementById(`studio-command-${active}`) as HTMLAnchorElement | null)?.click(); }}/>
         <button type="button" onClick={closePalette} aria-label="Close search">Esc</button>
       </label>
       <div id="studio-command-results" className="studio-command-results" role="listbox" aria-label="Studio pages">
         {items.length ? items.map((item, index) => <Link id={`studio-command-${index}`} key={item.href} href={hrefFor(item.href)} role="option" aria-selected={index === active} className={"studio-command-result" + (index === active ? " is-active" : "")}
           onMouseEnter={() => setActive(index)} onClick={closePalette}>
-          <span className="studio-command-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.label}</strong><small>{item.group} · {item.href === pathname ? "Current page" : item.href}</small></span><kbd>↵</kbd>
+          <span className="studio-command-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.label}</strong><small>{"description" in item ? item.description : `${item.group} · ${item.href === pathname ? "Current page" : item.href}`}</small></span><kbd>↵</kbd>
         </Link>) : <p className="studio-command-empty">No matching Studio pages.</p>}
       </div>
       <footer><span>Navigate <kbd>↑</kbd><kbd>↓</kbd></span><span>Open <kbd>↵</kbd></span><span>Close <kbd>Esc</kbd></span></footer>
