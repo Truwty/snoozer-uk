@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { siteUrl } from "@/lib/env";
 import { profileRevisionNumber } from "@/lib/profile";
 import { profileAudioExtension, profileAudioFormats, profileAudioFinal, profileAudioIncoming, profileAudioMaxBytes, validProfileAudioBytes } from "@/lib/profile-audio";
 import { requireAccount } from "@/lib/profiles-server";
@@ -78,7 +77,7 @@ export async function finishProfileAudioUpload(profileId:string,revision:number,
   }
   await incoming.remove([path]);
   refresh();
-  return {message:"Track added to your private audio library.",url:siteUrl().origin+"/media/audio/"+id+"."+meta.data.extension,
+  return {message:"Track added to your private audio library.",url:"/media/audio/"+id+"."+meta.data.extension,
     title:meta.data.title,artist:meta.data.artist,id};
 }
 
@@ -105,7 +104,7 @@ export async function loadProfileAudio(profileId:string){
     contentType:z.string(),bytes:z.number().int().positive(),createdAt:z.string(),
   })).safeParse(data);
   if(!items.success)return {error:"Could not read the audio library.",items:[]};
-  return {error:"",items:items.data.map(item=>({...item,url:siteUrl().origin+"/media/audio/"+item.id+"."+item.extension}))};
+  return {error:"",items:items.data.map(item=>({...item,url:"/media/audio/"+item.id+"."+item.extension}))};
 }
 
 export async function removeProfileAudio(profileId:string,id:string){
