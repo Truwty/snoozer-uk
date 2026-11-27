@@ -95,7 +95,22 @@ These are performance/maintenance candidates, not reasons to add permissions or 
 | SA-05 | Low | Dependency audit code still carried a time-boxed exception for GHSA-fc5q-39xc-vjpf | GitHub withdrew the advisory on 18 November 2026. This branch removes the exception and makes any audit finding fail; verify against the CI runner's current npm registry response. |
 | SA-06 | Informational | No independent production penetration test | Not performed. Consider a scoped independent test before materially increasing account volume or data sensitivity. |
 
+## Full-history secret scan
+
+The full-history Gitleaks run scanned 2,266 commits and reported six matches. Each match was reviewed against its source and history:
+
+| Count | Location/type | Assessment |
+| ---: | --- | --- |
+| 3 | Synthetic Discord snowflake literals in test fixtures | False positives; fixed test identifiers, not bot tokens, application secrets or user credentials |
+| 1 | Repeated-character fake Render key in a domain-verification test | False positive; `"x".repeat(32)` is a deliberately invalid test value |
+| 2 | Same Supabase Auth user UUID in two INSERT statements in the retired Owner seed migration | Not a credential, password or session token. It is a public account identifier that maps to the current Owner account and can be used for account correlation. Treat as a privacy exposure, not as an authentication bypass. |
+
+The repository-level `.gitleaksignore` contains only the six exact fingerprints above, with comments. It does not suppress any rule globally or any other path/line. The retired migration file is no longer in the current source tree, but its contents remain in public Git history.
+
+**Residual privacy action:** no Git history rewrite was performed. Removing the historical identifier from every commit would require a coordinated history rewrite, force-update of repository refs and consideration of GitHub's cached objects/forks/clones. Do not claim the identifier has been erased. A history rewrite is an owner-approved, disruptive operation and is not required to rotate a provider credential because the value is not an authentication secret.
+
 ## Current CI and deployment evidence
+
 
 - Latest observed main-branch CI: [Run #1312](https://github.com/Truwty/snoozer-uk/actions/runs/46021425902), completed successfully on 27 November 2026.
 - The Render web service is `snoozer-uk-staging`, on `main`, Free Frankfurt Node service. Render currently reports auto-deploy enabled for commits.
@@ -107,7 +122,7 @@ These are performance/maintenance candidates, not reasons to add permissions or 
 
 - [ ] Enable Supabase leaked-password protection (or record the plan limitation and mitigation).
 - [ ] Verify GitHub branch protection and required status checks in repository settings.
-- [ ] Full-history Gitleaks scan passes with no unrotated leaked credentials.
+- [ ] Full-history Gitleaks scan passes with the six reviewed exact fingerprints ignored; investigate any additional finding as a possible secret exposure.
 - [ ] Strict npm audit passes for both full and production dependency trees.
 - [ ] All CI jobs pass on the exact security pull-request head.
 - [ ] Render dashboard health check is reconciled with `/health/live`.

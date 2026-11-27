@@ -1,0 +1,13 @@
+# Exact Gitleaks findings reviewed on 27 November 2026.
+# Three deterministic synthetic Discord snowflakes in unit/integration fixtures.
+390c135150811458c38b33e4c25cb631ffd9f2ff:tests/discord-presence-worker.test.mjs:discord-client-id:6
+7927c5aabefd361c2659d5c20564c2f4518248b4:tests/discord-presence.test.ts:discord-client-id:8
+a24b27fde1d9808f10982f9e5e482d2d3c6cecec:tests/database.test.ts:discord-client-id:2363
+
+# Same non-secret Auth user UUID appears in two INSERT statements in a retired historical Owner seed migration.
+# This is a public account identifier, not an authentication credential. See docs/security-audit.md.
+e500297998d508d0b1934565c4db2e4e6a575c84:supabase/migrations/20261122042500_platform_owner.sql:generic-api-key:17
+a08d2e9be45d241026442742355913d481caf8d0:supabase/migrations/20261122042500_platform_owner.sql:generic-api-key:12
+
+# Deterministic fake key (32 x characters) used by the custom-domain verifier unit test.
+28ea0394fea929a90f4be0e5907121619ec7f63c:tests/domains.test.ts:generic-api-key:8
