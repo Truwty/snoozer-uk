@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/shell";
+import { SocialProviderIcon } from "@/components/social-provider-icon";
 import { signIn, signInWithDiscord, signInWithGoogle } from "../auth/actions";
 
 export const metadata = { title: "Sign in", description: "Sign in to manage your Snoozer profile.", robots: { index: false, follow: false } };
@@ -21,12 +22,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
     <form action={signInWithGoogle}>
       {adding && <input type="hidden" name="add_account" value="1" />}
       {next && <input type="hidden" name="next" value={next} />}
-      <button type="submit" className="button auth-provider-button"><span className="auth-provider-mark auth-provider-mark-google" aria-hidden="true">G</span>Continue with Google</button>
+      <button type="submit" className="button auth-provider-button"><SocialProviderIcon providerId="google" className="auth-provider-icon" />Continue with Google</button>
     </form>
     <form action={signInWithDiscord}>
       {adding && <input type="hidden" name="add_account" value="1" />}
       {next && <input type="hidden" name="next" value={next} />}
-      <button type="submit" className="button auth-provider-button"><span className="auth-provider-mark auth-provider-mark-discord" aria-hidden="true">●</span>Continue with Discord</button>
+      <button type="submit" className="button auth-provider-button"><SocialProviderIcon providerId="discord" className="auth-provider-icon" />Continue with Discord</button>
     </form>
     </div>
     <div className="auth-login-footer">
