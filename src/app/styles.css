@@ -1991,7 +1991,6 @@ body:has(> .public-page[data-background-image="true"]) {
   justify-self: stretch;
 }
 .profile-card--bio-experience .profile-more-content,
-.profile-card--bio-experience .profile-social-links,
 .profile-card--bio-experience .profile-audio-player {
   display:grid;
   gap:.95rem;
@@ -2763,27 +2762,7 @@ body:has(> .public-page[data-background-image="true"]) {
 
 
 
-/* Keep the compact public bio cards content-sized and the provider icons in one row. */
-.public-page .profile-card--bio-experience .profile-social-links {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 0;
-  height: auto;
-  padding: .3rem .45rem;
-}
-.public-page .profile-card--bio-experience .profile-social-link {
-  flex: 0 1 2.5rem;
-  width: 2.5rem;
-  min-width: 2rem;
-  height: 2.5rem;
-  min-height: 2.5rem;
-}
+/* Keep the public bio content cards compact without changing the Studio-matched social icon row. */
 .public-page .profile-card--bio-experience :is(.profile-text-section, .profile-content-block) {
   height: auto;
   min-height: 0;
@@ -2799,10 +2778,4 @@ body:has(> .public-page[data-background-image="true"]) {
 }
 .public-page .profile-card--bio-experience .profile-audio-player {
   padding: .8rem .85rem;
-}
-@media (max-width: 22rem) {
-  .public-page .profile-card--bio-experience .profile-social-links {
-    gap: 8px;
-    padding: .25rem;
-  }
 }
