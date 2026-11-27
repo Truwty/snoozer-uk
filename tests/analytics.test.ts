@@ -17,6 +17,13 @@ describe("consent-aware analytics boundary", () => {
     expect(analyticsRangeStart("7d", now)).toBe("2026-11-20");
     expect(analyticsRangeStart("30d", now)).toBe("2026-10-28");
   });
+  it("accepts separately consented country analytics only on version 4", async () => {
+    const record=vi.fn();
+    const v4={...event,version:4,countryConsent:true,browser:"00000000-0000-4000-8000-000000000012",browserDay:"2026-11-26"};
+    expect((await receiveAnalytics(request(v4),origin,record)).status).toBe(204);
+    expect(record).toHaveBeenCalledWith(v4);
+    expect((await receiveAnalytics(request({...v4,version:3}),origin,record)).status).toBe(400);
+  });
   it("binds creator-host events to the profile served on that host", async () => {
     const record = vi.fn();
     expect((await receiveAnalytics(request(), origin, record, "another-creator")).status).toBe(403);

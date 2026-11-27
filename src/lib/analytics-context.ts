@@ -39,7 +39,7 @@ export function analyticsDevice(agent: string): typeof trafficDevices[number] {
   return /Mobile|iPhone|Android/i.test(agent) ? "mobile" : "desktop";
 }
 
-export function attributionForConsentVersion(event: { version?: 2 | 3; source?: TrafficSource; campaign?: string }, agent: string) {
-  if (event.version !== 2 && event.version !== 3) return { source: "direct", campaign: null, device: "unknown" } as const;
+export function attributionForConsentVersion(event: { version?: 2 | 3 | 4; source?: TrafficSource; campaign?: string }, agent: string) {
+  if (event.version !== 2 && event.version !== 3 && event.version !== 4) return { source: "direct", campaign: null, device: "unknown" } as const;
   return { source: event.source ?? "direct", campaign: event.campaign ?? null, device: analyticsDevice(agent) };
 }

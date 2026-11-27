@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAccount } from "@/lib/profiles-server";
+import { openImageHostLifetimeCheckout } from "@/lib/image-host-live-service";
 
 const idSchema=z.uuid();
 const titleSchema=z.string().trim().min(1).max(80);
@@ -48,4 +49,18 @@ export async function deleteTextPaste(form:FormData) {
  if(error||data!==true)redirect(destination(profile.data,"failed"));
  revalidatePath("/studio/image-host"); revalidatePath(`/paste/${id.data}`);
  redirect(destination(profile.data,"deleted"));
+}
+
+
+export async function startImageHostLifetimeCheckout(form:FormData) {
+ const price= z.string().regex(/^price_[A-Za-z0-9]{1,128}$/).safeParse(form.get("price"));
+ if(!price.success)redirect("/studio/image-host?purchase=unavailable");
+ const {user}=await requireAccount();
+ let url:string;
+ try {
+  url=await openImageHostLifetimeCheckout(user.id,user.email??null,price.data);
+ } catch {
+  redirect("/studio/image-host?purchase=unavailable");
+ }
+ redirect(url);
 }

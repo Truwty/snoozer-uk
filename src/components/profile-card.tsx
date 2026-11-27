@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent, type ReactNode, type RefObject, type SyntheticEvent } from "react";
-import dynamic from "next/dynamic";
 import { countdownDate, countdownTarget } from "@/lib/countdown";
 import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
-import { kofiProfileUrl } from "@/lib/kofi-link";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
 import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
-import { youtubeVideoId } from "@/lib/youtube";
 
-import { spotifyResource } from "@/lib/spotify";
-import { SpotifyWidget } from "./spotify-widget";
-
-import { metadataWidget, twitchChannel, robloxPlace } from "@/lib/widgets";
 
 
 import { ProfileEffectsLayer } from "./profile-effects";
@@ -23,19 +16,13 @@ import { DiscordPresenceWidget } from "./discord-presence-widget";
 import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
+import { profileAudioCanShuffle } from "@/lib/profile-audio";
+import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
-/*
- * Optional profile widgets are split into independent chunks. They are only
- * requested when a published profile actually uses the corresponding widget.
- * SSR remains enabled so public profile HTML and layout are preserved.
- */
-const YouTubeWidget = dynamic(() => import("./youtube-widget").then((module) => module.YouTubeWidget));
-const PublicMetadataWidget = dynamic(() => import("./public-metadata-widget").then((module) => module.PublicMetadataWidget));
-const TwitchWidget = dynamic(() => import("./twitch-widget").then((module) => module.TwitchWidget));
 
-type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string };
+type SocialLink = { label: string; url: string; index: number; providerId: SocialProviderId; providerLabel: string; iconImage?: string };
 
 const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
 
@@ -121,44 +108,103 @@ function formatAudioTime(value: number) {
   return minutes + ":" + String(seconds).padStart(2, "0");
 }
 
-function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
-  src: string;
-  title: string;
-  artist: string;
+type ProfileAudioTrack = { src: string; title: string; artist: string; cover?: string };
+
+function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
+  tracks: ProfileAudioTrack[];
   cover?: string;
   volume: number;
   audioRef: RefObject<HTMLAudioElement | null>;
 }) {
+  const [trackIndex, setTrackIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [shuffle, setShuffle] = useState(false);
+  const [shuffleMessage, setShuffleMessage] = useState("");
+  const resumeAfterChange = useRef(false);
+  const track = tracks[trackIndex] ?? tracks[0];
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume]);
+  }, [audioRef, volume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.load();
+    setPosition(0);
+    setDuration(0);
+    if (resumeAfterChange.current) {
+      resumeAfterChange.current = false;
+      void audio.play().catch(() => setPlaying(false));
+    }
+  }, [audioRef, trackIndex]);
+
+  function changeTrack(next: number, resume = playing) {
+    if (tracks.length < 2) return;
+    resumeAfterChange.current = resume;
+    setTrackIndex((next + tracks.length) % tracks.length);
+  }
+
+  function nextTrack(resume = true) {
+    if (tracks.length < 2) return;
+    const next = shuffle
+      ? (() => {
+          const choices = tracks.map((_, index) => index).filter((index) => index !== trackIndex);
+          return choices[Math.floor(Math.random() * choices.length)] ?? trackIndex;
+        })()
+      : trackIndex + 1;
+    changeTrack(next, resume);
+  }
+
+  function previousTrack() {
+    const audio = audioRef.current;
+    if (audio && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      setPosition(0);
+      return;
+    }
+    changeTrack(trackIndex - 1, playing);
+  }
+
+  useEffect(() => {
+    if (!shuffleMessage) return;
+    const timeout = window.setTimeout(() => setShuffleMessage(""), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [shuffleMessage]);
+
+  function toggleShuffle() {
+    if (!profileAudioCanShuffle(tracks.length)) {
+      setShuffleMessage("You need at least 2 audios to shuffle.");
+      return;
+    }
+    setShuffle((value) => !value);
+    setShuffleMessage("");
+  }
 
   async function togglePlayback() {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      try {
-        await audio.play();
-      } catch {
-        setPlaying(false);
-      }
-    } else {
-      audio.pause();
-    }
+      try { await audio.play(); } catch { setPlaying(false); }
+    } else audio.pause();
   }
 
   return <section className="profile-audio-player" aria-label="Profile music player">
-    <audio ref={audioRef} src={src} preload="metadata"
+    {shuffleMessage && <p className="profile-audio-shuffle-alert" role="alert">{shuffleMessage}</p>}
+    <audio ref={audioRef} src={track.src} preload="metadata"
       onPlay={() => setPlaying(true)}
       onPause={() => setPlaying(false)}
       onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
       onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
       onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
-      onEnded={() => { setPlaying(false); setPosition(0); }} />
+      onEnded={() => {
+        if (tracks.length > 1) nextTrack(true);
+        else { setPlaying(false); setPosition(0); }
+      }} />
     {cover
       // The selected image is already a same-origin, resized profile asset.
       // eslint-disable-next-line @next/next/no-img-element
@@ -169,8 +215,8 @@ function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
           </svg>
         </span>}
     <div className="profile-audio-details">
-      <strong title={title}>{title}</strong>
-      <span title={artist}>{artist}</span>
+      <strong title={track.title}>{track.title}</strong>
+      <span title={track.artist}>{track.artist}</span>
       <input className="profile-audio-progress" type="range" min={0} max={Math.max(duration, 1)}
         step={0.1} value={Math.min(position, duration || 0)} disabled={!duration}
         aria-label="Track progress"
@@ -180,14 +226,23 @@ function ProfileAudioPlayer({ src, title, artist, cover, volume, audioRef }: {
             setPosition(audioRef.current.currentTime);
           }
         }} />
-      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)}</span>
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)} · {trackIndex + 1}/{tracks.length}</span>
     </div>
-    <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
-      aria-label={playing ? "Pause music" : "Play music"}>
-      {playing
-        ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
-        : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
-    </button>
+    <div className="profile-audio-transport">
+      <button className="profile-audio-step" type="button" onClick={previousTrack} disabled={tracks.length < 2}
+        aria-label="Previous track" title="Previous track">|◀</button>
+      <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
+        aria-label={playing ? "Pause music" : "Play music"}>
+        {playing
+          ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
+          : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
+      </button>
+      <button className="profile-audio-step" type="button" onClick={() => nextTrack()} disabled={tracks.length < 2}
+        aria-label="Next track" title="Next track">▶|</button>
+      <button className={"profile-audio-step profile-audio-shuffle" + (shuffle ? " is-active" : "")}
+        type="button" onClick={toggleShuffle} aria-pressed={shuffle}
+        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">SHUF</button>
+    </div>
   </section>;
 }
 
@@ -334,6 +389,12 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage }
     : {};
+  const cursorImage = profile.appearance.customCursorImage
+    ? profile.gallery.find((image) => image.id === profile.appearance.customCursorImage)
+    : undefined;
+  const customCursor = cursorImage && galleryBase
+    ? `url("${galleryBase}/${encodeURIComponent(cursorImage.id)}") 16 16, auto`
+    : undefined;
   const colors = profile.appearance.colors;
   const fontFamilies = {
     system: "system-ui, sans-serif",
@@ -343,6 +404,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   } as const;
   const appearanceStyle = {
     ...backgroundStyle,
+    "--profile-custom-cursor": customCursor ?? "auto",
     ...(colors?.background ? { "--profile-base-page": colors.background } : {}),
     ...(colors?.text ? { "--text": colors.text } : {}),
     ...(colors?.accent ? { "--detail": colors.accent } : {}),
@@ -369,6 +431,16 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {preview ? <h2 className="profile-name-heading">{nameContent}</h2> : <h1 className="profile-name-heading">{nameContent}</h1>}
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
+    {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
+      {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
+        <span aria-hidden="true">{badge.category === "custom" ? badge.image_id
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img className="profile-custom-badge-art" src={`/media/badges/${badge.image_id}`} alt="" width={24} height={24}/>
+          : <span className="profile-custom-badge-icon" style={{ color: badge.color }}>{badge.icon}</span>
+          : <BadgeArtwork slug={badge.slug} size={24}/>}</span>
+      </span>)}
+      {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
+    </nav>}
     {profile.appearance.showLocation && profile.appearance.location && <p className="profile-location"><span aria-hidden="true">⌖</span>{profile.appearance.location}</p>}
     {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
@@ -391,128 +463,71 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
   }
 
-  function renderLinkList(links: { label: string; url: string; index: number }[], socialIconsAlreadyVisible = false) {
-    if (links.length === 0) return null;
-    return <ul className="profile-links" style={linkStyle}>
-      {links.map(({ label, url, index }) => {
-        const video = youtubeVideoId(url);
-        const metadata = metadataWidget(url);
-        const channel = twitchChannel(url);
-        const place = robloxPlace(url);
-        const spotify = spotifyResource(url);
-        const provider = socialProviderForUrl(url);
-        const iconAlreadyLinksToProvider = socialIconsAlreadyVisible && provider && provider.id !== "spotify" && !place;
-        return <li key={url + "-" + index} className={spotify ? "spotify-link-slot" : undefined}>
-          {spotify
-            ? <SpotifyWidget key={spotify.kind + spotify.id} resource={spotify} label={label}
-                analyticsUsername={preview ? undefined : profile.username}
-                analyticsPosition={preview ? undefined : index + 1} />
-            : iconAlreadyLinksToProvider ? null : <a href={url} rel="ugc nofollow noreferrer"
-                data-analytics-profile={preview ? undefined : profile.username}
-                data-analytics-position={preview ? undefined : index + 1}>{label}{kofiProfileUrl(url) && " · Ko-fi"}{place && " · Roblox"} <span aria-hidden="true">↗</span></a>}
-          {video && <YouTubeWidget key={video} videoId={video} label={label} />}
-          {metadata && (preview ? <p className="widget-preview-note">Public {metadata.provider === "github" ? "GitHub" : "Discord"} summaries are available after publishing this link.</p>
-            : <PublicMetadataWidget key={metadata.provider + metadata.resource} {...metadata} username={profile.username} position={index + 1} />)}
-          {channel && <TwitchWidget key={channel} channel={channel} label={label} />}
-        </li>;
-      })}
-    </ul>;
-  }
-
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
       .filter(({ url, hidden }) => safeLink(url) && !hidden);
-    if (valid.length === 0) return null;
 
-    const hasProviderEmbed = (url: string) => Boolean(
-      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
-    );
-
-    if (entryExperience) {
-      const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
-        const provider = socialProviderForUrl(url);
-        // Game/place links stay as descriptive links in More instead of
-        // being hidden behind a generic Roblox social icon.
-        return provider && provider.id !== "spotify" && !robloxPlace(url)
-          ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }]
-          : [];
-      });
-      const audioLink = valid.find(({ url }) => directAudioSource(url));
-      const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
-      const audioSource = audioLink ? directAudioSource(audioLink.url) : null;
-      const audioInfo = audioLink ? audioMetadata(audioLink.label, profile.display_name) : null;
-      const spotifyTrackResource = spotifyTrack ? spotifyResource(spotifyTrack.url) : null;
-      const cover = profile.gallery[0] && galleryBase
-        ? galleryBase + "/" + profile.gallery[0].id
-        : avatarSrc;
-
-      return <>
-        {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-          {social.map(({ label, url, index, providerId }) => <a key={url + index} className="profile-social-link" href={url}
-            rel="ugc nofollow noreferrer" title={label} aria-label={label}
-            data-analytics-profile={preview ? undefined : profile.username}
-            data-analytics-position={preview ? undefined : index + 1}>
-            <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
-          </a>)}
-        </nav>}
-        {audioLink && audioSource && audioInfo
-          ? <ProfileAudioPlayer src={audioSource} title={audioInfo.title} artist={audioInfo.artist}
-              cover={cover} volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />
-          : spotifyTrack && spotifyTrackResource
-            ? <SpotifyWidget key={spotifyTrackResource.kind + spotifyTrackResource.id}
-                resource={spotifyTrackResource} label={spotifyTrack.label} compact
-                analyticsUsername={profile.username} analyticsPosition={spotifyTrack.index + 1} />
-            : null}
-      </>;
-    }
-
-    const social: SocialLink[] = valid.flatMap(({ label, url, index }) => {
-      const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) ? [{ label, url, index, providerId: provider.id, providerLabel: provider.label }] : [];
+    const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
+      const src = directAudioSource(url);
+      if (!src) return [];
+      const info = audioMetadata(label, profile.display_name);
+      const artwork = audioCoverImage ? profile.gallery.find((image) => image.id === audioCoverImage) : undefined;
+      const trackCover = artwork && galleryBase
+        ? galleryBase + "/" + encodeURIComponent(artwork.id)
+        : undefined;
+      return [{ src, title: info.title, artist: info.artist, cover: trackCover, sourceIndex: index }];
+    }) : [];
+    const audioIndexes = new Set(audioTracks.map((track) => track.sourceIndex));
+    const social: SocialLink[] = valid.flatMap((item) => {
+      if (item.mode === "text" || audioIndexes.has(item.index)) return [];
+      const provider = socialProviderForUrl(item.url);
+      const customIcon = item.iconImage && profile.gallery.some((image) => image.id === item.iconImage);
+      if (!provider && !customIcon) return [];
+      return [{
+        label: item.label,
+        url: item.url,
+        index: item.index,
+        providerId: provider?.id ?? "website",
+        providerLabel: provider?.label ?? "Website",
+        ...(customIcon ? { iconImage: item.iconImage } : {}),
+      }];
     });
-    const regular = valid.filter(({ url }) => !socialProviderForUrl(url) || hasProviderEmbed(url));
+    const iconIndexes = new Set(social.map((item) => item.index));
+    const textLinks = valid.filter((item) => !audioIndexes.has(item.index) && (item.mode === "text" || !iconIndexes.has(item.index)));
+    const publicAudioTracks = audioTracks.map((track) => ({
+      src: track.src, title: track.title, artist: track.artist, cover: track.cover,
+    }));
+    const cover = profile.gallery[0] && galleryBase
+      ? galleryBase + "/" + profile.gallery[0].id
+      : avatarSrc;
+
     return <>
       {social.length > 0 && <nav className="profile-social-links" aria-label="Social profiles">
-        {social.map(({ label, url, index, providerId, providerLabel }) => <a key={url + index} className="profile-social-link" href={url}
-          rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
-          data-analytics-profile={preview ? undefined : profile.username}
-          data-analytics-position={preview ? undefined : index + 1}>
-          <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>
-        </a>)}
+        {social.map(({ label, url, index, providerId, providerLabel, iconImage }) => {
+          const image = iconImage ? profile.gallery.find((item) => item.id === iconImage) : undefined;
+          const imageSrc = image && galleryBase ? galleryBase + "/" + encodeURIComponent(image.id) : undefined;
+          return <a key={url + index} className="profile-social-link" href={url}
+            rel="ugc nofollow noreferrer" title={`${label} · ${providerLabel}`} aria-label={`${label} · ${providerLabel}`}
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>
+            {imageSrc
+              // Gallery images are already processed and served through the public profile media route.
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img className="profile-social-custom-icon" src={imageSrc} alt="" width={26} height={26} loading="lazy"/>
+              : <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>}
+          </a>;
+        })}
       </nav>}
-      {renderLinkList(regular)}
+      {textLinks.length > 0 && <ul className="profile-links profile-text-links" style={linkStyle}>
+        {textLinks.map(({ label, url, index }) => <li key={url + "-" + index}>
+          <a href={url} rel="ugc nofollow noreferrer"
+            data-analytics-profile={preview ? undefined : profile.username}
+            data-analytics-position={preview ? undefined : index + 1}>{label} <span aria-hidden="true">↗</span></a>
+        </li>)}
+      </ul>}
+      {audioTracks.length > 0 && <ProfileAudioPlayer tracks={publicAudioTracks} cover={cover}
+        volume={musicMuted ? 0 : musicVolume} audioRef={profileAudioRef} />}
     </>;
-  }
-
-  function renderMoreContent() {
-    const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url, hidden }) => safeLink(url) && !hidden);
-    const hasProviderEmbed = (url: string) => Boolean(
-      spotifyResource(url) || youtubeVideoId(url) || metadataWidget(url) || twitchChannel(url) || robloxPlace(url)
-    );
-    const social = valid.filter(({ url }) => {
-      const provider = socialProviderForUrl(url);
-      return provider && !hasProviderEmbed(url) && provider.id !== "spotify";
-    });
-    const audioLink = valid.find(({ url }) => directAudioSource(url));
-    const spotifyTrack = audioLink ? null : valid.find(({ url }) => spotifyResource(url)?.kind === "track");
-    const extras = valid.filter((link) =>
-      !social.some((item) => item.index === link.index)
-      && (!audioLink || link.index !== audioLink.index)
-      && (!spotifyTrack || link.index !== spotifyTrack.index)
-    );
-    const additionalLinks = renderLinkList(extras, true);
-    const additionalItems = layout.items.map((item, index) => item.type === "links"
-      ? null
-      : renderItem(item, index)).filter(Boolean);
-
-    if (!additionalLinks && additionalItems.length === 0) return null;
-
-    return <details className="profile-more-content">
-      <summary>More</summary>
-      {additionalLinks}
-      {additionalItems}
-    </details>;
   }
 
   function renderBlock(id: string) {
@@ -563,7 +578,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   }
 
   function renderWidgets() {
-    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience} />;
+    return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience && !entered} />;
   }
 
   function renderGallery() {
@@ -613,6 +628,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-template-style={profile.appearance.templateStyle ?? "classic"}
     data-background-image={backgroundImage ? "true" : undefined}
+    data-custom-cursor={customCursor ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
     data-swap-box-colors={profile.appearance.swapBoxColors ? "true" : undefined}
     data-monochrome-icons={profile.appearance.monochromeIcons ? "true" : undefined}
@@ -636,7 +652,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     <div className="profile-inner">
       <header className="profile-identity">{identity}</header>
       <div className="profile-layout profile-sections" role="group" aria-label="Profile content">
-        {entryExperience ? <>{renderLinks()}{renderMoreContent()}</> : layout.items.map((item, index) => renderItem(item, index))}
+        {entryExperience && !entered ? renderLinks() : layout.items.map((item, index) => renderItem(item, index))}
       </div>
     </div>
     </section>;

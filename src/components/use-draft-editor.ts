@@ -154,8 +154,20 @@ export function useDraftEditor(draft: DraftProfile) {
     }
   }
 
+  const refreshSaved = useCallback(async () => {
+    const latest = await loadSavedDraft(saved.profile_id);
+    if (!latest) throw new Error("Profile unavailable after the upload.");
+    setConfirmed(latest);
+    setEditor((current) => current.edits
+      ? { ...current, edits: { ...current.edits, revision: latest.revision } }
+      : emptyEditor(latest.revision));
+    setConflicted(false);
+    failed.current = null;
+    return latest;
+  }, [saved.profile_id]);
+
   return {
-    saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel,
+    saved, edits, edit, pending, conflict, message, commit, discardAndReload, refreshSaved, travel,
     canUndo: historyCurrent && editor.past.length > 0,
     canRedo: historyCurrent && editor.future.length > 0,
   };

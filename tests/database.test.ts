@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { accountPlan, can } from "../src/lib/entitlements";
@@ -62,12 +63,15 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
         expect(await published("legacy")).toMatchObject({ display_name: "Legacy profile", links: [{ label: "Work" }] });
       }
     }
+    expect((await db.query<{count:number}>(
+      "select count(*)::integer as count from snoozer.badge_catalog where slug='image-host-owner' and enabled",
+    )).rows[0]?.count).toBe(1);
   });
 
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
+    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.account_mfa_recovery_codes, snoozer.account_mfa_recovery_attempts, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.image_host_purchases, snoozer.image_host_payment_holds, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -3161,6 +3165,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     const key="obsidian-nocturne";
     await result("select public.set_my_template_favorite($1,true) as value",[key]);
     await result("select public.record_my_template_use($1) as value",[key]);
+    await result("select public.set_my_template_rating($1,5) as value",[key]);
+    expect(await result("select coalesce(jsonb_agg(to_jsonb(metrics)), '[]'::jsonb) as value from public.get_template_catalogue_metrics($1::text[]) metrics",[[key]]))
+      .toMatchObject([{template_key:key,uses:1,weekly_uses:1,rating_count:1,rating_average:5,my_rating:5}]);
     expect(await result("select public.get_my_template_activity() as value")).toMatchObject({favorites:[key],recent:[key],uploads:[],community:[]});
     await expect(result("select public.record_my_template_use('not-a-template') as value"))
       .rejects.toMatchObject({code:"P0002"});
@@ -3184,6 +3191,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await result("select public.record_my_template_use($1) as value",[id]);
     expect((await result<{community:Array<{id:string;usage_count:number}>}>("select public.get_my_template_activity() as value"))
       .community).toContainEqual(expect.objectContaining({id,usage_count:2}));
+    await result("select public.set_my_template_rating($1,4) as value",[id]);
+    expect(await result("select coalesce(jsonb_agg(to_jsonb(metric)),'[]'::jsonb) as value from public.get_template_catalogue_metrics($1::text[]) as metric",[[id]]))
+      .toMatchObject([{template_key:id,uses:2,weekly_uses:2,rating_count:1,rating_average:4,my_rating:4}]);
     await expect(result<{items:Array<{id:string;usage_count:number}>;total:number;page:number;pageCount:number}>(
       "select public.list_community_templates($1,'popular',1) as value",["Community"]
     )).resolves.toMatchObject({total:1,page:1,pageCount:1,items:[expect.objectContaining({id,usage_count:2})]});
@@ -3193,6 +3203,65 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await expect(result("select public.report_community_template($1,'Please review this template.') as value",[id]))
       .rejects.toMatchObject({code:"23505"});
   });
+
+  it("stores only hashed MFA recovery codes, requires AAL2 to replace them and consumes each code once", async () => {
+    const rawCodes = Array.from({length:10},(_,index)=>("A1B2C3D4E5F6"+index.toString(16).toUpperCase().padStart(8,"0")).slice(0,20));
+    const hashes = rawCodes.map((code)=>createHash("sha256").update(code).digest("hex"));
+
+    await act("authenticated",alice);
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal1"})]);
+    await expect(result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[hashes]))
+      .rejects.toMatchObject({code:"42501"});
+
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal2"})]);
+    expect(await result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[hashes])).toBe(10);
+    await db.exec("reset role");
+    expect(await result("select count(*)::integer as value from snoozer.account_mfa_recovery_codes")).toBe(10);
+    await act("authenticated",alice);
+
+    await act("authenticated",bob);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(false);
+    await act("authenticated",alice);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(true);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[0]])).toBe(false);
+
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({aal:"aal2"})]);
+    const replacementCodes = Array.from({length:10},(_,index)=>("B2C3D4E5F6A7"+index.toString(16).toUpperCase().padStart(8,"0")).slice(0,20));
+    const replacementHashes = replacementCodes.map((code)=>createHash("sha256").update(code).digest("hex"));
+    expect(await result("select public.replace_my_mfa_recovery_codes($1::text[]) as value",[replacementHashes])).toBe(10);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[hashes[1]])).toBe(false);
+    expect(await result("select public.consume_my_mfa_recovery_code($1) as value",[replacementHashes[1]])).toBe(true);
+
+    await expect(db.query("select * from snoozer.account_mfa_recovery_codes")).rejects.toMatchObject({code:"42501"});
+  });
+
+
+  it("records only separately consented country totals and suppresses counts below three", async () => {
+    await act("authenticated",alice);
+    await claim("country-analytics");
+    const profile=(await draft() as {profile_id:string}).profile_id;
+    await save(0,"Country profile",[],true);
+    await act("service_role");
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:"service_role"})]);
+    const recordView=async(event:string)=>{
+      await db.query("select public.record_profile_event_with_browser('country-analytics',$1,'view',null,null,null,'direct',null,'desktop',null)",[event]);
+      await db.query("select public.record_profile_country_event('country-analytics',$1,'view','GB')",[event]);
+    };
+    const events=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
+    await recordView(events[0]); await recordView(events[1]);
+    await act("authenticated",alice);
+    expect((await db.query("select * from public.get_my_profile_country_totals($1,null)",[profile])).rows).toEqual([]);
+    await act("service_role");
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:"service_role"})]);
+    await recordView(events[2]); await recordView(events[2]);
+    await act("authenticated",alice);
+    expect((await db.query("select * from public.get_my_profile_country_totals($1,null)",[profile])).rows)
+      .toEqual([{country_code:"GB",views:3,clicks:0}]);
+    await expect(db.query("select * from snoozer.profile_country_days")).rejects.toMatchObject({code:"42501"});
+    await expect(db.query("select public.record_profile_country_event('country-analytics',$1,'view','US')",[crypto.randomUUID()]))
+      .rejects.toMatchObject({code:"42501"});
+  });
+
 
   it("keeps Image Host text pastes owner-scoped and serves public content as plain text only", async () => {
     await act("authenticated",alice);
@@ -3213,6 +3282,73 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await result("select public.delete_my_image_host_text_paste($1) as value",[paste]);
     await act("anon");
     expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toBeNull();
+  });
+
+
+  it("awards the Image Host badge only for a verified lifetime purchase and revokes it when payment is reversed", async () => {
+    await act("authenticated",alice);
+    await claim("image-host-badge");
+    await db.exec("reset role");
+    // TRUNCATE profiles CASCADE also clears badge_catalog via its optional
+    // unique_profile_id FK, so restore the migration-seeded catalogue fixture.
+    await db.query(
+      "insert into snoozer.badge_catalog(slug,name,description,icon,category,rarity,award_mode,criterion_key,enabled,sort_order) values('image-host-owner','Image Host','Lifetime Image Host access is active on this Snoozer account.','▧','premium','epic','automatic','image_host_purchase',true,161) on conflict(slug) do nothing",
+    );
+    const profile=await result<string>("select id::text as value from snoozer.profiles where owner_id=$1",[alice]);
+    expect(profile).toBeTruthy();
+
+    const priceId="price_imagehostbadge001";
+    await db.query(
+      "insert into snoozer.image_host_prices(price_id,product_id,currency,unit_amount) values($1,$2,'eur',499) on conflict(price_id) do nothing",
+      [priceId,"prod_imagehostbadge001"],
+    );
+    const purchase=await result<string>(
+      "insert into snoozer.image_host_purchases(owner_id,price_id,status) values($1,$2,'pending') returning id::text as value",
+      [alice,priceId],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(0);
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='active',verified_at=now() where id=$1",
+      [purchase],
+    );
+    const awardState=await result<{
+      activePurchases:number;catalogueEntries:number;ownerProfiles:number;triggerCount:number;earnedRows:number;
+    }>(`select jsonb_build_object(
+      'activePurchases',(select count(*)::integer from snoozer.image_host_purchases where owner_id=$1 and status='active' and verified_at is not null),
+      'catalogueEntries',(select count(*)::integer from snoozer.badge_catalog where slug='image-host-owner' and enabled),
+      'ownerProfiles',(select count(*)::integer from snoozer.profiles where owner_id=$1),
+      'triggerCount',(select count(*)::integer from pg_trigger where tgrelid='snoozer.image_host_purchases'::regclass and tgname='image_host_purchase_badges_refresh' and not tgisinternal),
+      'earnedRows',(select count(*)::integer from snoozer.profile_badges where profile_id=$2 and slug='image-host-owner' and revoked_at is null)
+    ) as value`,[alice,profile]);
+    expect(awardState).toMatchObject({
+      activePurchases:1,catalogueEntries:1,ownerProfiles:1,triggerCount:1,earnedRows:1,
+    });
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='refunded' where id=$1",
+      [purchase],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is not null",
+      [profile],
+    )).toBe(1);
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(0);
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='active' where id=$1",
+      [purchase],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(1);
   });
 
 });

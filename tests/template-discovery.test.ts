@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { profileTemplateStyles } from "../src/lib/profile";
-import { findTemplates, getTemplatePage, studioTemplates, templateCategories, templateFilters, templatePalettes } from "../src/lib/studio-templates";
+import { findTemplates, getTemplatePage, studioTemplates, templateCategories, templateFilters, templatePalettes, templatePaletteIdForAppearance } from "../src/lib/studio-templates";
 
 describe("first-party template discovery", () => {
   it("ships 120 designs across ten categories and thirty visual styles", () => {
@@ -12,6 +12,8 @@ describe("first-party template discovery", () => {
     expect(templateCategories).toHaveLength(10);
     expect(templatePalettes.map((palette) => palette.id)).toEqual(["nocturne", "glacier", "parchment", "afterglow"]);
     expect(studioTemplates.every((item) => item.appearance.templateStyle === item.style)).toBe(true);
+    expect(studioTemplates.every((item) => templatePaletteIdForAppearance(item.appearance) === item.paletteId)).toBe(true);
+    expect(templatePaletteIdForAppearance({ ...studioTemplates[0].appearance, colors: undefined })).toBeNull();
     expect(studioTemplates.every((item) => item.sections.length >= 1 && item.appearance.colors?.background)).toBe(true);
   });
   it("combines case-insensitive word, category, theme and layout filters", () => {

@@ -34,8 +34,8 @@ describe("profile validation", () => {
     for (const colors of [{ background: "red" }, { text: "#fff" }, { customCss: "url(https://example.com)" }]) {
       expect(profileAppearance.safeParse({ ...defaultAppearance, colors }).success).toBe(false);
     }
-    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 39 }).success).toBe(false);
-    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 25 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, opacity: 19 }).success).toBe(false);
+    expect(profileAppearance.safeParse({ ...defaultAppearance, blur: 81 }).success).toBe(false);
     expect(profileAppearance.safeParse({ ...defaultAppearance, font: "url(https://example.com)" }).success).toBe(false);
   });
 
@@ -65,7 +65,12 @@ describe("profile validation", () => {
   it("defaults new profile links to visible and validates visibility as a boolean", () => {
     expect(link.parse({ label: "GitHub", url: "https://github.com/example" }).hidden).toBeUndefined();
     expect(link.parse({ label: "Private", url: "https://example.com/private", hidden: true }).hidden).toBe(true);
+    expect(link.parse({ label: "Icon", url: "https://example.com/icon", mode: "icon" }).mode).toBe("icon");
+    expect(link.parse({ label: "Text", url: "https://example.com/text", mode: "text" }).mode).toBe("text");
+    expect(link.parse({ label: "Custom", url: "https://example.com/custom", iconImage: "00000000-0000-4000-8000-000000000011" }).iconImage).toBe("00000000-0000-4000-8000-000000000011");
     expect(link.safeParse({ label: "Bad visibility", url: "https://example.com", hidden: "yes" }).success).toBe(false);
+    expect(link.safeParse({ label: "Bad mode", url: "https://example.com", mode: "iframe" }).success).toBe(false);
+    expect(link.safeParse({ label: "Bad icon", url: "https://example.com", iconImage: "not-an-id" }).success).toBe(false);
   });
 
   it("canonicalises ASCII usernames and rejects confusables", () => {

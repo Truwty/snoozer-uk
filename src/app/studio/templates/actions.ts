@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { readDraft, requireAccount, studioHref } from "@/lib/profiles-server";
-import { profileAppearance, themes, textSections } from "@/lib/profile";
+import { defaultAppearance, profileAppearance, themes, textSections } from "@/lib/profile";
 import { studioTemplates } from "@/lib/studio-templates";
 import { save } from "@/app/studio/actions";
 
@@ -27,17 +27,20 @@ export async function useStudioTemplate(form: FormData) {
   const {client}=await requireAccount();
   const {error:historyError}=await client.rpc("record_my_template_use",{p_key:template.data});
   if(historyError) redirect("/studio/templates?error=save");
-  if(studioTemplates.some((item)=>item.id===template.data)) redirect(studioHref("/studio/builder?template="+encodeURIComponent(template.data),profile.data??undefined));
+  if(studioTemplates.some((item)=>item.id===template.data)) redirect(studioHref("/studio/customize?template="+encodeURIComponent(template.data),profile.data??undefined));
   const id=uuid.safeParse(template.data); if(!id.success) redirect("/studio/templates?error=missing");
   const {data,error}=await client.rpc("get_community_template",{p_id:id.data});
-  const parsed=z.object({config:z.strictObject({theme:z.enum(themes),appearance:profileAppearance,sections:textSections})}).safeParse(data);
+  const parsed=z.object({config:z.object({theme:z.enum(themes),appearance:z.record(z.string(),z.unknown()),sections:z.unknown()})}).safeParse(data);
   if(error||!parsed.success) redirect("/studio/templates?error=unavailable");
+  const appearance=profileAppearance.safeParse({...defaultAppearance,...parsed.data.config.appearance});
+  const sections=textSections.safeParse(parsed.data.config.sections??[]);
+  if(!appearance.success||!sections.success) redirect("/studio/templates?error=unavailable");
   const draft=await readDraft(profile.data??undefined);
   if(!draft) redirect("/studio");
-  const result=await save({profileId:draft.profile_id,revision:draft.revision,content:{...draft,theme:parsed.data.config.theme,appearance:parsed.data.config.appearance,sections:parsed.data.config.sections},intent:"draft",removeAvatar:false});
+  const result=await save({profileId:draft.profile_id,revision:draft.revision,content:{...draft,theme:parsed.data.config.theme,appearance:appearance.data,sections:sections.data},intent:"draft",removeAvatar:false});
   if(result.status!=="success") redirect("/studio/templates?error=apply");
-  revalidatePath("/studio/builder"); revalidatePath("/studio");
-  redirect(studioHref("/studio/builder",draft.profile_id));
+  revalidatePath("/studio/customize"); revalidatePath("/studio");
+  redirect(studioHref("/studio/customize",draft.profile_id));
 }
 
 export async function submitCommunityTemplate(form: FormData) {
@@ -62,4 +65,15 @@ export async function reportCommunityTemplate(form: FormData) {
   if(!template.success||!reason.success) redirect("/studio/templates?error=invalid");
   const {client}=await requireAccount(); const {error}=await client.rpc("report_community_template",{p_id:template.data,p_reason:reason.data});
   redirect(error?"/studio/templates?error=report":"/studio/templates?reported=1");
+}
+
+export async function rateStudioTemplate(form: FormData) {
+  const template=key.safeParse(form.get("template"));
+  const rating=z.coerce.number().int().min(1).max(5).safeParse(form.get("rating"));
+  if(!template.success||!rating.success) redirect("/studio/templates?error=rating");
+  const {client}=await requireAccount();
+  const {error}=await client.rpc("set_my_template_rating",{p_key:template.data,p_rating:rating.data});
+  if(error) redirect("/studio/templates?error=rating");
+  revalidatePath("/studio/templates");
+  redirect("/studio/templates?rated=1");
 }

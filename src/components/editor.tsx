@@ -1,26 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { kofiProfileUrl } from "@/lib/kofi-link";
-import { spotifyResource, spotifyLink } from "@/lib/spotify";
+import { createBrowserClient } from "@supabase/ssr";
+import { StudioAudioLibrary } from "@/components/studio-audio-library";
+import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { galleryMemoryWarning } from "@/lib/gallery-budget";
-import { profileCorners, profileDensities, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
+import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
+import { supabaseConfig } from "@/lib/env";
+import { safeLink } from "@/lib/safe-link";
+import { type DraftProfile, type ProfileContent } from "@/lib/profile";
+import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
-import { VisualSelect } from "./visual-select";
 import { CopyLink } from "./copy-link";
 import { SchedulePublication } from "./schedule-publication";
 import type { PublicationSchedule } from "@/lib/publication-schedule";
 import { Unpublish } from "./unpublish";
-import { AppearanceTransfer } from "./appearance-transfer";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { ImageHostPurchase } from "@/components/image-host-purchase";
 import { SocialProviderIcon } from "./social-provider-icon";
-import { EffectsEditor } from "./effects-editor";
-import type { EffectTier } from "@/lib/profile-effects";
 import { TextSectionsEditor } from "./text-sections-editor";
 import { ProfileBlocksEditor } from "./profile-blocks-editor";
 import { ProfileWidgetsEditor } from "./profile-widgets-editor";
@@ -52,20 +54,23 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "block-quote", label: "Quote block", description: "Add a styled quotation", symbol: "“" },
 ];
 
-export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
-  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, travel, canUndo, canRedo } = useDraftEditor(draft);
+export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOffer = null, imageHostActive = false, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; imageHostOffer?: { price_id:string; currency:"eur"; unit_amount:499 } | null; imageHostActive?: boolean; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
+  const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, refreshSaved, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
   const [previewSize, setPreviewSize] = useState("wide");
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const template = studioTemplates.find(({ id }) => id === templateId);
-  const [kofiUrl, setKofiUrl] = useState("");
-  const [kofiError, setKofiError] = useState(false);
-  const [spotifyUrl, setSpotifyUrl] = useState("");
-  const [spotifyError, setSpotifyError] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [providerQuery, setProviderQuery] = useState("");
   const [providerCategory, setProviderCategory] = useState<SocialProviderCategory>("All");
+  const [customUrlOpen, setCustomUrlOpen] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+  const [customSocialMode, setCustomSocialMode] = useState<"icon" | "text">("icon");
+  const [customIconFile, setCustomIconFile] = useState<File | null>(null);
+  const [customIconBusy, setCustomIconBusy] = useState(false);
+  const [customUrlError, setCustomUrlError] = useState("");
+  const customIconInput = useRef<HTMLInputElement>(null);
   const [dropActive, setDropActive] = useState(false);
   const pointerBlockDrag = useRef<{ pointerId: number; kind: BuilderBlock; x: number; y: number; active: boolean } | null>(null);
   const suppressBlockClick = useRef(false);
@@ -139,6 +144,82 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     focusLink(to);
   }
 
+  async function addCustomUrl() {
+    if (content.links.length >= linkLimit) {
+      setCustomUrlError("Your current plan has reached its link limit.");
+      return;
+    }
+    let parsed: URL;
+    try { parsed = new URL(customUrl.trim()); } catch {
+      setCustomUrlError("Enter a valid URL.");
+      return;
+    }
+    if (!["http:", "https:"].includes(parsed.protocol) || !safeLink(parsed.href)) {
+      setCustomUrlError("Use a public HTTP or HTTPS address.");
+      return;
+    }
+    setCustomIconBusy(true);
+    setCustomUrlError("");
+    let uploadedId: string | undefined;
+    let stagedId: string | undefined;
+    try {
+      if (customSocialMode === "icon" && customIconFile) {
+        if (customIconFile.size < 1 || customIconFile.size > galleryMaxBytes || !galleryTypes.includes(customIconFile.type)) {
+          setCustomUrlError("Choose a JPEG, PNG or WebP icon up to 4 MB.");
+          return;
+        }
+        const started = await startGalleryUpload(saved.profile_id, saved.revision, "Custom social icon — " + parsed.hostname);
+        if ("error" in started || !started.id || !started.path || !started.token) {
+          setCustomUrlError(started.error ?? "Could not prepare the icon upload.");
+          return;
+        }
+        stagedId = started.id;
+        const config = supabaseConfig();
+        const browser = createBrowserClient(config.url, config.key);
+        const { error } = await browser.storage.from(galleryIncoming)
+          .uploadToSignedUrl(started.path, started.token, customIconFile, { contentType: customIconFile.type, upsert: false });
+        if (error) {
+          await discardGalleryUpload(saved.profile_id, saved.revision, started.id);
+          setCustomUrlError("The icon could not be uploaded. Try again.");
+          return;
+        }
+        const completed = await finishGalleryUpload(saved.profile_id, saved.revision, started.id);
+        if ("error" in completed) {
+          await discardGalleryUpload(saved.profile_id, saved.revision, started.id);
+          setCustomUrlError(completed.error ?? "The icon could not be saved.");
+          return;
+        }
+        uploadedId = started.id;
+        await refreshSaved();
+      }
+      const label = parsed.hostname.replace(/^www\./i, "").slice(0, 80) || "Custom URL";
+      const newLink = {
+        label, url: parsed.href, hidden: false, mode: customSocialMode,
+        ...(uploadedId ? { iconImage: uploadedId } : {}),
+      };
+      if (uploadedId) {
+        const latest = await refreshSaved();
+        edit((current) => ({
+          ...current,
+          revision: latest.revision,
+          content: { ...current.content, links: [...current.content.links, newLink] },
+        }));
+      } else {
+        set("links", [...content.links, newLink]);
+      }
+      setCustomUrlOpen(false);
+      setCustomUrl("");
+      setCustomIconFile(null);
+      if (customIconInput.current) customIconInput.current.value = "";
+      setAnnouncement("Custom URL added. Save or publish your profile to make it visible.");
+    } catch (reason) {
+      if (stagedId && !uploadedId) await discardGalleryUpload(saved.profile_id, saved.revision, stagedId).catch(() => undefined);
+      setCustomUrlError(reason instanceof Error ? reason.message : "The custom URL could not be added.");
+    } finally {
+      setCustomIconBusy(false);
+    }
+  }
+
   function addSocialProvider(provider: SocialProvider) {
     if (content.links.length >= linkLimit) {
       setAnnouncement("Your current plan's link limit has been reached.");
@@ -148,33 +229,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
     setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
     focusLink(index);
-  }
-
-  function addKofiLink() {
-    if (content.links.length >= linkLimit) return;
-    const url = kofiProfileUrl(kofiUrl);
-    if (!url) {
-      setKofiError(true);
-      return;
-    }
-    set("links", [...content.links, { label: "Support me", url }]);
-    setKofiUrl("");
-    setKofiError(false);
-    setAnnouncement("Ko-fi support link added.");
-    focusLink(content.links.length);
-  }
-
-  function addSpotifyLink() {
-    if (content.links.length >= linkLimit) return;
-    const resource = spotifyResource(spotifyUrl);
-    const url = resource ? spotifyLink(resource) : null;
-    if (!url || !resource) { setSpotifyError(true); return; }
-    const name = resource.kind === "show" ? "Podcast" : resource.kind[0].toUpperCase() + resource.kind.slice(1);
-    set("links", [...content.links, { label: "Spotify " + name, url }]);
-    setSpotifyUrl("");
-    setSpotifyError(false);
-    setAnnouncement("Added a Spotify " + resource.kind + " link.");
-    focusLink(content.links.length);
   }
 
   function focusLink(index: number) {
@@ -368,7 +422,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
     }}>
 
       <section role="tabpanel" aria-labelledby="editor-tab-Profile" id="editor-panel-Profile" data-editor-panel="Profile" hidden={tab !== "Profile"} className="editor-panel stack">
-        <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>
+        {!panelOnly && <div className="avatar-panel"><h2>Avatar</h2>{avatar}</div>}
       <fieldset className="stack">
         <legend className="section-title">Profile details</legend>
         <label>Display name<input name="display_name" maxLength={60} required value={content.display_name}
@@ -378,161 +432,182 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
       </fieldset>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Design" id="editor-panel-Design" data-editor-panel="Design" hidden={tab !== "Design"} className="editor-panel stack">
-      <fieldset className="stack"><legend className="section-title">Appearance</legend>
-        <VisualSelect label="Theme" onPick={(value) => { const theme = themes.find((item) => item === value); if (theme) set("theme", theme); }}><select name="theme" value={content.theme}
-          onChange={(event) => set("theme", event.target.value as ProfileContent["theme"])}>
-          {themes.map((theme) => <option key={theme} value={theme}>{theme[0].toUpperCase() + theme.slice(1)}</option>)}
-        </select></VisualSelect>
-        <VisualSelect label="Profile layout" onPick={(value) => { const layout = profileLayouts.find((item) => item === value); if (layout) set("appearance", { ...content.appearance, layout }); }}><select value={content.appearance.layout} onChange={(event) => {
-          const layout = profileLayouts.find((value) => value === event.target.value);
-          if (layout) set("appearance", { ...content.appearance, layout });
-        }}>
-          <option value="centred">Centred card</option>
-          <option value="editorial">Editorial</option>
-          <option value="portfolio">Portfolio grid</option>
-        </select></VisualSelect>
-        <label>Background entrance<select value={content.appearance.entrance} onChange={(event) => {
-          const entrance = event.target.value;
-          if (entrance === "none" || entrance === "fade" || entrance === "rise") set("appearance", { ...content.appearance, entrance });
-        }}>
-          <option value="none">None</option>
-          <option value="fade">Fade in</option>
-          <option value="rise">Soft rise</option>
-        </select></label>
-        <small className="muted">Decorative backgrounds animate once. Your visitor’s reduced-motion setting always takes priority.</small>
-        <fieldset className="stack">
-          <legend className="section-title">Profile background image</legend>
-          <p className="muted">Choose an image from your gallery. A soft theme overlay keeps text readable, and the selected image won’t be repeated in the public gallery.</p>
-          <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
-          {!saved.gallery.length && <p className="muted">Upload an image in your gallery to use it here.</p>}
-          <div className="background-image-options" role="group" aria-label="Profile background image">
-            <button type="button" className="background-image-option background-image-none"
-              aria-pressed={!saved.gallery.some(({ id }) => id === content.appearance.backgroundImage)}
-              onClick={() => setBackgroundImage()}>
-              <span aria-hidden="true">Aa</span><span>No image</span>
-            </button>
-            {saved.gallery.map((image) => <button type="button" className="background-image-option"
-              key={image.id} aria-label={`Use ${image.alt} as profile background`}
-              aria-pressed={content.appearance.backgroundImage === image.id}
-              onClick={() => setBackgroundImage(image.id)}>
-              {/* The authenticated Studio route serves this already processed image. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/studio/gallery/image/${image.id}`} alt="" width={image.width} height={image.height} loading="lazy" />
-              <span>{image.alt}</span>
-            </button>)}
+        <section className="studio-assets-uploader stack" aria-labelledby="studio-assets-title">
+          <div className="studio-assets-heading">
+            <div><p className="eyebrow">PROFILE ASSETS</p><h2 id="studio-assets-title">Assets Uploader</h2>
+              <p className="muted">Upload and manage the four assets used by your published profile.</p></div>
+            <Link className="button small" href={galleryHref}>Manage Image Host ↗</Link>
+          </div>
+          {effectTier === "free" && <div className="studio-assets-premium">
+            <div><strong>Make your page stand out</strong><p>Unlock more profile effects and media capacity with Snoozer Premium.</p></div>
+            <Link className="button small primary" href="/studio/plan">Explore Premium ↗</Link>
+          </div>}
+          <div className="studio-assets-grid">
+            <article className="studio-asset-card studio-asset-background">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">▧</span><span className="studio-asset-kind">01 / BACKGROUND</span></div>
+              <div className="studio-asset-preview">
+                {content.appearance.backgroundImage && saved.gallery.some((image)=>image.id===content.appearance.backgroundImage)
+                  ? <img src={"/studio/gallery/image/"+content.appearance.backgroundImage} alt="" loading="lazy"/>
+                  : <div className="studio-asset-placeholder"><span aria-hidden="true">▧</span><strong>No background selected</strong></div>}
+              </div>
+              <h3>Background</h3>
+              <p className="muted">Choose the image shown behind your profile card.</p>
+              <label>Background image
+                <select value={content.appearance.backgroundImage??""} onChange={(event)=>setBackgroundImage(event.target.value||undefined)}>
+                  <option value="">No background image</option>
+                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+                </select>
+              </label>
+              <Link className="button small" href={galleryHref}>Upload background</Link>
+            </article>
+            <article className="studio-asset-card studio-asset-audio">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">♫</span><span className="studio-asset-kind">02 / AUDIO</span></div>
+              <div className="studio-asset-preview studio-asset-audio-preview"><span aria-hidden="true">♫</span><strong>PROFILE AUDIO</strong><small>MP3 · M4A · OGG · WAV · AAC · FLAC</small></div>
+              <h3>Audio</h3>
+              <p className="muted">Upload audio files, add cover artwork and manage your profile playlist.</p>
+              <StudioAudioLibrary
+                profileId={saved.profile_id}
+                revision={saved.revision}
+                gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
+                onAddTrack={(track) => {
+                  if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
+                  set("links",[...content.links,{
+                    label:track.title+" — "+track.artist,
+                    url:track.url,
+                    mode:"text",
+                    hidden:false,
+                    ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
+                  }]);
+                  setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+                }}
+              />
+            </article>
+            <article className="studio-asset-card studio-asset-avatar">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">◉</span><span className="studio-asset-kind">03 / PROFILE AVATAR</span></div>
+              <div className="studio-asset-preview studio-asset-avatar-preview">{avatar}</div>
+              <h3>Profile Avatar</h3>
+              <p className="muted">Upload or replace the image shown beside your profile name.</p>
+            </article>
+            <article className="studio-asset-card studio-asset-cursor">
+              <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">⌖</span><span className="studio-asset-kind">04 / CUSTOM CURSOR</span></div>
+              <div className="studio-asset-preview studio-asset-cursor-preview">
+                {content.appearance.customCursorImage && saved.gallery.some((image)=>image.id===content.appearance.customCursorImage)
+                  ? <img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/>
+                  : <div className="studio-asset-placeholder"><span aria-hidden="true">↖</span><strong>Default cursor</strong></div>}
+              </div>
+              <h3>Custom Cursor</h3>
+              <p className="muted">Choose a small image to use as the pointer on your profile.</p>
+              <label>Cursor image
+                <select value={content.appearance.customCursorImage??""} onChange={(event)=>set("appearance",{...content.appearance,customCursorImage:event.target.value||undefined})}>
+                  <option value="">Use standard cursor</option>
+                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+                </select>
+              </label>
+              <Link className="button small" href={galleryHref}>Upload cursor image</Link>
+            </article>
+          </div>
+        </section>
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">General Customization</legend>
+          <div className="studio-reference-customization-grid">
+            <label>Description
+              <textarea name="bio" maxLength={280} rows={3} value={content.bio}
+                onChange={(event)=>set("bio",event.target.value)}/>
+            </label>
+            <div className="studio-reference-widget">
+              <span>Profile Widget</span>
+              <Link className="studio-reference-widget-action" href="/studio/discord">
+                <span aria-hidden="true">◉</span> Discord Presence <strong>Settings ↗</strong>
+              </Link>
+            </div>
+            <label>Profile Opacity: {content.appearance.opacity??100}%
+              <input type="range" min={20} max={100} step={1} value={content.appearance.opacity??100}
+                onChange={(event)=>set("appearance",{...content.appearance,opacity:Number(event.target.value)})}/>
+            </label>
+            <label>Profile Blur: {content.appearance.blur??0}px
+              <input type="range" min={0} max={80} step={1} value={content.appearance.blur??0}
+                onChange={(event)=>set("appearance",{...content.appearance,blur:Number(event.target.value)})}/>
+            </label>
+            <label>Background Effects
+              <select value={content.appearance.effects?.background??"none"} onChange={(event)=>{
+                const background=event.target.value as ProfileEffects["background"];
+                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),background,preset:"none",enabled:background!=="none"||Boolean(content.appearance.effects?.enabled)}});
+              }}>
+                {effectBackgrounds.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Username Effects
+              <select value={content.appearance.effects?.text??"none"} onChange={(event)=>{
+                const text=event.target.value as ProfileEffects["text"];
+                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),text,preset:"none",enabled:text!=="none"||Boolean(content.appearance.effects?.enabled)}});
+              }}>
+                {effectTexts.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Location
+              <input type="text" maxLength={80} autoComplete="off" placeholder="Your location"
+                value={content.appearance.location??""}
+                onChange={(event)=>set("appearance",{...content.appearance,location:event.target.value||undefined})}/>
+            </label>
+            <div className="studio-reference-glow-settings">
+              <strong>Glow Settings</strong>
+              <div className="studio-reference-glow-options">
+                <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,usernameGlow:event.target.checked})}/> Username</label>
+                <label className="check"><input type="checkbox" checked={content.appearance.socialGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,socialGlow:event.target.checked})}/> Socials</label>
+                <label className="check"><input type="checkbox" checked={content.appearance.badgeGlow??false}
+                  onChange={(event)=>set("appearance",{...content.appearance,badgeGlow:event.target.checked})}/> Badges</label>
+              </div>
+            </div>
+          </div>
+          <label className="check studio-reference-location-toggle">
+            <input type="checkbox" checked={content.appearance.showLocation??false}
+              disabled={!content.appearance.location?.trim()}
+              onChange={(event)=>set("appearance",{...content.appearance,showLocation:event.target.checked})}/>
+            Show location on my profile
+          </label>
+        </fieldset>
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">Color Customization</legend>
+          <div className="studio-reference-color-grid">
+            <label>Accent Color<input type="color" value={customColours.accent??"#9b8cff"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,accent:event.target.value}})}/></label>
+            <label>Text Color<input type="color" value={customColours.text??"#f5f6fa"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,text:event.target.value}})}/></label>
+            <label>Background Color<input type="color" value={customColours.background??"#171923"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,background:event.target.value}})}/></label>
+            <label>Icon Color<input type="color" value={customColours.icon??"#e4e7f0"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,icon:event.target.value}})}/></label>
+            <label>Background Effect Color<input type="color" value={customColours.effect??"#7c72d8"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,effect:event.target.value}})}/></label>
+            <label>Primary Color<input type="color" value={customColours.gradientStart??"#493c96"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,gradientStart:event.target.value}})}/></label>
+            <label>Secondary Color<input type="color" value={customColours.gradientEnd??"#137f83"}
+              onChange={(event)=>set("appearance",{...content.appearance,colors:{...customColours,gradientEnd:event.target.value}})}/></label>
+          </div>
+          <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled??false}
+            onChange={(event)=>set("appearance",{...content.appearance,gradientEnabled:event.target.checked})}/> Enable profile gradient</label>
+        </fieldset>
+
+        <fieldset className="stack studio-reference-customization">
+          <legend className="section-title">Other Customization</legend>
+          <div className="studio-reference-other-options">
+            <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons??false}
+              onChange={(event)=>set("appearance",{...content.appearance,monochromeIcons:event.target.checked})}/> Monochrome Icons</label>
+            <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle??false}
+              onChange={(event)=>set("appearance",{...content.appearance,animatedTitle:event.target.checked})}/> Animated Title</label>
+            <label className="check"><input type="checkbox" checked={content.appearance.swapBoxColors??false}
+              onChange={(event)=>set("appearance",{...content.appearance,swapBoxColors:event.target.checked})}/> Swap Box Colors</label>
           </div>
         </fieldset>
-        <VisualSelect label="Card spacing" onPick={(value) => { const density = profileDensities.find((item) => item === value); if (density) set("appearance", { ...content.appearance, density }); }}><select value={content.appearance.density} onChange={(event) => {
-          const density = profileDensities.find((value) => value === event.target.value);
-          if (density) set("appearance", { ...content.appearance, density });
-        }}>
-          {profileDensities.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></VisualSelect>
-        <VisualSelect label="Card corners" onPick={(value) => { const corners = profileCorners.find((item) => item === value); if (corners) set("appearance", { ...content.appearance, corners }); }}><select value={content.appearance.corners} onChange={(event) => {
-          const corners = profileCorners.find((value) => value === event.target.value);
-          if (corners) set("appearance", { ...content.appearance, corners });
-        }}>
-          {profileCorners.map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}
-        </select></VisualSelect>
-        <label>Link accent<select value={content.appearance.accent} aria-describedby="link-accent-contrast" onChange={(event) => {
-          const accent = linkAccents.find((value) => value === event.target.value);
-          if (accent) set("appearance", { ...content.appearance, accent });
-        }}>
-          {linkAccents.map((accent) => <option value={accent} key={accent}>{linkAccentLabels[accent]}</option>)}
-        </select></label>
-        <p id="link-accent-contrast" className="muted" aria-live="polite">
-          {linkColours ? "Link text contrast " + (Math.floor(linkColours.ratio * 10) / 10).toFixed(1) + " to 1."
-            : "Links use your theme colours."}
-        </p>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Custom colours</legend>
-        <p className="muted">Set exact profile colours. Leave each value at its theme default until you choose a custom shade.</p>
-        <div className="studio-color-grid">
-          <label>Background<input type="color" value={customColours.background ?? "#171923"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, background: event.target.value } })}/></label>
-          <label>Text<input type="color" value={customColours.text ?? "#f5f6fa"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, text: event.target.value } })}/></label>
-          <label>Accent<input type="color" value={customColours.accent ?? "#9b8cff"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, accent: event.target.value } })}/></label>
-          <label>Icons<input type="color" value={customColours.icon ?? "#e4e7f0"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, icon: event.target.value } })}/></label>
-          <label>Effect colour<input type="color" value={customColours.effect ?? "#7c72d8"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, effect: event.target.value } })}/></label>
-          <label>Gradient start<input type="color" value={customColours.gradientStart ?? "#493c96"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientStart: event.target.value } })}/></label>
-          <label>Gradient end<input type="color" value={customColours.gradientEnd ?? "#137f83"}
-            onChange={(event) => set("appearance", { ...content.appearance, colors: { ...customColours, gradientEnd: event.target.value } })}/></label>
-        </div>
-        <label className="check"><input type="checkbox" checked={content.appearance.gradientEnabled ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, gradientEnabled: event.target.checked })}/> Enable profile gradient</label>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Surface and typography</legend>
-        <label>Profile opacity: {content.appearance.opacity ?? 100}%
-          <input type="range" min={40} max={100} step={1} value={content.appearance.opacity ?? 100}
-            onChange={(event) => set("appearance", { ...content.appearance, opacity: Number(event.target.value) })}/>
-        </label>
-        <label>Background blur: {content.appearance.blur ?? 0}px
-          <input type="range" min={0} max={24} step={1} value={content.appearance.blur ?? 0}
-            onChange={(event) => set("appearance", { ...content.appearance, blur: Number(event.target.value) })}/>
-        </label>
-        <label>Typography
-          <select value={content.appearance.font ?? "system"} onChange={(event) => {
-            const font = ["system", "sans", "serif", "mono"].find((value) => value === event.target.value);
-            if (font) set("appearance", { ...content.appearance, font: font as typeof content.appearance.font });
-          }}>
-            <option value="system">System</option><option value="sans">Sans serif</option>
-            <option value="serif">Serif</option><option value="mono">Monospace</option>
-          </select>
-        </label>
-      </fieldset>
-      <fieldset className="stack studio-customize-panel">
-        <legend className="section-title">Profile details and effects</legend>
-        <label className="check"><input type="checkbox" checked={content.appearance.monochromeIcons ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, monochromeIcons: event.target.checked })}/> Monochrome social icons</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.animatedTitle ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, animatedTitle: event.target.checked })}/> Animate profile title</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.swapBoxColors ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, swapBoxColors: event.target.checked })}/> Swap profile and content box colours</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.usernameGlow ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, usernameGlow: event.target.checked })}/> Username glow</label>
-        <label className="check"><input type="checkbox" checked={content.appearance.socialGlow ?? false}
-          onChange={(event) => set("appearance", { ...content.appearance, socialGlow: event.target.checked })}/> Social icon glow</label>
-        <label>Location shown on your profile (optional)
-          <input type="text" maxLength={80} autoComplete="off" value={content.appearance.location ?? ""}
-            onChange={(event) => set("appearance", { ...content.appearance, location: event.target.value || undefined })}/>
-        </label>
-        <label className="check"><input type="checkbox" checked={content.appearance.showLocation ?? false}
-          disabled={!content.appearance.location?.trim()}
-          onChange={(event) => set("appearance", { ...content.appearance, showLocation: event.target.checked })}/>
-          Show my location publicly</label>
-      </fieldset>
-      <EffectsEditor tier={effectTier} value={content.appearance.effects} onChange={(effects) => set("appearance", { ...content.appearance, effects })} />
-      <fieldset className="stack">
-        <legend className="section-title">Profile design library</legend>
-        <p className="muted">Choose from 120 designs. The live preview updates here before you apply anything.</p>
-        <label>Preview a design
-          <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
-            <option value="">Show my current design</option>
-            {studioTemplates.map(({ id, name, categoryLabel }) => <option key={id} value={id}>{name} · {categoryLabel}</option>)}
-          </select>
-        </label>
-        <p><Link className="text-link" href="/templates">Browse the full library of 120 templates ↗</Link></p>
-        {template && <>
-          <p className="muted">{template.categoryLabel} · {template.description} Your links, widgets, gallery and existing sections stay yours.</p>
-          <div className="actions">
-            <button type="button" className="button small primary" onClick={() => applyTemplate(false)}>Apply template design</button>
-            {content.sections.length === 0 && <button type="button" className="button small"
-              onClick={() => applyTemplate(true)}>Apply design with sample sections</button>}
-          </div>
-        </>}
-      </fieldset>
-      <AppearanceTransfer settings={content} onApply={(settings) => {
-        edit((current) => ({ ...current, content: { ...current.content, ...settings,
-          appearance: { ...settings.appearance, ...(current.content.appearance.backgroundImage ? { backgroundImage: current.content.appearance.backgroundImage } : {}) } } }));
-        setTemplateId("");
-      }} />
+        {template&&<fieldset className="stack">
+          <legend className="section-title">Template</legend>
+          <p className="muted">{template.categoryLabel} · {template.description}</p>
+          <button type="button" className="button small primary" onClick={()=>applyTemplate(false)}>Apply template design</button>
+        </fieldset>}
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Sections" id="editor-panel-Sections" data-editor-panel="Sections" hidden={tab !== "Sections"} className="editor-panel stack">
         <TextSectionsEditor sections={content.sections} onChange={(sections) => set("sections", sections)} />
@@ -545,6 +620,11 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
+        <section className="studio-links-image-host-card">
+          <div><p className="eyebrow">IMAGE HOST / LIFETIME ADD-ON</p><strong>Host and share your own profile assets</strong>
+            <p className="muted">Custom domains, secure uploads, advanced galleries, text pastes and upload analytics.</p></div>
+          <ImageHostPurchase offer={imageHostOffer} active={imageHostActive}/>
+        </section>
         <section className="studio-links-catalogue stack" aria-labelledby="social-catalogue-title">
           <div className="studio-links-catalogue-heading">
             <div><p className="eyebrow">ADD A LINK</p><h2 id="social-catalogue-title">Social profiles</h2></div>
@@ -567,7 +647,14 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
               <span>{provider.label}</span><span className="studio-provider-plus" aria-hidden="true">+</span>
             </button>)}
           </div>
-          {filterSocialProviders(providerQuery, providerCategory).length === 0 && <p className="muted">No providers match that search.</p>}
+          <button type="button" className="studio-provider-card studio-provider-custom-url"
+            disabled={content.links.length >= linkLimit} onClick={() => {
+              setCustomUrl(""); setCustomSocialMode("icon"); setCustomIconFile(null);
+              setCustomUrlError(""); setCustomUrlOpen(true);
+            }}>
+            <span className="studio-provider-mark" aria-hidden="true">◎</span>
+            <span>Add Custom URL</span><span className="studio-provider-plus" aria-hidden="true">+</span>
+          </button>
         </section>
       <fieldset className="stack" ref={linkList}>
         <legend className="section-title">Links <small>{content.links.length}/{linkLimit}</small></legend>
@@ -588,6 +675,24 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
           <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
+          <label>Display mode
+            <select value={item.mode ?? "icon"} onChange={(event) => {
+              const mode = event.target.value === "text" ? "text" : "icon";
+              set("links", content.links.map((entry, i) => i === index ? { ...entry, mode } : entry));
+            }}>
+              <option value="icon">Icon link</option>
+              <option value="text">Text link</option>
+            </select>
+          </label>
+          {(item.mode ?? "icon") === "icon" ? (
+            <label>Custom icon (optional)
+              <select value={item.iconImage ?? ""} onChange={(event) =>
+                set("links", content.links.map((entry, i) => i === index ? { ...entry, iconImage: event.target.value || undefined } : entry))}>
+                <option value="">Use detected platform icon</option>
+                {saved.gallery.map((image) => <option key={image.id} value={image.id}>{image.alt || "Gallery image"}</option>)}
+              </select>
+            </label>
+          ) : null}
           <details className="row-menu" onClick={(event) => { if (event.target instanceof Element && event.target.closest("button")) event.currentTarget.open = false; }}><summary aria-label={`Actions for link ${index + 1}`}>Actions</summary><div className="actions">
             <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
             <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
@@ -606,36 +711,49 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         {content.links.length < linkLimit && <details>
           <summary>Add a hosted audio track</summary>
           <div className="stack">
-            <p className="muted">For the compact public bio player, add a public HTTPS audio-file URL ending in .mp3, .m4a, .ogg, .wav, .aac or .flac as a normal link. Set its label to “Track title — Artist”. The first gallery image is used as artwork, falling back to your avatar. Host the audio file yourself; direct audio uploads are not currently supported.</p>
+            <p className="muted">Upload audio in Customize → Profile audio library. Add the uploaded track to your profile from there; it will appear after you save and publish.</p>
           </div>
         </details>}
-        {content.links.length < linkLimit && <details>
-          <summary>Add Spotify music or playlist</summary>
-          <div className="stack">
-            <p className="muted">Add an official Spotify track, album, playlist, artist or podcast link. A track appears in the compact bio player; albums, playlists, artists and podcasts stay under More. No Spotify account connection is required. Spotify controls its embedded playback and volume.</p>
-            <label>Spotify share URL<input type="url" maxLength={2048} value={spotifyUrl}
-              placeholder="https://open.spotify.com/playlist/…"
-              aria-invalid={spotifyError} aria-describedby={spotifyError ? "spotify-url-error" : undefined}
-              onChange={(event) => { setSpotifyUrl(event.target.value); setSpotifyError(false); }}
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSpotifyLink(); } }} /></label>
-            {spotifyError && <p id="spotify-url-error" role="alert">Enter a recognised open.spotify.com track, album, playlist, artist, show or episode link.</p>}
-            <button type="button" className="button small" onClick={addSpotifyLink}>Add Spotify link</button>
-          </div>
-        </details>}
-        {content.links.length < linkLimit && <details>
-          <summary>Add Ko-fi support link</summary>
-          <div className="stack">
-            <label>Ko-fi profile URL<input type="text" inputMode="url" maxLength={100}
-              value={kofiUrl} placeholder="https://ko-fi.com/yourname"
-              aria-invalid={kofiError} aria-describedby={kofiError ? "kofi-url-error" : undefined}
-              onChange={(event) => { setKofiUrl(event.target.value); setKofiError(false); }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") { event.preventDefault(); addKofiLink(); }
-              }} /></label>
-            {kofiError && <p id="kofi-url-error" role="alert">Enter your full Ko-fi profile address.</p>}
-            <button type="button" className="button small" onClick={addKofiLink}>Add support link</button>
-          </div>
-        </details>}
+        {customUrlOpen && <div className="studio-custom-url-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !customIconBusy) setCustomUrlOpen(false);
+        }}>
+          <section className="studio-custom-url-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-custom-url-title">
+            <button type="button" className="studio-custom-url-close" aria-label="Close custom URL dialog"
+              disabled={customIconBusy} onClick={() => setCustomUrlOpen(false)}>×</button>
+            <p className="eyebrow">LINKS / SOCIAL PROFILES</p>
+            <h2 id="studio-custom-url-title">Add Custom URL Social</h2>
+            <p className="muted">Add a website or social destination that is not in the provider list.</p>
+            <label>Social Mode
+              <div className="studio-custom-url-mode" role="group" aria-label="Social Mode">
+                <button type="button" aria-pressed={customSocialMode === "icon"} className={customSocialMode === "icon" ? "is-selected" : ""}
+                  onClick={() => setCustomSocialMode("icon")}>Link</button>
+                <button type="button" aria-pressed={customSocialMode === "text"} className={customSocialMode === "text" ? "is-selected" : ""}
+                  onClick={() => setCustomSocialMode("text")}>Text</button>
+              </div>
+            </label>
+            {customSocialMode === "icon" && <div className="studio-custom-url-icon">
+              <strong>Upload icon (optional)</strong>
+              <p className="muted">JPEG, PNG or WebP · up to 4 MB. Images are resized and metadata is removed.</p>
+              <button type="button" className="button small" disabled={customIconBusy}
+                onClick={() => customIconInput.current?.click()}>
+                {customIconFile ? "Change icon" : "Choose icon"}
+              </button>
+              {customIconFile && <small>Selected: {customIconFile.name}</small>}
+              <input ref={customIconInput} type="file" accept={galleryTypes.join(",")} disabled={customIconBusy} hidden
+                onChange={(event) => { setCustomIconFile(event.target.files?.[0] ?? null); setCustomUrlError(""); }}/>
+            </div>}
+            <label>URL<input type="url" autoComplete="url" maxLength={2048} placeholder="https://example.com"
+              value={customUrl} onChange={(event) => setCustomUrl(event.target.value)}/></label>
+            {customUrlError && <p className="message error" role="alert">{customUrlError}</p>}
+            <div className="studio-custom-url-actions">
+              <button type="button" className="button" disabled={customIconBusy} onClick={() => setCustomUrlOpen(false)}>Cancel</button>
+              <button type="button" className="button primary" disabled={customIconBusy || content.links.length >= linkLimit}
+                onClick={() => void addCustomUrl()}>{customIconBusy ? "Uploading…" : "Add"}</button>
+            </div>
+          </section>
+        </div>}
+
+
       </fieldset>
       </section>
 

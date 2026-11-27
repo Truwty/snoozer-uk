@@ -1,98 +1,238 @@
 import Link from "next/link";
+import { CopyLink } from "@/components/copy-link";
 import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
-import { profileLayouts } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
+import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
+import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
-import { reportCommunityTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
+import { rateStudioTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
 import { z } from "zod";
 
 export const metadata = { title: "Template Library", robots: { index: false, follow: false } };
-type Search = StudioProfileQuery & { q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[]; palette?:string|string[]; page?:string|string[]; tab?:string|string[]; community_q?:string|string[]; community_sort?:string|string[]; community_page?:string|string[]; submitted?:string|string[]; error?:string|string[]; reported?:string|string[] };
+type Search = StudioProfileQuery & {
+  q?: string|string[]; theme?:string|string[]; layout?:string|string[]; category?:string|string[];
+  palette?:string|string[]; page?:string|string[]; tab?:string|string[]; error?:string|string[];
+  sort?:string|string[]; rated?:string; submitted?:string;
+};
+const templateMetricSchema=z.array(z.object({
+  template_key:z.string(),uses:z.coerce.number().int().nonnegative(),weekly_uses:z.coerce.number().int().nonnegative(),
+  rating_count:z.coerce.number().int().nonnegative(),rating_average:z.coerce.number().min(0).max(5),
+  my_rating:z.number().int().min(1).max(5).nullable(),
+}));
+const communityListingSchema=z.object({
+  items:z.array(z.object({
+    id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.coerce.number().int().nonnegative(),
+    config:z.object({theme:z.enum(themes),appearance:z.record(z.string(),z.unknown()),sections:z.unknown()}),
+    creator_username:z.string(),rating_count:z.coerce.number().int().nonnegative(),
+    rating_average:z.coerce.number().min(0).max(5),weekly_uses:z.coerce.number().int().nonnegative()
+  })).max(12),
+  total:z.number().int().nonnegative(),page:z.number().int().positive(),pageCount:z.number().int().positive()
+});
+const layoutLabels={centred:"Centred",editorial:"Editorial",portfolio:"Portfolio"};
+
+function ratingLabel(average:number,count:number) {
+  return count>0 ? "★ "+average.toFixed(1)+" · "+count+" ratings" : "Not rated yet";
+}
+function templatePreviewProfile(theme:typeof themes[number],appearance:z.infer<typeof profileAppearance>,sections:z.infer<typeof textSections>) {
+  return {
+    seo:{title:"",description:""},username:"snoozer-preview",display_name:"Your name",
+    bio:"A little space on the internet that feels like you.",theme,indexable:false,avatar:null,
+    appearance,blocks:[],pageLayout:{version:1 as const,items:[]},gallery:[],badges:[],
+    widgets:defaultProfileWidgets,links:[{label:"Your website",url:"https://example.com/"}],sections
+  };
+}
 
 export default async function StudioTemplates({ searchParams }: { searchParams: Promise<Search> }) {
   const params=await searchParams;
   const draft=await readStudioDraft(params.profile);
   const selected=params.profile===undefined?undefined:draft?.profile_id;
   const {client}=await requireAccount();
-  const communityQuery=(typeof params.community_q==="string"?params.community_q:" ").trim().slice(0,80);
-  const communitySort=params.community_sort==="popular"?"popular":"newest";
-  const requestedCommunityPage=Number.parseInt(typeof params.community_page==="string"?params.community_page:"1",10);
-  const communityPageInput=Number.isFinite(requestedCommunityPage)?Math.min(Math.max(requestedCommunityPage,1),100000):1;
-  const [{data:activityData},{data:communityData}]=await Promise.all([
-    client.rpc("get_my_template_activity"),
-    params.tab==="community"?client.rpc("list_community_templates",{p_query:communityQuery,p_sort:communitySort,p_page:communityPageInput}):Promise.resolve({data:null}),
-  ]);
-  const activity=z.object({favorites:z.array(z.string()),recent:z.array(z.string()),uploads:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),status:z.enum(["pending","approved","rejected"]),created_at:z.string()})),community:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()}))}).safeParse(activityData);
-  const communityListing=z.object({items:z.array(z.object({id:z.uuid(),title:z.string(),description:z.string(),created_at:z.string(),usage_count:z.number().int().nonnegative().safe()})).max(12),total:z.number().int().nonnegative(),page:z.number().int().positive(),pageCount:z.number().int().positive()}).safeParse(communityData);
+  const activityResponse=await client.rpc("get_my_template_activity");
+  const activity=z.object({
+    favorites:z.array(z.string()),
+    recent:z.array(z.string()),
+    uploads:z.array(z.object({
+      id:z.uuid(),title:z.string(),description:z.string(),
+      status:z.enum(["pending","approved","rejected"]),created_at:z.string(),
+    })),
+  }).safeParse(activityResponse.data);
   const favorites=activity.success?activity.data.favorites:[];
   const recent=activity.success?activity.data.recent:[];
   const uploads=activity.success?activity.data.uploads:[];
-  const community=activity.success?activity.data.community:[];
-  const communityPage=communityListing.success?communityListing.data.page:1;
-  const communityPageCount=communityListing.success?communityListing.data.pageCount:1;
-  const communityVisible=communityListing.success?communityListing.data.items:[];
-  const tabs=["library","favorites","recent","uploads","community","create"] as const;
+  const tabs=["library","favorites","recent","uploads","create"] as const;
   const requestedTab=typeof params.tab==="string"?params.tab:"library";
   const tab=(tabs as readonly string[]).includes(requestedTab)?requestedTab:"library";
+  const actionProfile=draft?.profile_id;
   const filters=templateFilters(params);
   const allTemplates=findTemplates(filters);
-  const templates=tab==="favorites"?allTemplates.filter((item)=>favorites.includes(item.id))
-    :tab==="recent"?recent.flatMap((id)=>allTemplates.filter((item)=>item.id===id)):allTemplates;
-  const communityActivity=community.filter((item)=>tab==="favorites"?favorites.includes(item.id):tab==="recent"?recent.includes(item.id):false);
+  const templates=tab==="favorites"?allTemplates.filter(item=>favorites.includes(item.id))
+    :tab==="recent"?recent.flatMap(id=>allTemplates.filter(item=>item.id===id))
+    :tab==="uploads"||tab==="create"?[]:allTemplates;
   const {page,pageCount,start}=getTemplatePage(params.page,templates.length);
   const visible=templates.slice(start,start+templatePageSize);
   const active=Boolean(filters.q||filters.theme!=="all"||filters.layout!=="all"||filters.category!=="all"||filters.palette!=="all");
-  const layoutLabels={centred:"Centred card",editorial:"Editorial",portfolio:"Portfolio grid"};
   const profileQuery=selected?"&profile="+encodeURIComponent(selected):"";
-  const templateHref=(id:string)=>"/studio/builder?template="+encodeURIComponent(id)+profileQuery;
   const clearHref=selected?"/studio/templates?tab="+tab+"&profile="+encodeURIComponent(selected):"/studio/templates?tab="+tab;
   const queryForPage=(next:number)=>{
-    const query=new URLSearchParams({tab}); if(filters.q)query.set("q",filters.q);
-    if(filters.theme!=="all")query.set("theme",filters.theme); if(filters.layout!=="all")query.set("layout",filters.layout);
-    if(filters.category!=="all")query.set("category",filters.category); if(filters.palette!=="all")query.set("palette",filters.palette);
-    if(selected)query.set("profile",selected); if(next>1)query.set("page",String(next)); return "/studio/templates?"+query.toString();
+    const query=new URLSearchParams({tab});
+    if(filters.q)query.set("q",filters.q);
+    if(filters.theme!=="all")query.set("theme",filters.theme);
+    if(filters.layout!=="all")query.set("layout",filters.layout);
+    if(filters.category!=="all")query.set("category",filters.category);
+    if(filters.palette!=="all")query.set("palette",filters.palette);
+    if(selected)query.set("profile",selected);
+    if(next>1)query.set("page",String(next));
+    return "/studio/templates?"+query.toString();
   };
+
+  const [communityResponse]=await Promise.all([
+    client.rpc("list_community_templates",{
+      p_query:filters.q,p_sort:params.sort==="newest"?"newest":"popular",p_page:1
+    })
+  ]);
+  const communityParsed=communityListingSchema.safeParse(communityResponse.data);
+  const community=communityParsed.success?communityParsed.data.items.flatMap(item=>{
+    const appearance=profileAppearance.safeParse({...defaultAppearance,...item.config.appearance});
+    const sections=textSections.safeParse(item.config.sections??[]);
+    if(!appearance.success||!sections.success)return [];
+    const style=appearance.data.templateStyle;
+    if(filters.theme!=="all"&&item.config.theme!==filters.theme)return [];
+    if(filters.layout!=="all"&&appearance.data.layout!==filters.layout)return [];
+    if(filters.palette!=="all"&&templatePaletteIdForAppearance(appearance.data)!==filters.palette)return [];
+    if(filters.category!=="all"&&(!style||templateStyleCategories[style]!==filters.category))return [];
+    return [{...item,config:{theme:item.config.theme,appearance:appearance.data,sections:sections.data}}];
+  }):[];
+  const metricKeys=[...visible.map(item=>item.id),...community.map(item=>item.id)];
+  const metricResponse=await client.rpc("get_template_catalogue_metrics",{p_keys:metricKeys});
+  const metricParsed=templateMetricSchema.safeParse(metricResponse.data);
+  const metrics=new Map((metricParsed.success?metricParsed.data:[]).map(item=>[item.template_key,item]));
+
   return <main className="shell studio-shell studio-template-page template-library">
-    <header className="studio-page-heading"><div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
-      <p className="muted">Browse Snoozer’s original designs, manage favourites and recent use, or submit a safe community template.</p>
-      <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{community.length}</strong> approved community designs</span></div></div>
-      <Link className="button primary" href={selected?"/studio/builder?profile="+encodeURIComponent(selected):"/studio/builder"}>Open Page Builder ↗</Link></header>
-    <nav className="studio-template-tabs" aria-label="Template sections">{[["library","Template Library"],["favorites","Favourite Templates"],["recent","Last Used"],["uploads","My Uploads"],["community","Community"],["create","Create Template"]].map(([id,label])=><Link key={id} aria-current={tab===id?"page":undefined} className={"button small"+(tab===id?" is-active":"")} href={`/studio/templates?tab=${id}${profileQuery}`}>{label}</Link>)}</nav>
-    {params.submitted==="1"&&<p className="message" role="status">Your template was submitted for moderation. It will appear in Community after approval.</p>}
-    {params.reported==="1"&&<p className="message" role="status">Your report was submitted for review.</p>}
+    <header className="studio-page-heading">
+      <div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
+        <p className="muted">Browse profile designs, save favourites, rate templates and return to your recent choices.</p>
+        <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
+      </div>
+      <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
+    </header>
+    <nav className="studio-template-tabs" aria-label="Template sections">
+      {[["library","Template Library"],["favorites","Favourite Templates"],["recent","Last Used Templates"],["uploads","My Uploads"]].map(([id,label])=>
+        <Link key={id} aria-current={tab===id?"page":undefined} className={"button small"+(tab===id?" is-active":"")}
+          href={"/studio/templates?tab="+id+profileQuery}>{label}</Link>)}
+    </nav>
     {params.error&&<p className="message error" role="alert">We couldn’t complete that template action. Refresh and try again.</p>}
-    {tab==="uploads"&&<section className="studio-dashboard-panel"><h2>My submissions</h2>{uploads.length?<ul>{uploads.map((item)=><li key={item.id}><strong>{item.title}</strong> · {item.status} <span className="muted">{item.description}</span></li>)}</ul>:<p className="muted">You have not submitted any community templates yet.</p>}</section>}
-    {tab==="community"&&<section className="studio-dashboard-panel"><h2>Community templates</h2><form action="/studio/templates" method="get" className="studio-template-search"><input type="hidden" name="tab" value="community"/>{selected&&<input type="hidden" name="profile" value={selected}/>}<label>Search community designs<input type="search" name="community_q" maxLength={80} defaultValue={communityQuery} placeholder="Search titles and descriptions"/></label><label>Sort by<select name="community_sort" defaultValue={communitySort}><option value="newest">Newest</option><option value="popular">Most used</option></select></label><button className="button small" type="submit">Search</button></form>{communityVisible.length?<div className="studio-community-template-grid">{communityVisible.map((item)=><article className="studio-community-template" key={item.id}>
-      <p className="eyebrow">COMMUNITY · MODERATED</p><h3>{item.title}</h3><p className="muted">{item.description}</p><small className="muted">{item.usage_count.toLocaleString("en-GB")} uses</small>
-      <form action={useStudioTemplate}><input type="hidden" name="template" value={item.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form>
-      <form action={setTemplateFavorite}><input type="hidden" name="template" value={item.id}/><input type="hidden" name="favorite" value={favorites.includes(item.id)?"false":"true"}/><button className="button small" type="submit">{favorites.includes(item.id)?"★ Favourite":"☆ Favourite"}</button></form>
-      <details><summary>Report this template</summary><form action={reportCommunityTemplate}><input type="hidden" name="template" value={item.id}/><label>Reason<input name="reason" required minLength={8} maxLength={500}/></label><button className="button small" type="submit">Send report</button></form></details>
-    </article>)}</div>:<p className="muted">{communityListing.success?(communityListing.data.total>0?"No templates on this page.":communityQuery?"No community templates match this search.":"No community templates have been approved yet. Submissions are checked before they appear here."):"Community templates could not be loaded right now."}</p>}{communityListing.success&&communityPageCount>1&&<nav className="template-pagination" aria-label="Community template pages">{communityPage>1&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage-1}`}>Previous</Link>}<span className="muted">Page {communityPage} of {communityPageCount}</span>{communityPage<communityPageCount&&<Link className="button" href={`/studio/templates?tab=community${profileQuery}&community_sort=${communitySort}&community_q=${encodeURIComponent(communityQuery)}&community_page=${communityPage+1}`}>Next</Link>}</nav>}</section>}
-    {tab==="create"&&<section className="studio-dashboard-panel"><h2>Create a community template</h2>{!selected?<p className="muted">Choose a profile first, then save its design settings as a template.</p>:<form action={submitCommunityTemplate} className="studio-template-create-form">
-      <input type="hidden" name="profile" value={selected}/><p className="muted">Only theme, appearance, and sections are shared. Your name, bio, links, avatar, gallery, widgets, embeds, and private data stay out of the template. Community templates are free and reviewed before publication.</p>
-      <label>Title<input name="title" required minLength={2} maxLength={60}/></label><label>Description<input name="description" maxLength={280}/></label><button className="button primary" type="submit">Submit for review</button>
-    </form>}</section>}
-    {(tab==="library"||tab==="favorites"||tab==="recent")&&<>
-      <form key={JSON.stringify(filters)+tab} action="/studio/templates" method="get" className="template-filters"><input type="hidden" name="tab" value={tab}/>{selected&&<input type="hidden" name="profile" value={selected}/>}
-        <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, terminal..."/></label>
-        <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map((c)=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
-        <label>Colour treatment<select name="palette" defaultValue={filters.palette}><option value="all">All treatments</option>{templatePalettes.map((p)=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
-        <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map((l)=><option key={l} value={l}>{layoutLabels[l]}</option>)}</select></label>
-        <button className="button" type="submit">Filter templates</button>{active&&<Link className="text-link" href={clearHref}>Clear filters</Link>}
-      </form>
-      {communityActivity.length>0&&<section className="studio-dashboard-panel"><h2>Community designs</h2><div className="studio-community-template-grid">{communityActivity.map((item)=><article className="studio-community-template" key={item.id}><p className="eyebrow">COMMUNITY</p><h3>{item.title}</h3><p className="muted">{item.description}</p><small className="muted">{item.usage_count.toLocaleString("en-GB")} uses</small><form action={useStudioTemplate}><input type="hidden" name="template" value={item.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form></article>)}</div></section>}
-      <div className="template-results-heading"><p className="muted" role="status">Showing {templates.length?start+1:0}–{Math.min(start+templatePageSize,templates.length)} of {templates.length} matching designs</p><p className="muted">Page {page} of {pageCount}</p></div>
-      {templates.length===0&&communityActivity.length===0&&<EmptyState title={tab==="favorites"?"No favourite templates yet":tab==="recent"?"No recently used templates":"No matching designs"} description={tab==="library"?"Try another search or remove one of your filters.":"Save or use a design to see it here."}><Link className="button" href={clearHref}>Browse designs</Link></EmptyState>}
-      <ul className="template-grid">{visible.map((template)=><li className="template-item stack" key={template.id}>
-        <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
-        <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={{seo:{title:"",description:""},username:"snoozer-preview",display_name:"Your name",bio:"A little space on the internet that feels like you.",theme:template.theme,indexable:false,avatar:null,appearance:template.appearance,blocks:[],pageLayout:{version:1,items:[]},gallery:[],badges:[],widgets:defaultProfileWidgets,links:[{label:"Your website",url:"https://example.com/"}],sections:template.sections}}/></div>
-        <div className="studio-template-card-actions"><Link className="button primary" href={templateHref(template.id)}>Customise this design <span aria-hidden="true">↗</span></Link>
-          <form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button" type="submit">Use Template</button></form>
-          <form action={setTemplateFavorite}><input type="hidden" name="template" value={template.id}/><input type="hidden" name="favorite" value={favorites.includes(template.id)?"false":"true"}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button small" type="submit">{favorites.includes(template.id)?"★ Favourite":"☆ Favourite"}</button></form></div>
-      </li>)}</ul>
-      {pageCount>1&&<nav className="template-pagination" aria-label="Template pages"><Link className={"button"+(page===1?" is-disabled":"")} aria-disabled={page===1} tabIndex={page===1?-1:undefined} href={queryForPage(Math.max(1,page-1))}>Previous</Link><span className="muted">Page {page} / {pageCount}</span><Link className={"button"+(page===pageCount?" is-disabled":"")} aria-disabled={page===pageCount} tabIndex={page===pageCount?-1:undefined} href={queryForPage(Math.min(pageCount,page+1))}>Next</Link></nav>}
+    {params.rated==="1"&&<p className="message" role="status">Your template rating has been saved.</p>}
+    {params.submitted==="1"&&<p className="message" role="status">Your template was submitted for review. It will appear in the community library after approval.</p>}
+    {tab!=="uploads"&&tab!=="create"&&<form key={JSON.stringify(filters)+tab} action="/studio/templates" method="get" className="template-filters">
+      <input type="hidden" name="tab" value={tab}/>{selected&&<input type="hidden" name="profile" value={selected}/>}
+      <label>Search designs<input name="q" type="search" maxLength={80} defaultValue={filters.q} placeholder="Try anime, portfolio, terminal..."/></label>
+      <label>Category<select name="category" defaultValue={filters.category}><option value="all">All categories</option>{templateCategories.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      <label>Colour treatment<select name="palette" defaultValue={filters.palette}><option value="all">All treatments</option>{templatePalettes.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      <label>Composition<select name="layout" defaultValue={filters.layout}><option value="all">All compositions</option>{profileLayouts.map(item=><option key={item} value={item}>{layoutLabels[item]}</option>)}</select></label>
+      <label>Sort<select name="sort" defaultValue={params.sort==="newest"?"newest":"popular"}><option value="popular">Popular</option><option value="newest">Newest</option></select></label>
+      <button className="button" type="submit">Filter templates</button>{active&&<Link className="text-link" href={clearHref}>Clear filters</Link>}
+    </form>}
+
+    {tab==="uploads"&&<section className="template-community-section stack" aria-labelledby="my-template-uploads-title">
+      <div className="template-results-heading"><div><h2 id="my-template-uploads-title">My Uploads</h2><p className="muted">Templates you have submitted to the Snoozer community.</p></div><span className="muted">{uploads.length} / 10 submissions</span></div>
+      {uploads.length===0?<EmptyState title="No template uploads yet" description="Create a template from your current profile appearance and sections. Your private profile details are never included."><Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>Create Template</Link></EmptyState>
+      :<ul className="studio-template-upload-list">{uploads.map(item=><li className="studio-dashboard-panel" key={item.id}>
+        <div><h3>{item.title}</h3><p className="muted">{item.description||"No description provided."}</p><small>Submitted {new Date(item.created_at).toLocaleDateString("en-GB")}</small></div>
+        <div className="actions"><span className={"studio-template-review-status is-"+item.status}>{item.status==="pending"?"Pending review":item.status==="approved"?"Approved":"Not approved"}</span>
+          {item.status==="approved"&&<Link className="button small" href={"/studio/templates/preview?template="+encodeURIComponent(item.id)}>Preview</Link>}</div>
+      </li>)}</ul>}
+    </section>}
+
+    {tab==="create"&&<section className="studio-dashboard-panel studio-template-submit-panel">
+      <div className="studio-panel-heading"><div><p className="eyebrow">COMMUNITY / CREATOR UPLOAD</p><h2>Create Template</h2><p className="muted">Share your profile design with other Snoozer creators.</p></div></div>
+      {actionProfile?<form action={submitCommunityTemplate} className="studio-template-create-form">
+        <input type="hidden" name="profile" value={actionProfile}/>
+        <p className="muted">Only your theme, appearance and text-section structure are shared. Your username, display name, biography, links, avatar, gallery, widgets, music and private account data stay private. Submissions are free and reviewed before appearing in the public library.</p>
+        <label>Template name<input name="title" required minLength={2} maxLength={60} placeholder="Give your design a name"/></label>
+        <label>Description<input name="description" maxLength={280} placeholder="What makes this design different?"/></label>
+        <button className="button primary" type="submit" disabled={uploads.length>=10}>Submit Template for Review</button>
+        {uploads.length>=10&&<p role="alert">You have reached the limit of 10 template submissions.</p>}
+      </form>:<EmptyState title="A profile is required" description="Claim a profile before creating a community template."><Link className="button" href="/studio">Open Studio</Link></EmptyState>}
+    </section>}
+
+    {tab!=="uploads"&&tab!=="create"&&<>
+    <div className="template-results-heading">
+      <p className="muted" role="status">Showing {templates.length?start+1:0}–{Math.min(start+templatePageSize,templates.length)} of {templates.length} matching designs</p>
+      <p className="muted">Page {page} of {pageCount}</p>
+    </div>
+    {templates.length===0&&community.length===0&&<EmptyState
+      title={tab==="favorites"?"No favourite templates yet":tab==="recent"?"No recently used templates":"No matching designs"}
+      description={tab==="library"?"Try another search or remove one of your filters.":"Save or use a design to see it here."}>
+      <Link className="button" href={clearHref}>Browse designs</Link>
+    </EmptyState>}
+
+    {templates.length>0&&<ul className="template-grid" aria-label="Curated templates">
+      {visible.map(template=>{
+        const metric=metrics.get(template.id);
+        const uses=metric?.uses??0,weekly=metric?.weekly_uses??0,count=metric?.rating_count??0,average=metric?.rating_average??0;
+        const previewPath="/studio/templates/preview?template="+encodeURIComponent(template.id);
+        return <li className="template-item stack" key={template.id}>
+          <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
+          <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={templatePreviewProfile(template.theme,template.appearance,template.sections)}/></div>
+          <div className="template-card-meta"><span className="template-card-creator">By Snoozer</span><span>{uses.toLocaleString("en-GB")} uses</span>
+            <span aria-label={ratingLabel(average,count)}>{ratingLabel(average,count)}</span>{weekly>=3&&<span className="template-trending">Trending</span>}</div>
+          <div className="template-card-tags"><span>{template.categoryLabel}</span><span>{template.palette}</span><span>{layoutLabels[template.appearance.layout]}</span></div>
+          <div className="studio-template-card-actions">
+            <form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form>
+            <CopyLink path={previewPath} label="⧉"/>
+            <Link className="button small" href={previewPath} aria-label={"Preview "+template.name}>◉</Link>
+            <form action={setTemplateFavorite}><input type="hidden" name="template" value={template.id}/><input type="hidden" name="favorite" value={favorites.includes(template.id)?"false":"true"}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button small" type="submit" aria-label={favorites.includes(template.id)?"Remove favourite":"Add favourite"}>{favorites.includes(template.id)?"★":"☆"}</button></form>
+          </div>
+          <form action={rateStudioTemplate} className="template-rating-form">
+            <input type="hidden" name="template" value={template.id}/>
+            <label>Rate this template<select name="rating" defaultValue={String(metric?.my_rating??5)}>
+              <option value="5">★★★★★ · 5</option><option value="4">★★★★☆ · 4</option><option value="3">★★★☆☆ · 3</option><option value="2">★★☆☆☆ · 2</option><option value="1">★☆☆☆☆ · 1</option>
+            </select></label><button className="button small" type="submit">Save rating</button>
+          </form>
+        </li>;
+      })}
+    </ul>}
+
+    {pageCount>1&&<nav className="template-pagination" aria-label="Template pages">
+      <Link className={"button"+(page===1?" is-disabled":"")} aria-disabled={page===1} tabIndex={page===1?-1:undefined} href={queryForPage(Math.max(1,page-1))}>Previous</Link>
+      <span className="muted">Page {page} / {pageCount}</span>
+      <Link className={"button"+(page===pageCount?" is-disabled":"")} aria-disabled={page===pageCount} tabIndex={page===pageCount?-1:undefined} href={queryForPage(Math.min(pageCount,page+1))}>Next</Link>
+    </nav>}
+
+    {tab!=="uploads"&&tab!=="create"&&community.length>0&&<section className="template-community-section stack">
+      <div className="template-results-heading"><div><h2>Community Templates</h2><p className="muted">Approved profile designs shared by Snoozer creators.</p></div>
+        <span className="muted">{communityParsed.success?communityParsed.data.total:0} approved designs</span></div>
+      <ul className="template-grid" aria-label="Community templates">
+        {community.map(template=>{
+          const metric=metrics.get(template.id);
+          const uses=metric?.uses??template.usage_count;
+          const ratingCount=metric?.rating_count??template.rating_count;
+          const average=metric?.rating_average??template.rating_average;
+          const previewPath="/studio/templates/preview?template="+encodeURIComponent(template.id);
+          const style=template.config.appearance.templateStyle;
+          return <li className="template-item stack" key={template.id}>
+            <div className="template-item-heading"><p className="eyebrow">COMMUNITY · {template.config.theme}</p><h2>{template.title}</h2><p className="muted">{template.description}</p></div>
+            <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.title+" preview"} profile={templatePreviewProfile(template.config.theme,template.config.appearance,template.config.sections)}/></div>
+            <div className="template-card-meta"><span className="template-card-creator">By @{template.creator_username}</span><span>{uses.toLocaleString("en-GB")} uses</span>
+              <span>{ratingLabel(average,ratingCount)}</span>{(metric?.weekly_uses??template.weekly_uses)>=3&&<span className="template-trending">Trending</span>}</div>
+            <div className="template-card-tags"><span>Community</span><span>{style??"Custom design"}</span><span>{layoutLabels[template.config.appearance.layout]}</span></div>
+            <div className="studio-template-card-actions">
+              <form action={useStudioTemplate}><input type="hidden" name="template" value={template.id}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button primary" type="submit">Use Template</button></form>
+              <CopyLink path={previewPath} label="⧉"/>
+              <Link className="button small" href={previewPath} aria-label={"Preview "+template.title}>◉</Link>
+              <form action={setTemplateFavorite}><input type="hidden" name="template" value={template.id}/><input type="hidden" name="favorite" value={favorites.includes(template.id)?"false":"true"}/>{selected&&<input type="hidden" name="profile" value={selected}/>}<button className="button small" type="submit" aria-label={favorites.includes(template.id)?"Remove favourite":"Add favourite"}>{favorites.includes(template.id)?"★":"☆"}</button></form>
+            </div>
+            <form action={rateStudioTemplate} className="template-rating-form">
+              <input type="hidden" name="template" value={template.id}/>
+              <label>Rate this template<select name="rating" defaultValue="5">
+                <option value="5">★★★★★ · 5</option><option value="4">★★★★☆ · 4</option><option value="3">★★★☆☆ · 3</option><option value="2">★★☆☆☆ · 2</option><option value="1">★☆☆☆☆ · 1</option>
+              </select></label><button className="button small" type="submit">Save rating</button>
+            </form>
+          </li>;
+        })}
+      </ul>
+    </section>}
     </>}
   </main>;
 }

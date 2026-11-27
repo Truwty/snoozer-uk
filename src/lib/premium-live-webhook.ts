@@ -6,6 +6,7 @@ import { premiumLiveWebhookConfig } from "./premium-live-config";
 import { verifyLiveCheckoutSession } from "./premium-live-proof";
 import { reconcilePremiumLiveSubscription, holdPremiumLiveRiskEvent } from "./premium-live-reconciliation";
 import { storageAdmin } from "./supabase";
+import { completeImageHostLifetimePurchase, expireImageHostCheckout, holdImageHostLifetimePayment } from "./image-host-live-service";
 
 const eventId = z.string().regex(/^evt_[A-Za-z0-9]{1,128}$/);
 const types = new Set([
@@ -31,9 +32,13 @@ export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Even
 
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     const session = await stripe.checkout.sessions.retrieve(objectId);
-    const owner = session.metadata?.snoozer_owner;
-    const attempt = session.metadata?.snoozer_attempt;
-    if (owner || attempt) {
+    const imageHostAttempt = session.metadata?.snoozer_image_host_purchase;
+    if (imageHostAttempt) {
+      await completeImageHostLifetimePurchase(stripe, objectId);
+    } else {
+      const owner = session.metadata?.snoozer_owner;
+      const attempt = session.metadata?.snoozer_attempt;
+      if (owner || attempt) {
       // The same Stripe account may receive unrelated Checkout events. Only an explicitly
       // marked Snoozer attempt may bind a subscription or affect a Snoozer entitlement.
       if (typeof owner !== "string" || !z.uuid().safeParse(owner).success
@@ -56,12 +61,15 @@ export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Even
         throw new Error("Snoozer Checkout binding is not yet committed; retry.");
       }
       await reconcilePremiumLiveSubscription(stripe, checked.subscription!);
+      }
+      // Other unmarked events are not Snoozer subscription purchases.
     }
-    // Unmarked events are not Snoozer subscription purchases.
   } else if (event.type === "checkout.session.expired") {
     const session = await stripe.checkout.sessions.retrieve(objectId);
     if (!session.livemode || session.status !== "expired") throw new Error("Checkout expiry not confirmed.");
-    if (session.mode === "subscription" && session.subscription === null
+    if (session.metadata?.snoozer_image_host_purchase) {
+      await expireImageHostCheckout(stripe, objectId);
+    } else if (session.mode === "subscription" && session.subscription === null
       && typeof session.customer === "string" && typeof session.client_reference_id === "string") {
       const expired = await admin.rpc("expire_premium_live_checkout", {
         p_owner: session.client_reference_id, p_customer: session.customer, p_session: session.id,
@@ -76,6 +84,10 @@ export async function processPremiumLiveEvent(stripe: Stripe, event: Stripe.Even
     const sub = invoice.parent?.subscription_details?.subscription;
     if (typeof sub === "string") await reconcilePremiumLiveSubscription(stripe, sub);
   } else {
+    if (event.type === "charge.refunded" || event.type.startsWith("charge.dispute.")
+      || event.type === "radar.early_fraud_warning.created") {
+      await holdImageHostLifetimePayment(stripe, event);
+    }
     await holdPremiumLiveRiskEvent(stripe, { id, type: event.type, objectId });
   }
   const finished = await admin.rpc("finish_premium_live_receipt", { p_id: id });

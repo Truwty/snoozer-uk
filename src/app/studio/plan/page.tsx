@@ -69,7 +69,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const linksUsed = draft?.links.length ?? 0;
 
   return <main className="shell">
-    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio/builder", selected)}>Back to Page Builder</Link></header>
+    <header className="nav studio-subnav"><Link className="button small" href={studioHref("/studio", selected)}>Back to Overview</Link></header>
     <section className="stack plan-page">
       <h1>Plan and usage</h1>
       {showSandbox && sandboxPaidGiftConfiguration() && <Link href="/studio/plan/gifts">Sandbox plan gifts</Link>}
@@ -96,7 +96,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <ul>{profiles.data.map((profile) => <li key={profile.id}>
             {profile.published ? <Link href={`/${profile.username}`}>@{profile.username}</Link> :
               <span>@{profile.username} · Draft</span>}
-            {" · "}<Link href={studioHref("/studio/builder", profile.id)} aria-label={`Edit @${profile.username}`}>Edit</Link>
+            {" · "}<Link href={studioHref("/studio/customize", profile.id)} aria-label={`Edit @${profile.username}`}>Edit</Link>
           </li>)}</ul>}
         {plan && !profileResponse.error && profiles.success && profiles.data.length > 0
           && profiles.data.length < plan.quotas.profiles && <details>

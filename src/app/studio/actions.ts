@@ -8,6 +8,7 @@ import { canonicalUsername, profileContent, profileRevisionNumber, textSections,
 import { readDraft, requireAccount, studioHref } from "@/lib/profiles-server";
 import { effectsAllowed } from "@/lib/profile-effects";
 import { accountPlan } from "@/lib/entitlements";
+import { normalizeProfileLinks } from "@/lib/profile-links";
 
 export async function claim(_: ActionState, form: FormData): Promise<ActionState> {
   const name = username.safeParse(canonicalUsername(String(form.get("username") ?? "")));
@@ -17,7 +18,7 @@ export async function claim(_: ActionState, form: FormData): Promise<ActionState
   if (error?.code === "23505") return { status: "error", message: "That address is unavailable. If you already claimed a page, reload Studio." };
   if (error?.code === "P1001") return { status: "error", message: "You can claim one replacement address every 24 hours. Try again later." };
   if (error) return { status: "error", message: "Couldn’t claim your address. Try again." };
-  redirect("/studio/builder");
+  redirect("/studio");
 }
 
 export async function claimAdditional(_: ActionState, form: FormData): Promise<ActionState> {
@@ -58,7 +59,7 @@ export async function save(input: unknown): Promise<SaveResult> {
     ...(backgroundImage && { backgroundImage }),
     ...(effects && { effects }),
   };
-  const links = content.links.map(({ label, url, hidden }) => ({ label, url: new URL(url).href, hidden: hidden ?? false }));
+  const links = normalizeProfileLinks(content.links);
   const { client } = await requireAccount();
   const planResult = await client.rpc("get_my_plan");
   const plan = accountPlan.safeParse(planResult.data);

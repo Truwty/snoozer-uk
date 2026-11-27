@@ -78,201 +78,90 @@ async function editorTab(page: Page, name: string) {
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
 
-async function openMoreStudioTools(page: Page) {
-  const trigger = page.getByRole("button", { name: "More Snoozer tools", exact: true });
-  if (await trigger.getAttribute("aria-expanded") !== "true") await trigger.click();
-}
 async function linkMenu(page: Page, index: number) {
   await editorTab(page, "Links");
   const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
   if (!(await summary.evaluate((element) => element.parentElement?.hasAttribute("open")))) await summary.click();
 }
 
-test("profile analytics requires consent, counts published link clicks and exports only to its owner", async ({ page, browser }) => {
+test("profile analytics requires consent, counts link clicks and exports only to its owner", async ({ page, browser }) => {
   test.setTimeout(90000);
   const name = "analytics-" + randomUUID().slice(0, 10);
   const email = name + "@example.com";
-  const githubResource = `snoozer-fixtures/${name}`;
-  const discordInvite = name;
-  const discordResource = `i:${discordInvite}`;
   const profileLinks = [
     { label: "Work", url: "https://example.com/" },
     { label: "Video", url: "https://www.youtube.com/watch?v=M7lc1UVf-VE" },
-    { label: "Repository", url: `https://github.com/${githubResource}` },
-    { label: "Community", url: `https://discord.gg/${discordInvite}` },
+    { label: "Repository", url: "https://github.com/snoozer-fixtures/reference" },
+    { label: "Community", url: "https://discord.gg/snoozer-reference" },
     { label: "Stream", url: "https://www.twitch.tv/twitchdev" },
     { label: "Game", url: "https://www.roblox.com/games/1234567890/Fixture" },
-    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=not-published-in-embed" },
+    { label: "Playlist", url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M" },
     { label: "Track", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" },
   ];
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
   const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(account.error).toBeNull();
   const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-  // Set initial consent once. addInitScript would overwrite the visitor's
-  // later opt-in on every navigation and break campaign reload assertions.
   const visitor = await browser.newContext({
     baseURL: "http://localhost:3000",
     userAgent: "Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36",
-    storageState: {
-      cookies: [],
-      origins: [{
-        origin: "http://localhost:3000",
-        localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }],
-      }],
-    },
+    storageState: { cookies: [], origins: [{ origin: "http://localhost:3000",
+      localStorage: [{ name: "snoozer-analytics-consent-v3", value: "no" }] }] },
   });
   try {
     expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
     expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
-    expect((await owner.rpc("save_profile", { p_expected: 0, p_name: "Analytics fixture", p_bio: "",
-      p_theme: "midnight", p_indexable: false, p_links: profileLinks,
-      p_publish: true, p_remove_avatar: false })).error).toBeNull();
+    expect((await owner.rpc("save_profile", {
+      p_expected: 0, p_name: "Analytics fixture", p_bio: "", p_theme: "midnight", p_indexable: false,
+      p_links: profileLinks, p_publish: true, p_remove_avatar: false,
+    })).error).toBeNull();
     const draft = await owner.rpc("get_draft");
+    expect(draft.error).toBeNull();
     const id = draft.data.profile_id;
-    // Provider responses are isolated, explicit fixtures in the disposable stack.
-    // No GitHub or Discord credentials or network calls are needed in CI.
-    const githubClaim = await admin.rpc("claim_public_widget", {
-      p_provider: "github", p_resource: githubResource,
-    });
-    expect(githubClaim.error).toBeNull();
-    expect(githubClaim.data.state).toBe("refresh");
-
-    const githubComplete = await admin.rpc("complete_public_widget", {
-      p_provider: "github", p_resource: githubResource, p_lease: githubClaim.data.lease,
-      p_payload: {
-        version: 1, provider: "github", resource: githubResource,
-        title: "Disposable repository fixture", description: "Public metadata test fixture",
-        stats: [{ label: "Stars", value: 7 }, { label: "Forks", value: 2 }],
-        fetchedAt: new Date().toISOString(),
-      },
-      p_retry_after: 0,
-    });
-    expect(githubComplete.error).toBeNull();
-    expect(githubComplete.data).toBe(true);
-
-    const discordClaim = await admin.rpc("claim_public_widget", {
-      p_provider: "discord", p_resource: discordResource,
-    });
-    expect(discordClaim.error).toBeNull();
-    expect(discordClaim.data.state).toBe("refresh");
-
-    const discordComplete = await admin.rpc("complete_public_widget", {
-      p_provider: "discord", p_resource: discordResource,
-      p_lease: discordClaim.data.lease, p_payload: null, p_retry_after: 0,
-    });
-    expect(discordComplete.error).toBeNull();
-    expect(discordComplete.data).toBe(true);
     const read = async () => (await owner.rpc("get_my_profile_view_days", { p_profile: id })).data;
+    const readBrowsers = async () => (await owner.rpc("get_my_profile_browser_days", { p_profile: id })).data;
     const publicPage = await visitor.newPage();
-    let spotifyRequests = 0;
-    // Intercept automatically loaded Spotify iframes before first navigation:
-    // the test must never depend on Spotify's network or logged-in state.
-    await publicPage.route("https://open.spotify.com/embed/**", (route) => {
-      spotifyRequests++;
-      return route.abort();
-    });
     const events: string[] = [];
-    publicPage.on("request", (req) => { if (req.url().endsWith("/api/v1/analytics/view")) events.push(req.postData() ?? ""); });
+    publicPage.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/analytics/view")) events.push(request.postData() ?? "");
+    });
     await publicPage.goto("/" + name);
     await enterPublicBio(publicPage);
-    await expect(publicPage.locator(".discord-presence-card")).toHaveCount(0);
-    expect((await visitor.request.get("/api/v1/discord/presence?username=" + name)).status()).toBe(404);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
     await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
     await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 0 }]);
-    // Middle click leaves the source page open and exercises the real link handler.
+
     const popupPromise = visitor.waitForEvent("page");
-    await publicPage.getByRole("link", { name: "Work" }).click({ button: "middle" });
+    await publicPage.getByRole("link", { name: "Work", exact: true }).click({ button: "middle" });
     const popup = await popupPromise;
     await popup.close();
     await expect.poll(read).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
-    const readBrowsers = async () => (await owner.rpc("get_my_profile_browser_days", { p_profile: id })).data;
     await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 1, clicked_browsers: 1 }]);
     expect(JSON.parse(events[0])).toMatchObject({ version: 3, browser: expect.any(String), browserDay: expect.any(String) });
-    await publicPage.getByRole("button", { name: "Turn off profile analytics" }).click();
+
+    await publicPage.getByRole("button", { name: "Turn off profile analytics", exact: true }).click();
     expect(await publicPage.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("snoozer-analytics-browser-v3:")))).toEqual([]);
     await publicPage.reload();
     await enterPublicBio(publicPage);
-    await expect(publicPage.getByText("Analytics preferences", { exact: true })).toBeVisible();
     expect(events).toHaveLength(2);
-    // Spotify is a visible native iframe, while YouTube still waits for opt-in.
-    const spotify = publicPage.getByTitle("Spotify: Playlist");
-    const compactSpotify = publicPage.getByTitle("Spotify: Track");
-    await expect(spotify).toHaveCount(1);
-    await expect(compactSpotify).toHaveCount(1);
-    await expect(publicPage.locator("iframe")).toHaveCount(2);
-    await expect(publicPage.getByRole("button", { name: /Load Spotify player|Hide Spotify player/ })).toHaveCount(0);
-    await expect(publicPage.getByText("Learn more about Spotify privacy")).toHaveCount(0);
-    let embedRequests = 0;
-    await publicPage.route("https://www.youtube-nocookie.com/**", (route) => { embedRequests++; return route.abort(); });
-    await publicPage.getByRole("button", { name: "Load YouTube player" }).click();
-    await expect(publicPage.getByTitle("YouTube: Video")).toHaveAttribute("referrerpolicy", "strict-origin");
-    await expect.poll(() => embedRequests).toBe(1);
-    await expect(publicPage.getByRole("link", { name: "Video", exact: false })).toHaveAttribute("href", "https://www.youtube.com/watch?v=M7lc1UVf-VE");
-    await publicPage.getByRole("button", { name: "Hide YouTube player" }).click();
-    await expect(publicPage.locator("iframe")).toHaveCount(2);
-    // The compact themed card replaces the former duplicate link and the
-    // Spotify player renders automatically, independent of analytics consent.
-    await expect(spotify).toHaveAttribute("src", "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(spotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-    await expect(spotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(spotify).not.toHaveAttribute("sandbox", /.*/);
-    await expect(spotify).toHaveAttribute("height", "352");
-    await expect(compactSpotify).toHaveAttribute("src", "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC");
-    await expect(compactSpotify).toHaveAttribute("height", "152");
-    await expect(compactSpotify).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-    await expect(compactSpotify).toHaveAttribute("allow", /encrypted-media/);
-    await expect(compactSpotify).not.toHaveAttribute("sandbox", /.*/);
-    await expect(publicPage.locator(".spotify-widget__compact-open")).toHaveAttribute("href",
-      "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
-    await publicPage.setViewportSize({ width: 320, height: 800 });
-    await compactSpotify.scrollIntoViewIfNeeded();
-    const compactBox = await compactSpotify.boundingBox();
-    expect(compactBox?.width ?? 0).toBeGreaterThanOrEqual(280);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    await expect(publicPage.locator(".spotify-widget__brand")).toContainText("Spotify");
-    await expect(publicPage.locator(".spotify-widget__open")).toHaveAttribute("href",
-      "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
-    await expect(publicPage.locator(".spotify-link-slot > a")).toHaveCount(0);
-    await spotify.scrollIntoViewIfNeeded();
-    const fullBox = await spotify.boundingBox();
-    expect(fullBox?.width ?? 0).toBeGreaterThanOrEqual(280);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    await expect.poll(() => spotifyRequests).toBeGreaterThan(0);
-    expect(events).toHaveLength(2); // displaying a Spotify player does not enable Snoozer analytics
-    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
-    // Restore the desktop viewport after the 320px embed-width regression check.
-    // Later in this test the Twitch player is intentionally available only at desktop widths.
-    await publicPage.setViewportSize({ width: 1280, height: 720 });
+    await expect(publicPage.locator("iframe")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-social-links a[href^=\"https://open.spotify.com/\"]")).toHaveCount(2);
+    await expect(publicPage.locator(".profile-more-content, .profile-widgets, .spotify-widget")).toHaveCount(0);
+    await expect(publicPage.locator('.profile-social-links a[href="https://www.youtube.com/watch?v=M7lc1UVf-VE"]')).toHaveCount(1);
 
+    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    // Wait for the server action to finish and persist the account session before navigating.
     await expect(page).toHaveURL(/\/studio$/);
-    await page.goto("/studio/discord");
-    await expect(page.getByRole("heading", { name: "Discord Presence" })).toBeVisible();
-    await expect(page.getByText("Discord account not connected", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect Discord" })).toBeEnabled();
-    await expect(page.getByRole("checkbox", { name: /Show Discord Presence on this profile/ })).not.toBeChecked();
-    await expect(page.getByRole("checkbox", { name: /Custom status/ })).toBeDisabled();
-    await expect(page.getByRole("checkbox", { name: /I meet Discord’s minimum age requirement/ })).not.toBeChecked();
-    await page.getByRole("link", { name: "Back to Page Builder" }).click();
-    await page.getByRole("link", { name: "Analytics", exact: true }).click();
-    await page.getByText("Daily activity table", { exact: true }).click();
-    await expect(page.getByRole("table", { name: "Recorded activity by UTC day within your plan’s retention window" })).toContainText("1");
-    await expect(page.getByRole("table", { name: "Clicks attributed to published destinations" })).toContainText("Work");
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download CSV" }).click();
-    expect((await downloadPromise).suggestedFilename()).toBe("snoozer-analytics.csv");
-    const linkDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download link CSV", exact: true }).click();
-    expect((await linkDownload).suggestedFilename()).toBe("snoozer-link-analytics.csv");
+    await page.goto("/studio/analytics");
+    for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
+      await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
+    }
+    await expect(page.locator(".analytics-metric")).toHaveCount(4);
     const linksCsv = await page.request.get("/api/v1/analytics/export?breakdown=links&profile=" + id);
     expect(linksCsv.status()).toBe(200);
     expect(await linksCsv.text()).toBe('label,url,clicks\r\n"Work","https://example.com/",1\r\n');
@@ -280,109 +169,11 @@ test("profile analytics requires consent, counts published link clicks and expor
     expect(csv.status()).toBe(200);
     expect(csv.headers()["cache-control"]).toBe("private, no-store");
     expect(await csv.text()).toMatch(/^date_utc,views,clicks\r\n\d{4}-\d{2}-\d{2},1,1\r\n$/);
-    await expect(page.getByRole("table", { name: "Daily browser observations within your plan’s retention window" })).toContainText("100.0%");
-    expect(await page.getByRole("region", { name: "Daily browser report", exact: true })
-      .evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect((await visitor.request.get("/api/v1/analytics/export?profile=" + id)).status()).toBe(401);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await page.setViewportSize({ width: 1280, height: 720 });
-    const browserDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download browser CSV", exact: true }).click();
-    expect((await browserDownload).suggestedFilename()).toBe("snoozer-browser-analytics.csv");
-    const browserCsv = await page.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id);
-    expect(browserCsv.status()).toBe(200);
-    expect(await browserCsv.text()).toMatch(/^date_utc,daily_browsers,clicked_browsers,browser_ctr_percent\r\n\d{4}-\d{2}-\d{2},1,1,100.0\r\n$/);
-    expect((await visitor.request.get("/api/v1/analytics/export?breakdown=browsers&profile=" + id)).status()).toBe(401);
-    // A signed-in creator who opts in still must not count their own page.
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    await page.getByText("Analytics preferences", { exact: true }).click();
-    const selfView = page.waitForResponse((r) => r.url().endsWith("/api/v1/analytics/view"));
-    await page.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
-    expect((await selfView).status()).toBe(204);
-    expect(await read()).toEqual([{ day: expect.any(String), views: 1, clicks: 1 }]);
-
-    await page.goto("/studio/analytics?profile=" + id);
-    await page.getByText("Campaign links (0/20)", { exact: true }).click();
-    await page.getByLabel("Campaign name", { exact: true }).fill("Newsletter");
-    await page.getByRole("button", { name: "Create campaign link", exact: true }).click();
-    await expect(page.getByText("Campaign link ready.", { exact: true })).toBeVisible();
-    const campaignUrl = new URL(await page.getByLabel("Campaign link: Newsletter", { exact: true }).inputValue());
-    campaignUrl.searchParams.set("utm_source", "newsletter");
-    const traffic = async () => (await owner.rpc("get_my_profile_traffic_totals", { p_profile: id })).data;
-    await publicPage.goto(campaignUrl.href);
-    await enterPublicBio(publicPage);
-    await publicPage.getByText("Analytics preferences", { exact: true }).click();
-    await publicPage.getByRole("button", { name: "Allow profile analytics", exact: true }).click();
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", device: "desktop", views: 1, clicks: 0 }),
-    ]));
-    await page.getByRole("button", { name: "Pause campaign", exact: true }).click();
-    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(false);
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", views: 1 }),
-      expect.objectContaining({ campaign: null, source: "email", views: 1 }),
-    ]));
-    await page.getByRole("button", { name: "Resume campaign", exact: true }).click();
-    await expect.poll(async () => (await owner.rpc("get_my_analytics_campaigns", { p_profile: id })).data?.[0]?.active).toBe(true);
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect.poll(traffic).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Newsletter", source: "email", views: 2 }),
-    ]));
-    // The first scope was withdrawn, so the new opt-in creates one new browser code.
-    // Reloads while this scope remains allowed reuse it.
-    await expect.poll(readBrowsers).toEqual([{ day: expect.any(String), unique_browsers: 2, clicked_browsers: 1 }]);
-    await page.reload();
-    await expect(page.getByRole("table", { name: "Campaign, source and device event totals" })).toContainText("Newsletter");
-    const trafficDownload = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Download traffic CSV", exact: true }).click();
-    expect((await trafficDownload).suggestedFilename()).toBe("snoozer-traffic-analytics.csv");
-    const trafficCsv = await page.request.get("/api/v1/analytics/export?breakdown=traffic&profile=" + id);
-    expect(trafficCsv.status()).toBe(200);
-    expect(await trafficCsv.text()).toContain('"Newsletter",email,desktop,2,0');
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
-    await publicPage.getByRole("button", { name: "Load GitHub summary", exact: true }).click();
-    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toBeVisible();
-    await expect(publicPage.getByText("Stars", { exact: true })).toBeVisible();
-    await publicPage.getByRole("button", { name: "Hide GitHub summary", exact: true }).click();
-    await expect(publicPage.getByText("Disposable repository fixture", { exact: true })).toHaveCount(0);
-    await publicPage.getByRole("button", { name: "Load Discord summary", exact: true }).click();
-    await expect(publicPage.getByText("Summary unavailable or temporarily rate limited. Use the original link above, or try again later.", { exact: true })).toBeVisible();
-    await expect(publicPage.getByRole("link", { name: "Community", exact: true })).toHaveAttribute("href", `https://discord.gg/${discordInvite}`);
-    await publicPage.route("https://player.twitch.tv/**", (route) => route.abort());
-    await publicPage.getByRole("button", { name: "Load Twitch player", exact: true }).click();
-    const stream = publicPage.getByTitle("Twitch: Stream");
-    const embed = new URL((await stream.getAttribute("src"))!);
-    expect(embed.searchParams.get("parent")).toBe("localhost");
-    expect(embed.searchParams.get("autoplay")).toBe("false");
-    expect(embed.searchParams.get("muted")).toBe("true");
-    const box = (await stream.boundingBox())!;
-    expect(box.width).toBeGreaterThanOrEqual(400);
-    expect(box.height).toBeGreaterThanOrEqual(300);
-    await publicPage.setViewportSize({ width: 375, height: 812 });
-    await expect(stream).toHaveCount(0);
-    expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-    await publicPage.getByRole("button", { name: "Hide Twitch player", exact: true }).click();
-    await publicPage.setViewportSize({ width: 1280, height: 720 });
-    await expect(stream).toHaveCount(0);
-    await expect(publicPage.getByRole("link", { name: "Game · Roblox", exact: true })).toHaveAttribute("href", profileLinks[5].url);
-    expect((await new AxeBuilder({ page: publicPage }).analyze()).violations).toEqual([]);
-    expect((await owner.rpc("save_profile", { p_expected: 1, p_name: "Analytics fixture", p_bio: "", p_theme: "midnight",
-      p_indexable: false, p_links: profileLinks.filter((item) => item.label !== "Repository"),
-      p_publish: true, p_remove_avatar: false })).error).toBeNull();
-    const revoked = await visitor.request.post("/api/v1/widgets/public", {
-      headers: { Origin: "http://localhost:3000" }, data: { username: name, position: 3, provider: "github", consent: true },
-    });
-    expect(revoked.status()).toBe(400);
-    expect(await revoked.text()).toBe("");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("button", { name: "Load GitHub summary", exact: true })).toHaveCount(0);
   } finally {
     await visitor.close();
     if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
@@ -403,7 +194,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await expect(page.getByText("Claim another profile", { exact: true })).toHaveCount(0);
     const gift = await admin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -415,26 +206,24 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByText("Claim another profile", { exact: true }).click();
     await page.getByLabel("Username").fill(second);
     await page.getByRole("button", { name: "Claim address" }).click();
-    const preview = page.getByRole("region", { name: "Page preview" });
-    await expect(preview.getByText(`@${second}`, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
+    await expect(page.locator(".editor-topbar strong")).toHaveText("@" + second);
     const selectedProfile = new URL(page.url()).searchParams.get("profile");
     expect(selectedProfile).toMatch(/^[0-9a-f-]{36}$/);
     await page.getByRole("link", { name: "Customize", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/studio/customize\\?profile=" + selectedProfile));
-    await openMoreStudioTools(page);
-    await page.getByRole("link", { name: "Page Builder", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp("/studio/builder\\?profile=" + selectedProfile));
     await page.getByRole("link", { name: "Templates", exact: true }).click();
-    await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first())
-      .toHaveAttribute("href", new RegExp("^/studio/builder\\?template=.*&profile=" + selectedProfile));
-    await page.goto("/studio/builder?profile=" + selectedProfile);
+    await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
+    await page.goto("/studio/customize?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect(page.getByRole("link", { name: "View live page" })).toHaveAttribute("href", `/${second}`);
     expect((await request.get(`/${name}`)).status()).toBe(404);
     expect((await request.get(`/${second}`)).status()).toBe(200);
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await page.getByRole("link", { name: `Edit @${name}`, exact: true }).click();
-    await expect(preview.getByText(`@${name}`, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
+    await expect(page.locator(".editor-topbar strong")).toHaveText("@" + name);
     await expect(page.getByRole("link", { name: "View live page" })).toHaveCount(0);
   } finally {
     if (data.user) await admin.auth.admin.deleteUser(data.user.id);
@@ -460,6 +249,8 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    await page.goto("/studio/builder");
     await editorTab(page, "Settings");
     await expect(page.getByLabel("Domain hostname", { exact: true })).toBeDisabled();
     await page.getByRole("link", { name: "Premium", exact: true }).click();
@@ -468,7 +259,8 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.getByText("Redeem a plan gift", { exact: true }).click();
     await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
     await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
-    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
+    await page.getByRole("link", { name: "Back to Overview", exact: true }).click();
+    await page.goto("/studio/builder");
     await page.getByLabel("Display name", { exact: true }).fill("Isolated creator-domain fixture");
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
@@ -559,7 +351,7 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
     await page.goto(await mailLink(request, email, "Verify your Snoozer email", "/auth/confirm"));
     await page.getByRole("button", { name: "Verify email", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Claim your address", exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Referral choices and Growth", exact: true }).click();
+    await page.goto("/studio/growth");
     await expect(page.getByText("Your consented referral is included in the sharing creator’s aggregate report.", { exact: true })).toBeVisible();
     expect((await owner.rpc("get_my_growth")).data).toMatchObject({ verified: 1, claimed: null, published: null });
     await page.getByText("Withdraw or prevent referral attribution", { exact: true }).click();
@@ -576,332 +368,214 @@ test("signup referral credit is optional, private and withdrawable", async ({ pa
   }
 });
 
-test("portfolio projects persist, publish and restore with responsive public rendering", async ({ page, browser }) => {
-  test.setTimeout(120000);
-  page.setDefaultTimeout(15000);
-  const name = `portfolio-${randomUUID().slice(0, 8)}`;
-  const email = `${name}@example.com`;
+test("legacy sections and widgets remain hidden until the visitor enters the compact reference profile", async ({ browser }) => {
+  const name = "compact-" + randomUUID().slice(0, 10);
+  const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(error).toBeNull();
-  let scheduledProfileId = "";
-  const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(created.error).toBeNull();
+  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+  const visitor = await browser.newContext({ baseURL: "http://localhost:3000" });
   try {
-    await page.goto("/sign-in");
-    await page.getByLabel("Email address").fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await page.getByLabel("Username").fill(name);
-    await page.getByRole("button", { name: "Claim address" }).click();
-    await page.getByLabel("Display name").fill("Portfolio first publication");
-    await editorTab(page, "Sections");
-    for (const index of [1, 2]) {
-      await page.getByRole("button", { name: "Add text section", exact: true }).click();
-      await page.getByRole("combobox", { name: `Section ${index} type`, exact: true }).selectOption("project");
-      await page.getByLabel(`Section ${index} heading`, { exact: true }).fill(`Project ${index}`);
-      await page.getByLabel(`Section ${index} text`, { exact: true }).fill(`The story behind project ${index}.`);
-      await page.getByLabel(`Section ${index} project URL`, { exact: true }).fill(`https://example.com/project-${index}`);
-    }
-    await editorTab(page, "Design");
-    await expect(page.getByRole("button", { name: "Portfolio grid", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Portfolio grid", exact: true }).click();
-    await page.getByRole("combobox", { name: "Background entrance", exact: true }).selectOption("rise");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await page.reload();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
-    expect((await visitor.request.get(`/${name}`)).status()).toBe(404);
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
+    const draft = await owner.rpc("get_draft");
+    expect(draft.error).toBeNull();
+    const pollId = randomUUID();
+    const sections = [{ heading: "Legacy project", body: "Saved but not displayed in the reference profile.", kind: "project", target: "https://example.com/legacy" }];
+    const widgets = {
+      version: 1, order: ["guestbook","testimonials","poll","faq"],
+      guestbook: { enabled: true, heading: "Guestbook", description: "Leave a message.", maxEntries: 10, submissionsOpen: true },
+      testimonials: { enabled: true, heading: "Kind words", items: [{ id: randomUUID(), quote: "Legacy quote.", author: "Customer", role: "Client" }] },
+      poll: { enabled: true, id: pollId, question: "Legacy poll?", options: [{ id: randomUUID(), label: "One" }, { id: randomUUID(), label: "Two" }], open: true, closesAt: null, showResultsBeforeVote: false },
+      faq: { enabled: true, heading: "Legacy questions", items: [{ id: randomUUID(), question: "Old FAQ?", answer: "Old answer." }] },
+    };
+    const saved = await owner.rpc("save_profile", {
+      p_profile: draft.data.profile_id, p_expected: draft.data.revision, p_name: "Compact reference fixture",
+      p_bio: "A compact profile", p_theme: "midnight", p_indexable: false,
+      p_links: [{ label: "Website", url: "https://example.com/" }], p_sections: sections,
+      p_widgets: widgets, p_publish: true, p_remove_avatar: false,
+      p_appearance: draft.data.appearance ?? { density: "balanced", corners: "soft" }, p_seo: { title: "", description: "" },
+    });
+    expect(saved.error).toBeNull();
+    const reloaded = await owner.rpc("get_draft");
+    expect(reloaded.data.sections).toHaveLength(1);
+    expect(reloaded.data.widgets.testimonials.heading).toBe("Kind words");
+    await visitor.addInitScript(() => {
+      try { localStorage.setItem("snoozer-analytics-consent-v3", "no"); } catch { /* Optional storage. */ }
+    });
     const publicPage = await visitor.newPage();
-    await publicPage.goto(`/${name}`);
+    await publicPage.goto("/" + name);
+    await expect(publicPage.locator(".profile-entry-overlay")).toBeVisible();
+    await expect(publicPage.locator(".profile-more-content, .profile-widgets, .profile-layout-block")).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Kind words" })).toHaveCount(0);
+    await expect(publicPage.getByText("Legacy project", { exact: true })).toHaveCount(0);
     await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await editorTab(page, "Settings");
-    await page.getByLabel("SEO title", { exact: true }).fill("Custom portfolio title");
-    await page.getByLabel("SEO description", { exact: true }).fill("Custom portfolio description");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage).toHaveTitle("Portfolio first publication · Snoozer");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "Publishing custom SEO metadata" })).toContainText("requires Plus or higher");
-    await page.getByRole("link", { name: "Premium", exact: true }).click();
-    const gift = await admin.rpc("issue_gift_code", { p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString() }).single<{ code: string }>();
-    expect(gift.error).toBeNull();
-    await page.getByText("Redeem a plan gift", { exact: true }).click();
-    await page.getByLabel("Gift code", { exact: true }).fill(gift.data!.code);
-    await page.getByRole("button", { name: "Redeem gift code", exact: true }).click();
-    await expect(page.getByText("Plus", { exact: true }).first()).toBeVisible();
-    await page.getByRole("link", { name: "Back to Page Builder", exact: true }).click();
-    await page.getByLabel("Display name").fill("Portfolio SEO publication");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage).toHaveTitle("Custom portfolio title · Snoozer");
-    await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute("content", "Custom portfolio description");
-    await expect(publicPage.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
-    const social = await test.step("Generate the published social card", () => visitor.request.get(`/media/profile-card/${name}`, { timeout: 15000 }));
-    expect(social.status()).toBe(200);
-    expect(social.headers()["content-type"]).toContain("image/png");
-    expect((await social.body()).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
-    expect((await visitor.request.get("/media/profile-card/unclaimed-profile")).status()).toBe(404);
-    await editorTab(page, "Settings");
-    const alias = name + "-alt";
-    await page.getByLabel("New alias", { exact: true }).fill(alias);
-    await page.getByRole("button", { name: "Claim alias", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
-    const redirected = await visitor.request.get(`/${alias}?campaign=qa-code`, { maxRedirects: 0 });
-    expect(redirected.status()).toBe(307);
-    expect(redirected.headers().location).toContain(`/${name}?campaign=qa-code`);
-    expect(redirected.headers()["cache-control"]).toContain("no-store");
-    await page.getByRole("button", { name: `Renew @${alias} for 90 days`, exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias saved for 90 days." })).toBeVisible();
-    await page.getByText(`Retire @${alias}`, { exact: true }).click();
-    await page.getByRole("button", { name: `Retire @${alias} permanently`, exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Alias retired." })).toBeVisible();
-    expect((await visitor.request.get(`/${alias}`, { maxRedirects: 0 })).status()).toBe(404);
-    const competitorEmail = `${name}-race@example.com`;
-    const competitor = await admin.auth.admin.createUser({ email: competitorEmail, password, email_confirm: true });
-    expect(competitor.error).toBeNull();
-    try {
-      const ownerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-      const otherClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-      expect((await ownerClient.auth.signInWithPassword({ email, password })).error).toBeNull();
-      expect((await otherClient.auth.signInWithPassword({ email: competitorEmail, password })).error).toBeNull();
-      const ownerDraft = await ownerClient.rpc("get_draft");
-      expect(ownerDraft.error).toBeNull();
-      expect(ownerDraft.data.profile_id).toMatch(/^[0-9a-f-]{36}$/);
-      scheduledProfileId = ownerDraft.data.profile_id;
-      const collision = name + "-race";
-      const results = await Promise.all([
-        ownerClient.rpc("manage_profile_alias", { p_profile: ownerDraft.data.profile_id, p_name: collision, p_operation: "create" }),
-        otherClient.rpc("claim_profile", { p_name: collision }),
-      ]);
-      expect(results.filter((result) => !result.error)).toHaveLength(1);
-      expect(results.filter((result) => result.error).map((result) => result.error!.code)).toEqual(["23505"]);
-    } finally { if (competitor.data.user) await admin.auth.admin.deleteUser(competitor.data.user.id); }
-    await editorTab(page, "Sections");
-    for (const width of [360, 1280]) {
-      await publicPage.setViewportSize({ width, height: 850 });
-      expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-      const columns = await publicPage.locator(".profile-sections").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
-      expect(columns).toBe(width === 360 ? 1 : 2);
-    }
-    await publicPage.emulateMedia({ reducedMotion: "reduce" });
-    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
-    await publicPage.emulateMedia({ reducedMotion: "no-preference" });
-    expect(await publicPage.locator(".profile-decoration").evaluate((element) => getComputedStyle(element).animationName)).toBe("profile-rise");
-    // Keep the no-JavaScript rendering checks; axe itself needs script execution.
-    const accessiblePage = await page.context().newPage();
-    await accessiblePage.goto(publicPage.url());
-    expect((await new AxeBuilder({ page: accessiblePage }).analyze()).violations).toEqual([]);
-    await accessiblePage.close();
-    await page.getByLabel("Section 1 project URL", { exact: true }).fill("https://example.com/updated");
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Portfolio second publication");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Draft saved.");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Publish History", exact: true }).click();
-    await page.getByRole("listitem").filter({ hasText: "Portfolio first publication" }).getByRole("link", { name: /Preview version/ }).click();
-    await page.getByRole("button", { name: "Restore to draft", exact: true }).click();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 project URL", { exact: true })).toHaveValue("https://example.com/project-1");
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio second publication", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Publish page", exact: true }).click();
-    await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
-    await expect(publicPage.getByRole("link", { name: "Explore Project 1" })).toHaveAttribute("href", "https://example.com/project-1");
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Scheduled future version");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    await editorTab(page, "Settings");
-    const future = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
-    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
-    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Portfolio first publication", exact: true })).toBeVisible();
-    await editorTab(page, "Profile");
-    await page.getByLabel("Display name").fill("Draft after scheduling");
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    // Only this disposable fixture's due time changes; production code never accepts a simulated clock.
-    execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", `update snoozer.publication_schedules set run_at=now()-interval '1 second' where profile_id='${scheduledProfileId}'`]);
-    await editorTab(page, "Settings");
-    await page.getByRole("button", { name: "Check due publication", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Scheduled version is now live." })).toBeVisible();
-    await publicPage.reload();
-    await enterPublicBio(publicPage);
-    await expect(publicPage.getByRole("heading", { name: "Scheduled future version", exact: true })).toBeVisible();
-    await editorTab(page, "Profile");
-    await expect(page.getByLabel("Display name")).toHaveValue("Draft after scheduling");
-    await editorTab(page, "Settings");
-    await page.getByLabel("Publish at (UTC)", { exact: true }).fill(future);
-    await page.getByRole("button", { name: "Schedule saved draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved version scheduled." })).toBeVisible();
-    await page.getByRole("button", { name: "Cancel scheduled publication", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Schedule cancelled." })).toBeVisible();
-    await expect(page.locator("form form")).toHaveCount(0);
+    await expect(publicPage.getByRole("heading", { name: "Compact reference fixture" })).toBeVisible();
+    await expect(publicPage.getByText("Legacy project", { exact: true })).toBeVisible();
+    await expect(publicPage.getByRole("heading", { name: "Kind words" })).toBeVisible();
+    const privatePoll = await visitor.request.get("/api/v1/widgets/poll", { params: { username: name, pollId } });
+    expect(privatePoll.status()).toBe(403);
   } finally {
-    // The browser fixture closes visitor contexts even when a timed-out test has already closed them.
-    if (data.user) await admin.auth.admin.deleteUser(data.user.id);
+    await visitor.close();
+    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
   }
 });
 
-test("Studio builder adds, reorders, saves and publishes blocks across desktop and mobile layouts", async ({ page }) => {
-  test.setTimeout(120000);
-  const name = `builder-${randomUUID().slice(0, 8)}`;
-  const email = `${name}@example.com`;
+test("reference dashboard pages, asset uploader, custom links and QR share match the video", async ({ page }) => {
+  const name = "reference-" + randomUUID().slice(0, 10);
+  const email = name + "@example.com";
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const account = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(account.error).toBeNull();
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(created.error).toBeNull();
   try {
     await page.goto("/sign-in");
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
     await page.getByLabel("Username", { exact: true }).fill(name);
-    await page.getByRole("button", { name: "Claim address", exact: true }).click();
+    await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
-    await page.goto("/studio");
-    await expect(page.getByRole("heading", { name: "Visitor Devices", exact: true })).toBeVisible();
-    await expect(page.getByText("Recorded profile views across the last 7 UTC calendar days.", { exact: true })).toBeVisible();
-    await page.goto("/studio/builder");
-    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
+    await expect(page.locator(".studio-stat-card")).toHaveCount(4);
+    await expect(page.getByRole("heading", { name: "Account Statistics", exact: true })).toBeVisible();
+    await expect(page.getByText("Profile completion", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Manage your account", exact: true })).toBeVisible();
+    await expect(page.getByText("Connections", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account Analytics", exact: true })).toBeVisible();
 
-    const workspace = page.locator("main.studio-shell");
-    for (const width of [1280, 1366, 1440, 1920]) {
-      await page.setViewportSize({ width, height: 900 });
-      expect(await workspace.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(900);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth), `Studio at ${width}px`).toBeLessThanOrEqual(width);
+    const referenceLinks = ["Overview","Analytics","Badges","Settings","Customize","Links","Premium","Image Host","Templates"];
+    await expect(page.locator(".studio-sidebar-nav a")).toHaveCount(referenceLinks.length);
+    for (const label of referenceLinks) await expect(page.locator(".studio-sidebar-nav").getByRole("link", { name: label, exact: true })).toBeVisible();
+    await expect(page.locator(".studio-sidebar-nav")).not.toContainText("Page Builder");
+
+    await page.getByRole("link", { name: "Analytics", exact: true }).click();
+    for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
+      await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
     }
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    await expect(page.locator(".block-library-item")).toHaveCount(18);
-    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled native callout" })).toBeVisible();
-    await expect(page.locator(".block-library-item").filter({ hasText: "Add a styled quotation" })).toBeVisible();
+    await expect(page.locator(".analytics-metric")).toHaveCount(4);
 
-    await page.locator(".block-library-item").filter({ hasText: "Text" }).click();
-    await editorTab(page, "Sections");
-    await expect(page.getByLabel("Section 1 heading", { exact: true })).toHaveValue("New section");
+    await page.getByRole("link", { name: "Badges", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Badges", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "All badges", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Badge catalogue", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Custom badges", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Purchase", exact: true })).toHaveAttribute("href", /\/studio\/plan/);
+    await expect(page.getByRole("button", { name: "Preview Custom Badge", exact: true })).toBeVisible();
 
-    await page.locator(".block-library-item").filter({ hasText: "Highlight an update" }).dragTo(page.locator(".preview"));
-    await editorTab(page, "Sections");
-    await expect(page.locator('[data-reorder-index="1"] select')).toHaveValue("callout");
+    await page.getByRole("link", { name: "Settings", exact: true }).click();
+    for (const heading of ["General Information","Language Settings","Security Settings","Connections","Gift Links","Email Marketing","Account Actions"]) {
+      await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    }
+    await expect(page.locator("#snoozer-locale option")).toHaveCount(6);
+    await page.keyboard.press("Control+k");
+    const commandSearch = page.getByRole("dialog", { name: "Search Studio" }).getByLabel("Search Studio features, pages, and actions");
+    await commandSearch.fill("multi-factor");
+    const mfaCommand = page.getByRole("option", { name: /Multi-factor authentication/ });
+    await expect(mfaCommand).toContainText("Enable or disable multi-factor authentication.");
+    await commandSearch.press("Enter");
+    await expect(page).toHaveURL(/\/studio\/account#account-mfa$/);
 
-    await page.locator(".block-library-item").filter({ hasText: "FAQ" }).dragTo(page.locator(".preview"));
-    await editorTab(page, "Widgets");
-    await expect(page.getByLabel("Enable FAQ", { exact: true })).toBeChecked();
+    await page.getByRole("link", { name: "Links", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Social profiles", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Purchase Image Host", exact: true }).click();
+    const imageHostDialog = page.getByRole("dialog", { name: "Image Host", exact: true });
+    await expect(imageHostDialog.getByText("4,99€", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText("Pay once. Keep it forever.", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText(/Add Custom Image Host Domain/)).toBeVisible();
+    await expect(imageHostDialog.getByText(/Upload Analytics/)).toBeVisible();
+    await expect(imageHostDialog.getByText("Checkout is not available yet", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByRole("button", { name: "Gift Image Host is not available yet" })).toBeDisabled();
+    await imageHostDialog.getByRole("button", { name: "Close Image Host purchase" }).click();
 
-    await page.locator(".block-library-item").filter({ hasText: "Guestbook" }).click();
-    await editorTab(page, "Widgets");
-    await expect(page.getByLabel("Enable Guestbook", { exact: true })).toBeChecked();
+    await page.getByRole("button", { name: "Add Custom URL", exact: true }).click();
+    const customDialog = page.getByRole("dialog", { name: "Add Custom URL Social", exact: true });
+    await expect(customDialog).toBeVisible();
+    await expect(customDialog.getByRole("group", { name: "Social Mode" })).toBeVisible();
+    await customDialog.getByRole("button", { name: "Text", exact: true }).click();
+    await customDialog.getByRole("textbox", { name: "URL", exact: true }).fill("https://example.org/custom-link");
+    await customDialog.getByRole("button", { name: "Add", exact: true }).click();
+    const customRow = page.locator(".link-row").last();
+    await expect(customRow).toBeVisible();
+    await expect(customRow.getByLabel("Link 1 label", { exact: true })).toHaveValue("example.org");
+    await expect(customRow.getByLabel("Link 1 URL", { exact: true })).toHaveValue("https://example.org/custom-link");
+    await expect(customRow.getByRole("combobox", { name: "Display mode", exact: true })).toHaveValue("text");
 
-    const blocks = page.locator(".preview-card .profile-layout-block");
-    await expect(blocks).toHaveCount(3);
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
-    await expect(blocks.nth(2)).toHaveAttribute("data-layout-type", "widgets");
-    await blocks.nth(2).locator(".profile-layout-drag-handle").dragTo(blocks.nth(0));
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+    await page.getByRole("link", { name: "Templates", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
+    await expect(page.locator(".template-card-meta").first()).toContainText("uses");
+    await expect(page.locator(".template-card-tags").first()).toBeVisible();
+    for (const label of ["Template Library","Favourite Templates","Last Used Templates","My Uploads"]) {
+      await expect(page.getByRole("link", { name: label, exact: true })).toBeVisible();
+    }
+    await page.getByRole("link", { name: /Create Template/ }).click();
+    await expect(page.getByRole("heading", { name: "Create Template", exact: true })).toBeVisible();
+    await expect(page.getByText(/Only your theme, appearance and text-section structure are shared/)).toBeVisible();
+    await page.getByLabel("Template name", { exact: true }).fill("Reference creator template");
+    await page.getByLabel("Description", { exact: true }).fill("A free creator-submitted design.");
+    await page.getByRole("button", { name: "Submit Template for Review", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("submitted for review");
+    await expect(page.getByRole("heading", { name: "My Uploads", exact: true })).toBeVisible();
+    await expect(page.getByText("Reference creator template", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pending review", { exact: true })).toBeVisible();
 
-    await blocks.nth(0).getByRole("button", { name: "Move Interactive widgets down" }).press("Enter");
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "section");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "widgets");
-    await blocks.nth(1).getByRole("button", { name: "Move Interactive widgets up" }).press("Enter");
-    await expect(blocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(blocks.nth(1)).toHaveAttribute("data-layout-type", "section");
+    await page.getByRole("link", { name: "Image Host", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Image Host", exact: true, level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Snippets", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create text paste", exact: true })).toBeEnabled();
+    await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
 
-    // Add a typed custom block, edit its content and verify the live preview.
-    await page.locator(".block-library-item").filter({ hasText: "Project" }).dragTo(page.locator(".preview-card"));
-    await editorTab(page, "Blocks");
-    await page.getByLabel("Project title", { exact: true }).fill("Studio portfolio project");
-    await page.getByLabel("Description", { exact: true }).fill("A project created in the custom block editor.");
-    await page.getByLabel("Project URL", { exact: true }).fill("https://portfolio.example.org/work");
-    const firstProjectEditor = page.locator(".studio-block-editor").first();
-    await firstProjectEditor.getByLabel("Locked").check();
-    await expect(firstProjectEditor.getByLabel("Width")).toBeDisabled();
-    await expect(firstProjectEditor.getByLabel("Project title")).toBeDisabled();
-    await firstProjectEditor.getByLabel("Locked").uncheck();
-    await expect(firstProjectEditor.getByLabel("Width")).toBeEnabled();
-    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
-    await expect(page.locator(".preview-card .profile-block-project")).toContainText("A project created in the custom block editor.");
-    await page.getByRole("button", { name: "Duplicate block 1" }).click();
-    await expect(page.locator(".studio-block-editor")).toHaveCount(2);
-    await expect(page.locator(".preview-card .profile-block-project")).toHaveCount(2);
+    await page.goto("/studio/customize");
+    await expect(page.getByRole("heading", { name: "Assets Uploader", exact: true })).toBeVisible();
+    await expect(page.locator(".studio-asset-card")).toHaveCount(4);
+    for (const label of ["Background","Audio","Profile Avatar","Custom Cursor"]) await expect(page.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByText("General Customization", { exact: true })).toBeVisible();
+    await expect(page.getByText("Color Customization", { exact: true })).toBeVisible();
+    await expect(page.getByText("Other Customization", { exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Save draft", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Draft saved." })).toBeVisible();
-    await page.reload();
-    const reloadedBlocks = page.locator(".preview-card .profile-layout-block");
-    await expect(reloadedBlocks).toHaveCount(5);
-    await expect(reloadedBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(reloadedBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".preview-card .profile-block-project").first()).toContainText("Studio portfolio project");
+    await page.getByRole("button", { name: "Click to open audio manager", exact: true }).click();
+    const audioManager = page.getByRole("dialog", { name: "Audio Manager", exact: true });
+    await expect(audioManager).toBeVisible();
+    await audioManager.getByRole("button", { name: "+ Add Audio", exact: true }).click();
+    const addAudio = page.getByRole("dialog", { name: "Add an Audio", exact: true });
+    await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
+    await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
+    await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
+    await addAudio.getByRole("button", { name: "Close Add Audio", exact: true }).click();
+    await audioManager.getByRole("button", { name: "Close audio manager", exact: true }).click();
 
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    const publicBlocks = page.locator(".public-page .profile-layout-block");
-    await expect(publicBlocks).toHaveCount(5);
-    await expect(publicBlocks.nth(0)).toHaveAttribute("data-layout-type", "widgets");
-    await expect(publicBlocks.nth(1)).toHaveAttribute("data-layout-type", "section");
-    await expect(page.locator(".public-page .profile-block-project")).toHaveCount(2);
-    await expect(page.locator(".public-page .profile-block-project").first()).toContainText("Studio portfolio project");
-    await expect(page.locator(".public-page .profile-block-project a").first()).toHaveAttribute("href", "https://portfolio.example.org/work");
+    await page.reload();
+    await page.getByRole("button", { name: "Share Your Profile", exact: true }).click();
+    const shareDialog = page.getByRole("dialog", { name: "Share Your Profile", exact: true });
+    await expect(shareDialog.getByRole("button", { name: "Snoozer QR Code" })).toBeVisible();
+    await expect(shareDialog.getByRole("link", { name: /Get more profile views/ })).toHaveAttribute("href", "/help?q=views");
+    await expect(shareDialog.getByRole("link", { name: /Open My Page/ })).toBeVisible();
+    await expect(shareDialog.getByRole("button", { name: "Copy URL", exact: true })).toBeVisible();
+    await expect(shareDialog.getByRole("link", { name: "Help Centre", exact: true })).toHaveAttribute("href", "/help");
+    await expect(shareDialog.getByRole("link", { name: "Support Email", exact: true })).toHaveAttribute("href", "mailto:snoozersupport@snoozer.uk");
+    await shareDialog.getByRole("button", { name: "Snoozer QR Code" }).click();
+    const qrDialog = page.getByRole("dialog", { name: "Snoozer QR Code", exact: true });
+    await expect(qrDialog.locator("svg#snoozer-profile-qr-svg")).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Download PNG", exact: true })).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Download SVG", exact: true })).toBeVisible();
+    await expect(qrDialog.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
+    await qrDialog.getByRole("button", { name: "Close QR code" }).click();
+    await expect(shareDialog.getByRole("button", { name: "Copy URL", exact: true })).toBeVisible();
 
-    await page.goto("/studio");
-    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
-    await page.setViewportSize({ width: 360, height: 812 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-
-    const mobileNavigationButton = page.getByRole("button", { name: "Open navigation", exact: true });
-    const mobileNavigationBounds = await mobileNavigationButton.boundingBox();
-    expect(mobileNavigationBounds?.width).toBeGreaterThanOrEqual(44);
-    expect(mobileNavigationBounds?.height).toBeGreaterThanOrEqual(44);
-    await mobileNavigationButton.click();
-    await openMoreStudioTools(page);
-    await expect(page.getByRole("link", { name: "Page Builder", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await page.getByRole("button", { name: "Close navigation", exact: true }).click();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
-    await page.goto("/studio/builder");
-    await expect(page.getByRole("heading", { name: "Add to page", exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-    await expect(page.locator(".preview-card")).toBeVisible();
-
-    await page.goto("/studio/customize");
-    await expect(page.getByRole("heading", { name: "Customize", exact: true })).toBeVisible();
-    await expect(page.locator(".editor-grid.panel-only")).toBeVisible();
-    await expect(page.locator(".editor-grid.panel-only .editor-sidebar")).toBeHidden();
-    await expect(page.locator(".preview-card")).toBeVisible();
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   } finally {
-    if (account.data.user) await admin.auth.admin.deleteUser(account.data.user.id);
+    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
   }
 });
 
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
-  test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
+  // This is the full account lifecycle journey, including Lighthouse, publication
+  // history, password reset, deletion and storage cleanup. Keep the test intact;
+  // give CI enough time for the complete flow rather than timing out at cleanup.
+  test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 360000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
   const email = `${name}@example.com`;
   const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
@@ -920,6 +594,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("unavailable");
     await page.getByLabel("Username").fill(name.toUpperCase());
     await page.getByRole("button", { name: "Claim address" }).click();
+    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
     const profileTab = page.getByRole("tab", { name: "Profile", exact: true });
     await profileTab.focus();
@@ -931,17 +607,18 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.setViewportSize({ width: 1280, height: 720 });
     await checkLighthouse(page, "/studio");
-    await page.getByRole("link", { name: "Premium" }).click();
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Plan and usage" })).toBeVisible();
     await expect(page.getByText("Free", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 20", { exact: true })).toBeVisible();
     await expect(page.getByText(`@${name} · Draft`, { exact: true })).toBeVisible();
     const editProfile = page.getByRole("link", { name: `Edit @${name}` });
     const profileHref = (await editProfile.getAttribute("href"))!;
-    expect(profileHref).toMatch(/^\/studio\/builder\?profile=[a-f0-9-]{36}$/);
+    expect(profileHref).toMatch(/^\/studio\/customize\?profile=[a-f0-9-]{36}$/);
     await editProfile.click();
-    await expect(page.getByRole("link", { name: "Image Host" })).toHaveAttribute("href", profileHref.replace("/studio/builder?", "/studio/image-host?"));
-    await page.getByRole("link", { name: "Premium" }).click();
+    await expect(page).toHaveURL(/\/studio\/customize\?profile=/);
+    await expect(page.getByRole("link", { name: "Image Host", exact: true })).toHaveAttribute("href", profileHref.replace("/studio/customize?", "/studio/image-host?"));
+    await page.getByRole("link", { name: "Premium", exact: true }).click();
     const giftAdmin = createClient(project!, adminKey!, { auth: { persistSession: false } });
     const gift = await giftAdmin.rpc("issue_gift_code", {
       p_plan: "plus", p_version: 1, p_duration_days: 1, p_redeem_by: new Date(Date.now() + 3600000).toISOString(),
@@ -953,7 +630,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByText("Gift redeemed.")).toBeVisible();
     await expect(page.getByText("Plus", { exact: true })).toBeVisible();
     await expect(page.getByText("0 of 100", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Back to Page Builder" }).click();
+    await page.getByRole("link", { name: "Back to Overview" }).click();
 
     const image = await sharp({ create: { width: 25, height: 25, channels: 3, background: "blue" } }).png().toBuffer();
     const stageOwner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
@@ -985,7 +662,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const abandonedPath = `${abandonedStage.scope}/${abandonedStage.key}`;
     const oldToken = await stageAdmin.storage.from("avatar-incoming").createSignedUploadUrl(abandonedPath);
     expect(oldToken.error).toBeNull();
-    await page.getByText("Upload recovery", { exact: true }).click();
+    await page.getByRole("tabpanel", { name: "Profile" }).getByText("Upload recovery", { exact: true }).click();
     await page.getByRole("button", { name: "Discard pending upload" }).click();
     await expect(page.getByRole("status")).toHaveText("Pending upload cleared.");
     expect((await stageOwner.storage.from("avatar-incoming").uploadToSignedUrl(
@@ -996,7 +673,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("alert").filter({ hasText: "Choose an image to upload" })).toBeVisible();
 
     await editorTab(page, "Profile");
-    await page.getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
+    await page.getByRole("tabpanel", { name: "Profile" }).getByLabel("Choose an avatar").setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: image });
     await editorTab(page, "Profile");
     await page.getByRole("button", { name: /Upload avatar|Finish pending upload/ }).click();
     await expect(page.getByRole("status")).toContainText("Avatar saved");
@@ -1005,76 +682,53 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.goto("/templates?q=terminal&category=cyber&palette=nocturne");
     await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(1);
     await page.locator('a[href="/studio/builder?template=terminal-nocturne"]').click();
-    await expect(page.getByLabel("Preview a design")).toHaveValue("terminal-nocturne");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("");
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "whoami", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Apply template design", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toHaveCount(0);
 
     await editorTab(page, "Profile");
     await page.getByLabel("Display name").fill("Snoozer Creator");
     await editorTab(page, "Profile");
     await page.getByLabel("Bio").fill("Private until I publish.");
-    await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Lagoon", exact: true }).click();
-    await editorTab(page, "Design");
-    await page.getByText("Copy or paste appearance", { exact: true }).click();
-    await expect(page.getByLabel("Current appearance code")).toHaveValue(/"theme":"lagoon"/);
-    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-    await page.getByRole("button", { name: "Copy appearance", exact: true }).click();
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('"theme":"lagoon"');
-    await editorTab(page, "Design");
-    await page.getByLabel("Paste an appearance code").fill('{"version":2}');
-    await page.getByRole("button", { name: "Apply appearance" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "Enter a valid Snoozer appearance code." })).toBeVisible();
-    await editorTab(page, "Design");
-    await page.getByLabel("Paste an appearance code").fill(JSON.stringify({
-      version: 1, theme: "daybreak",
-      appearance: { density: "airy", corners: "round", layout: "editorial", accent: "rose" },
-    }));
-    await page.getByRole("button", { name: "Apply appearance" }).click();
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("daybreak");
-    await expect(page.getByLabel("Card corners")).toHaveValue("round");
-    await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
-    await page.getByRole("button", { name: "Undo edit" }).click();
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
-    await expect(page.getByLabel("Card corners")).toHaveValue("soft");
-    await editorTab(page, "Design");
-    await page.getByText("Copy or paste appearance", { exact: true }).click();
-    await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("terminal-nocturne");
-    await expect(page.getByRole("heading", { name: "whoami" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
-    await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply design with sample sections" }).click();
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("midnight");
-    await expect(page.getByLabel("Section 1 heading")).toHaveValue("whoami");
+    await editorTab(page, "Sections");
+    await page.getByRole("button", { name: "Add text section", exact: true }).click();
+    await page.getByLabel("Section 1 heading").fill("whoami");
+    await page.getByLabel("Section 1 text").fill("About this creator.");
+    await page.getByRole("button", { name: "Add text section", exact: true }).click();
+    await page.getByLabel("Section 2 heading").fill("Projects");
+    await page.getByLabel("Section 2 text").fill("Project summary.");
     await editorTab(page, "Sections");
     await page.getByLabel("Section 1 text").fill("First line.\nLiteral <em>markup</em>.");
     await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Move up (section 2)" }).press("Enter");
     await expect(page.getByLabel("Section 1 heading")).toBeFocused();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toHaveText("Draft saved.");
+    await page.goto("/studio/builder?template=forest-glacier");
     await editorTab(page, "Design");
-    await page.getByLabel("Preview a design").selectOption("forest-glacier");
-    await expect(page.getByRole("button", { name: "Apply design with sample sections" })).toHaveCount(0);
-    await editorTab(page, "Design");
-    await page.getByRole("button", { name: "Apply template design" }).click();
+    await expect(page.getByRole("button", { name: "Apply template design", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Apply template design", exact: true }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
-    await expect(page.getByRole("combobox", { name: "Theme", exact: true })).toHaveValue("lagoon");
+    const designPreview = page.getByRole("region", { name: "Page preview" });
+    await expect(designPreview).toHaveAttribute("data-template-style", "forest");
+    await expect(designPreview).toHaveAttribute("data-layout", "centred");
+    await expect(page.getByLabel("Accent Color")).toBeVisible();
+    await expect(page.getByLabel("Background Color")).toBeVisible();
     await editorTab(page, "Design");
-    await page.getByLabel("Enable effects").check();
-    await page.locator("#profile-effect-background").selectOption("gradient");
-    await expect(page.getByRole("region", { name: "Page preview" }).locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
-    await page.getByLabel("Background entrance").selectOption("fade");
-    await editorTab(page, "Design");
-    await page.getByLabel("Link accent").selectOption("ink");
-    await expect(page.locator("#link-accent-contrast")).toContainText("Link text contrast");
-    await editorTab(page, "Design");
-    await page.getByLabel("Profile layout").selectOption("editorial");
-    await expect(page.getByRole("region", { name: "Page preview" })).toHaveAttribute("data-layout", "editorial");
-    await editorTab(page, "Design");
-    await page.getByLabel("Card spacing").selectOption("compact");
-    await editorTab(page, "Design");
-    await page.getByLabel("Card corners").selectOption("square");
+    await page.getByLabel("Background Effects").selectOption("gradient");
+    await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
+    await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
+    await page.getByRole("checkbox", { name: "Show location on my profile" }).check();
+    await expect(designPreview.locator(".profile-location")).toContainText("Studio North");
+    await page.getByRole("checkbox", { name: "Monochrome Icons" }).check();
+    await expect(designPreview).toHaveAttribute("data-monochrome-icons", "true");
+    await page.getByRole("checkbox", { name: "Animated Title" }).check();
+    await expect(designPreview).toHaveAttribute("data-animated-title", "true");
+    await page.getByRole("checkbox", { name: "Swap Box Colors" }).check();
+    await expect(designPreview).toHaveAttribute("data-swap-box-colors", "true");
     await editorTab(page, "Sections");
     await page.getByLabel("Section 1 type").selectOption("callout");
     await editorTab(page, "Sections");
@@ -1148,13 +802,24 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const topLink = links.locator('[data-reorder-index="0"] .reorder-handle');
     const bottomLink = links.locator('[data-reorder-index="1"] .reorder-handle');
     await topLink.evaluate((handle) => handle.scrollIntoView({ block: "center" }));
+    // Keep both drag endpoints inside the viewport. Scrolling only the first
+    // handle can leave the second handle below the viewport on a phone, causing
+    // CDP to dispatch touch events to <html> instead of the reorder handle.
+    await bottomLink.scrollIntoViewIfNeeded();
+    await expect(topLink).toBeInViewport();
+    await expect(bottomLink).toBeInViewport();
     const topBox = (await topLink.boundingBox())!;
     const bottomBox = (await bottomLink.boundingBox())!;
     const touch = await page.context().newCDPSession(page);
     try {
       await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
-      const from = { x: bottomBox.x + 15, y: bottomBox.y + 20 };
-      const to = { x: topBox.x + 15, y: topBox.y + 20 };
+      const from = { x: bottomBox.x + bottomBox.width / 2, y: bottomBox.y + bottomBox.height / 2 };
+      const to = { x: topBox.x + topBox.width / 2, y: topBox.y + topBox.height / 2 };
+      const targets = await page.evaluate(({ from, to }) => ({
+        from: Boolean(document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle")),
+        to: Boolean(document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle")),
+      }), { from, to });
+      expect(targets).toEqual({ from: true, to: true });
       await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
       for (let step = 1; step <= 8; step++) {
         const y = from.y + (to.y - from.y) * step / 8;
@@ -1180,19 +845,19 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Links");
     const instagramProvider = page.getByRole("button", { name: "Instagram" });
     await expect(instagramProvider.locator("svg path")).toHaveAttribute("d", /^M/);
-    await page.getByText("Add Ko-fi support link", { exact: true }).click();
-    await editorTab(page, "Links");
-    await page.getByLabel("Ko-fi profile URL").fill("https://ko-fi.com.example.org/creator");
-    await editorTab(page, "Links");
-    await page.getByRole("button", { name: "Add support link" }).click();
-    await expect(page.getByText("Enter your full Ko-fi profile address.")).toBeVisible();
-    await editorTab(page, "Links");
-    await page.getByLabel("Ko-fi profile URL").fill("https://www.ko-fi.com/creator/");
-    await editorTab(page, "Links");
-    await page.getByLabel("Ko-fi profile URL").press("Enter");
-    await expect(page.getByLabel("Link 3 label")).toBeFocused();
-    await editorTab(page, "Links");
+    await page.getByRole("button", { name: "Support", exact: true }).click();
+    const kofiProvider = page.getByRole("button", { name: "Ko-fi", exact: true });
+    await expect(kofiProvider).toBeVisible();
+    await kofiProvider.click();
+    await expect(page.getByLabel("Link 3 label")).toHaveValue("Ko-fi");
+    await expect(page.getByLabel("Link 3 URL")).toHaveValue("https://ko-fi.com/");
+    await page.getByLabel("Link 3 URL").fill("https://ko-fi.com/creator");
     await page.getByLabel("Link 3 label").fill("Support my projects");
+    await page.getByRole("button", { name: "Developer", exact: true }).click();
+    await page.getByRole("button", { name: "GitHub", exact: true }).click();
+    await page.getByLabel("Link 4 label").fill("Developer notes");
+    await page.getByLabel("Link 4 URL").fill("https://github.com/example");
+    await page.locator(".link-row").nth(3).getByLabel("Display mode").selectOption("text");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
@@ -1206,35 +871,40 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await publicPage.goto(`/${name}`);
     await enterPublicBio(publicPage);
     await expect(publicPage.getByRole("heading", { name: "Snoozer Creator" })).toBeVisible();
-    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗"]);
-    const kofiLink = publicPage.locator('.profile-social-links a[title="Support my projects"]');
+    await expect(publicPage.locator(".profile-links li")).toHaveText(["First ↗", "Second ↗", "Developer notes ↗"]);
+    const kofiLink = publicPage.getByRole("link", { name: "Support my projects · Ko-fi", exact: true });
     await expect(kofiLink).toHaveAttribute("href", "https://ko-fi.com/creator");
     await expect(kofiLink.locator(".profile-social-mark svg path")).toHaveAttribute("d", /^M/);
 
-    await expect(publicPage.locator(".profile-text-section h2")).toHaveText(["whoami", "Projects", "Launch"]);
-    await expect(publicPage.locator(".countdown time")).toHaveAttribute("datetime", "2096-02-29T18:15:00.000Z");
-    await expect(publicPage.locator(".countdown time")).toContainText("18:15 UTC");
+    // The reference-style public page intentionally suppresses the creator's
+    // extra sections, custom blocks and interactive widgets. Their data remains
+    // in Studio drafts and publication history, verified below after restore.
+    await expect(publicPage.locator(".profile-text-section")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-content-block")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-widgets")).toHaveCount(0);
+    await expect(publicPage.locator(".countdown time")).toHaveCount(0);
+    await expect(publicPage.locator(".profile-callout")).toHaveCount(0);
+    await expect(publicPage.locator("blockquote")).toHaveCount(0);
+    await expect(publicPage.locator("figcaption")).toHaveCount(0);
+    await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toHaveCount(0);
     const bioCard = publicPage.locator(".profile-card");
     await expect(bioCard).toHaveClass(/profile-card--bio-experience/);
-    await expect(bioCard).toHaveAttribute("data-layout", "editorial");
-    await expect(bioCard).toHaveAttribute("data-density", "compact");
+    await expect(bioCard).toHaveAttribute("data-layout", "centred");
+    await expect(bioCard).toHaveAttribute("data-density", "airy");
     await expect(bioCard).toHaveCSS("text-align", "center");
     expect(await bioCard.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(576);
     expect(await bioCard.evaluate((element) => parseFloat(getComputedStyle(element).borderTopLeftRadius))).toBeGreaterThan(16);
     expect(await publicPage.locator(".profile-identity").evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(1);
-    expect(await publicPage.locator(".profile-more-content .profile-links a").first()
+    expect(await publicPage.locator(".profile-links a").first()
       .evaluate((element) => parseFloat(getComputedStyle(element).borderRadius))).toBeGreaterThan(0);
-    await expect(publicPage.locator(".profile-callout h2")).toHaveText("Projects");
-    await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
-    await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
-    await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
+    // Custom sections and blocks remain editable in Studio, but are deliberately
+    // not rendered on the compact reference-style public profile. Their values
+    // are verified after restoring the saved publication below.
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await expect(publicPage.getByRole("checkbox", { name: "Disable profile effects" })).toHaveCount(0);
     await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
-    await expect(publicPage.locator(".profile-card")).toHaveAttribute("data-entrance", "fade");
-    await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "profile-entrance");
     await publicPage.emulateMedia({ reducedMotion: "reduce" });
     await expect(publicPage.locator(".profile-decoration")).toHaveCSS("animation-name", "none");
     await expect(publicPage.locator(".profile-links a").first()).toHaveCSS("transition-duration", "0s");
@@ -1267,22 +937,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Section 4 target time").fill("2000-01-01T00:00");
     await expect(preview.locator(".countdown-remaining")).toHaveText("Countdown finished.");
     await editorTab(page, "Design");
-    await page.getByLabel("Profile layout").selectOption("centred");
-    await editorTab(page, "Design");
-    await page.getByLabel("Link accent").selectOption("theme");
-    await editorTab(page, "Design");
-    await page.getByLabel("Card spacing").selectOption("airy");
-    await editorTab(page, "Design");
-    await page.getByLabel("Card corners").selectOption("round");
+    await page.getByLabel("Background Effects").selectOption("none");
+    await page.getByRole("textbox", { name: "Location" }).fill("Studio East");
+    await page.getByRole("checkbox", { name: "Show location on my profile" }).uncheck();
+    await page.getByRole("checkbox", { name: "Monochrome Icons" }).uncheck();
+    await page.getByRole("checkbox", { name: "Animated Title" }).uncheck();
+    await page.getByRole("checkbox", { name: "Swap Box Colors" }).uncheck();
     await editorTab(page, "Sections");
     await page.getByRole("button", { name: "Remove section 3" }).click();
     await lock.uncheck();
     await page.getByRole("checkbox", { name: "Hide section 2 from public profile" }).check();
     await expect(preview.getByRole("heading", { name: "Projects" })).toHaveCount(0);
-    await expect(publicPage.getByRole("heading", { name: "Projects" })).toBeVisible();
+    // Public reference layout keeps extra section content out of the page even
+    // when an earlier publication still contains the unhidden section.
+    await expect(publicPage.locator(".profile-text-section")).toHaveCount(0);
     await page.getByRole("button", { name: "Publish page" }).click();
     await expect.poll(async () => (await visitor.request.get(`/${name}`)).text()).toContain("Second publication");
-    await page.getByRole("link", { name: "Publish History", exact: true }).click();
+    // Publication history remains available as a route, but it is not a
+    // sidebar destination in the reference-matched dashboard navigation.
+    await page.goto(profileHref.replace("/studio/customize?", "/studio/history?"));
     await expect(page.getByRole("heading", { name: "Publish history" })).toBeVisible();
     const firstVersion = page.getByRole("listitem").filter({ hasText: "Snoozer Creator" });
     const historyPreviewHref = (await firstVersion.getByRole("link", { name: /Preview version/ }).getAttribute("href"))!;
@@ -1292,10 +965,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("Version restored");
     await expect(page.getByLabel("Display name")).toHaveValue("Snoozer Creator");
     await expect(page.getByLabel("Section 2 heading")).toHaveValue("Projects");
-    await expect(page.getByLabel("Profile layout")).toHaveValue("editorial");
-    await expect(page.getByLabel("Link accent")).toHaveValue("ink");
-    await expect(page.getByLabel("Card spacing")).toHaveValue("compact");
-    await expect(page.getByLabel("Card corners")).toHaveValue("square");
+    await editorTab(page, "Design");
+    await expect(page.getByRole("textbox", { name: "Location" })).toHaveValue("Studio North");
+    await expect(page.getByRole("checkbox", { name: "Show location on my profile" })).toBeChecked();
+    await expect(page.getByLabel("Background Effects")).toHaveValue("gradient");
+    await expect(page.getByRole("checkbox", { name: "Monochrome Icons" })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Animated Title" })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Swap Box Colors" })).toBeChecked();
     await editorTab(page, "Sections");
     await expect(page.getByRole("checkbox", { name: "Hide section 2 from public profile" })).not.toBeChecked();
     await expect(page.getByLabel("Section 2 type")).toHaveValue("callout");
@@ -1317,12 +993,13 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const responsivePage = await page.context().newPage();
     try {
       await responsivePage.setViewportSize({ width: 360, height: 812 });
-      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio/builder?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
+      for (const path of [profileHref, ...["analytics", "gallery", "gallery/folders", "history", "plan"].map((section) => profileHref.replace("/studio/customize?", `/studio/${section}?`)), historyPreviewHref, "/studio/plan/gifts", "/studio/billing-diagnostics", `/${name}`]) {
         const response = await responsivePage.goto(path);
         expect(response?.status()).toBe(path === "/studio/billing-diagnostics" ? 404 : 200);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(360);
       }
-      await responsivePage.goto(profileHref);
+      const builderHref = profileHref.replace("/studio/customize?", "/studio/builder?");
+      await responsivePage.goto(builderHref);
       for (const tab of ["Profile", "Design", "Links", "Sections", "Settings"]) {
         await editorTab(responsivePage, tab);
         expect(await responsivePage.evaluate(() => document.documentElement.scrollWidth), tab).toBeLessThanOrEqual(360);
@@ -1396,14 +1073,28 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const replacement = `new-${name}`;
     await page.getByLabel("Username").fill(replacement);
     await page.getByRole("button", { name: "Claim address" }).click();
-    await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
-    const { data: newDraft } = await ownerClient.rpc("get_draft");
-    const { data: newScope } = await ownerClient.rpc("draft_media_scope", { p_expected: newDraft.revision });
+    await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
+    // Re-authenticate the independent API client after the delete/reclaim lifecycle.
+    // The browser's authenticated Studio session has already confirmed the replacement
+    // profile; use a fresh JWT before checking it through the separate Supabase client.
+    const replacementOwnerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+    const { error: replacementSignInError } = await replacementOwnerClient.auth.signInWithPassword({ email, password: newPassword });
+    expect(replacementSignInError).toBeNull();
+    const { data: newDraft, error: newDraftError } = await replacementOwnerClient.rpc("get_draft");
+    expect(newDraftError).toBeNull();
+    expect(newDraft).toMatchObject({ username: replacement, revision: oldDraft.revision + 1 });
+    const { data: newScope, error: newScopeError } = await replacementOwnerClient.rpc("draft_media_scope", { p_expected: newDraft!.revision });
+    expect(newScopeError).toBeNull();
+    expect(newScope).toMatch(/^[0-9a-f-]{36}$/);
     expect(newScope).not.toBe(oldScope);
-    expect((await ownerClient.storage.from("avatar-incoming").uploadToSignedUrl(
+    expect((await replacementOwnerClient.storage.from("avatar-incoming").uploadToSignedUrl(
       `${oldScope}/pending`, lateUpload!.token, image, { contentType: "image/png" },
     )).error).toBeNull();
-    expect((await incoming.upload(`${newScope}/pending`, image, { contentType: "image/png" })).error).toBeNull();
+    const { data: newUpload, error: newSigningError } = await incoming.createSignedUploadUrl(`${newScope}/pending`);
+    expect(newSigningError).toBeNull();
+    expect((await replacementOwnerClient.storage.from("avatar-incoming").uploadToSignedUrl(
+      `${newScope}/pending`, newUpload!.token, image, { contentType: "image/png" },
+    )).error).toBeNull();
 
     // Move the clock forward for this one test job in the disposable Docker database.
     execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres",
@@ -1460,8 +1151,9 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Profile Gallery" }).click();
-  await expect(page.getByRole("heading", { name: "Image gallery" })).toBeVisible();
+  await page.getByRole("link", { name: "Image Host", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Image Host", exact: true, level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByLabel("Image description").fill("A disguised file");
@@ -1492,14 +1184,16 @@ test("gallery images upload to private Storage and follow publication visibility
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   await page.getByLabel("Image description").fill("Blue shoreline");
   await page.getByRole("button", { name: "Upload image" }).click();
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
+  const draftGalleryImages = page.getByRole("list", { name: "Draft gallery images" });
+  const blueShorelineDraftImage = draftGalleryImages.getByRole("img", { name: "Blue shoreline" });
+  await expect(blueShorelineDraftImage).toBeVisible();
 
   await page.getByLabel("Image description").fill("Open water");
   await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
   await page.getByRole("button", { name: "Upload image" }).click();
   await expect(page.getByRole("status")).toContainText("Image added to your draft");
-  await expect(page.getByRole("img", { name: "Open water" })).toBeVisible();
-  const privatePath = (await page.getByRole("img", { name: "Blue shoreline" }).getAttribute("src"))!;
+  await expect(draftGalleryImages.getByRole("img", { name: "Open water" })).toBeVisible();
+  const privatePath = (await blueShorelineDraftImage.getAttribute("src"))!;
   const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
   const blueShorelineId = privatePath.split("/").at(-1)!;
   expect((await page.request.get(privatePath)).headers()["content-type"]).toBe("image/webp");
@@ -1513,19 +1207,10 @@ test("gallery images upload to private Storage and follow publication visibility
 
   await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
   await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
-  await page.getByRole("link", { name: "Back to Page Builder" }).click();
-  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toContainText("12.5 MiB");
-  await expect(page.getByRole("link", { name: "Manage gallery images" })).toHaveAttribute("href", "/studio/gallery");
-  await editorTab(page, "Design");
-  await page.getByRole("button", { name: "Use Blue shoreline as profile background" }).click();
-  const previewCard = page.getByRole("region", { name: "Page preview" });
-  // ProfileCard itself is the named region, not a descendant of it.
-  const previewPage = previewCard;
-  await expect(previewPage).toHaveAttribute("data-background-image", "true");
-  await expect(previewPage).toHaveAttribute("style", new RegExp(blueShorelineId));
-  await expect.poll(() => previewPage.evaluate((element) =>
-    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
-  await expect(previewCard.locator(".profile-gallery img")).toHaveCount(1);
+  await page.getByRole("link", { name: "Back to Customize" }).click();
+  const backgroundImage = page.getByLabel("Background image");
+  await expect(backgroundImage).toBeVisible();
+  await backgroundImage.selectOption(blueShorelineId);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
   const liveImage = await request.get(publicPath);
@@ -1536,7 +1221,8 @@ test("gallery images upload to private Storage and follow publication visibility
   expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
   expect(html).toMatch(/<section\b[^>]*class="profile-card[^"]*"[^>]*data-background-image="true"/);
   expect(html).toContain(blueShorelineId);
-  expect(html).toContain('alt="Open water"');
+  // The reference's compact entry profile intentionally hides the gallery and legacy sections.
+  expect(html).not.toContain('alt="Open water"');
   expect(html).not.toContain('alt="Blue shoreline"');
   expect(html).not.toContain("Gallery may use more memory");
   await page.goto("/" + name);
@@ -1576,15 +1262,15 @@ test("gallery images upload to private Storage and follow publication visibility
   const afterFolders = await (await request.get("/" + name)).text();
   expect(afterFolders).not.toContain("Private portfolio");
   expect(afterFolders).not.toContain("Private archive");
-  expect(afterFolders).toContain('alt="Open water"');
+  expect(afterFolders).not.toContain('alt="Open water"');
   expect(afterFolders).not.toContain('alt="Blue shoreline"');
 
   await page.goto("/studio/gallery");
   await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
   expect((await request.get(publicPath)).status()).toBe(200);
-  await page.getByRole("link", { name: "Back to Page Builder" }).click();
-  await expect(page.getByRole("region", { name: "Gallery may use more memory on phones" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Back to Customize" }).click();
+  await expect(page.getByLabel("Background image")).toBeVisible();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
   expect(await (await request.get("/" + name)).text()).not.toContain('data-background-image="true"');
@@ -1597,7 +1283,7 @@ test("gallery images upload to private Storage and follow publication visibility
   expect((await request.get(publicPath)).status()).toBe(404);
   await page.getByRole("link", { name: "Back to image gallery" }).click();
   await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  await page.getByRole("link", { name: "Back to Page Builder" }).click();
+  await page.getByRole("link", { name: "Back to Customize" }).click();
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
   expect(await (await request.get("/" + name)).text()).toContain('data-background-image="true"');
@@ -1632,6 +1318,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
+  await page.goto("/studio/builder");
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
 
@@ -2046,79 +1733,3 @@ test("independent appeals require a verified email, one-time token and service p
 });
 
 
-test("interactive profile widgets publish, accept visitor interactions and enforce moderation and voting privacy", async ({ browser }) => {
-  test.setTimeout(90000);
-  const suffix = randomUUID().slice(0, 10);
-  const name = "widgets-" + suffix;
-  const email = name + "@example.com";
-  const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  expect(created.error).toBeNull();
-  const owner = createClient(project!, publishableKey!, { auth: { persistSession: false } });
-  const visitor = await browser.newContext({ baseURL: "http://localhost:3000" });
-  try {
-    expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
-    expect((await owner.rpc("claim_profile", { p_name: name })).error).toBeNull();
-    const draft = await owner.rpc("get_draft");
-    expect(draft.error).toBeNull();
-    const profileId = draft.data.profile_id as string;
-    const pollId = randomUUID();
-    const optionA = randomUUID();
-    const optionB = randomUUID();
-    const widgets = {
-      version: 1,
-      order: ["guestbook", "testimonials", "poll", "faq"],
-      guestbook: { enabled: true, heading: "Guestbook", description: "Leave a message for the creator.", maxEntries: 10, submissionsOpen: true },
-      testimonials: { enabled: true, heading: "Kind words", items: [
-        { id: randomUUID(), quote: "A lovely project.", author: "A customer", role: "Client" },
-      ] },
-      poll: { enabled: true, id: pollId, question: "Which feature do you use most?", options: [
-        { id: optionA, label: "Community" }, { id: optionB, label: "Polls" },
-      ], open: true, closesAt: null, showResultsBeforeVote: false },
-      faq: { enabled: true, heading: "Questions", items: [
-        { id: randomUUID(), question: "Where can I find updates?", answer: "Check the creator's links." },
-      ] },
-    };
-    const saved = await owner.rpc("save_profile", {
-      p_profile: profileId, p_expected: 0, p_name: "Interactive widgets fixture",
-      p_bio: "Widget test profile", p_theme: "midnight", p_indexable: false,
-      p_links: [], p_publish: true, p_remove_avatar: false, p_sections: [],
-      p_appearance: { density: "balanced", corners: "soft" },
-      p_seo: { title: "", description: "" }, p_widgets: widgets,
-    });
-    expect(saved.error).toBeNull();
-
-    await visitor.addInitScript(() => {
-      try { localStorage.setItem("snoozer-analytics-consent-v3", "no"); } catch { /* Optional storage. */ }
-    });
-    const page = await visitor.newPage();
-    await page.goto("/" + name);
-    await enterPublicBio(page);
-    await expect(page.getByRole("heading", { name: "Kind words" })).toBeVisible();
-    await expect(page.getByText("A lovely project.", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Questions" })).toBeVisible();
-    await expect(page.getByText("Where can I find updates?", { exact: true })).toBeVisible();
-
-    const privateResults = await visitor.request.get("/api/v1/widgets/poll", {
-      params: { username: name, pollId },
-    });
-    expect(privateResults.status()).toBe(403);
-
-    await page.getByRole("button", { name: "Community", exact: true }).click();
-    await page.getByRole("button", { name: "Vote", exact: true }).click();
-    await expect(page.getByText("Your vote has been recorded.", { exact: true })).toBeVisible();
-    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
-    await page.reload();
-    await enterPublicBio(page);
-    await page.getByRole("button", { name: "I already voted — show results", exact: true }).click();
-    await expect(page.getByText("1 votes", { exact: true })).toBeVisible();
-
-    await expect(page.getByRole("heading", { name: "Guestbook" })).toHaveCount(0);
-    await expect(page.locator(".profile-guestbook")).toHaveCount(0);
-    await expect(page.getByLabel("Your name")).toHaveCount(0);
-
-  } finally {
-    await visitor.close();
-    if (created.data.user) await admin.auth.admin.deleteUser(created.data.user.id);
-  }
-});

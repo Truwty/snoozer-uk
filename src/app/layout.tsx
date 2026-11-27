@@ -3,7 +3,11 @@ import type { ReactNode } from "react";
 import { siteUrl } from "@/lib/env";
 import { browserThemeColour } from "@/lib/tokens";
 import { CookieConsent } from "@/components/cookie-consent";
+import { sessionClient } from "@/lib/supabase";
+import { accountLocale } from "@/lib/account-locale";
+import { supabaseUrl, supabaseKey } from "@/lib/env";
 import "./styles.css";
+import "./badge-restored.css";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +32,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: browserThemeColour, viewportFit: "cover" };
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <html lang="en-GB"><body>{children}<CookieConsent /></body></html>;
+export default async function Layout({ children }: { children: ReactNode }) {
+  let locale = "en-US";
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const client = await sessionClient();
+      const { data } = await client.auth.getUser();
+      locale = accountLocale(data.user?.user_metadata?.snoozer_locale);
+    } catch {
+      // Public pages remain available with the default document language.
+    }
+  }
+  return <html lang={locale}><body>{children}<CookieConsent /></body></html>;
 }
