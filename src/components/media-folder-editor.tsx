@@ -94,7 +94,7 @@ export function MediaFolderEditor({ profileId, library, draftRevision, draftSize
       </div>
     </details>}
     <h2>{selectedFolder?.name ?? (filter === "unfiled" ? "Unfiled" : "All images")}</h2>
-    {!visible.length && <EmptyState title="No images here" description={filter ? "There are no images here." : "Upload an image in the gallery to start your library."}><Link className="button" href={`/studio/gallery?profile=${profileId}`}>Open image gallery</Link></EmptyState>}
+    {!visible.length && <EmptyState title="No images here" description={filter ? "There are no images here." : "Upload a profile background from Studio to add an image asset to your library."}><Link className="button" href="/studio/customize">Open Studio customisation</Link></EmptyState>}
     {!!visible.length && <ul className="gallery-editor-grid" aria-label="Media library images">
       {visible.map((item) => <li className="panel stack" key={item.id}>
         {/* The owner image route serves an already resized WebP. */}
