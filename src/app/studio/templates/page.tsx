@@ -114,10 +114,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
         <p className="muted">Browse profile designs, save favourites, rate templates and return to your recent choices.</p>
         <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
       </div>
-      <div className="actions">
-        <Link className="button" href={"/studio/templates?tab=uploads"+profileQuery}>My Uploads</Link>
-        <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
-      </div>
+      <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
     </header>
     <nav className="studio-template-tabs" aria-label="Template sections">
       {[["library","Template Library"],["favorites","Favourite Templates"],["recent","Last Used Templates"],["uploads","My Uploads"]].map(([id,label])=>
