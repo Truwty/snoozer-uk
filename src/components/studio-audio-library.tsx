@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { supabaseConfig } from "@/lib/env";
 import { profileAudioIncoming } from "@/lib/profile-audio";
@@ -17,6 +16,7 @@ type Props={
   revision:number;
   gallery:GalleryImage[];
   onAddTrack:(track:{title:string;artist:string;url:string;coverImageId?:string})=>void;
+  onAssetsChanged?:()=>void|Promise<void>;
 };
 
 const audioAccept=".mp3,.m4a,.ogg,.wav,.aac,.flac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac,audio/flac";
@@ -24,7 +24,7 @@ const subscribeToHydration = () => () => {};
 const getClientHydrationSnapshot = () => true;
 const getServerHydrationSnapshot = () => false;
 
-export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props){
+export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAssetsChanged}:Props){
   const [items,setItems]=useState<AudioItem[]>([]);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
@@ -42,7 +42,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const audioInput=useRef<HTMLInputElement>(null);
   const newCoverInput=useRef<HTMLInputElement>(null);
   const coverInput=useRef<HTMLInputElement>(null);
-  const router=useRouter();
 
   const reload=useCallback(async()=>{
     setLoading(true);
@@ -107,7 +106,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
       await discardGalleryUpload(profileId,revision,started.id);
       throw new Error(completed.error??"The cover image could not be saved.");
     }
-    router.refresh();
+    await onAssetsChanged?.();
     return started.id;
   }
 
