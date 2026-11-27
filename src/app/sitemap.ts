@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...helpArticles.map((article) => `/help/${article.slug}`),
   ].map((path) => ({
     url: new URL(path, base).href,
-    changeFrequency: "monthly",
+    changeFrequency: "monthly" as const,
     priority: path === "/help" ? 0.7 : 0.5,
   }));
   return [...sitemapEntries(base, profiles), ...helpPages];
