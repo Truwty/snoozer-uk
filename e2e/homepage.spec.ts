@@ -69,9 +69,19 @@ test("homepage footer language menu opens upward and lists supported locales", a
   await page.goto("/");
   const picker = page.locator(".home-footer-language");
   await expect(picker).toBeVisible();
-  await expect(picker.getByText(/English \\(United States\\)/)).toBeVisible();
+  await expect(picker.getByText(/English \(United States\)/)).toBeVisible();
   await picker.locator("summary").click();
   await expect(picker.locator(".home-language-menu button")).toHaveCount(6);
   await expect(picker.getByRole("button", { name: /Español/ })).toBeVisible();
   await expect(picker.getByRole("button", { name: /Türkçe/ })).toBeVisible();
+});
+
+
+test("homepage footer language selection is saved for the current browser", async ({ page }) => {
+  await page.goto("/");
+  const picker = page.locator(".home-footer-language");
+  await picker.locator("summary").click();
+  await picker.getByRole("button", { name: /Español/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "es-ES");
+  await expect(picker).toContainText("Español (España)");
 });
