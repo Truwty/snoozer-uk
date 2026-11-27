@@ -365,3 +365,37 @@
   .studio-share-url-row { grid-template-columns:auto minmax(0,1fr); }
   .studio-share-url-row .button { grid-column:1/-1; width:100%; }
 }
+
+
+/* Reference Image Host lifetime purchase dialog. */
+.studio-image-host-purchase-overlay {
+  position:fixed; inset:0; z-index:1250; display:grid; place-items:center;
+  padding:1rem; background:rgba(0,0,0,.8); backdrop-filter:blur(12px);
+}
+.studio-image-host-purchase-dialog {
+  position:relative; display:grid; gap:.8rem; width:min(100%,31rem);
+  max-height:min(91svh,52rem); overflow:auto; padding:1.7rem;
+  border:1px solid rgba(255,255,255,.1); border-radius:1rem;
+  background:#111415; color:#f1f4ef; box-shadow:0 2rem 6rem rgba(0,0,0,.55);
+}
+.studio-image-host-purchase-dialog h2 { font-size:1.65rem; letter-spacing:-.045em; }
+.studio-image-host-price { display:flex; align-items:baseline; gap:.5rem; margin-top:.1rem; }
+.studio-image-host-price strong { font-size:2.55rem; letter-spacing:-.06em; }
+.studio-image-host-price span { color:#a8b0aa; font-size:.92rem; }
+.studio-image-host-tagline { margin-top:-.55rem; color:#c4ccc4; font-size:.86rem; }
+.studio-image-host-feature-list { display:grid; gap:.6rem; padding:1rem 0; border-block:1px solid rgba(255,255,255,.08); list-style:none; }
+.studio-image-host-feature-list li { display:flex; align-items:center; gap:.6rem; color:#e6ebe5; font-size:.82rem; }
+.studio-image-host-feature-list li span { display:grid; place-items:center; flex:none; width:1.3rem; height:1.3rem; border-radius:50%; background:rgba(216,251,134,.12); color:#d8fb86; font-size:.7rem; font-weight:800; }
+.studio-image-host-purchase-button { width:100%; min-height:2.95rem; font-weight:750; }
+.studio-image-host-checkout-locked { display:grid; gap:.35rem; padding:.9rem; border:1px solid rgba(255,255,255,.1); border-radius:.7rem; background:#191c1d; }
+.studio-image-host-checkout-locked strong { font-size:.82rem; color:#f1f4ef; }
+.studio-image-host-checkout-locked p,.studio-image-host-small-print,.studio-image-host-gate-note { color:#9da69e; font-size:.7rem; line-height:1.5; }
+.studio-image-host-small-print { text-align:center; }
+.studio-image-host-offer-panel { display:grid; gap:.75rem; }
+.studio-image-host-offer-panel .studio-panel-heading { align-items:center; }
+.studio-image-host-entitlement { color:#c4e89a; font-size:.75rem; }
+.studio-image-host-gate-note { max-width:48rem; }
+@media(max-width:520px) {
+  .studio-image-host-purchase-dialog { padding:1.25rem; }
+  .studio-image-host-price strong { font-size:2.2rem; }
+}
