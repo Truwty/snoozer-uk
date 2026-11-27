@@ -33,8 +33,8 @@ describe("compact public bio experience", () => {
     const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
     const socialStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-social-links {");
     const compactCardStart = styles.indexOf(".public-page .profile-card--bio-experience :is(.profile-text-section, .profile-content-block) {");
-    const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\\n}", socialStart));
-    const compactCardRule = compactCardStart < 0 ? "" : styles.slice(compactCardStart, styles.indexOf("\\n}", compactCardStart));
+    const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\n}", socialStart));
+    const compactCardRule = compactCardStart < 0 ? "" : styles.slice(compactCardStart, styles.indexOf("\n}", compactCardStart));
 
     expect(socialRule).toContain("display: flex;");
     expect(socialRule).toContain("flex-direction: row;");
@@ -43,7 +43,6 @@ describe("compact public bio experience", () => {
     expect(socialRule).toContain("height: auto;");
     expect(compactCardRule).toContain("min-height: 0;");
     expect(compactCardRule).toContain("padding: .55rem .7rem;");
-    expect(compactCardRule).toMatch(/padding:\\s*\.55rem \.7rem/);
   });
 
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
