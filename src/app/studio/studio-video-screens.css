@@ -399,3 +399,40 @@
   .studio-image-host-purchase-dialog { padding:1.25rem; }
   .studio-image-host-price strong { font-size:2.2rem; }
 }
+
+
+/* Creator template uploads and the Image Host add-on tile in the badge catalogue. */
+.studio-template-upload-list { display:grid; gap:.65rem; padding:0; margin:0; list-style:none; }
+.studio-template-upload-list > li {
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  padding:1rem; border:1px solid rgba(255,255,255,.065); border-radius:10px; background:#121516;
+}
+.studio-template-upload-list > li > div:first-child { display:grid; gap:.25rem; min-width:0; }
+.studio-template-upload-list h3 { color:#f1f4ef; font-size:.85rem; }
+.studio-template-upload-list p,.studio-template-upload-list small { color:#98a29a; font-size:.68rem; }
+.studio-template-upload-list .actions { align-items:center; flex:none; }
+.studio-template-review-status {
+  display:inline-flex; align-items:center; min-height:1.9rem; padding:.32rem .6rem;
+  border:1px solid rgba(255,255,255,.09); border-radius:999px; color:#b7c0b9; font-size:.64rem;
+}
+.studio-template-review-status.is-approved { border-color:rgba(174,235,146,.22); color:#c6ef9c; }
+.studio-template-review-status.is-pending { border-color:rgba(234,198,118,.2); color:#e5c980; }
+.studio-template-review-status.is-rejected { border-color:rgba(229,133,133,.2); color:#e9a0a0; }
+.studio-template-submit-panel { display:grid; gap:.75rem; }
+.studio-template-create-form { max-width:44rem; }
+.studio-image-host-badge {
+  grid-template-columns:2.2rem minmax(0,1fr);
+  border-color:rgba(216,251,134,.2);
+  background:linear-gradient(145deg,rgba(216,251,134,.055),transparent 55%),#121615;
+}
+.studio-image-host-badge-mark {
+  display:grid; place-items:center; width:2rem; height:2rem; border-radius:8px;
+  background:rgba(216,251,134,.12); color:#d8fb86; font-size:1.05rem;
+}
+.studio-image-host-badge .studio-badge-card-copy { min-width:0; }
+.studio-image-host-badge .studio-badge-card-copy p { font-size:.62rem; line-height:1.4; }
+.studio-image-host-badge .button { grid-column:1/-1; width:100%; }
+@media(max-width:760px) {
+  .studio-template-upload-list > li { align-items:flex-start; flex-direction:column; }
+  .studio-template-upload-list .actions { flex-wrap:wrap; }
+}
