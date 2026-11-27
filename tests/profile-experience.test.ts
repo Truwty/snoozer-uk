@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { ProfileCard } from "../src/components/profile-card";
 import { defaultAppearance, publishedProfile } from "../src/lib/profile";
 import { defaultProfileWidgets } from "../src/lib/profile-widgets";
@@ -28,6 +29,20 @@ function profileWith(overrides: Record<string, unknown> = {}) {
 }
 
 describe("compact public bio experience", () => {
+  it("keeps bio profile social icons horizontal and inner content cards compact", () => {
+    const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
+    const socialRule = styles.match(/\.public-page \.profile-card--bio-experience \.profile-social-links\\s*\\{([^}]*)\\}/)?.[1] ?? "";
+    const compactCardRule = styles.match(/\.public-page \.profile-card--bio-experience :is\\(\.profile-text-section, \.profile-content-block\\)\\s*\\{([^}]*)\\}/)?.[1] ?? "";
+
+    expect(socialRule).toMatch(/display:\\s*flex/);
+    expect(socialRule).toMatch(/flex-direction:\\s*row/);
+    expect(socialRule).toMatch(/justify-content:\\s*center/);
+    expect(socialRule).toMatch(/gap:\\s*12px/);
+    expect(socialRule).toMatch(/height:\\s*auto/);
+    expect(compactCardRule).toMatch(/min-height:\\s*0/);
+    expect(compactCardRule).toMatch(/padding:\\s*\.55rem \.7rem/);
+  });
+
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
     const profile = profileWith();
     const html = renderToStaticMarkup(createElement(ProfileCard, {
