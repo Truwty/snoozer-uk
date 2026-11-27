@@ -25,9 +25,9 @@ type Props = {
   gallery: GalleryItem[];
   backgroundImage?: string;
   backgroundVideo?: string;
-  onSelectImage: (id?: string) => void;
+  onSelectImage: (id?: string, revision?: number) => void;
   onSelectVideo: (id?: string) => void;
-  onImageAdded: (image: GalleryItem) => void | Promise<void>;
+  onImageAdded: (image: GalleryItem) => void | number | Promise<void | number>;
 };
 
 const videoAccept = ".mp4,.m4v,.webm,video/mp4,video/webm";
@@ -88,8 +88,8 @@ export function StudioBackgroundUploader({
         return;
       }
       stagedId = undefined;
-      await onImageAdded(completed.image);
-      onSelectImage(completed.image.id);
+      const latestRevision = await onImageAdded(completed.image);
+      onSelectImage(completed.image.id, typeof latestRevision === "number" ? latestRevision : undefined);
       setMessage("Background image added to your draft. Publish to make it visible.");
     } catch {
       if (stagedId) await discardGalleryUpload(profileId, revision, stagedId);
