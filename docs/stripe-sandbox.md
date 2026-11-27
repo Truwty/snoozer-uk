@@ -2,7 +2,7 @@
 
 **Reviewed:** 27 November 2026
 
-<badge>TEST MODE ONLY</badge>
+**TEST MODE ONLY — ISOLATED SANDBOX ENVIRONMENTS**
 
 This guide is for disposable development/QA environments. It does not describe Snoozer's live subscription system. Never use test-mode configuration, test Price IDs, sandbox receipts or test grants to change a production account's entitlements. The live Snoozer-owned Plus, Pro and Studio subscription path is documented separately in [Premium LIVE operations](premium-live-launch.md). The operator has confirmed that live payments and subscriptions work; preserve that configuration during general maintenance.
 
