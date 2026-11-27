@@ -265,4 +265,84 @@ grant execute on function public.list_image_host_addon_offers(),
   to service_role;
 grant execute on function public.get_my_image_host_status() to authenticated;
 
+
+-- Award the Image Host badge only while a verified lifetime purchase is active.
+-- Keep the award synchronized with the payment state, not the purchase modal.
+insert into snoozer.badge_catalog(
+  slug,name,description,icon,category,rarity,award_mode,criterion_key,enabled,sort_order
+) values (
+  'image-host-owner','Image Host','Lifetime Image Host access is active on this Snoozer account.',
+  '▧','premium','epic','automatic','image_host_purchase',true,161
+) on conflict(slug) do update set
+  name=excluded.name,description=excluded.description,icon=excluded.icon,
+  category=excluded.category,rarity=excluded.rarity,award_mode=excluded.award_mode,
+  criterion_key=excluded.criterion_key,enabled=excluded.enabled,sort_order=excluded.sort_order;
+
+create function snoozer.refresh_image_host_profile_badges(p_owner uuid)
+returns void language plpgsql security definer set search_path=''
+as $function$
+declare badge snoozer.badge_catalog;
+begin
+  select * into badge from snoozer.badge_catalog
+    where slug='image-host-owner' and enabled;
+  if not found then return; end if;
+
+  if exists(
+    select 1 from snoozer.image_host_purchases
+    where owner_id=p_owner and status='active' and verified_at is not null
+  ) then
+    insert into snoozer.profile_badges(
+      profile_id,slug,name,description,icon,category,rarity,source,award_reason
+    )
+    select p.id,badge.slug,badge.name,badge.description,badge.icon,
+      badge.category,badge.rarity,'automatic',
+      'Verified Image Host lifetime purchase'
+    from snoozer.profiles p
+    where p.owner_id=p_owner
+    on conflict(profile_id,slug) do update
+      set revoked_at=null,awarded_at=now(),name=excluded.name,
+          description=excluded.description,icon=excluded.icon,
+          category=excluded.category,rarity=excluded.rarity
+      where snoozer.profile_badges.revoked_at is not null;
+  else
+    update snoozer.profile_badges b
+      set revoked_at=coalesce(b.revoked_at,now())
+      from snoozer.profiles p
+      where p.id=b.profile_id and p.owner_id=p_owner
+        and b.slug='image-host-owner' and b.revoked_at is null;
+  end if;
+end
+$function$;
+
+create function snoozer.refresh_image_host_badges_after_change()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+begin
+  perform snoozer.refresh_image_host_profile_badges(new.owner_id);
+  return new;
+end
+$function$;
+
+create function snoozer.refresh_image_host_badges_for_new_profile()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+begin
+  perform snoozer.refresh_image_host_profile_badges(new.owner_id);
+  return new;
+end
+$function$;
+
+create trigger image_host_purchase_badges_refresh
+  after insert or update of status on snoozer.image_host_purchases
+  for each row execute function snoozer.refresh_image_host_badges_after_change();
+
+create trigger image_host_new_profile_badge_refresh
+  after insert on snoozer.profiles
+  for each row execute function snoozer.refresh_image_host_badges_for_new_profile();
+
+revoke all on function snoozer.refresh_image_host_profile_badges(uuid),
+  snoozer.refresh_image_host_badges_after_change(),
+  snoozer.refresh_image_host_badges_for_new_profile()
+  from public,anon,authenticated,service_role;
+
 commit;
