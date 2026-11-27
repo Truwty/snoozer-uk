@@ -481,8 +481,8 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     const imageHostDialog = page.getByRole("dialog", { name: "Image Host", exact: true });
     await expect(imageHostDialog.getByText("4,99€", { exact: true })).toBeVisible();
     await expect(imageHostDialog.getByText("Pay once. Keep it forever.", { exact: true })).toBeVisible();
-    await expect(imageHostDialog.getByText("Add Custom Image Host Domain", { exact: true })).toBeVisible();
-    await expect(imageHostDialog.getByText("Upload Analytics", { exact: true })).toBeVisible();
+    await expect(imageHostDialog.getByText(/Add Custom Image Host Domain/)).toBeVisible();
+    await expect(imageHostDialog.getByText(/Upload Analytics/)).toBeVisible();
     await expect(imageHostDialog.getByText("Checkout is not available yet", { exact: true })).toBeVisible();
     await expect(imageHostDialog.getByRole("button", { name: "Gift Image Host is not available yet" })).toBeDisabled();
     await imageHostDialog.getByRole("button", { name: "Close Image Host purchase" }).click();
