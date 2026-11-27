@@ -518,10 +518,19 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
     await page.reload();
     await page.getByRole("button", { name: "Share Your Profile", exact: true }).click();
-    const qrDialog = page.getByRole("dialog", { name: "Share Your Profile", exact: true });
+    const shareDialog = page.getByRole("dialog", { name: "Share Your Profile", exact: true });
+    await expect(shareDialog.getByRole("button", { name: "Snoozer QR Code" })).toBeVisible();
+    await expect(shareDialog.getByRole("link", { name: /Get more profile views/ })).toHaveAttribute("href", "/help?q=views");
+    await expect(shareDialog.getByRole("link", { name: /Open My Page/ })).toBeVisible();
+    await expect(shareDialog.getByRole("button", { name: "Copy URL", exact: true })).toBeVisible();
+    await expect(shareDialog.getByRole("link", { name: "Help Centre", exact: true })).toHaveAttribute("href", "/help");
+    await expect(shareDialog.getByRole("link", { name: "Support Email", exact: true })).toHaveAttribute("href", "mailto:snoozersupport@snoozer.uk");
+    await shareDialog.getByRole("button", { name: "Snoozer QR Code" }).click();
+    const qrDialog = page.getByRole("dialog", { name: "Snoozer QR Code", exact: true });
     await expect(qrDialog.locator("svg#snoozer-profile-qr-svg")).toBeVisible();
     await expect(qrDialog.getByRole("button", { name: "Download PNG", exact: true })).toBeVisible();
     await expect(qrDialog.getByRole("button", { name: "Download SVG", exact: true })).toBeVisible();
+    await qrDialog.getByRole("button", { name: "Close QR code" }).click();
     await expect(qrDialog.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 375, height: 812 });
