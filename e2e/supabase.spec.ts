@@ -934,7 +934,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const bioCard = publicPage.locator(".profile-card");
     await expect(publicPage.locator(".profile-official-badges")).toHaveCount(0);
     await expect(bioCard).toHaveAttribute("data-background-video", "true");
-    const publicVideoSrc = await bioCard.locator("video.profile-background-video").getAttribute("src");
+    const viewportVideo = publicPage.locator(".profile-page-background video.profile-background-video--viewport");
+    await expect(viewportVideo).toBeVisible();
+    const publicVideoBounds = await viewportVideo.evaluate((video) => video.getBoundingClientRect().toJSON());
+    expect(publicVideoBounds.width).toBeGreaterThanOrEqual(await publicPage.evaluate(() => window.innerWidth) - 1);
+    expect(publicVideoBounds.height).toBeGreaterThanOrEqual(await publicPage.evaluate(() => window.innerHeight) - 1);
+    const publicVideoSrc = await viewportVideo.getAttribute("src");
     expect(publicVideoSrc).toMatch(/^\/media\/background-video\/[0-9a-f-]{36}$/);
     const publicVideoResponse = await visitor.request.get("http://localhost:3000" + publicVideoSrc!, { maxRedirects: 0 });
     expect(publicVideoResponse.status()).toBe(307);
