@@ -37,7 +37,7 @@ test("private media export refuses anonymous and other-account files",async({pag
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(a.email);
   await page.getByLabel("Password",{exact:true}).fill(a.password);
-  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await page.getByRole("button",{name:"Log in",exact:true}).click();
   await expect(page).toHaveURL("http://localhost:3000/studio");
   const list=await page.request.get("/api/v1/account/media-export");
   expect(list.status()).toBe(200);

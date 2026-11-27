@@ -155,7 +155,7 @@ test("profile analytics requires consent, counts link clicks and exports only to
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/analytics");
     for (const heading of ["Account Analytics","Total Link Clicks","Click Rate","Profile Views","Average Daily Views","Visitor Devices","Most Clicked Socials","Most Clicked Buttons","Top Referrers","Top Countries by Views"]) {
@@ -191,7 +191,7 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
     await page.getByRole("link", { name: "Premium", exact: true }).click();
@@ -264,7 +264,7 @@ test("isolated domain fixtures bind HTTP hosts and reject cross-profile and priv
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username").fill(name);
     await page.getByRole("button", { name: "Claim address", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
@@ -450,7 +450,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await page.goto("/sign-in");
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await page.getByLabel("Username", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
@@ -556,6 +556,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(audioManager).toBeVisible();
     await audioManager.getByRole("button", { name: "+ Add Audio", exact: true }).click();
     const addAudio = page.getByRole("dialog", { name: "Add an Audio", exact: true });
+    expect(await addAudio.evaluate((dialog) => dialog.closest(".studio-audio-add-overlay")?.parentElement === document.body)).toBe(true);
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
@@ -739,6 +740,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Theme").selectOption("daybreak");
     await expect(designPreview).toHaveClass(/theme-daybreak/);
     await page.getByLabel("Link colour").selectOption("mint");
+    const minimalMp4 = Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
+    await page.locator('input[type="file"][accept*="video/mp4"]').setInputFiles({
+      name: "profile-background.mp4", mimeType: "video/mp4", buffer: minimalMp4,
+    });
+    await expect(designPreview).toHaveAttribute("data-background-video", "true");
+    await expect(designPreview.locator("video.profile-background-video")).toHaveAttribute("src", /\/studio\/background-video\//);
     await page.getByLabel("Background Effects").selectOption("gradient");
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
@@ -909,6 +916,12 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(publicPage.locator("figcaption")).toHaveCount(0);
     await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toHaveCount(0);
     const bioCard = publicPage.locator(".profile-card");
+    await expect(publicPage.locator(".profile-official-badges")).toHaveCount(0);
+    await expect(bioCard).toHaveAttribute("data-background-video", "true");
+    const publicVideoSrc = await bioCard.locator("video.profile-background-video").getAttribute("src");
+    expect(publicVideoSrc).toMatch(/^\/media\/background-video\/[0-9a-f-]{36}$/);
+    const publicVideoResponse = await visitor.request.get("http://localhost:3000" + publicVideoSrc!, { maxRedirects: 0 });
+    expect(publicVideoResponse.status()).toBe(307);
     await expect(bioCard).toHaveClass(/profile-card--bio-experience/);
     await expect(bioCard).toHaveClass(/theme-daybreak/);
     await expect(publicPage.locator(".profile-links")).toHaveAttribute("style", /--link-background/);
@@ -1049,7 +1062,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByRole("status")).toContainText("password has been updated");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await page.goto("/studio/builder");
     await expect(page.getByRole("heading", { name: "Page Builder", exact: true })).toBeVisible();
@@ -1171,7 +1184,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
   await page.getByRole("link", { name: "Image Host", exact: true }).click();
@@ -1338,7 +1351,7 @@ test("autosave keeps the public page stable and recovers a stale tab", async ({ 
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
   await page.goto("/studio/builder");
@@ -1461,7 +1474,7 @@ test("sign-ins persist across navigation and independent accounts switch without
     await page.goto("/sign-in");
     await page.getByLabel("Email address").fill(emailA);
     await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page).toHaveURL(/\/studio/);
     await page.goto("/pricing");
     await page.reload();

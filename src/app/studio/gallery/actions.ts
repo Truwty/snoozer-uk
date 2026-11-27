@@ -91,7 +91,7 @@ export async function finishGalleryUpload(profileId: string, revision: number, i
   }
   await incoming.remove([key]);
   refreshGallery();
-  return { message: "Image added to your draft. Publish in Studio to make it visible." };
+  return { message: "Image added to your draft. Publish in Studio to make it visible.", image: { id, alt: stage.data.alt, width: encoded.info.width, height: encoded.info.height } };
 }
 
 export async function discardGalleryUpload(profileId: string, revision: number, id: string) {

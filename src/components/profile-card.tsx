@@ -6,7 +6,7 @@ import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
-import { profileBackgroundImage, safeLink, type PublishedProfile } from "@/lib/profile";
+import { profileBackgroundImage, profileBackgroundVideoId, safeLink, type PublishedProfile } from "@/lib/profile";
 
 
 
@@ -17,7 +17,6 @@ import type { DiscordPresencePublic } from "@/lib/discord-presence";
 
 import { SocialProviderIcon } from "./social-provider-icon";
 import { profileAudioCanShuffle } from "@/lib/profile-audio";
-import { BadgeArtwork } from "./badge-artwork";
 import { InteractiveProfileWidgets } from "./interactive-profile-widgets";
 
 
@@ -386,6 +385,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
   const backgroundImage = background && galleryBase
     ? `url("${galleryBase}/${encodeURIComponent(background.id)}")`
     : undefined;
+  const backgroundVideoId = profileBackgroundVideoId(profile);
+  const backgroundVideoSrc = backgroundVideoId
+    ? `${preview ? "/studio/background-video" : "/media/background-video"}/${encodeURIComponent(backgroundVideoId)}`
+    : undefined;
   const backgroundStyle = backgroundImage
     ? { "--profile-background-image": backgroundImage }
     : {};
@@ -431,16 +434,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     {!entryExperience && <p className="profile-handle">@{profile.username}</p>}
     {preview ? <h2 className="profile-name-heading">{nameContent}</h2> : <h1 className="profile-name-heading">{nameContent}</h1>}
     {entryExperience && <p className="profile-handle">@{profile.username}</p>}
-    {!preview && profile.badges.length>0 && <nav className="profile-official-badges" aria-label="Official Snoozer badges">
-      {profile.badges.slice(0,8).map((badge)=><span className={"profile-official-badge rarity-"+badge.rarity} key={badge.slug} role="img" title={badge.name+": "+badge.description} aria-label={badge.name}>
-        <span aria-hidden="true">{badge.category === "custom" ? badge.image_id
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img className="profile-custom-badge-art" src={`/media/badges/${badge.image_id}`} alt="" width={24} height={24}/>
-          : <span className="profile-custom-badge-icon" style={{ color: badge.color }}>{badge.icon}</span>
-          : <BadgeArtwork slug={badge.slug} size={24}/>}</span>
-      </span>)}
-      {profile.badges.length>8 && <span className="profile-official-badge-more" role="img" aria-label={profile.badges.length-8+" more badges"}>+{profile.badges.length-8}</span>}
-    </nav>}
     {profile.appearance.showLocation && profile.appearance.location && <p className="profile-location"><span aria-hidden="true">⌖</span>{profile.appearance.location}</p>}
     {profile.bio && (entryExperience ? <TypewriterBio value={profile.bio} active={entered} /> : <p className="profile-bio">{profile.bio}</p>)}
   </>;
@@ -628,6 +621,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-entrance={profile.appearance.entrance} data-layout={profile.appearance.layout} data-density={profile.appearance.density} data-corners={profile.appearance.corners}
     data-template-style={profile.appearance.templateStyle ?? "classic"}
     data-background-image={backgroundImage ? "true" : undefined}
+    data-background-video={backgroundVideoSrc ? "true" : undefined}
     data-custom-cursor={customCursor ? "true" : undefined}
     data-gradient-enabled={profile.appearance.gradientEnabled ? "true" : undefined}
     data-swap-box-colors={profile.appearance.swapBoxColors ? "true" : undefined}
@@ -642,6 +636,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-text={effects.enabled ? effects.text : "none"}
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
+    {backgroundVideoSrc && <video className="profile-background-video" src={backgroundVideoSrc} muted autoPlay loop playsInline preload="metadata" aria-hidden="true" tabIndex={-1} />}
     <ProfileEffectsLayer effects={effects} />
     {effects.enabled && !entryExperience && <label className="profile-effects-toggle">
       <input type="checkbox" aria-label="Disable profile effects" />

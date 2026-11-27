@@ -4,7 +4,7 @@ import { profileAppearance, themes, type PublishedProfile } from "./profile";
 const transfer = z.strictObject({
   version: z.literal(1),
   theme: z.enum(themes),
-  appearance: profileAppearance.omit({ backgroundImage: true }),
+  appearance: profileAppearance.omit({ backgroundImage: true, backgroundVideo: true }),
 });
 export const appearanceTransferLimit = 2048;
 export type AppearanceSettings = Omit<z.output<typeof transfer>, "version">;
@@ -12,6 +12,7 @@ export type AppearanceSettings = Omit<z.output<typeof transfer>, "version">;
 export function exportAppearance(settings: Pick<PublishedProfile, "theme" | "appearance">) {
   const appearance = { ...settings.appearance };
   delete appearance.backgroundImage;
+  delete appearance.backgroundVideo;
   return JSON.stringify({ version: 1, theme: settings.theme, appearance });
 }
 
