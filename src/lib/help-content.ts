@@ -147,7 +147,7 @@ export const helpArticles: HelpArticle[] = [
         ],
       },
     ],
-    related: ["images-gallery", "profile-effects", "publish-and-history"],
+    related: ["profile-effects", "publish-and-history"],
   },
   {
     slug: "social-links",
@@ -256,41 +256,7 @@ export const helpArticles: HelpArticle[] = [
         ],
       },
     ],
-    related: ["studio-editor", "images-gallery"],
-  },
-  {
-    slug: "images-gallery",
-    title: "Upload images and use your gallery",
-    category: "profiles-studio",
-    summary: "Add profile imagery, organise uploads and choose media for your page.",
-    keywords: ["image", "gallery", "upload", "avatar", "background", "folder", "media"],
-    sections: [
-      {
-        heading: "Upload an image",
-        steps: [
-          "Open Studio and go to Gallery.",
-          "Choose the upload option and select an image from your device.",
-          "Wait for processing to finish and check that the image appears in your gallery.",
-          "Choose the image in the relevant profile appearance or media setting.",
-          "Preview and publish the change when you are ready.",
-        ],
-      },
-      {
-        heading: "Organise your files",
-        paragraphs: [
-          "Use gallery folders to keep related media together. Check the file's preview before selecting it for a public profile.",
-          "Your plan's storage or upload limits are shown in the relevant Studio area. Remove files you no longer need to stay within your allowance.",
-        ],
-      },
-      {
-        heading: "Images and privacy",
-        paragraphs: [
-          "An image stored in your gallery is not automatically displayed on your public profile. It becomes visible when you use it in published profile content or another public feature.",
-          "Only upload content you have the right to use. Do not upload private images of another person without their permission.",
-        ],
-      },
-    ],
-    related: ["studio-editor", "profile-effects", "troubleshooting"],
+    related: ["studio-editor"],
   },
   {
     slug: "publish-and-history",
@@ -655,7 +621,7 @@ export const helpArticles: HelpArticle[] = [
         ],
       },
     ],
-    related: ["account-recovery", "images-gallery", "custom-domains"],
+    related: ["account-recovery", "custom-domains"],
   },
 ];
 

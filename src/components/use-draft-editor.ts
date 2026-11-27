@@ -30,14 +30,20 @@ export function useDraftEditor(draft: DraftProfile) {
   const busy = useRef(false);
   const failed = useRef<Edits | null>(null);
   const saved = confirmed && confirmed.revision > draft.revision ? confirmed : draft;
+  const savedRef = useRef(saved);
   const conflict = conflicted || Boolean(edits && edits.revision !== saved.revision);
 
   const historyCurrent = Boolean(edits) || editor.historyRevision === saved.revision;
 
+  useEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
+
   function edit(update: (current: Edits) => Edits) {
     setEditor((current) => {
-      const state = current.edits || current.historyRevision === saved.revision ? current : emptyEditor(saved.revision);
-      const previous = state.edits ?? { revision: saved.revision, content: saved, removeAvatar: false };
+      const latest = savedRef.current;
+      const state = current.edits || current.historyRevision === latest.revision ? current : emptyEditor(latest.revision);
+      const previous = state.edits ?? { revision: latest.revision, content: latest, removeAvatar: false };
       const next = update(previous);
       if (next.content === previous.content) return { ...state, edits: next };
       return { ...state, edits: next, past: [...state.past.slice(-29), previous.content], future: [] };
@@ -93,11 +99,13 @@ export function useDraftEditor(draft: DraftProfile) {
         return;
       }
 
-      setConfirmed({
+      const nextSaved = {
         ...saved, ...result.content, revision: result.revision,
         avatar: snapshot.removeAvatar ? null : saved.avatar,
         published_revision: intent === "publish" ? result.revision : saved.published_revision,
-      });
+      };
+      savedRef.current = nextSaved;
+      setConfirmed(nextSaved);
       // Edits made during the request start from this write, never from a newer server response.
       setEditor((current) => ({
         ...current, historyRevision: result.revision,
@@ -140,6 +148,7 @@ export function useDraftEditor(draft: DraftProfile) {
     try {
       const latest = await loadSavedDraft(saved.profile_id);
       if (!latest) throw new Error("Profile unavailable.");
+      savedRef.current = latest;
       setConfirmed(latest);
       setEditor((current) => current.edits === edits ? emptyEditor(latest.revision) : current);
       setConflicted(false);
@@ -157,6 +166,7 @@ export function useDraftEditor(draft: DraftProfile) {
   const refreshSaved = useCallback(async () => {
     const latest = await loadSavedDraft(saved.profile_id);
     if (!latest) throw new Error("Profile unavailable after the upload.");
+    savedRef.current = latest;
     setConfirmed(latest);
     setEditor((current) => current.edits
       ? { ...current, edits: { ...current.edits, revision: latest.revision } }

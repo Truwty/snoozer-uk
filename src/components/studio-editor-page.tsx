@@ -51,7 +51,6 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
   const linkLimit = plan.success ? Math.min(plan.data.quotas.links, maximumProfileLinkLimit) : freeProfileLinkLimit;
   const template = typeof params.template === "string" ? studioTemplates.find(({ id }) => id === params.template) : undefined;
   const config = modeConfig[mode];
-  const galleryHref = studioHref("/studio/gallery", selected);
   const domainConfig = domainProviderConfig();
   const imageHostAccess = z.object({active:z.boolean()}).safeParse(imageHostStatusResponse.data);
   const imageHostActive = !imageHostStatusResponse.error&&imageHostAccess.success&&imageHostAccess.data.active;
@@ -68,7 +67,7 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
     {params.restored === "1" && <p className="message" role="status">Version restored to your draft.</p>}
     <Editor key={draft.profile_id + ":" + mode} draft={draft}
       effectTier={plan.success ? plan.data.plan : "free"}
-      linkLimit={linkLimit} galleryHref={galleryHref}
+      linkLimit={linkLimit}
       imageHostOffer={imageHostOffer} imageHostActive={imageHostActive}
       initialTemplateId={template?.id ?? ""} initialTab={config.tab} panelOnly={config.panelOnly}
       schedule={schedule.success && !scheduleResponse.error

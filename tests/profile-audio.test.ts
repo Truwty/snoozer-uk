@@ -10,6 +10,13 @@ describe("profile audio validation",()=>{
     expect(profileAudioExtension("audio/aac")).toBe("aac");
     expect(profileAudioExtension("audio/flac")).toBe("flac");
     expect(profileAudioExtension("audio/webm")).toBeNull();
+    expect(profileAudioExtension("audio/mp3")).toBe("mp3");
+    expect(profileAudioExtension("audio/x-m4a")).toBe("m4a");
+    expect(profileAudioExtension("audio/x-wav")).toBe("wav");
+    expect(profileAudioExtension("audio/x-flac")).toBe("flac");
+    expect(profileAudioExtension("application/octet-stream", "voice.mp3")).toBe("mp3");
+    expect(profileAudioExtension("", "voice.m4a")).toBe("m4a");
+    expect(profileAudioExtension("audio/webm", "voice.mp3")).toBeNull();
   });
   it("checks file signatures rather than trusting the extension",()=>{
     expect(validProfileAudioBytes(new TextEncoder().encode("ID3xxxxx"),"mp3")).toBe(true);

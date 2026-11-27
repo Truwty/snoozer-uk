@@ -9,10 +9,26 @@ export const profileBackgroundVideoFormats = {
 
 export type ProfileBackgroundVideoExtension = keyof typeof profileBackgroundVideoFormats;
 
-export function profileBackgroundVideoExtension(value: string): ProfileBackgroundVideoExtension | null {
-  if (value === "video/mp4") return "mp4";
-  if (value === "video/webm") return "webm";
-  return null;
+const videoMimeAliases: Record<ProfileBackgroundVideoExtension, readonly string[]> = {
+  mp4: ["video/mp4", "video/x-m4v", "application/mp4"],
+  webm: ["video/webm", "audio/webm"],
+};
+
+const videoExtensionAliases: Record<string, ProfileBackgroundVideoExtension> = {
+  mp4: "mp4", m4v: "mp4",
+  webm: "webm",
+};
+
+export function profileBackgroundVideoExtension(value: string, fileName?: string): ProfileBackgroundVideoExtension | null {
+  const mime = value.split(";")[0].trim().toLowerCase();
+  for (const [extension, aliases] of Object.entries(videoMimeAliases) as [ProfileBackgroundVideoExtension, readonly string[]][]) {
+    if (aliases.includes(mime)) return extension;
+  }
+  const suffix = fileName?.toLowerCase().split(".").pop() ?? "";
+  const byFileName = videoExtensionAliases[suffix];
+  if (!byFileName) return null;
+  if (!mime || mime === "application/octet-stream" || mime === "binary/octet-stream") return byFileName;
+  return videoMimeAliases[byFileName].includes(mime) ? byFileName : null;
 }
 
 export function validProfileBackgroundVideoBytes(bytes: Uint8Array, extension: ProfileBackgroundVideoExtension) {

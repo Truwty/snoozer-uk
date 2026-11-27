@@ -87,7 +87,7 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | 7.15 | Bulk Edits | Deferred |
 | 7.16 | Asset Library Picker | Retained image reuse verified in disposable Supabase CI |
 | 7.17 | Contrast Inspector | Studio reports contrast for three link accent presets. Unit, SQL and provider browser tests passed |
-| 7.18 | Performance Budget Warnings | Studio gallery memory advisory verified in unit tests and disposable Supabase CI. Other budget metrics remain open |
+| 7.18 | Performance Budget Warnings | Profile Gallery memory advisory retired with the public gallery. Other budget metrics remain open |
 
 ## 8. LAYOUT AND THEME ENGINE
 
@@ -196,10 +196,10 @@ Deferred entries are implementation work. Milestone 4 scope/entitlement decision
 | ID | Capability | Status |
 | --- | --- | --- |
 | 12.1 | Avatar Cropper | Deferred |
-| 12.2 | Background Image | Select a processed image from the draft gallery as the profile-card background; preview and publication/history behavior verified in unit, SQL and disposable browser tests. A separate background upload pipeline is not used |
-| 12.3 | Background Video | Deferred |
-| 12.4 | Audio Uploads | Deferred |
-| 12.5 | Gallery And Folders | Image galleries and private folders verified in disposable Supabase CI |
+| 12.2 | Background Image | Direct upload button uses private image processing; draft revision refreshes before applying the background. Published media stays private until referenced by the current publication |
+| 12.3 | Background Video | Private MP4/WebM upload, signature validation, quota accounting and publication-gated serving added; disposable Supabase CI verification required before release |
+| 12.4 | Audio Uploads | Private audio library and multi-track profile playback implemented; browser MIME aliases normalised and server validates file signatures. Disposable Supabase CI verification required before release |
+| 12.5 | Gallery And Folders | Retired as a Studio/Profile feature. Private image assets remain for backgrounds, cover art and custom icons; Image Host remains separate |
 | 12.6 | Drag-And-Drop Uploads | Single-image drop and picker paths verified in disposable Supabase CI |
 | 12.7 | Resumable Multipart Uploads | Deferred |
 | 12.8 | Presigned Urls | Tested against disposable Supabase in CI |

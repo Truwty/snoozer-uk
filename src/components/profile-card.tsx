@@ -6,7 +6,7 @@ import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
-import { profileBackgroundImage, profileBackgroundVideoId, safeLink, type PublishedProfile } from "@/lib/profile";
+import { profileBackgroundImage, profileBackgroundVideoId, safeLink, safeProfileLink, type PublishedProfile } from "@/lib/profile";
 
 
 
@@ -26,6 +26,8 @@ type SocialLink = { label: string; url: string; index: number; providerId: Socia
 const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
 
 function directAudioSource(value: string) {
+  const internalPath = /^\/media\/audio\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
+  if (internalPath.test(value)) return value;
   try {
     const url = new URL(value);
     return url.protocol === "https:" && audioFilePattern.test(url.pathname) ? url.toString() : null;
@@ -458,7 +460,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+      .filter(({ url, hidden }) => safeProfileLink(url) && !hidden);
 
     const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
       const src = directAudioSource(url);
@@ -504,7 +506,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
             data-analytics-profile={preview ? undefined : profile.username}
             data-analytics-position={preview ? undefined : index + 1}>
             {imageSrc
-              // Gallery images are already processed and served through the public profile media route.
+              // Uploaded image assets are processed and served through the published profile media route.
               // eslint-disable-next-line @next/next/no-img-element
               ? <img className="profile-social-custom-icon" src={imageSrc} alt="" width={26} height={26} loading="lazy"/>
               : <span aria-hidden="true" className="profile-social-mark"><SocialProviderIcon providerId={providerId} /></span>}
@@ -574,21 +576,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience && !entered} />;
   }
 
-  function renderGallery() {
-    if (!galleryBase || profile.gallery.length === 0) return null;
-    const visible = profile.gallery.filter((item) => item.id !== (backgroundImage ? background?.id : undefined));
-    if (visible.length === 0) return null;
-    return <section className="profile-gallery">
-      {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
-      <ul className="profile-gallery-grid">
-        {visible.map((item) => <li key={item.id}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
-            width={item.width} height={item.height} loading="lazy" />
-        </li>)}
-      </ul>
-    </section>;
-  }
 
   function renderItem(item: ProfilePageLayoutItem, position: number) {
     let child: ReactNode;
@@ -596,14 +583,14 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     else if (item.type === "block") child = renderBlock(item.id);
     else if (item.type === "links") child = renderLinks();
     else if (item.type === "widgets") child = renderWidgets();
-    else child = renderGallery();
+    else child = null;
     if (!child) return null;
     return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type === "block" ? "block-" + item.id : item.type}
       item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
-  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
+  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeProfileLink(item.url) && Boolean(directAudioSource(item.url)));
 
   function enterProfile() {
     // Reveal the profile immediately in the same click that opens the native

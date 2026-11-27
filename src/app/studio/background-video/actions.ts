@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { profileRevisionNumber } from "@/lib/profile";
 import {
-  profileBackgroundVideoExtension, profileBackgroundVideoFinal, profileBackgroundVideoIncoming,
+  profileBackgroundVideoExtension, profileBackgroundVideoFormats, profileBackgroundVideoFinal, profileBackgroundVideoIncoming,
   profileBackgroundVideoMaxBytes, validProfileBackgroundVideoBytes,
 } from "@/lib/profile-background-video";
 import { requireAccount } from "@/lib/profiles-server";
@@ -27,20 +27,21 @@ function refresh() {
 }
 
 export async function startProfileBackgroundVideoUpload(
-  profileId: string, revision: number, contentType: string, bytes: number,
+  profileId: string, revision: number, contentType: string, bytes: number, fileName?: string,
 ) {
   if (!z.uuid().safeParse(profileId).success || !profileRevisionNumber.safeParse(revision).success
     || !Number.isInteger(bytes) || bytes < 12 || bytes > profileBackgroundVideoMaxBytes) {
     return { error: "Choose an MP4 or WebM clip up to 50 MB." };
   }
-  const extension = profileBackgroundVideoExtension(contentType);
+  const extension = profileBackgroundVideoExtension(contentType,fileName);
   if (!extension) return { error: "Choose an MP4 or WebM video file." };
 
+  const canonicalContentType = profileBackgroundVideoFormats[extension].contentType;
   const { user } = await requireAccount("/studio/customize");
   const admin = storageAdmin();
   const { data, error } = await admin.rpc("prepare_profile_background_video_upload", {
     p_owner: user.id, p_profile: profileId, p_expected: revision,
-    p_extension: extension, p_content_type: contentType, p_bytes: bytes,
+    p_extension: extension, p_content_type: canonicalContentType, p_bytes: bytes,
   });
   if (error?.code === "P1103") return { error: "You have reached the daily background video upload limit. Try again after midnight UTC." };
   if (error?.code === "P1104") return { error: "Your plan's media storage allowance has been reached." };
@@ -53,7 +54,7 @@ export async function startProfileBackgroundVideoUpload(
   const { data: signed, error: signError } = await admin.storage.from(profileBackgroundVideoIncoming)
     .createSignedUploadUrl(objectPath, { upsert: false });
   if (signError || !signed) return { error: "Could not prepare the private video upload. Try again." };
-  return { id: parsed.data.id, path: objectPath, token: signed.token, extension, contentType };
+  return { id: parsed.data.id, path: objectPath, token: signed.token, extension, contentType: canonicalContentType };
 }
 
 export async function finishProfileBackgroundVideoUpload(profileId: string, revision: number, id: string) {

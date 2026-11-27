@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { normalizeProfileLinks } from "../src/lib/profile-links";
 
 describe("normalizeProfileLinks", () => {
+  it("preserves valid same-origin uploaded audio paths", () => {
+    const path = "/media/audio/22222222-2222-4222-8222-222222222222.mp3";
+    expect(normalizeProfileLinks([
+      { label: "Uploaded audio", url: path, mode: "text" },
+    ])).toEqual([
+      { label: "Uploaded audio", url: path, mode: "text", hidden: false },
+    ]);
+  });
+
   it("normalises URLs and defaults link visibility without dropping optional presentation fields", () => {
     const iconId = "11111111-1111-4111-8111-111111111111";
     const audioCoverId = "22222222-2222-4222-8222-222222222222";

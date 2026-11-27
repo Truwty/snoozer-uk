@@ -13,8 +13,35 @@ export const profileAudioFormats = {
 
 export type ProfileAudioExtension = keyof typeof profileAudioFormats;
 
-export function profileAudioExtension(value: string): ProfileAudioExtension | null {
-  return Object.entries(profileAudioFormats).find(([,format])=>format.contentType===value)?.[0] as ProfileAudioExtension | undefined ?? null;
+const audioMimeAliases: Record<ProfileAudioExtension, readonly string[]> = {
+  mp3: ["audio/mpeg", "audio/mp3", "audio/x-mp3", "audio/mpeg3"],
+  m4a: ["audio/mp4", "audio/m4a", "audio/x-m4a", "audio/x-mp4"],
+  ogg: ["audio/ogg", "application/ogg"],
+  wav: ["audio/wav", "audio/x-wav", "audio/wave", "audio/vnd.wave"],
+  aac: ["audio/aac", "audio/x-aac"],
+  flac: ["audio/flac", "audio/x-flac"],
+};
+
+const audioExtensionAliases: Record<string, ProfileAudioExtension> = {
+  mp3: "mp3", mpga: "mp3", mpeg: "mp3",
+  m4a: "m4a", mp4: "m4a",
+  ogg: "ogg", oga: "ogg",
+  wav: "wav", wave: "wav",
+  aac: "aac",
+  flac: "flac",
+};
+
+export function profileAudioExtension(value: string, fileName?: string): ProfileAudioExtension | null {
+  const mime = value.split(";")[0].trim().toLowerCase();
+  for (const [extension, aliases] of Object.entries(audioMimeAliases) as [ProfileAudioExtension, readonly string[]][]) {
+    if (aliases.includes(mime)) return extension;
+  }
+
+  const suffix = fileName?.toLowerCase().split(".").pop() ?? "";
+  const byFileName = audioExtensionAliases[suffix];
+  if (!byFileName) return null;
+  if (!mime || mime === "application/octet-stream" || mime === "binary/octet-stream") return byFileName;
+  return audioMimeAliases[byFileName].includes(mime) ? byFileName : null;
 }
 
 export function validProfileAudioBytes(bytes: Uint8Array, extension: ProfileAudioExtension) {

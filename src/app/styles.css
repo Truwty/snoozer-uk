@@ -201,26 +201,7 @@ textarea { resize: vertical; }
 .discord-settings-fields:disabled { opacity: .6; }
 .discord-settings-panel form > p { max-width: 68ch; }
 
-.profile-gallery { display: grid; gap: .65rem; width: 100%; text-align: start; }
-.profile-gallery h2, .profile-gallery h3 { margin: 0; font-size: 1.1rem; }
-.profile-gallery-grid, .gallery-editor-grid { display: grid; gap: .65rem; list-style: none; margin: 0; padding: 0; }
-.profile-gallery-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
-.gallery-editor-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
-.background-image-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8rem), 1fr)); gap: .6rem; }
-.background-image-option { display: grid; align-content: start; gap: .45rem; min-width: 0; min-height: 7rem; padding: .5rem; border: 1px solid var(--edge); border-radius: .75rem; background: var(--ground); color: var(--ink); text-align: start; overflow-wrap: anywhere; }
-.background-image-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.background-image-option img { width: 100%; height: 5rem; object-fit: cover; border-radius: .45rem; }
-.background-image-none > span:first-child { display: grid; place-items: center; width: 100%; height: 5rem; border-radius: .45rem; background: linear-gradient(135deg, var(--midnight-swatch), var(--lagoon-swatch), var(--daybreak-swatch)); color: white; font-size: 1.5rem; font-weight: 750; }
-.media-folder-form { align-items: end; }
-.media-folder-settings { margin-top: 1rem; }
-.gallery-editor-grid li { min-width: 0; overflow-wrap: anywhere; }
-.gallery-image { display: block; width: 100%; height: auto; border-radius: var(--block-radius, .75rem); }
-.gallery-editor-grid .gallery-image { width: 100%; height: 10rem; object-fit: contain; background: var(--ground); }
 
-@media (max-width: 54rem) {
-  .hero { grid-template-columns: 1fr 1fr; min-height: 26rem; }
-  .hero-copy { gap: 1rem; }
-}
 @media (max-width: 39rem) {
   .hero, .steps, .editor-grid { grid-template-columns: minmax(0, 1fr); }
   .home-demo { margin: 0 .85rem .85rem; }
@@ -2379,15 +2360,7 @@ body:has(> .public-page[data-background-image="true"]) {
   background: rgb(255 255 255 / 5%);
   box-shadow: none;
 }
-.profile-card--bio-experience .profile-more-content .profile-gallery {
-  gap: .6rem;
-  margin-top: .55rem;
-  text-align: center;
-}
-.profile-card--bio-experience .profile-more-content .profile-gallery-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
-  gap: .45rem;
-}
+
 
 
 /* Keep the public bio stack centred even when the saved Studio layout is editorial. */

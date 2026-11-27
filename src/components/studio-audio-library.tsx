@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { supabaseConfig } from "@/lib/env";
 import { profileAudioIncoming } from "@/lib/profile-audio";
@@ -16,7 +15,8 @@ type Props={
   profileId:string;
   revision:number;
   gallery:GalleryImage[];
-  onAddTrack:(track:{title:string;artist:string;url:string;coverImageId?:string})=>void;
+  onAddTrack:(track:{title:string;artist:string;url:string;coverImageId?:string},revision?:number)=>void;
+  onAssetsChanged?:()=>number|void|Promise<number|void>;
 };
 
 const audioAccept=".mp3,.m4a,.ogg,.wav,.aac,.flac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac,audio/flac";
@@ -24,7 +24,7 @@ const subscribeToHydration = () => () => {};
 const getClientHydrationSnapshot = () => true;
 const getServerHydrationSnapshot = () => false;
 
-export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props){
+export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAssetsChanged}:Props){
   const [items,setItems]=useState<AudioItem[]>([]);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
@@ -42,7 +42,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const audioInput=useRef<HTMLInputElement>(null);
   const newCoverInput=useRef<HTMLInputElement>(null);
   const coverInput=useRef<HTMLInputElement>(null);
-  const router=useRouter();
 
   const reload=useCallback(async()=>{
     setLoading(true);
@@ -86,7 +85,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     if(newCoverInput.current)newCoverInput.current.value="";
   }
 
-  async function saveCoverAsset(file:File,description:string){
+  async function saveCoverAsset(file:File,description:string):Promise<{id:string;revision?:number}>{
     if(file.size<1||file.size>galleryMaxBytes||!galleryTypes.includes(file.type)){
       throw new Error("Choose a JPEG, PNG or WebP cover image up to 4 MB.");
     }
@@ -107,8 +106,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
       await discardGalleryUpload(profileId,revision,started.id);
       throw new Error(completed.error??"The cover image could not be saved.");
     }
-    router.refresh();
-    return started.id;
+    const latestRevision = await onAssetsChanged?.();
+    return {id:started.id,revision:typeof latestRevision==="number"?latestRevision:undefined};
   }
 
   async function uploadNewAudio(){
@@ -122,12 +121,12 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     setBusy(true);setError("");setMessage("");
     try{
       const cleanArtist="Unknown artist";
-      const started=await startProfileAudioUpload(profileId,revision,title.trim(),cleanArtist,audioFile.type,audioFile.size);
+      const started=await startProfileAudioUpload(profileId,revision,title.trim(),cleanArtist,audioFile.type,audioFile.size,audioFile.name);
       if("error" in started){setError(started.error??"Could not prepare the audio upload. Try again.");return;}
       const config=supabaseConfig();
       const browser=createBrowserClient(config.url,config.key);
       const {error:uploadError}=await browser.storage.from(profileAudioIncoming)
-        .uploadToSignedUrl(started.path,started.token,audioFile,{contentType:audioFile.type,upsert:false});
+        .uploadToSignedUrl(started.path,started.token,audioFile,{contentType:started.contentType,upsert:false});
       if(uploadError){
         await discardProfileAudioUpload(profileId,revision,started.id);
         setError("The audio file could not be uploaded. Check its format and try again.");
@@ -137,15 +136,18 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
       if("error" in completed){setError(completed.error??"The audio file could not be saved.");return;}
 
       let coverImageId:string|undefined;
+      let coverRevision:number|undefined;
       let coverWarning="";
       if(newCoverFile){
         try{
-          coverImageId=await saveCoverAsset(newCoverFile,"Audio cover art — "+title.trim());
+          const coverAsset=await saveCoverAsset(newCoverFile,"Audio cover art — "+title.trim());
+          coverImageId=coverAsset.id;
+          coverRevision=coverAsset.revision;
         }catch(reason){
           coverWarning=reason instanceof Error?reason.message:"The cover image could not be saved.";
         }
       }
-      onAddTrack({title:completed.title,artist:completed.artist,url:completed.url,...(coverImageId?{coverImageId}:{})});
+      onAddTrack({title:completed.title,artist:completed.artist,url:completed.url,...(coverImageId?{coverImageId}:{})},coverRevision);
       await reload();
       setAddOpen(false);
       resetAddForm();
@@ -160,8 +162,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     if(coverBusy)return;
     setCoverBusy(true);setError("");setMessage("");
     try{
-      const id=await saveCoverAsset(file,"Audio cover art — "+item.title);
-      setCover(current=>({...current,[item.id]:id}));
+      const asset=await saveCoverAsset(file,"Audio cover art — "+item.title);
+      setCover(current=>({...current,[item.id]:asset.id}));
       setMessage("Cover artwork added. Select it when adding this track to your profile.");
     }catch(reason){
       setError(reason instanceof Error?reason.message:"The cover image could not be saved.");

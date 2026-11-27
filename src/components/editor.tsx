@@ -5,7 +5,6 @@ import { createBrowserClient } from "@supabase/ssr";
 import { StudioAudioLibrary } from "@/components/studio-audio-library";
 import { StudioBackgroundUploader } from "@/components/studio-background-uploader";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { galleryMemoryWarning } from "@/lib/gallery-budget";
 import { galleryIncoming, galleryMaxBytes, galleryTypes, type GalleryItem } from "@/lib/gallery";
 import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
 import { supabaseConfig } from "@/lib/env";
@@ -56,7 +55,7 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "block-quote", label: "Quote block", description: "Add a styled quotation", symbol: "“" },
 ];
 
-export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOffer = null, imageHostActive = false, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; imageHostOffer?: { price_id:string; currency:"eur"; unit_amount:499 } | null; imageHostActive?: boolean; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
+export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, imageHostActive = false, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; imageHostOffer?: { price_id:string; currency:"eur"; unit_amount:499 } | null; imageHostActive?: boolean; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, refreshSaved, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
@@ -83,7 +82,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
   const removeAvatar = edits?.removeAvatar ?? false;
   const customColours = content.appearance.colors ?? {};
   const previewGallery = [...saved.gallery, ...uploadedBackgroundImages.filter((image) => !saved.gallery.some((savedImage) => savedImage.id === image.id))];
-  const galleryWarning = galleryMemoryWarning(saved.gallery);
   const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
   const { list: linkList, dropIndex: linkDropIndex, handle: linkHandle } = usePointerReorder(content.links, move);
 
@@ -133,14 +131,20 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
     setTemplateId("");
   }
 
-  function setBackgroundImage(id?: string) {
-    const appearance = { ...content.appearance };
-    delete appearance.backgroundImage;
-    if (id) {
-      delete appearance.backgroundVideo;
-      appearance.backgroundImage = id;
-    }
-    set("appearance", appearance);
+  function setBackgroundImage(id?: string, revisionOverride?: number) {
+    edit((current) => {
+      const appearance = { ...current.content.appearance };
+      delete appearance.backgroundImage;
+      if (id) {
+        delete appearance.backgroundVideo;
+        appearance.backgroundImage = id;
+      }
+      return {
+        ...current,
+        ...(typeof revisionOverride === "number" ? { revision: revisionOverride } : {}),
+        content: { ...current.content, appearance },
+      };
+    });
   }
 
   function setBackgroundVideo(id?: string) {
@@ -504,7 +508,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
           <div className="studio-assets-heading">
             <div><p className="eyebrow">PROFILE ASSETS</p><h2 id="studio-assets-title">Assets Uploader</h2>
               <p className="muted">Upload and manage the four assets used by your published profile.</p></div>
-            <Link className="button small" href={galleryHref}>Manage Image Host ↗</Link>
+            <Link className="button small" href="/studio/image-host">Open Image Host ↗</Link>
           </div>
           {effectTier === "free" && <div className="studio-assets-premium">
             <div><strong>Make your page stand out</strong><p>Unlock more profile effects and media capacity with Snoozer Premium.</p></div>
@@ -523,8 +527,13 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
                 backgroundVideo={content.appearance.backgroundVideo}
                 onSelectImage={setBackgroundImage}
                 onSelectVideo={setBackgroundVideo}
-                onImageAdded={(image) => setUploadedBackgroundImages((current) =>
-                  [...current.filter((item) => item.id !== image.id), image])}
+                onImageAdded={async (image) => {
+                  setUploadedBackgroundImages((current) =>
+                    [...current.filter((item) => item.id !== image.id), image]);
+                  // Image processing increments the profile revision; refresh before autosaving its background selection.
+                  const latest = await refreshSaved();
+                  return latest.revision;
+                }}
               />
             </article>
             <article className="studio-asset-card studio-asset-audio">
@@ -535,17 +544,31 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
               <StudioAudioLibrary
                 profileId={saved.profile_id}
                 revision={saved.revision}
-                gallery={saved.gallery.map(({id,alt})=>({id,alt}))}
-                onAddTrack={(track) => {
-                  if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
-                  set("links",[...content.links,{
+                gallery={previewGallery.map(({id,alt})=>({id,alt}))}
+                onAssetsChanged={async () => (await refreshSaved()).revision}
+                onAddTrack={(track, revisionOverride) => {
+                  let limitReached = false;
+                  const link = {
                     label:track.title+" — "+track.artist,
                     url:track.url,
-                    mode:"text",
+                    mode:"text" as const,
                     hidden:false,
                     ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
-                  }]);
-                  setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+                  };
+                  edit((current) => {
+                    if (current.content.links.length >= linkLimit) {
+                      limitReached = true;
+                      return current;
+                    }
+                    return {
+                      ...current,
+                      ...(typeof revisionOverride === "number" ? { revision: revisionOverride } : {}),
+                      content: { ...current.content, links: [...current.content.links, link] },
+                    };
+                  });
+                  setAnnouncement(limitReached
+                    ? "Your current plan has reached its profile link limit."
+                    : "Track added to your profile draft. Save and publish to make it public.");
                 }}
               />
             </article>
@@ -558,7 +581,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
             <article className="studio-asset-card studio-asset-cursor">
               <div className="studio-asset-card-top"><span className="studio-asset-icon" aria-hidden="true">⌖</span><span className="studio-asset-kind">04 / CUSTOM CURSOR</span></div>
               <div className="studio-asset-preview studio-asset-cursor-preview">
-                {content.appearance.customCursorImage && saved.gallery.some((image)=>image.id===content.appearance.customCursorImage)
+                {content.appearance.customCursorImage && previewGallery.some((image)=>image.id===content.appearance.customCursorImage)
                   ? <img src={"/studio/gallery/image/"+content.appearance.customCursorImage} alt="" loading="lazy"/>
                   : <div className="studio-asset-placeholder"><span aria-hidden="true">↖</span><strong>Default cursor</strong></div>}
               </div>
@@ -567,10 +590,10 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
               <label>Cursor image
                 <select value={content.appearance.customCursorImage??""} onChange={(event)=>set("appearance",{...content.appearance,customCursorImage:event.target.value||undefined})}>
                   <option value="">Use standard cursor</option>
-                  {saved.gallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Gallery image"}</option>)}
+                  {previewGallery.map((image)=><option key={image.id} value={image.id}>{image.alt||"Uploaded image"}</option>)}
                 </select>
               </label>
-              <Link className="button small" href={galleryHref}>Upload cursor image</Link>
+              <p className="muted">Upload an image with the Background button above, then select it here.</p>
             </article>
           </div>
         </section>
@@ -730,7 +753,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
             ref={(input) => { linkLabels.current[index] = input; }}
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
-          <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
+          <label>Link {index + 1} URL<input required type="text" inputMode="url" autoComplete="url" maxLength={2048} placeholder="https:// or uploaded audio path"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
           <label>Display mode
             <select value={item.mode ?? "icon"} onChange={(event) => {
@@ -746,7 +769,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
               <select value={item.iconImage ?? ""} onChange={(event) =>
                 set("links", content.links.map((entry, i) => i === index ? { ...entry, iconImage: event.target.value || undefined } : entry))}>
                 <option value="">Use detected platform icon</option>
-                {saved.gallery.map((image) => <option key={image.id} value={image.id}>{image.alt || "Gallery image"}</option>)}
+                {previewGallery.map((image) => <option key={image.id} value={image.id}>{image.alt || "Uploaded image"}</option>)}
               </select>
             </label>
           ) : null}
@@ -865,11 +888,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
           </select>
         </label>
       </div>
-      {galleryWarning && <section className="panel stack gallery-budget" aria-labelledby="gallery-budget-title">
-        <h2 id="gallery-budget-title">Gallery may use more memory on phones</h2>
-        <p>Estimated image memory after decoding is {galleryWarning} MiB. Use fewer or smaller images to reduce it.</p>
-        <div><Link className="button small" href={galleryHref}>Manage gallery images</Link></div>
-      </section>}
       <div className={"preview-card preview-" + previewSize + (dropActive ? " is-drop-active" : "")}>
         <ProfileCard preview galleryBase="/studio/gallery/image" profile={template ? {
           ...saved, ...content, gallery: previewGallery, theme: template.theme, appearance: { ...content.appearance, ...template.appearance },
@@ -882,7 +900,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
             else if (item.type === "block") setTab("Blocks");
             else if (item.type === "links") setTab("Links");
             else if (item.type === "widgets") setTab("Widgets");
-            else window.location.assign(galleryHref);
+            else setTab("Design");
           }} />
         {dropActive && <div className="preview-drop-overlay" aria-hidden="true"><span>Drop to add to your page</span></div>}
       </div>

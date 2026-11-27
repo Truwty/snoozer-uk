@@ -10,6 +10,11 @@ describe("profile background video uploads", () => {
     expect(profileBackgroundVideoExtension("video/webm")).toBe("webm");
     expect(profileBackgroundVideoExtension("video/quicktime")).toBeNull();
     expect(profileBackgroundVideoExtension("application/octet-stream")).toBeNull();
+    expect(profileBackgroundVideoExtension("video/x-m4v")).toBe("mp4");
+    expect(profileBackgroundVideoExtension("", "phone-clip.mp4")).toBe("mp4");
+    expect(profileBackgroundVideoExtension("application/octet-stream", "clip.m4v")).toBe("mp4");
+    expect(profileBackgroundVideoExtension("", "clip.webm")).toBe("webm");
+    expect(profileBackgroundVideoExtension("video/quicktime", "clip.mp4")).toBeNull();
   });
 
   it("checks MP4 and WebM container signatures rather than trusting the file name", () => {
