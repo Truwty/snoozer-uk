@@ -23,6 +23,8 @@ function orderOf(items: readonly object[]) {
 export function usePointerReorder<T extends object>(items: readonly T[], move: (from: number, to: number) => void) {
   const list = useRef<HTMLFieldSetElement>(null);
   const drag = useRef<PointerDrag | null>(null);
+  const latest = useRef({ items, move });
+  latest.current = { items, move };
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
       if (drag.current) window.cancelAnimationFrame(drag.current.frame);
       const touch = event.touches[0];
       const from = Number(card.dataset.reorderIndex);
-      if (!items[from]) return;
+      if (!latest.current.items[from]) return;
       if (event.cancelable) event.preventDefault();
       drag.current = {
         pointer: -1, pointerType: "touch", from, order: orderOf(items),
@@ -74,7 +76,7 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
       document.removeEventListener("touchcancel", onTouchCancel, true);
       if (drag.current) window.cancelAnimationFrame(drag.current.frame);
     };
-  }, [items, move]);
+  }, []);
 
   function sectionAt(x: number, y: number) {
     const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-reorder-index]");
@@ -127,11 +129,12 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     drag.current = null;
     window.cancelAnimationFrame(active.frame);
     setDropIndex(null);
-    if (!commit || !active.active || orderOf(items) !== active.order) return;
+    const current = latest.current;
+    if (!commit || !active.active || orderOf(current.items) !== active.order) return;
     // Use the last tracked move position. Touch pointer-up can report stale or
     // zero coordinates while pointer capture is active.
     const destination = sectionAt(active.x, active.y);
-    if (destination !== null) move(active.from, destination);
+    if (destination !== null) current.move(active.from, destination);
   }
 
   function finishDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
