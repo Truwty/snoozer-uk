@@ -574,21 +574,6 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     return <InteractiveProfileWidgets widgets={profile.widgets} username={profile.username} preview={preview} reportBaseUrl={reportBaseUrl} hideGuestbook={entryExperience && !entered} />;
   }
 
-  function renderGallery() {
-    if (!galleryBase || profile.gallery.length === 0) return null;
-    const visible = profile.gallery.filter((item) => item.id !== (backgroundImage ? background?.id : undefined));
-    if (visible.length === 0) return null;
-    return <section className="profile-gallery">
-      {preview ? <h3>Gallery</h3> : <h2>Gallery</h2>}
-      <ul className="profile-gallery-grid">
-        {visible.map((item) => <li key={item.id}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="gallery-image" src={galleryBase + "/" + item.id} alt={item.alt}
-            width={item.width} height={item.height} loading="lazy" />
-        </li>)}
-      </ul>
-    </section>;
-  }
 
   function renderItem(item: ProfilePageLayoutItem, position: number) {
     let child: ReactNode;
@@ -596,7 +581,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     else if (item.type === "block") child = renderBlock(item.id);
     else if (item.type === "links") child = renderLinks();
     else if (item.type === "widgets") child = renderWidgets();
-    else child = renderGallery();
+    else child = null;
     if (!child) return null;
     return <LayoutBlock key={item.type === "section" ? "section-" + item.index : item.type === "block" ? "block-" + item.id : item.type}
       item={item} position={position} total={layout.items.length} preview={preview} onMove={onMoveLayoutItem}
