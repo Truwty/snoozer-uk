@@ -753,7 +753,7 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
           <label>Link {index + 1} label<input required maxLength={80} value={item.label}
             ref={(input) => { linkLabels.current[index] = input; }}
             onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, label: event.target.value } : entry))} /></label>
-          <label>Link {index + 1} URL<input required type="url" maxLength={2048} placeholder="https://"
+          <label>Link {index + 1} URL<input required type="text" inputMode="url" autoComplete="url" maxLength={2048} placeholder="https:// or uploaded audio path"
             value={item.url} onChange={(event) => set("links", content.links.map((entry, i) => i === index ? { ...entry, url: event.target.value } : entry))} /></label>
           <label>Display mode
             <select value={item.mode ?? "icon"} onChange={(event) => {
