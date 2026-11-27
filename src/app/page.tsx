@@ -37,7 +37,7 @@ export default async function Home() {
           <p className="home-hero-note"><span aria-hidden="true">✓</span> {copy.hero.note}</p>
         </div>
         <div className="home-hero-showcase" data-reveal="up">
-          <HomeProfileDemo />
+          <HomeProfileDemo locale={locale} />
         </div>
       </section>
 
