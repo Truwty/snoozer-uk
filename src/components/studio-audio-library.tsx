@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
@@ -20,12 +20,15 @@ type Props={
 };
 
 const audioAccept=".mp3,.m4a,.ogg,.wav,.aac,.flac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac,audio/flac";
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props){
   const [items,setItems]=useState<AudioItem[]>([]);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
-  const [portalReady,setPortalReady]=useState(false);
+  const portalReady=useSyncExternalStore(subscribeToHydration,getClientHydrationSnapshot,getServerHydrationSnapshot);
   const [managerOpen,setManagerOpen]=useState(false);
   const [addOpen,setAddOpen]=useState(false);
   const [title,setTitle]=useState("");
@@ -40,8 +43,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const newCoverInput=useRef<HTMLInputElement>(null);
   const coverInput=useRef<HTMLInputElement>(null);
   const router=useRouter();
-
-  useEffect(()=>setPortalReady(true),[]);
 
   const reload=useCallback(async()=>{
     setLoading(true);
