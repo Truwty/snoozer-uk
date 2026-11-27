@@ -127,6 +127,29 @@ test("profile analytics requires consent, counts link clicks and exports only to
     });
     await publicPage.goto("/" + name);
     await enterPublicBio(publicPage);
+    const socialLayout = await publicPage.locator(".profile-social-links").evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        display: style.display,
+        justifyContent: style.justifyContent,
+        alignItems: style.alignItems,
+        flexWrap: style.flexWrap,
+        backgroundColor: style.backgroundColor,
+        borderWidth: style.borderTopWidth,
+        paddingBlockStart: style.paddingBlockStart,
+        height: node.getBoundingClientRect().height,
+      };
+    });
+    expect(socialLayout).toMatchObject({
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      flexWrap: "wrap",
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      borderWidth: "0px",
+      paddingBlockStart: "2.4px",
+    });
+    expect(socialLayout.height).toBeLessThan(52);
     await publicPage.getByText("Analytics preferences", { exact: true }).click();
     expect(await read()).toEqual([]);
     expect(events).toHaveLength(0);
