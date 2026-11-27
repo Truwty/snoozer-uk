@@ -738,6 +738,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Design");
     await page.getByLabel("Theme").selectOption("daybreak");
     await expect(designPreview.locator(".profile-card")).toHaveClass(/theme-daybreak/);
+    await page.getByLabel("Link colour").selectOption("mint");
     await page.getByLabel("Background Effects").selectOption("gradient");
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
@@ -910,6 +911,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const bioCard = publicPage.locator(".profile-card");
     await expect(bioCard).toHaveClass(/profile-card--bio-experience/);
     await expect(bioCard).toHaveClass(/theme-daybreak/);
+    await expect(publicPage.locator(".profile-links")).toHaveAttribute("style", /--link-background/);
     await expect(bioCard).toHaveAttribute("data-layout", "centred");
     await expect(bioCard).toHaveAttribute("data-density", "airy");
     await expect(bioCard).toHaveCSS("text-align", "center");
