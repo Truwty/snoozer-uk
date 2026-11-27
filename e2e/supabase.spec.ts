@@ -560,8 +560,9 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(qrDialog.locator("svg#snoozer-profile-qr-svg")).toBeVisible();
     await expect(qrDialog.getByRole("button", { name: "Download PNG", exact: true })).toBeVisible();
     await expect(qrDialog.getByRole("button", { name: "Download SVG", exact: true })).toBeVisible();
-    await qrDialog.getByRole("button", { name: "Close QR code" }).click();
     await expect(qrDialog.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
+    await qrDialog.getByRole("button", { name: "Close QR code" }).click();
+    await expect(shareDialog.getByRole("button", { name: "Copy URL", exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
