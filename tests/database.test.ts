@@ -63,6 +63,9 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
         expect(await published("legacy")).toMatchObject({ display_name: "Legacy profile", links: [{ label: "Work" }] });
       }
     }
+    expect((await db.query<{count:number}>(
+      "select count(*)::integer as count from snoozer.badge_catalog where slug='image-host-owner' and enabled",
+    )).rows[0]?.count).toBe(1);
   });
 
   afterAll(async () => { await db?.close(); });
@@ -3286,6 +3289,11 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await act("authenticated",alice);
     await claim("image-host-badge");
     await db.exec("reset role");
+    // TRUNCATE profiles CASCADE also clears badge_catalog via its optional
+    // unique_profile_id FK, so restore the migration-seeded catalogue fixture.
+    await db.query(
+      "insert into snoozer.badge_catalog(slug,name,description,icon,category,rarity,award_mode,criterion_key,enabled,sort_order) values('image-host-owner','Image Host','Lifetime Image Host access is active on this Snoozer account.','▧','premium','epic','automatic','image_host_purchase',true,161) on conflict(slug) do nothing",
+    );
     const profile=await result<string>("select id::text as value from snoozer.profiles where owner_id=$1",[alice]);
     expect(profile).toBeTruthy();
 
