@@ -9,7 +9,7 @@ import {
   discardProfileBackgroundVideoUpload, finishProfileBackgroundVideoUpload,
   loadProfileBackgroundVideos, startProfileBackgroundVideoUpload,
 } from "@/app/studio/background-video/actions";
-import type { ProfileBackgroundVideoExtension } from "@/lib/profile-background-video";
+import { profileBackgroundVideoExtension, type ProfileBackgroundVideoExtension } from "@/lib/profile-background-video";
 
 type BackgroundVideoItem = {
   id: string;
@@ -30,7 +30,7 @@ type Props = {
   onImageAdded: (image: GalleryItem) => void;
 };
 
-const videoAccept = ".mp4,.webm,video/mp4,video/webm";
+const videoAccept = ".mp4,.m4v,.webm,video/mp4,video/webm";
 
 export function StudioBackgroundUploader({
   profileId, revision, gallery, backgroundImage, backgroundVideo,
@@ -73,7 +73,7 @@ export function StudioBackgroundUploader({
       const config = supabaseConfig();
       const browser = createBrowserClient(config.url, config.key);
       const { error: uploadError } = await browser.storage.from(galleryIncoming)
-        .uploadToSignedUrl(started.path, started.token, file, { contentType: file.type, upsert: false });
+        .uploadToSignedUrl(started.path, started.token, file, { contentType: started.contentType, upsert: false });
       if (uploadError) {
         await discardGalleryUpload(profileId, revision, started.id);
         stagedId = undefined;
@@ -106,14 +106,14 @@ export function StudioBackgroundUploader({
       setError("Choose an MP4 or WebM background clip between 12 bytes and 50 MB.");
       return;
     }
-    if (file.type !== "video/mp4" && file.type !== "video/webm") {
+    if (!profileBackgroundVideoExtension(file.type,file.name)) {
       setError("Choose an MP4 or WebM video file.");
       return;
     }
     setBusy("video"); setError(""); setMessage("");
     let stagedId: string | undefined;
     try {
-      const started = await startProfileBackgroundVideoUpload(profileId, revision, file.type, file.size);
+      const started = await startProfileBackgroundVideoUpload(profileId, revision, file.type, file.size, file.name);
       if ("error" in started) {
         setError(started.error ?? "Could not prepare the background video upload.");
         return;
