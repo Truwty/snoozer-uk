@@ -40,7 +40,7 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
       if (!latest.current.items[from]) return;
       if (event.cancelable) event.preventDefault();
       drag.current = {
-        pointer: -1, pointerType: "touch", from, order: orderOf(items),
+        pointer: -1, pointerType: "touch", from, order: orderOf(latest.current.items),
         startY: touch.clientY, x: touch.clientX, y: touch.clientY, active: false, frame: 0,
       };
     };
