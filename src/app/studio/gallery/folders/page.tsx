@@ -5,5 +5,6 @@ export const metadata = { title: "Customize profile", robots: { index: false, fo
 
 export default async function RemovedGalleryPage({ searchParams }: { searchParams: Promise<StudioProfileQuery> }) {
   const { profile } = await searchParams;
-  redirect(studioHref("/studio/customize", profile));
+  const selectedProfile = Array.isArray(profile) ? profile[0] : profile;
+  redirect(studioHref("/studio/customize", selectedProfile));
 }
