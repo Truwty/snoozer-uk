@@ -1,8 +1,10 @@
-# Supabase Auth signup hook rollout
+# Supabase Auth signup hook
+
+**Reviewed:** 27 November 2026. The SQL hook migration is present in the connected project's migration history; enabling the Auth Dashboard hook is a separate provider configuration step.
 
 The email registration setting already blocks email/password signup in the app, but it cannot alone prevent newly created Discord OAuth users. The new optional **Before User Created** Auth hook enforces the same Owner-controlled flag in the Auth provider **before creating a user**.
 
-1. Apply `20261122073000_owner_signup_hook.sql` to the intended Supabase project and check that `public.snoozer_before_user_created(jsonb)` exists and only `supabase_auth_admin` has execute permission.
+1. Apply `20261122082136_owner_signup_hook.sql` to the intended Supabase project and check that `public.snoozer_before_user_created(jsonb)` exists and only `supabase_auth_admin` has execute permission.
 2. Open Supabase Dashboard → Authentication → Hooks → Before User Created. Select PostgreSQL function `public.snoozer_before_user_created`, enable and save. This Auth configuration step is required because applying SQL alone does **not** activate the hook.
 3. With registrations enabled, test both email/password signup and a new Discord identity in staging. With registrations disabled, confirm new registrations by either method fail *before* the Auth account appears; existing email and Discord sign-ins must still succeed. Restore enabled and retest.
 4. Use `/owner/settings` to operate the setting with AAL2 MFA, a reason and an audit entry. The disabled state rejects *all* new Supabase Auth users, not only Discord. Do not enable this hook in a different Supabase project without reproducing these checks.
@@ -11,5 +13,4 @@ Do not rely on the app callback alone for signup enforcement. On self-hosted Sup
 
 Source: https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook
 
-## CI baseline verification
-The shared legal-disclosure baseline was repaired on main in [PR #55](https://github.com/Truwty/snoozer-uk/pull/55). This branch must pass the full GitHub Actions suite against that corrected base before being merged.
+**Hosted configuration note:** the connected database migration registry includes the signup-hook migration. The Supabase Auth Dashboard's Before User Created hook enablement state was not readable through the connected provider tools during this audit. An operator should confirm that it points to `public.snoozer_before_user_created` before relying on provider-level registration blocking.
