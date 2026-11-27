@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 
 type PointerDrag = {
   pointer: number;
@@ -25,9 +25,56 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
   const drag = useRef<PointerDrag | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
-  useEffect(() => () => {
-    if (drag.current) window.cancelAnimationFrame(drag.current.frame);
-  }, []);
+  useEffect(() => {
+    const onTouchStart = (event: globalThis.TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const handle = target.closest(".reorder-handle");
+      const card = handle?.closest<HTMLElement>("[data-reorder-index]");
+      if (!handle || !card || !list.current?.contains(card) || event.touches.length !== 1) return;
+      if (drag.current) window.cancelAnimationFrame(drag.current.frame);
+      const touch = event.touches[0];
+      const from = Number(card.dataset.reorderIndex);
+      if (!items[from]) return;
+      if (event.cancelable) event.preventDefault();
+      drag.current = {
+        pointer: -1, pointerType: "touch", from, order: orderOf(items),
+        startY: touch.clientY, x: touch.clientX, y: touch.clientY, active: false, frame: 0,
+      };
+    };
+    const onTouchMove = (event: globalThis.TouchEvent) => {
+      const active = drag.current;
+      const touch = event.touches[0];
+      if (!active || active.pointerType !== "touch" || !touch) return;
+      if (event.cancelable) event.preventDefault();
+      updatePosition(active, touch.clientX, touch.clientY);
+    };
+    const onTouchEnd = (event: globalThis.TouchEvent) => {
+      const active = drag.current;
+      if (!active || active.pointerType !== "touch") return;
+      const touch = event.changedTouches[0];
+      if (touch) {
+        active.x = touch.clientX;
+        active.y = touch.clientY;
+      }
+      finishActiveDrag(active, true);
+    };
+    const onTouchCancel = () => {
+      const active = drag.current;
+      if (active?.pointerType === "touch") finishActiveDrag(active, false);
+    };
+    document.addEventListener("touchstart", onTouchStart, { capture: true, passive: false });
+    document.addEventListener("touchmove", onTouchMove, { capture: true, passive: false });
+    document.addEventListener("touchend", onTouchEnd, { capture: true, passive: false });
+    document.addEventListener("touchcancel", onTouchCancel, { capture: true, passive: false });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart, true);
+      document.removeEventListener("touchmove", onTouchMove, true);
+      document.removeEventListener("touchend", onTouchEnd, true);
+      document.removeEventListener("touchcancel", onTouchCancel, true);
+      if (drag.current) window.cancelAnimationFrame(drag.current.frame);
+    };
+  }, [items, move]);
 
   function sectionAt(x: number, y: number) {
     const card = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-reorder-index]");
@@ -70,39 +117,10 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     };
   }
 
-  function beginTouchDrag(event: TouchEvent<HTMLSpanElement>) {
-    if (event.touches.length === 0) return;
-    // Some touch emulators dispatch pointerdown before touchstart. Transfer
-    // the gesture to the TouchEvent path so pointercancel/lostcapture cannot
-    // discard the drop before touchend.
-    if (drag.current) {
-      window.cancelAnimationFrame(drag.current.frame);
-      drag.current = null;
-      setDropIndex(null);
-    }
-    const touch = event.touches[0];
-    const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
-    const index = Number(card?.dataset.reorderIndex);
-    if (!items[index]) return;
-    event.preventDefault();
-    drag.current = {
-      pointer: -1, pointerType: "touch", from: index, order: orderOf(items),
-      startY: touch.clientY, x: touch.clientX, y: touch.clientY, active: false, frame: 0,
-    };
-  }
-
   function moveDrag(event: PointerEvent<HTMLSpanElement>) {
     const active = drag.current;
     if (!active || active.pointer !== event.pointerId) return;
     updatePosition(active, event.clientX, event.clientY);
-  }
-
-  function moveTouchDrag(event: TouchEvent<HTMLSpanElement>) {
-    const active = drag.current;
-    const touch = event.touches[0];
-    if (!active || active.pointerType !== "touch" || !touch) return;
-    event.preventDefault();
-    updatePosition(active, touch.clientX, touch.clientY);
   }
 
   function finishActiveDrag(active: PointerDrag, commit: boolean) {
@@ -122,27 +140,12 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     finishActiveDrag(active, commit);
   }
 
-  function finishTouchDrag(event: TouchEvent<HTMLSpanElement>, commit: boolean) {
-    const active = drag.current;
-    if (!active || active.pointerType !== "touch") return;
-    const touch = event.changedTouches[0];
-    if (touch) {
-      active.x = touch.clientX;
-      active.y = touch.clientY;
-    }
-    finishActiveDrag(active, commit);
-  }
-
   const handle = {
     onPointerDown: beginDrag,
     onPointerMove: moveDrag,
     onPointerUp: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, true),
     onPointerCancel: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, false),
     onLostPointerCapture: (event: PointerEvent<HTMLSpanElement>) => finishDrag(event, false),
-    onTouchStart: beginTouchDrag,
-    onTouchMove: moveTouchDrag,
-    onTouchEnd: (event: TouchEvent<HTMLSpanElement>) => finishTouchDrag(event, true),
-    onTouchCancel: (event: TouchEvent<HTMLSpanElement>) => finishTouchDrag(event, false),
   };
 
   return { list, dropIndex, handle };
