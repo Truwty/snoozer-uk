@@ -9,8 +9,8 @@ import { galleryIncoming, galleryMaxBytes, galleryTypes } from "@/lib/gallery";
 import { startGalleryUpload, finishGalleryUpload, discardGalleryUpload } from "@/app/studio/gallery/actions";
 import { supabaseConfig } from "@/lib/env";
 import { safeLink } from "@/lib/safe-link";
-import { type DraftProfile, type ProfileContent } from "@/lib/profile";
-import { defaultEffects, effectBackgrounds, effectTexts, type EffectTier, type ProfileEffects } from "@/lib/profile-effects";
+import { profileCorners, profileDensities, profileEntrances, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
+import type { EffectTier } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
 import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
 import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
@@ -21,6 +21,7 @@ import type { PublicationSchedule } from "@/lib/publication-schedule";
 import { Unpublish } from "./unpublish";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { EffectsEditor } from "./effects-editor";
 import { ImageHostPurchase } from "@/components/image-host-purchase";
 import { SocialProviderIcon } from "./social-provider-icon";
 import { TextSectionsEditor } from "./text-sections-editor";
@@ -358,7 +359,7 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
 
   return <div className="studio-workspace" onPointerMove={trackBlockPointerDrag} onPointerUp={finishBlockPointerDrag} onPointerCancel={cancelBlockPointerDrag}>
     <header className="editor-topbar">
-      <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Offline · Draft only" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p></div>
+      <div><strong>@{saved.username}</strong><p className="muted" aria-live="polite">{pending ? "Saving…" : edits ? "Unsaved changes" : saved.published_revision === null ? "Draft only · Not live yet" : saved.revision === saved.published_revision ? "Live · Up to date" : "Live · Unpublished changes"}</p><p className="editor-publish-hint">Drafts save privately. Publish page to update the profile visitors see.</p></div>
       <div className="actions">
         {saved.published_revision !== null && <><Link className="button small" href={`/${saved.username}`}>View live page ↗</Link><CopyLink path={`/${saved.username}`} /></>}
         <div className="actions" aria-label="Editing history" role="group">
@@ -432,6 +433,50 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
       </fieldset>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Design" id="editor-panel-Design" data-editor-panel="Design" hidden={tab !== "Design"} className="editor-panel stack">
+        <fieldset className="stack studio-reference-customization studio-profile-style-controls">
+          <legend className="section-title">Profile Style</legend>
+          <div className="studio-reference-customization-grid">
+            <label>Theme
+              <select aria-label="Theme" value={content.theme}
+                onChange={(event)=>set("theme",event.target.value as typeof themes[number])}>
+                {themes.map((theme)=><option key={theme} value={theme}>{theme[0].toUpperCase()+theme.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Profile layout
+              <select aria-label="Profile layout" value={content.appearance.layout}
+                onChange={(event)=>set("appearance",{...content.appearance,layout:event.target.value as typeof profileLayouts[number]})}>
+                {profileLayouts.map((layout)=><option key={layout} value={layout}>{layout==="centred"?"Centred card":layout[0].toUpperCase()+layout.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Profile density
+              <select aria-label="Profile density" value={content.appearance.density}
+                onChange={(event)=>set("appearance",{...content.appearance,density:event.target.value as typeof profileDensities[number]})}>
+                {profileDensities.map((density)=><option key={density} value={density}>{density[0].toUpperCase()+density.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Profile corners
+              <select aria-label="Profile corners" value={content.appearance.corners}
+                onChange={(event)=>set("appearance",{...content.appearance,corners:event.target.value as typeof profileCorners[number]})}>
+                {profileCorners.map((corners)=><option key={corners} value={corners}>{corners[0].toUpperCase()+corners.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Background entrance
+              <select aria-label="Background entrance" value={content.appearance.entrance}
+                onChange={(event)=>set("appearance",{...content.appearance,entrance:event.target.value as typeof profileEntrances[number]})}>
+                {profileEntrances.map((entrance)=><option key={entrance} value={entrance}>{entrance==="none"?"None":entrance[0].toUpperCase()+entrance.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>Profile font
+              <select aria-label="Profile font" value={content.appearance.font??"system"}
+                onChange={(event)=>set("appearance",{...content.appearance,font:event.target.value as NonNullable<ProfileContent["appearance"]["font"]>})}>
+                <option value="system">System</option>
+                <option value="sans">Sans serif</option>
+                <option value="serif">Serif</option>
+                <option value="mono">Monospace</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
         <section className="studio-assets-uploader stack" aria-labelledby="studio-assets-title">
           <div className="studio-assets-heading">
             <div><p className="eyebrow">PROFILE ASSETS</p><h2 id="studio-assets-title">Assets Uploader</h2>
@@ -529,22 +574,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
               <input type="range" min={0} max={80} step={1} value={content.appearance.blur??0}
                 onChange={(event)=>set("appearance",{...content.appearance,blur:Number(event.target.value)})}/>
             </label>
-            <label>Background Effects
-              <select value={content.appearance.effects?.background??"none"} onChange={(event)=>{
-                const background=event.target.value as ProfileEffects["background"];
-                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),background,preset:"none",enabled:background!=="none"||Boolean(content.appearance.effects?.enabled)}});
-              }}>
-                {effectBackgrounds.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
-              </select>
-            </label>
-            <label>Username Effects
-              <select value={content.appearance.effects?.text??"none"} onChange={(event)=>{
-                const text=event.target.value as ProfileEffects["text"];
-                set("appearance",{...content.appearance,effects:{...(content.appearance.effects??defaultEffects),text,preset:"none",enabled:text!=="none"||Boolean(content.appearance.effects?.enabled)}});
-              }}>
-                {effectTexts.map(value=><option key={value} value={value}>{value==="none"?"Disabled":value[0].toUpperCase()+value.slice(1)}</option>)}
-              </select>
-            </label>
             <label>Location
               <input type="text" maxLength={80} autoComplete="off" placeholder="Your location"
                 value={content.appearance.location??""}
@@ -569,6 +598,12 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
             Show location on my profile
           </label>
         </fieldset>
+
+        <EffectsEditor
+          value={content.appearance.effects}
+          tier={effectTier}
+          onChange={(effects)=>set("appearance",{...content.appearance,effects})}
+        />
 
         <fieldset className="stack studio-reference-customization">
           <legend className="section-title">Color Customization</legend>
