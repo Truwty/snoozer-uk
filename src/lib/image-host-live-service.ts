@@ -192,24 +192,32 @@ export async function holdImageHostLifetimePayment(stripe:Stripe,event:Stripe.Ev
   let paymentIntent:string|null=null;
   let reason:"refund"|"dispute"|"fraud";
   if(event.type==="charge.refunded"){
-    const charge=await stripe.charges.retrieve(event.data.object.id);
+    // The signed Charge event includes the refund state and PaymentIntent.
+    // Do not perform an unnecessary second Stripe request.
+    const charge=event.data.object as Stripe.Charge;
     if(!charge.livemode||charge.amount_refunded<=0)return false;
     paymentIntent=typeof charge.payment_intent==="string"?charge.payment_intent:charge.payment_intent?.id??null;
     reason="refund";
-  }else if(event.type==="charge.dispute.created"||event.type==="charge.dispute.closed"){
-    const dispute=await stripe.disputes.retrieve(event.data.object.id);
-    if(!dispute.livemode||dispute.id!==event.data.object.id)return false;
+  }else if(event.type.startsWith("charge.dispute.")){
+    if(typeof stripe.disputes?.retrieve!=="function"||typeof stripe.charges?.retrieve!=="function")return false;
+    const disputeId=(event.data.object as Stripe.Dispute).id;
+    const dispute=await stripe.disputes.retrieve(disputeId);
+    if(!dispute.livemode||dispute.id!==disputeId)return false;
     const chargeId=typeof dispute.charge==="string"?dispute.charge:dispute.charge?.id;
     if(!chargeId)return false;
     const charge=await stripe.charges.retrieve(chargeId);
+    if(!charge.livemode)return false;
     paymentIntent=typeof charge.payment_intent==="string"?charge.payment_intent:charge.payment_intent?.id??null;
     reason="dispute";
   }else if(event.type==="radar.early_fraud_warning.created"){
-    const warning=await stripe.radar.earlyFraudWarnings.retrieve(event.data.object.id);
-    if(!warning.livemode||warning.id!==event.data.object.id)return false;
+    if(typeof stripe.radar?.earlyFraudWarnings?.retrieve!=="function"||typeof stripe.charges?.retrieve!=="function")return false;
+    const warningId=(event.data.object as Stripe.Radar.EarlyFraudWarning).id;
+    const warning=await stripe.radar.earlyFraudWarnings.retrieve(warningId);
+    if(!warning.livemode||warning.id!==warningId)return false;
     const chargeId=typeof warning.charge==="string"?warning.charge:warning.charge?.id;
     if(!chargeId)return false;
     const charge=await stripe.charges.retrieve(chargeId);
+    if(!charge.livemode)return false;
     paymentIntent=typeof charge.payment_intent==="string"?charge.payment_intent:charge.payment_intent?.id??null;
     reason="fraud";
   }else return false;
