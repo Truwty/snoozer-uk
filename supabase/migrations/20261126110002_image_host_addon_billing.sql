@@ -37,7 +37,7 @@ create table snoozer.image_host_purchases (
   verified_at timestamptz,
   last_checked_at timestamptz,
   check(expires_at>created_at),
-  check((status='active')=(verified_at is not null))
+  check((status in ('active','refunded','disputed','fraud'))=(verified_at is not null))
 );
 create unique index image_host_one_open_or_active_purchase_per_owner
   on snoozer.image_host_purchases(owner_id)
