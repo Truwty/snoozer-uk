@@ -16,7 +16,9 @@ for (const width of [320, 375, 768, 1440]) {
     await expect(page.getByRole("heading", { name: /Explore your options/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Frequently Asked Questions/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Everything you want, right here/i }).last()).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "/help");
+    await expect(page.locator(".home-metric-card")).toHaveCount(4);
+    await expect(page.locator(".home-metric-value")).toHaveCount(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }

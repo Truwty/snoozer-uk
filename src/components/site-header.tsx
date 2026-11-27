@@ -47,7 +47,7 @@ export async function SiteHeader({ locale: suppliedLocale }: { locale?: AccountL
     <div className="snoozer-topbar">
       <Brand />
       <nav className="snoozer-header-links" aria-label="Primary navigation">
-        <Link href="https://help.snoozer.uk/">{copy.nav.help}</Link>
+        <Link href="/help">{copy.nav.help}</Link>
         <Link href="/templates">{copy.nav.templates}</Link>
         <Link href="/discover">{copy.nav.discover}</Link>
         <Link href="/leaderboard">{copy.nav.leaderboard}</Link>
