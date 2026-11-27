@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUsername, defaultAppearance, link, profileAppearance, profileAppearanceWithBackgroundValidation, profileBackgroundImage, profileBackgroundVideoId, profileContent, profileTemplateStyles, safeLink, username } from "../src/lib/profile";
+import { canonicalUsername, defaultAppearance, link, profileAppearance, profileAppearanceWithBackgroundValidation, profileBackgroundImage, profileBackgroundVideoId, profileContent, profileTemplateStyles, safeLink, safeProfileLink, username } from "../src/lib/profile";
 
 describe("profile validation", () => {
   it("accepts only registered first-party template style tokens and leaves older profiles valid", () => {
@@ -76,6 +76,12 @@ describe("profile validation", () => {
     expect(link.parse({ label: "Private", url: "https://example.com/private", hidden: true }).hidden).toBe(true);
     expect(link.parse({ label: "Icon", url: "https://example.com/icon", mode: "icon" }).mode).toBe("icon");
     expect(link.parse({ label: "Text", url: "https://example.com/text", mode: "text" }).mode).toBe("text");
+    const audioUrl = "/media/audio/00000000-0000-4000-8000-000000000012.mp3";
+    expect(link.parse({ label: "Audio", url: audioUrl }).url).toBe(audioUrl);
+    expect(safeProfileLink(audioUrl)).toBe(true);
+    expect(safeProfileLink("/media/audio/not-a-uuid.mp3")).toBe(false);
+    expect(safeProfileLink("/media/gallery/00000000-0000-4000-8000-000000000012")).toBe(false);
+    expect(safeProfileLink("//example.com/audio.mp3")).toBe(false);
     expect(link.parse({ label: "Custom", url: "https://example.com/custom", iconImage: "00000000-0000-4000-8000-000000000011" }).iconImage).toBe("00000000-0000-4000-8000-000000000011");
     expect(link.safeParse({ label: "Bad visibility", url: "https://example.com", hidden: "yes" }).success).toBe(false);
     expect(link.safeParse({ label: "Bad mode", url: "https://example.com", mode: "iframe" }).success).toBe(false);
