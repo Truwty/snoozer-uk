@@ -2237,9 +2237,6 @@ body:has(> .public-page[data-background-image="true"]) {
     width: 5.25rem;
     height: 5.25rem;
   }
-  .profile-card--bio-experience .profile-social-links {
-    gap: .56rem .65rem;
-  }
   .profile-audio-player { gap:.85rem; padding:.85rem; }
   .profile-audio-main { grid-template-columns:3.9rem minmax(0,1fr); gap:.8rem; }
   .profile-audio-cover { width:3.9rem; height:3.9rem; }
