@@ -135,6 +135,7 @@ export function ProfileQrShare({profilePath}:{profilePath:string}){
           <div className="studio-profile-qr-actions">
             <button type="button" className="button primary" onClick={downloadPng}>Download PNG</button>
             <button type="button" className="button" onClick={downloadSvg}>Download SVG</button>
+            <button type="button" className="button" onClick={()=>void copy()}>Copy link</button>
           </div>
           {message&&<p className="message" role="status">{message}</p>}
           <QRCodeCanvas id="snoozer-profile-qr-png" value={value} size={640} level="H" includeMargin
