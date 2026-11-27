@@ -15,8 +15,8 @@ type Props={
   profileId:string;
   revision:number;
   gallery:GalleryImage[];
-  onAddTrack:(track:{title:string;artist:string;url:string;coverImageId?:string})=>void;
-  onAssetsChanged?:()=>void|Promise<void>;
+  onAddTrack:(track:{title:string;artist:string;url:string;coverImageId?:string},revision?:number)=>void;
+  onAssetsChanged?:()=>number|void|Promise<number|void>;
 };
 
 const audioAccept=".mp3,.m4a,.ogg,.wav,.aac,.flac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac,audio/flac";
@@ -85,7 +85,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAsse
     if(newCoverInput.current)newCoverInput.current.value="";
   }
 
-  async function saveCoverAsset(file:File,description:string){
+  async function saveCoverAsset(file:File,description:string):Promise<{id:string;revision?:number}>{
     if(file.size<1||file.size>galleryMaxBytes||!galleryTypes.includes(file.type)){
       throw new Error("Choose a JPEG, PNG or WebP cover image up to 4 MB.");
     }
@@ -106,8 +106,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAsse
       await discardGalleryUpload(profileId,revision,started.id);
       throw new Error(completed.error??"The cover image could not be saved.");
     }
-    await onAssetsChanged?.();
-    return started.id;
+    const latestRevision = await onAssetsChanged?.();
+    return {id:started.id,revision:typeof latestRevision==="number"?latestRevision:undefined};
   }
 
   async function uploadNewAudio(){
@@ -136,15 +136,18 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAsse
       if("error" in completed){setError(completed.error??"The audio file could not be saved.");return;}
 
       let coverImageId:string|undefined;
+      let coverRevision:number|undefined;
       let coverWarning="";
       if(newCoverFile){
         try{
-          coverImageId=await saveCoverAsset(newCoverFile,"Audio cover art — "+title.trim());
+          const coverAsset=await saveCoverAsset(newCoverFile,"Audio cover art — "+title.trim());
+          coverImageId=coverAsset.id;
+          coverRevision=coverAsset.revision;
         }catch(reason){
           coverWarning=reason instanceof Error?reason.message:"The cover image could not be saved.";
         }
       }
-      onAddTrack({title:completed.title,artist:completed.artist,url:completed.url,...(coverImageId?{coverImageId}:{})});
+      onAddTrack({title:completed.title,artist:completed.artist,url:completed.url,...(coverImageId?{coverImageId}:{})},coverRevision);
       await reload();
       setAddOpen(false);
       resetAddForm();
@@ -159,8 +162,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack,onAsse
     if(coverBusy)return;
     setCoverBusy(true);setError("");setMessage("");
     try{
-      const id=await saveCoverAsset(file,"Audio cover art — "+item.title);
-      setCover(current=>({...current,[item.id]:id}));
+      const asset=await saveCoverAsset(file,"Audio cover art — "+item.title);
+      setCover(current=>({...current,[item.id]:asset.id}));
       setMessage("Cover artwork added. Select it when adding this track to your profile.");
     }catch(reason){
       setError(reason instanceof Error?reason.message:"The cover image could not be saved.");
