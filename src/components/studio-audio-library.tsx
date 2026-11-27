@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { supabaseConfig } from "@/lib/env";
@@ -24,6 +25,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const [items,setItems]=useState<AudioItem[]>([]);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
+  const [portalReady,setPortalReady]=useState(false);
   const [managerOpen,setManagerOpen]=useState(false);
   const [addOpen,setAddOpen]=useState(false);
   const [title,setTitle]=useState("");
@@ -38,6 +40,8 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
   const newCoverInput=useRef<HTMLInputElement>(null);
   const coverInput=useRef<HTMLInputElement>(null);
   const router=useRouter();
+
+  useEffect(()=>setPortalReady(true),[]);
 
   const reload=useCallback(async()=>{
     setLoading(true);
@@ -191,7 +195,7 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
         if(file&&item)void uploadCoverForTrack(item,file);
       }}/>
 
-    {managerOpen&&<div className="studio-audio-modal-overlay" onMouseDown={event=>{
+    {managerOpen&&portalReady&&createPortal(<div className="studio-audio-modal-overlay" onMouseDown={event=>{
       if(event.target===event.currentTarget){setAddOpen(false);setManagerOpen(false);}
     }}>
       <section className="studio-audio-manager-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-audio-manager-title">
@@ -234,9 +238,9 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
         </div>
         <p className="studio-audio-modal-note">Supported formats: MP3, M4A, OGG, WAV, AAC and FLAC. 15 MB per file · 12 uploads per day · 30 tracks per account.</p>
       </section>
-    </div>}
+    </div>,document.body)}
 
-    {addOpen&&<div className="studio-audio-modal-overlay studio-audio-add-overlay" onMouseDown={event=>{
+    {addOpen&&portalReady&&createPortal(<div className="studio-audio-modal-overlay studio-audio-add-overlay" onMouseDown={event=>{
       if(event.target===event.currentTarget)setAddOpen(false);
     }}>
       <section className="studio-audio-add-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-audio-add-title">
@@ -266,6 +270,6 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
         </div>
         <p className="studio-audio-modal-note">Audio up to 15 MB. Cover art accepts JPEG, PNG or WebP up to 4 MB.</p>
       </section>
-    </div>}
+    </div>,document.body)}
   </>;
 }
