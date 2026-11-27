@@ -1,6 +1,8 @@
 # Compact public bio profile
 
-Published profile pages use a focused, centred bio-page presentation. Studio preview keeps the full editable canvas and the existing stored profile layout.
+**Reviewed:** 27 November 2026. This document describes the current public rendering, not the Studio editing canvas.
+
+Published profile pages use a focused, centred bio-page presentation. Studio preview keeps the full editable canvas and the existing stored profile layout. The compact public renderer intentionally suppresses the Guestbook while the separate Guestbook configuration and API remain in source; see [Interactive profile widgets](profile-widgets.md).
 
 ## Public presentation
 
@@ -8,7 +10,7 @@ Published profile pages use a focused, centred bio-page presentation. Studio pre
 - Centred avatar, display name, owner-verification and Discord-presence indicators, and a short typewriter-style bio. The typewriter effect respects reduced-motion preferences.
 - Recognised profile links appear as monochrome SVG brand icons with a subtle hover glow.
 - Sections, content blocks, non-Guestbook interactive widgets and additional non-social links are tucked behind a minimal collapsed **More** disclosure. The first screen stays compact; the saved content remains available to visitors when expanded. The Guestbook is intentionally not rendered on public bio pages.
-- Achievement badges are temporarily hidden from public profiles. Their stored award records are retained; the Studio and Owner badge-management pages are also disabled until the feature is restored.
+- Achievement badges are temporarily hidden from public profiles. Their stored award records are retained; the Studio and Owner badge-management pages are also disabled. The badge catalogue and history are not deleted.
 - The public Report profile route remains available as a small fixed link.
 
 ## Music
