@@ -68,7 +68,7 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
   afterAll(async () => { await db?.close(); });
 
   beforeEach(async () => {
-    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.account_mfa_recovery_codes, snoozer.account_mfa_recovery_attempts, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
+    await db.exec("reset role; truncate auth.sessions cascade; truncate snoozer.account_marketing_preferences, snoozer.account_mfa_recovery_codes, snoozer.account_mfa_recovery_attempts, snoozer.discovery_collections, snoozer.discovery_request_windows cascade; truncate snoozer.public_widget_cache, snoozer.public_widget_limits, snoozer.stripe_sandbox_won_disputes, snoozer.stripe_sandbox_gift_payment_holds, snoozer.stripe_sandbox_gift_orders, snoozer.stripe_sandbox_gift_offers, snoozer.billing_diagnostics_access, snoozer.staff_roles, snoozer.gift_codes, snoozer.kofi_donation_reviews, snoozer.kofi_donation_receipts, snoozer.stripe_sandbox_ended_subscriptions, snoozer.stripe_sandbox_expired_checkouts, snoozer.stripe_sandbox_invoice_holds, snoozer.stripe_webhook_receipts, snoozer.stripe_sandbox_checkout_attempts, snoozer.stripe_sandbox_prices, snoozer.image_host_purchases, snoozer.image_host_payment_holds, snoozer.entitlement_grants, snoozer.profiles, snoozer.profile_revision_floor, snoozer.avatar_cleanup, snoozer.gallery_takedowns, snoozer.discord_presence_events, snoozer.discord_presence_cache, snoozer.discord_presence_settings, snoozer.discord_presence_links, snoozer.discord_presence_worker_state, auth.identities, storage.objects cascade;");
     await db.exec("truncate snoozer.referral_attributions, snoozer.referral_codes; update auth.users set created_at=now(),raw_user_meta_data='{}';");
     await db.exec("truncate snoozer.public_names; insert into snoozer.public_names select name from snoozer.reserved_names;");
   });
@@ -3279,6 +3279,60 @@ describe("real SQL migrations on embedded PostgreSQL", () => {
     await result("select public.delete_my_image_host_text_paste($1) as value",[paste]);
     await act("anon");
     expect(await result("select public.get_public_image_host_text_paste($1) as value",[paste])).toBeNull();
+  });
+
+
+  it("awards the Image Host badge only for a verified lifetime purchase and revokes it when payment is reversed", async () => {
+    await act("authenticated",alice);
+    await claim("image-host-badge");
+    await db.exec("reset role");
+    const profile=await result<string>("select id::text as value from snoozer.profiles where owner_id=$1",[alice]);
+    expect(profile).toBeTruthy();
+
+    const priceId="price_imagehostbadge001";
+    await db.query(
+      "insert into snoozer.image_host_prices(price_id,product_id,currency,unit_amount) values($1,$2,'eur',499) on conflict(price_id) do nothing",
+      [priceId,"prod_imagehostbadge001"],
+    );
+    const purchase=await result<string>(
+      "insert into snoozer.image_host_purchases(owner_id,price_id,status) values($1,$2,'pending') returning id::text as value",
+      [alice,priceId],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(0);
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='active',verified_at=now() where id=$1",
+      [purchase],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(1);
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='refunded' where id=$1",
+      [purchase],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is not null",
+      [profile],
+    )).toBe(1);
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(0);
+
+    await db.query(
+      "update snoozer.image_host_purchases set status='active' where id=$1",
+      [purchase],
+    );
+    expect(await result<number>(
+      "select count(*)::integer as value from snoozer.profile_badges where profile_id=$1 and slug='image-host-owner' and revoked_at is null",
+      [profile],
+    )).toBe(1);
   });
 
 });
