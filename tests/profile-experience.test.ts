@@ -52,12 +52,15 @@ describe("compact public bio experience", () => {
 
   it("compacts the public profile music bar and separates it from social links", () => {
     const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
-    const playerStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-player {", styles.indexOf("Compact the public music player"));
+    const sectionStart = styles.indexOf("Compact the public music player");
+    const playerStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-player {", sectionStart);
     const mainStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-main {", playerStart);
     const coverStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-cover {", mainStart);
-    const playerRule = playerStart < 0 ? "" : styles.slice(playerStart, styles.indexOf("\\n}", playerStart));
-    const mainRule = mainStart < 0 ? "" : styles.slice(mainStart, styles.indexOf("\\n}", mainStart));
-    const coverRule = coverStart < 0 ? "" : styles.slice(coverStart, styles.indexOf("\\n}", coverStart));
+    const transportStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-transport {", coverStart);
+    const playerRule = playerStart < 0 ? "" : styles.slice(playerStart, styles.indexOf("\n}", playerStart));
+    const mainRule = mainStart < 0 ? "" : styles.slice(mainStart, styles.indexOf("\n}", mainStart));
+    const coverRule = coverStart < 0 ? "" : styles.slice(coverStart, styles.indexOf("\n}", coverStart));
+    const transportRule = transportStart < 0 ? "" : styles.slice(transportStart, styles.indexOf("\n}", transportStart));
 
     expect(playerRule).toContain("margin-block-start: .85rem;");
     expect(playerRule).toContain("padding: .6rem .7rem;");
@@ -65,6 +68,7 @@ describe("compact public bio experience", () => {
     expect(mainRule).toContain("grid-template-columns: 3.25rem minmax(0, 1fr);");
     expect(coverRule).toContain("width: 3.25rem;");
     expect(coverRule).toContain("height: 3.25rem;");
+    expect(transportRule).toContain("min-height: 2.35rem;");
   });
 
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
