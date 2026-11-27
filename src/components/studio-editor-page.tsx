@@ -24,9 +24,9 @@ type Tab = "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings";
 
 const modeConfig: Record<Mode, { title: string; eyebrow: string; description: string; tab: Tab; panelOnly: boolean }> = {
   builder: { title: "Page Builder", eyebrow: "CREATE / PAGE BUILDER", description: "Arrange your page, add content and preview the published result.", tab: "Profile", panelOnly: false },
-  customize: { title: "Customize", eyebrow: "DESIGN / APPEARANCE", description: "Fine-tune your profile's visual identity and effects.", tab: "Design", panelOnly: true },
-  links: { title: "Links", eyebrow: "CONTENT / SOCIAL LINKS", description: "Manage the destinations visitors can open from your profile.", tab: "Links", panelOnly: true },
-  widgets: { title: "Widgets", eyebrow: "CONTENT / INTERACTIVE WIDGETS", description: "Configure the visitor interactions shown on your published profile.", tab: "Widgets", panelOnly: true },
+  customize: { title: "Customize", eyebrow: "DESIGN / APPEARANCE", description: "Fine-tune your profile's visual identity and effects.", tab: "Design", panelOnly: false },
+  links: { title: "Links", eyebrow: "CONTENT / SOCIAL LINKS", description: "Manage the destinations visitors can open from your profile.", tab: "Links", panelOnly: false },
+  widgets: { title: "Widgets", eyebrow: "CONTENT / INTERACTIVE WIDGETS", description: "Configure the visitor interactions shown on your published profile.", tab: "Widgets", panelOnly: false },
   settings: { title: "Profile settings", eyebrow: "PROFILE / SETTINGS", description: "Manage your username, search visibility, aliases, custom domains and profile lifecycle.", tab: "Settings", panelOnly: true },
 };
 
