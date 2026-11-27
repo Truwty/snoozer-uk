@@ -25,7 +25,7 @@ export function EffectsEditor({ value, tier, onChange }: {
     onChange(next);
   }
 
-  function changeLayer<K extends "background" | "border" | "particles" | "links" | "text" | "interaction>(
+  function changeLayer<K extends "background" | "border" | "particles" | "links" | "text" | "interaction">(
     key: K,
     nextValue: ProfileEffects[K],
   ) {
