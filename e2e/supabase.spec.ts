@@ -1219,7 +1219,7 @@ test("background images upload through the direct button and publish without a p
   await chooser.setFiles({ name: "blue-shoreline.png", mimeType: "image/png", buffer: image });
   await expect(page.getByRole("status").filter({ hasText: "Background image added to your draft" })).toBeVisible();
 
-  const preview = page.getByRole("region", { name: "Page preview" }).locator(".profile-card");
+  const preview = page.getByRole("region", { name: "Page preview" });
   await expect(preview).toHaveAttribute("data-background-image", "true");
   const backgroundValue = await preview.evaluate((element) => getComputedStyle(element).getPropertyValue("--profile-background-image"));
   const imageId = backgroundValue.match(/[0-9a-f-]{36}/i)?.[0];
