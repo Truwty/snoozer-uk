@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { HomeProfileDemo } from "@/components/home-profile-demo";
 import { HomeScrollMotion } from "@/components/home-scroll-motion";
 import { HomeFaq } from "@/components/home-faq";
+import { FooterLanguagePicker } from "@/components/footer-language-picker";
 
 export const metadata = {
   title: "Snoozer — your page, your way",
@@ -147,6 +148,7 @@ export default function Home() {
             <Brand />
             <p>Your links, your work and everything you want to share. All in one place.</p>
             <a className="home-footer-email" href="mailto:snoozersupport@snoozer.uk">snoozersupport@snoozer.uk</a>
+            <FooterLanguagePicker />
           </div>
           <div className="home-footer-column">
             <h2>General</h2>
