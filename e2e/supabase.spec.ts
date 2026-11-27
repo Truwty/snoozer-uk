@@ -572,7 +572,10 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
 });
 
 test("verify, publish, restore, reset, delete and clean up a profile", async ({ page, browser, request }) => {
-  test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 240000 : 90000);
+  // This is the full account lifecycle journey, including Lighthouse, publication
+  // history, password reset, deletion and storage cleanup. Keep the test intact;
+  // give CI enough time for the complete flow rather than timing out at cleanup.
+  test.setTimeout(process.env.SNOOZER_TEST_LIGHTHOUSE === "1" ? 360000 : 90000);
   const name = `creator-${randomUUID().slice(0, 12)}`;
   const email = `${name}@example.com`;
   const visitor = await browser.newContext({ javaScriptEnabled: false, baseURL: "http://localhost:3000" });
