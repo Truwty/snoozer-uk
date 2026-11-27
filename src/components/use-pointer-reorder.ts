@@ -74,7 +74,7 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
     window.cancelAnimationFrame(active.frame);
     setDropIndex(null);
     if (!commit || !active.active || orderOf(items) !== active.order) return;
-    const destination = sectionAt(event.clientX, event.clientY);
+    const destination = sectionAt(active.x, active.y);
     if (destination !== null) move(active.from, destination);
   }
 
