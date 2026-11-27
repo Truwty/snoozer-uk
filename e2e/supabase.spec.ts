@@ -556,6 +556,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(audioManager).toBeVisible();
     await audioManager.getByRole("button", { name: "+ Add Audio", exact: true }).click();
     const addAudio = page.getByRole("dialog", { name: "Add an Audio", exact: true });
+    expect(await addAudio.evaluate((dialog) => dialog.closest(".studio-audio-add-overlay")?.parentElement === document.body)).toBe(true);
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
