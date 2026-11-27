@@ -545,17 +545,30 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
                 profileId={saved.profile_id}
                 revision={saved.revision}
                 gallery={previewGallery.map(({id,alt})=>({id,alt}))}
-                onAssetsChanged={refreshSaved}
-                onAddTrack={(track) => {
-                  if(content.links.length>=linkLimit){setAnnouncement("Your current plan has reached its profile link limit.");return;}
-                  set("links",[...content.links,{
+                onAssetsChanged={async () => (await refreshSaved()).revision}
+                onAddTrack={(track, revisionOverride) => {
+                  let limitReached = false;
+                  const link = {
                     label:track.title+" — "+track.artist,
                     url:track.url,
-                    mode:"text",
+                    mode:"text" as const,
                     hidden:false,
                     ...(track.coverImageId?{audioCoverImage:track.coverImageId}:{})
-                  }]);
-                  setAnnouncement("Track added to your profile draft. Save and publish to make it public.");
+                  };
+                  edit((current) => {
+                    if (current.content.links.length >= linkLimit) {
+                      limitReached = true;
+                      return current;
+                    }
+                    return {
+                      ...current,
+                      ...(typeof revisionOverride === "number" ? { revision: revisionOverride } : {}),
+                      content: { ...current.content, links: [...current.content.links, link] },
+                    };
+                  });
+                  setAnnouncement(limitReached
+                    ? "Your current plan has reached its profile link limit."
+                    : "Track added to your profile draft. Save and publish to make it public.");
                 }}
               />
             </article>
