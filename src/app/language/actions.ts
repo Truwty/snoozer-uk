@@ -21,6 +21,7 @@ export async function saveHomepageLanguage(form: FormData) {
     maxAge: 60 * 60 * 24 * 365,
   });
 
+  let accountPreferenceFailed = false;
   try {
     const client = await sessionClient();
     const { data, error } = await client.auth.getUser();
@@ -34,12 +35,13 @@ export async function saveHomepageLanguage(form: FormData) {
       const { error: updateError } = await client.auth.updateUser({
         data: { ...metadata, snoozer_locale: parsed.data },
       });
-      if (updateError) redirect("/?language=failed");
+      accountPreferenceFailed = Boolean(updateError);
     }
   } catch {
     // Public visitors can still save a browser-level language preference.
     // Signed-in preferences are also stored in Auth metadata when available.
   }
+  if (accountPreferenceFailed) redirect("/?language=failed");
 
   revalidatePath("/");
   redirect("/");
