@@ -436,3 +436,11 @@
   .studio-template-upload-list > li { align-items:flex-start; flex-direction:column; }
   .studio-template-upload-list .actions { flex-wrap:wrap; }
 }
+
+.studio-image-host-intro { color:#aab3ac; font-size:.76rem; line-height:1.5; }
+.studio-image-host-checkout-actions { display:grid; grid-template-columns:minmax(0,1fr) 2.95rem; gap:.5rem; }
+.studio-image-host-gift-button {
+  display:grid; place-items:center; min-height:2.95rem; border:1px solid rgba(255,255,255,.1);
+  border-radius:.65rem; background:#191d1d; color:#a3aca5; font-size:1.05rem;
+  cursor:not-allowed; opacity:.58;
+}
