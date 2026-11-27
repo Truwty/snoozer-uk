@@ -122,12 +122,12 @@ export function StudioAudioLibrary({profileId,revision,gallery,onAddTrack}:Props
     setBusy(true);setError("");setMessage("");
     try{
       const cleanArtist="Unknown artist";
-      const started=await startProfileAudioUpload(profileId,revision,title.trim(),cleanArtist,audioFile.type,audioFile.size);
+      const started=await startProfileAudioUpload(profileId,revision,title.trim(),cleanArtist,audioFile.type,audioFile.size,audioFile.name);
       if("error" in started){setError(started.error??"Could not prepare the audio upload. Try again.");return;}
       const config=supabaseConfig();
       const browser=createBrowserClient(config.url,config.key);
       const {error:uploadError}=await browser.storage.from(profileAudioIncoming)
-        .uploadToSignedUrl(started.path,started.token,audioFile,{contentType:audioFile.type,upsert:false});
+        .uploadToSignedUrl(started.path,started.token,audioFile,{contentType:started.contentType,upsert:false});
       if(uploadError){
         await discardProfileAudioUpload(profileId,revision,started.id);
         setError("The audio file could not be uploaded. Check its format and try again.");
