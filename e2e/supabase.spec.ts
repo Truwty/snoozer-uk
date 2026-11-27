@@ -470,7 +470,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await page.keyboard.press("Control+k");
     const commandSearch = page.getByRole("dialog", { name: "Search Studio" }).getByLabel("Search Studio features, pages, and actions");
     await commandSearch.fill("multi-factor");
-    const mfaCommand = page.getByRole("link", { name: /Multi-factor authentication/ });
+    const mfaCommand = page.getByRole("option", { name: /Multi-factor authentication/ });
     await expect(mfaCommand).toContainText("Enable or disable multi-factor authentication.");
     await commandSearch.press("Enter");
     await expect(page).toHaveURL(/\/studio\/account#account-mfa$/);
@@ -520,7 +520,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(page.getByText("Pending review", { exact: true })).toBeVisible();
 
     await page.getByRole("link", { name: "Image Host", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Image Host", exact: true, level: 1 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Snippets", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Create text paste", exact: true })).toBeEnabled();
     await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
@@ -716,7 +716,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await editorTab(page, "Design");
     await page.getByLabel("Background Effects").selectOption("gradient");
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
-    await page.getByLabel("Location").fill("Studio North");
+    await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
     await page.getByRole("checkbox", { name: "Show location on my profile" }).check();
     await expect(designPreview.locator(".profile-location")).toContainText("Studio North");
     await page.getByRole("checkbox", { name: "Monochrome Icons" }).check();
@@ -1112,7 +1112,7 @@ test("gallery images upload to private Storage and follow publication visibility
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
   await page.getByRole("link", { name: "Image Host", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Image Host", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Image Host", exact: true, level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
