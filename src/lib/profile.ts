@@ -41,6 +41,7 @@ export const profileAppearance = z.strictObject({
   accent: z.enum(linkAccents).default(defaultAppearance.accent),
   entrance: z.enum(profileEntrances).default(defaultAppearance.entrance),
   backgroundImage: z.uuid().optional(),
+  backgroundVideo: z.uuid().optional(),
   customCursorImage: z.uuid().optional(),
   templateStyle: z.enum(profileTemplateStyles).optional(),
   effects: profileEffects.optional(),
@@ -57,6 +58,10 @@ export const profileAppearance = z.strictObject({
   swapBoxColors: z.boolean().optional(),
   location: z.string().trim().max(80).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Location contains unsupported control characters.").optional(),
   showLocation: z.boolean().optional(),
+}).superRefine((appearance, context) => {
+  if (appearance.backgroundImage && appearance.backgroundVideo) {
+    context.addIssue({ code: "custom", path: ["backgroundVideo"], message: "Choose either a background image or a background video, not both." });
+  }
 });
 export const username = z.string().regex(/^[a-z][a-z0-9-]{1,28}[a-z0-9]$/, "Use 3–30 letters, numbers or hyphens. Start with a letter and end with a letter or number.");
 
@@ -142,4 +147,8 @@ export type PublishedProfile = z.infer<typeof publishedProfile>;
 export function profileBackgroundImage(profile: Pick<PublishedProfile, "appearance" | "gallery">) {
   const id = profile.appearance.backgroundImage;
   return id ? profile.gallery.find((image) => image.id === id) ?? null : null;
+}
+
+export function profileBackgroundVideoId(profile: Pick<PublishedProfile, "appearance">) {
+  return profile.appearance.backgroundVideo ?? null;
 }
