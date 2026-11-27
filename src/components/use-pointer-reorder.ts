@@ -54,6 +54,10 @@ export function usePointerReorder<T extends object>(items: readonly T[], move: (
   }
 
   function beginDrag(event: PointerEvent<HTMLSpanElement>) {
+    // Touch has its own TouchEvent lifecycle below. Do not also capture the
+    // generated touch PointerEvent: pointercancel/lostcapture can otherwise
+    // terminate the gesture before touchend commits its destination.
+    if (event.pointerType === "touch") return;
     const card = event.currentTarget.closest<HTMLElement>("[data-reorder-index]");
     const index = Number(card?.dataset.reorderIndex);
     if (!items[index]) return;
