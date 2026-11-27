@@ -1,4 +1,4 @@
-import type { ProfileContent } from "./profile";
+import { safeProfileLink, type ProfileContent } from "./profile";
 
 /**
  * Canonicalise profile link URLs without discarding presentation metadata.
@@ -10,7 +10,7 @@ import type { ProfileContent } from "./profile";
 export function normalizeProfileLinks(links: ProfileContent["links"]) {
   return links.map((link) => ({
     ...link,
-    url: new URL(link.url).href,
+    url: link.url.startsWith("/media/audio/") && safeProfileLink(link.url) ? link.url : new URL(link.url).href,
     hidden: link.hidden ?? false,
   }));
 }
