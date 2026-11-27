@@ -1173,173 +1173,64 @@ test("concurrent claims yield one winner and direct storage requests are denied"
   expect((await other.client.rpc("set_avatar", { p_owner: winner.id, p_expected: 0, p_avatar: randomUUID() })).error).toBeTruthy();
 });
 
-test("gallery images upload to private Storage and follow publication visibility", async ({ page, request }) => {
+test("background images upload through the direct button and publish without a public gallery", async ({ page, request }) => {
   test.setTimeout(90000);
   const ready = await request.get("/health/ready");
   expect(ready.status()).toBe(200);
   const admin = createClient(project!, adminKey!, { auth: { persistSession: false } });
-  const name = "gallery-" + randomUUID().slice(0, 12);
+  const name = "background-" + randomUUID().slice(0, 12);
   const email = name + "@example.com";
   expect((await admin.auth.admin.createUser({ email, password, email_confirm: true })).error).toBeNull();
+
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
-  await page.getByRole("link", { name: "Image Host", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Image Host", exact: true, level: 1 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-  await page.getByLabel("Image description").fill("A disguised file");
-  await page.getByLabel("Choose a gallery image").setInputFiles({
-    name: "invalid.png", mimeType: "image/png", buffer: Buffer.from("<svg/>"),
-  });
-  await page.getByRole("button", { name: "Upload image" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Choose a single JPEG, PNG or WebP" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "A disguised file" })).toHaveCount(0);
+  await page.goto("/studio/customize");
+  await editorTab(page, "Design");
+  await expect(page.getByRole("heading", { name: "Assets Uploader", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Background", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload background image", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload background video", exact: true })).toBeVisible();
 
-  const image = await sharp({ create: { width: 1280, height: 1280, channels: 3, background: "blue" } }).png().toBuffer();
-  const dropZone = page.locator(".gallery-drop-zone");
-  const makeDrop = (names: string[]) => page.evaluateHandle(({ bytes, names }) => {
-    const transfer = new DataTransfer();
-    for (const name of names) {
-      transfer.items.add(new File([new Uint8Array(bytes)], name, { type: "image/png" }));
-    }
-    return transfer;
-  }, { bytes: Array.from(image), names });
-  const multiple = await makeDrop(["one.png", "two.png"]);
-  await dropZone.dispatchEvent("drop", { dataTransfer: multiple });
-  await expect(page.getByRole("alert").filter({ hasText: "Drop one image at a time." })).toBeVisible();
-  await multiple.dispose();
-  const single = await makeDrop(["shoreline.png"]);
-  await dropZone.dispatchEvent("drop", { dataTransfer: single });
-  await single.dispose();
-  await expect(dropZone).toContainText("Selected image: shoreline.png");
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
-  await page.getByLabel("Image description").fill("Blue shoreline");
-  await page.getByRole("button", { name: "Upload image" }).click();
-  const draftGalleryImages = page.getByRole("list", { name: "Draft gallery images" });
-  const blueShorelineDraftImage = draftGalleryImages.getByRole("img", { name: "Blue shoreline" });
-  await expect(blueShorelineDraftImage).toBeVisible();
+  const image = await sharp({ create: { width: 1280, height: 720, channels: 3, background: "blue" } }).png().toBuffer();
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Upload background image", exact: true }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({ name: "blue-shoreline.png", mimeType: "image/png", buffer: image });
+  await expect(page.getByRole("status").filter({ hasText: "Background image added to your draft" })).toBeVisible();
 
-  await page.getByLabel("Image description").fill("Open water");
-  await page.getByLabel("Choose a gallery image").setInputFiles({ name: "gallery.png", mimeType: "image/png", buffer: image });
-  await page.getByRole("button", { name: "Upload image" }).click();
-  await expect(page.getByRole("status")).toContainText("Image added to your draft");
-  await expect(draftGalleryImages.getByRole("img", { name: "Open water" })).toBeVisible();
-  const privatePath = (await blueShorelineDraftImage.getAttribute("src"))!;
-  const publicPath = "/media/gallery/" + name + "/" + privatePath.split("/").at(-1);
-  const blueShorelineId = privatePath.split("/").at(-1)!;
-  expect((await page.request.get(privatePath)).headers()["content-type"]).toBe("image/webp");
-  expect((await request.get(privatePath)).status()).toBe(404);
+  const preview = page.getByRole("region", { name: "Page preview" }).locator(".profile-card");
+  await expect(preview).toHaveAttribute("data-background-image", "true");
+  const backgroundValue = await preview.evaluate((element) => getComputedStyle(element).getPropertyValue("--profile-background-image"));
+  const imageId = backgroundValue.match(/[0-9a-f-]{36}/i)?.[0];
+  expect(imageId).toMatch(/^[0-9a-f-]{36}$/i);
+  const privatePreview = await page.request.get("/studio/gallery/image/" + imageId);
+  expect(privatePreview.status()).toBe(200);
+  expect(privatePreview.headers()["content-type"]).toBe("image/webp");
+
+  const publicPath = "/media/gallery/" + name + "/" + imageId;
   expect((await request.get(publicPath)).status()).toBe(404);
-
-  await page.goto("/studio/plan");
-  await expect(page.getByText("Media storage", { exact: true }).locator("..").locator("dd")).toHaveText(/^[1-9]\d* B of 100 MB$|^[\d.]+ MB of 100 MB$/);
-  await expect(page.getByText("0 MB of 100 MB", { exact: true })).toHaveCount(0);
-  await page.goto("/studio/gallery");
-
-  await page.getByRole("group", { name: "Actions for Open water" }).getByRole("button", { name: "Move earlier" }).click();
-  await expect(page.getByRole("img").first()).toHaveAttribute("alt", "Open water");
-  await page.getByRole("link", { name: "Back to Customize" }).click();
-  const backgroundImage = page.getByLabel("Background image");
-  await expect(backgroundImage).toBeVisible();
-  await backgroundImage.selectOption(blueShorelineId);
   await page.getByRole("button", { name: "Publish page" }).click();
   await expect(page.getByRole("link", { name: "View live page" })).toBeVisible();
   const liveImage = await request.get(publicPath);
   expect(liveImage.status()).toBe(200);
   expect(liveImage.headers()["content-type"]).toBe("image/webp");
-  const html = await (await request.get("/" + name)).text();
-  // The selected image backgrounds the whole public page, as well as the card.
-  expect(html).toMatch(/<main class="public-page"[^>]*data-background-image="true"/);
-  expect(html).toMatch(/<section\b[^>]*class="profile-card[^"]*"[^>]*data-background-image="true"/);
-  expect(html).toContain(blueShorelineId);
-  // The reference's compact entry profile intentionally hides the gallery and legacy sections.
-  expect(html).not.toContain('alt="Open water"');
-  expect(html).not.toContain('alt="Blue shoreline"');
-  expect(html).not.toContain("Gallery may use more memory");
-  await page.goto("/" + name);
-    await enterPublicBio(page);
-  const fullPageBackground = page.locator("main.public-page");
-  await expect(fullPageBackground).toHaveAttribute("data-background-image", "true");
-  await expect(fullPageBackground).toHaveCSS("background-size", "cover, cover");
-  await expect.poll(() => fullPageBackground.evaluate((element) =>
-    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
-  const publicPage = page.locator("main.public-page .profile-card");
-  await expect(publicPage).toHaveAttribute("data-background-image", "true");
-  await expect.poll(() => publicPage.evaluate((element) =>
-    getComputedStyle(element).backgroundImage)).toContain(blueShorelineId);
 
-  await page.goto("/studio/gallery/folders");
-  await page.setViewportSize({ width: 375, height: 812 });
-  await expect(page.getByRole("heading", { name: "Media folders" })).toBeVisible();
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.getByLabel("New folder name").fill("Private portfolio");
-  await page.getByRole("button", { name: "Create folder" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Folder created." })).toBeVisible();
-  await page.getByLabel("Folder for Blue shoreline").selectOption({ label: "Private portfolio" });
-  await page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Blue shoreline" }) })
-    .getByRole("button", { name: "Save location" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Image location saved." })).toBeVisible();
-  await page.reload();
-  await page.getByLabel("Show images in").selectOption({ label: "Private portfolio" });
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Open water" })).toHaveCount(0);
-  await page.getByText("Manage Private portfolio", { exact: true }).click();
-  await page.getByLabel("Folder name", { exact: true }).fill("Private archive");
-  await page.getByRole("button", { name: "Rename folder" }).click();
-  await expect(page.getByRole("heading", { name: "Private archive" })).toBeVisible();
-  await page.getByRole("button", { name: "Delete folder" }).click();
-  await expect(page.getByRole("heading", { name: "Unfiled" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  const afterFolders = await (await request.get("/" + name)).text();
-  expect(afterFolders).not.toContain("Private portfolio");
-  expect(afterFolders).not.toContain("Private archive");
-  expect(afterFolders).not.toContain('alt="Open water"');
-  expect(afterFolders).not.toContain('alt="Blue shoreline"');
+  const publicPage = await request.get("/" + name);
+  expect(publicPage.status()).toBe(200);
+  const html = await publicPage.text();
+  expect(html).toContain('data-background-image="true"');
+  expect(html).not.toContain('class="profile-gallery"');
+  await expect(page.locator(".profile-gallery")).toHaveCount(0);
 
+  // The old gallery URL remains a safe redirect to the direct-upload controls.
   await page.goto("/studio/gallery");
-  await page.getByRole("group", { name: "Actions for Blue shoreline" }).getByRole("button", { name: "Remove from draft" }).click();
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toHaveCount(0);
-  expect((await request.get(publicPath)).status()).toBe(200);
-  await page.getByRole("link", { name: "Back to Customize" }).click();
-  await expect(page.getByLabel("Background image")).toBeVisible();
-  await page.getByRole("button", { name: "Publish page" }).click();
-  await expect.poll(async () => (await request.get(publicPath)).status()).toBe(404);
-  expect(await (await request.get("/" + name)).text()).not.toContain('data-background-image="true"');
-  expect((await page.request.get(privatePath)).status()).toBe(200);
-  await page.goto("/studio/gallery/folders");
-  const retained = page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Blue shoreline" }) });
-  await expect(retained.getByText("In publish history")).toBeVisible();
-  await retained.getByRole("button", { name: "Add to draft gallery" }).click();
-  await expect(retained.getByText("In your draft")).toBeVisible();
-  expect((await request.get(publicPath)).status()).toBe(404);
-  await page.getByRole("link", { name: "Back to image gallery" }).click();
-  await expect(page.getByRole("img", { name: "Blue shoreline" })).toBeVisible();
-  await page.getByRole("link", { name: "Back to Customize" }).click();
-  await page.getByRole("button", { name: "Publish page" }).click();
-  await expect.poll(async () => (await request.get(publicPath)).status()).toBe(200);
-  expect(await (await request.get("/" + name)).text()).toContain('data-background-image="true"');
-
-  // The Studio preview also contains this image, but uses the owner-only URL.
-  await page.goto("/" + name);
-    await enterPublicBio(page);
-  const openWater = page.getByRole("img", { name: "Open water" });
-  await expect(openWater).toHaveAttribute("src", /^\/media\/gallery\//);
-  const openWaterPath = (await openWater.getAttribute("src"))!;
-  const openWaterId = openWaterPath.split("/").at(-1)!;
-  expect((await request.get(openWaterPath)).status()).toBe(200);
-  const takedown = execFileSync(process.execPath, [
-    "scripts/take-down-gallery-image.mjs", name, openWaterId, "TEST-GALLERY-001",
-  ], { encoding: "utf8", timeout: 12000 });
-  expect(takedown).toContain("Image blocked");
-  expect((await request.get(openWaterPath)).status()).toBe(404);
-  expect((await page.request.get("/studio/gallery/image/" + openWaterId)).status()).toBe(404);
-  await page.reload();
-  await expect(page.getByRole("img", { name: "Open water" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/studio\/customize/);
+  await expect(page.getByRole("button", { name: "Upload background image", exact: true })).toBeVisible();
 });
 
 test("autosave keeps the public page stable and recovers a stale tab", async ({ page, request }) => {
