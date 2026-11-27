@@ -521,8 +521,12 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
                 backgroundVideo={content.appearance.backgroundVideo}
                 onSelectImage={setBackgroundImage}
                 onSelectVideo={setBackgroundVideo}
-                onImageAdded={(image) => setUploadedBackgroundImages((current) =>
-                  [...current.filter((item) => item.id !== image.id), image])}
+                onImageAdded={async (image) => {
+                  setUploadedBackgroundImages((current) =>
+                    [...current.filter((item) => item.id !== image.id), image]);
+                  // Image processing increments the profile revision; refresh before autosaving its background selection.
+                  await refreshSaved();
+                }}
               />
             </article>
             <article className="studio-asset-card studio-asset-audio">
