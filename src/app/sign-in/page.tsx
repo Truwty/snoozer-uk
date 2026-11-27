@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
     <form action={signInWithGoogle}>
       {adding && <input type="hidden" name="add_account" value="1" />}
       {next && <input type="hidden" name="next" value={next} />}
-      <button type="submit" className="button auth-provider-button"><SocialProviderIcon providerId="google" className="auth-provider-icon" />Continue with Google</button>
+      <button type="submit" className="button auth-provider-button"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>
     </form>
     <form action={signInWithDiscord}>
       {adding && <input type="hidden" name="add_account" value="1" />}
