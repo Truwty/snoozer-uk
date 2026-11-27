@@ -29,20 +29,25 @@ function profileWith(overrides: Record<string, unknown> = {}) {
 }
 
 describe("compact public bio experience", () => {
-  it("keeps bio profile social icons horizontal and inner content cards compact", () => {
+  it("uses the same social icon row styling as the Creator Studio preview", () => {
     const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
-    const socialStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-social-links {");
-    const compactCardStart = styles.indexOf(".public-page .profile-card--bio-experience :is(.profile-text-section, .profile-content-block) {");
+    const socialStart = styles.indexOf(".profile-social-links {");
+    const iconStart = styles.indexOf(".profile-social-link {");
     const socialRule = socialStart < 0 ? "" : styles.slice(socialStart, styles.indexOf("\n}", socialStart));
-    const compactCardRule = compactCardStart < 0 ? "" : styles.slice(compactCardStart, styles.indexOf("\n}", compactCardStart));
+    const iconRule = iconStart < 0 ? "" : styles.slice(iconStart, styles.indexOf("\n}", iconStart));
 
     expect(socialRule).toContain("display: flex;");
-    expect(socialRule).toContain("flex-direction: row;");
     expect(socialRule).toContain("justify-content: center;");
-    expect(socialRule).toContain("gap: 12px;");
-    expect(socialRule).toContain("height: auto;");
-    expect(compactCardRule).toContain("min-height: 0;");
-    expect(compactCardRule).toContain("padding: .55rem .7rem;");
+    expect(socialRule).toContain("align-items: center;");
+    expect(socialRule).toContain("flex-wrap: wrap;");
+    expect(socialRule).toContain("gap: .55rem;");
+    expect(socialRule).toContain("width: 100%;");
+    expect(socialRule).toContain("padding-block: .15rem;");
+    expect(iconRule).toContain("width: 2.7rem;");
+    expect(iconRule).toContain("height: 2.7rem;");
+    expect(iconRule).toContain("min-height: 2.7rem;");
+    expect(styles).not.toContain(".profile-card--bio-experience .profile-social-links");
+    expect(styles).not.toContain(".public-page .profile-card--bio-experience .profile-social-links");
   });
 
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
