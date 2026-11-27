@@ -12,14 +12,17 @@ export type AccountMenuProps = {
   current: { label: string; username?: string; avatar?: string; isOwner?: boolean } | null;
 };
 
-function Avatar({ name, src }: { name: string; src?: string }) {
+function Avatar({ src }: { src?: string }) {
   return <span className="account-avatar" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c.7-3.6 3.1-5.5 7-5.5s6.3 1.9 7 5.5" />
+    </svg>
     {src
       // Local, validated avatar route from the verified account's draft.
       // eslint-disable-next-line @next/next/no-img-element
       ? <img src={src} alt="" width={38} height={38} onError={(event) => { event.currentTarget.style.display = "none"; }} />
       : null}
-    <span>{name.slice(0, 1).toUpperCase()}</span>
   </span>;
 }
 
@@ -33,17 +36,16 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
   };
   return <>
     <details id="studio-account-menu" className="account-dropdown" ref={menu}>
-      <summary className="account-trigger">
-        <Avatar name={active} src={current?.avatar}/>
-        <span className="account-trigger-identity">
-          <strong>{current?.username ? "@" + current.username : active}</strong>
-          <small>{current ? "YOUR ACCOUNT" : "Sign in"}</small>
-        </span>
-        <svg aria-hidden="true" className="account-chevron" width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+      <summary
+        className="account-trigger"
+        aria-label={current ? "Open account menu for " + active : "Open sign-in menu"}
+        title={current ? active : "Account"}
+      >
+        <Avatar src={current?.avatar}/>
       </summary>
       <div className="account-popover">
         {current ? <>
-          <p className="account-popover-owner"><Avatar name={active} src={current.avatar}/><strong>{active}</strong>{current.isOwner && <span className="account-owner-mark">OWNER</span>}</p>
+          <p className="account-popover-owner"><Avatar src={current.avatar}/><strong>{active}</strong>{current.isOwner && <span className="account-owner-mark">OWNER</span>}</p>
           <div className="account-popover-rule"/>
           <Link href="/studio/account">Account Settings</Link>
           {current.username ? <Link href={`/${current.username}`}>My Page</Link> : <Link href="/studio">My Page</Link>}
@@ -66,8 +68,7 @@ export function AccountMenu({ accounts, activeSlot, current }: AccountMenuProps)
       </div>
       <div className="accounts-list">
         {accounts.map((item) => <div className="account-entry" key={item.slot}>
-          <Avatar name={item.slot === activeSlot && current ? current.label : item.label}
-            src={item.slot === activeSlot ? current?.avatar : undefined}/>
+          <Avatar src={item.slot === activeSlot ? current?.avatar : undefined}/>
           <div className="account-entry-label">
             <strong>{item.slot === activeSlot && current ? current.label : item.label}</strong>
             <small>{item.slot === activeSlot && current ? "Active account" : item.email ?? "Saved account"}</small>
