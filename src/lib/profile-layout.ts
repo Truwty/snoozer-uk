@@ -51,7 +51,6 @@ function defaultItems(content: ProfileLayoutContent): ProfilePageLayoutItem[] {
   const hasWidgets = (["guestbook", "testimonials", "poll", "faq"] as const)
     .some((kind) => content.widgets[kind].enabled);
   if (hasWidgets) items.push({ type: "widgets" });
-  if (content.gallery?.length) items.push({ type: "gallery" });
   return items;
 }
 
