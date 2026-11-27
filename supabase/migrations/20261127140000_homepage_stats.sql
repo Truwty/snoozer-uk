@@ -11,8 +11,7 @@ as $function$
     'members', (
       select count(*)::bigint
       from auth.users u
-      where u.deleted_at is null
-        and coalesce(u.is_anonymous, false) = false
+      where coalesce(u.is_anonymous, false) = false
         and (u.email_confirmed_at is not null or u.phone_confirmed_at is not null)
     ),
     'profiles', (
