@@ -50,6 +50,23 @@ describe("compact public bio experience", () => {
     expect(styles).not.toContain(".public-page .profile-card--bio-experience .profile-social-links");
   });
 
+  it("compacts the public profile music bar and separates it from social links", () => {
+    const styles = readFileSync(new URL("../src/app/styles.css", import.meta.url), "utf8");
+    const playerStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-player {", styles.indexOf("Compact the public music player"));
+    const mainStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-main {", playerStart);
+    const coverStart = styles.indexOf(".public-page .profile-card--bio-experience .profile-audio-cover {", mainStart);
+    const playerRule = playerStart < 0 ? "" : styles.slice(playerStart, styles.indexOf("\\n}", playerStart));
+    const mainRule = mainStart < 0 ? "" : styles.slice(mainStart, styles.indexOf("\\n}", mainStart));
+    const coverRule = coverStart < 0 ? "" : styles.slice(coverStart, styles.indexOf("\\n}", coverStart));
+
+    expect(playerRule).toContain("margin-block-start: .85rem;");
+    expect(playerRule).toContain("padding: .6rem .7rem;");
+    expect(playerRule).toContain("gap: .5rem;");
+    expect(mainRule).toContain("grid-template-columns: 3.25rem minmax(0, 1fr);");
+    expect(coverRule).toContain("width: 3.25rem;");
+    expect(coverRule).toContain("height: 3.25rem;");
+  });
+
   it("renders a centred entry overlay, monochrome social icons and a compact native audio player", () => {
     const profile = profileWith();
     const html = renderToStaticMarkup(createElement(ProfileCard, {
