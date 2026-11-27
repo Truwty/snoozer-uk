@@ -75,30 +75,30 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
       <div><p className="eyebrow">ACCOUNT / SETTINGS</p><h1>{t("Account Settings")}</h1></div>
     </header>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-general-information" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("General Information")}</h2></div>
       {draft&&<div className="studio-setting-row"><div><strong>{t("Username")}</strong><p>@{draft.username}</p></div><ProfileUsernameChange profileId={draft.profile_id} username={draft.username}/></div>}
-      {draft&&<div className="studio-setting-row"><div><strong>{t("Display Name")}</strong><p>{draft.display_name}</p></div><Link className="button small" href="/studio/customize">{t("Edit Display Name")} ↗</Link></div>}
-      {draft&&aliases.success&&!aliasResponse.error&&<div className="studio-setting-row"><div><strong>{t("Alias")}</strong></div><ProfileAliases profileId={draft.profile_id} inventory={aliases.data}/></div>}
-      <div className="studio-setting-row"><div><strong>{t("Email")}</strong><p>{user.email?maskEmail(user.email):"No email address is currently available."}</p></div><details className="studio-reveal-email"><summary>Show email</summary><p>{user.email??"No email address is currently available."}</p></details></div>
+      {draft&&<div id="account-display-name" className="studio-setting-row"><div><strong>{t("Display Name")}</strong><p>{draft.display_name}</p></div><Link className="button small" href="/studio/customize">{t("Edit Display Name")} ↗</Link></div>}
+      {draft&&aliases.success&&!aliasResponse.error&&<div id="account-aliases" className="studio-setting-row"><div><strong>{t("Alias")}</strong></div><ProfileAliases profileId={draft.profile_id} inventory={aliases.data}/></div>}
+      <div id="account-email" className="studio-setting-row"><div><strong>{t("Email")}</strong><p>{user.email?maskEmail(user.email):"No email address is currently available."}</p></div><details className="studio-reveal-email"><summary>Show email</summary><p>{user.email??"No email address is currently available."}</p></details></div>
     </section>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-language" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Language Settings")}</h2></div>
       <p className="muted">{t("Choose language")}</p>
       <AccountLanguageSelect locale={locale} label={t("Language")} options={accountLocales}/>
     </section>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-security" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Security Settings")}</h2></div>
-      <div className="studio-setting-row studio-setting-row--stack">
+      <div id="account-mfa" className="studio-setting-row studio-setting-row--stack">
         <div><strong>{t("Multi-factor authentication")}</strong><p>Protect account sign-ins with an authenticator app.</p></div>
         <div className="studio-account-security-control">
           <AccountSecurityMfa verifiedFactorIds={verifiedTotp.map((factor)=>factor.id)}/>
           {verifiedTotp.map((factor)=><form key={factor.id} action={disableAccountMfa}><input type="hidden" name="factorId" value={factor.id}/><button className="button small studio-danger-button" type="submit">Disable MFA</button></form>)}
         </div>
       </div>
-      <details className="studio-setting-row studio-setting-row--stack studio-session-management">
+      <details id="account-sessions" className="studio-setting-row studio-setting-row--stack studio-session-management">
         <summary><div><strong>Session Management</strong><p>Review devices currently signed into your account and revoke sessions you do not recognise.</p></div><span aria-hidden="true">⌄</span></summary>
         <div className="studio-device-sessions">
           {sessions.success?sessions.data.length?sessions.data.map((session)=><article className="studio-device-session" key={session.session_id}>
@@ -109,26 +109,26 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
       </details>
     </section>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-connections" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Connections")}</h2></div>
-      <div className="studio-setting-row">
+      <div id="account-google" className="studio-setting-row">
         <div><strong>{t("Login with Google")}</strong><p>Sign in to Snoozer with your Google account.</p></div>
         {googleSignIn&&identities.length>1?<form action={unlinkSignInIdentity} className="stack"><input type="hidden" name="provider" value="google"/><label className="check"><input type="checkbox" name="confirm_unlink" required/> Confirm unlink</label><button className="button small studio-danger-button" type="submit">Unlink Google</button></form>:googleSignIn?<span className="studio-setting-status is-good">Connected · primary sign-in</span>:<form action={linkGoogleIdentity}><button className="button small" type="submit">Connect Google</button></form>}
       </div>
-      <div className="studio-setting-row">
+      <div id="account-discord" className="studio-setting-row">
         <div><strong>{t("Login with Discord")}</strong><p>Sign in to Snoozer with your Discord account.</p></div>
         {discordSignIn&&identities.length>1?<form action={unlinkSignInIdentity} className="stack"><input type="hidden" name="provider" value="discord"/><label className="check"><input type="checkbox" name="confirm_unlink" required/> Confirm unlink</label><button className="button small studio-danger-button" type="submit">Unlink Discord</button></form>:<span className={"studio-setting-status"+(discordSignIn?" is-good":"")}>{discordSignIn?"Connected · primary sign-in":"Not connected"}</span>}
       </div>
     </section>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-gifts" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Gift Links")}</h2><Link className="button small" href="/studio/plan/gifts">{t("Buy a gift")} ↗</Link></div>
       <p className="muted">{t("View and manage all of your purchased gifts.")}</p>
       {gifts.success&&gifts.data.length?gifts.data.map((gift)=><div className="studio-setting-row" key={gift.order_id}><div><strong>{gift.plan.toUpperCase()}</strong><p>{gift.status}</p></div><Link className="button small" href="/studio/plan/gifts">{t("Manage gift")} ↗</Link></div>):<div className="studio-gift-empty"><strong>{t("No gift links yet")}</strong><p>{t("You don’t have any gift links yet.")}</p></div>}
       {giftsResponse.error&&<p role="alert">Gift purchase history is unavailable.</p>}
     </section>
 
-    <section className="studio-dashboard-panel studio-account-settings-section">
+    <section id="account-email-marketing" className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Email Marketing")}</h2></div>
       {marketing.success?<form action={updateMarketingPreference} className="studio-marketing-preference">
         <div><strong>{t("Email updates")}</strong><p className="muted">Receive product news and offers by email. Important account, security and billing messages remain enabled.</p></div>
@@ -144,7 +144,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
     <section className="studio-dashboard-panel studio-account-settings-section">
       <div className="studio-panel-heading"><h2>{t("Account Actions")}</h2></div>
       <div className="studio-account-action-item"><strong>{t("Regenerate Recovery Codes")}</strong><AccountRecoveryCodes enabled={verifiedTotp.length>0}/></div>
-      <details className="studio-account-action-item studio-account-action-disclosure">
+      <details id="account-email-change" className="studio-account-action-item studio-account-action-disclosure">
         <summary>{t("Change Email")} <span aria-hidden="true">↗</span></summary>
         <EmailChangeForm/>
       </details>
