@@ -467,6 +467,13 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
       await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
     }
     await expect(page.locator("#snoozer-locale option")).toHaveCount(6);
+    await page.keyboard.press("Control+k");
+    const commandSearch = page.getByRole("dialog", { name: "Search Studio" }).getByLabel("Search Studio features, pages, and actions");
+    await commandSearch.fill("multi-factor");
+    const mfaCommand = page.getByRole("link", { name: /Multi-factor authentication/ });
+    await expect(mfaCommand).toContainText("Enable or disable multi-factor authentication.");
+    await commandSearch.press("Enter");
+    await expect(page).toHaveURL(/\/studio\/account#account-mfa$/);
 
     await page.getByRole("link", { name: "Links", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Social profiles", exact: true })).toBeVisible();
