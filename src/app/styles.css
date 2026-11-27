@@ -2637,3 +2637,119 @@ body:has(> .public-page[data-background-image="true"]) {
   to{opacity:1;transform:translate(-50%,0)}
 }
 @media(prefers-reduced-motion:reduce){.profile-audio-shuffle-alert{animation:none}}
+
+/* Email-first sign-in card */
+.auth-layout-login {
+  width: min(calc(100% - 2rem), 23rem);
+  min-height: 100svh;
+  padding-block: 1.25rem;
+  display: grid;
+  align-content: center;
+  justify-items: stretch;
+}
+.auth-panel-login {
+  display: grid;
+  gap: .8rem;
+  width: 100%;
+  margin: 0;
+  padding: 1.3rem;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 1.15rem;
+  background: #111213;
+  box-shadow: 0 24px 80px rgba(0,0,0,.4);
+}
+.auth-panel-login > .eyebrow { display:none; }
+.auth-panel-login h1 { margin:0; font-size:1.18rem; line-height:1.35; letter-spacing:-.02em; }
+.auth-panel-login > .muted { margin:0; font-size:.76rem; line-height:1.5; }
+.auth-login-brand { display:grid; justify-items:start; margin-block-end:.2rem; }
+.auth-login-brand .brand { justify-self:start; gap:.55rem; font-size:1rem; }
+.auth-login-brand .brand-mark { width:2.25rem; height:2.25rem; }
+.auth-panel-login form.stack { gap:.55rem; }
+.auth-panel-login label { font-size:.76rem; }
+.auth-panel-login input:not([type=checkbox]) {
+  min-height:2.55rem;
+  padding:.58rem .7rem;
+  border-color:rgba(255,255,255,.055);
+  border-radius:.7rem;
+  background:#090a0b;
+  font-size:.76rem;
+}
+.auth-panel-login .password-field input { padding-inline-end:4rem; }
+.auth-panel-login .password-toggle { top:1.22rem; min-height:2rem; font-size:.7rem; color:var(--muted); }
+.auth-password-reveal {
+  display:grid;
+  grid-template-rows:0fr;
+  overflow:hidden;
+  opacity:0;
+  transform:translateY(-5px);
+  visibility:hidden;
+  pointer-events:none;
+  transition:grid-template-rows .28s cubic-bezier(.2,.7,.2,1), opacity .22s ease, transform .28s ease, visibility .28s;
+}
+.auth-password-reveal.is-visible {
+  grid-template-rows:1fr;
+  opacity:1;
+  transform:translateY(0);
+  visibility:visible;
+  pointer-events:auto;
+}
+.auth-password-reveal-inner { min-height:0; overflow:hidden; }
+.auth-panel-login .auth-password-reveal.is-visible { margin-block-end:.15rem; }
+.auth-panel-login button.button,
+.auth-panel-login a.button {
+  width:100%;
+  min-height:2.55rem;
+  justify-content:center;
+  border-radius:999px;
+  font-size:.76rem;
+}
+.auth-panel-login form > button.button,
+.auth-panel-login form > .button { margin:0; }
+.auth-login-divider {
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:.65rem;
+  margin:.05rem 0;
+  color:var(--muted);
+  font-size:.64rem;
+}
+.auth-login-divider::before,.auth-login-divider::after {
+  content:"";
+  height:1px;
+  background:rgba(255,255,255,.08);
+}
+.auth-provider-actions { display:grid; gap:.5rem; }
+.auth-panel-login .auth-provider-button {
+  position:relative;
+  border:1px solid rgba(255,255,255,.045);
+  border-radius:.7rem;
+  background:#191a1b;
+  color:#f5f6f7;
+}
+.auth-panel-login .auth-provider-button:hover { background:#202223; border-color:rgba(255,255,255,.11); }
+.auth-provider-mark {
+  position:absolute;
+  inset-inline-start:1rem;
+  display:grid;
+  place-items:center;
+  width:1.1rem;
+  height:1.1rem;
+  font-weight:800;
+  font-size:.95rem;
+}
+.auth-provider-mark-google { color:#4285f4; text-shadow:1px 0 #34a853,-1px 0 #ea4335; }
+.auth-provider-mark-discord { color:#fff; font-size:.7rem; }
+.auth-login-footer { display:grid; gap:.2rem; margin-top:.1rem; text-align:center; }
+.auth-login-footer p { margin:0; color:var(--muted); font-size:.67rem; }
+.auth-login-footer a { color:var(--accent); text-decoration:none; }
+.auth-login-footer a:hover { text-decoration:underline; text-underline-offset:2px; }
+.auth-panel-login .message { font-size:.72rem; }
+@media (max-width:28rem) {
+  .auth-layout-login { width:min(calc(100% - 1.25rem),23rem); }
+  .auth-panel-login { padding:1.1rem; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .auth-password-reveal,.auth-password-reveal.is-visible { transition:none; transform:none; }
+}
+
