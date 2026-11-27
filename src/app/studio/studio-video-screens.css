@@ -459,3 +459,158 @@
 @media(max-width:620px) {
   .studio-links-image-host-card { align-items:stretch; flex-direction:column; }
 }
+
+/* Studio editor repair: visible panel edges, resilient inner grids and viewport fit. */
+.studio-main-content .studio-workspace,
+.studio-main-content .studio-workspace .editor-grid,
+.studio-main-content .studio-workspace .editor-sidebar,
+.studio-main-content .studio-workspace .editor-column,
+.studio-main-content .studio-workspace .editor-form,
+.studio-main-content .studio-workspace .preview,
+.studio-main-content .studio-workspace .preview-card {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.studio-main-content .studio-workspace .editor-sidebar,
+.studio-main-content .studio-workspace .editor-column,
+.studio-main-content .studio-workspace .preview,
+.studio-main-content .studio-workspace .editor-topbar,
+.studio-main-content .studio-reference-customization,
+.studio-main-content .studio-assets-uploader,
+.studio-main-content .studio-asset-card,
+.studio-main-content .studio-links-catalogue,
+.studio-main-content .link-editor.link-row {
+  border-color: rgba(255,255,255,.15);
+}
+
+.studio-main-content .studio-workspace .editor-topbar {
+  flex-wrap: wrap;
+  border-width: 1px;
+}
+
+.studio-main-content .studio-workspace .editor-topbar .actions {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.studio-main-content .studio-workspace .editor-panel > fieldset,
+.studio-main-content .studio-workspace .editor-settings > fieldset,
+.studio-main-content .studio-workspace .effects-editor,
+.studio-main-content .studio-workspace .studio-reference-customization {
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 10px;
+  background: #111516 !important;
+}
+
+.studio-main-content .studio-workspace .studio-reference-customization-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.studio-main-content .studio-workspace .studio-reference-color-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+}
+
+.studio-main-content .studio-workspace .studio-reference-other-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.studio-main-content .studio-workspace .studio-reference-glow-settings {
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+}
+
+.studio-main-content .studio-workspace .studio-assets-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.studio-main-content .studio-workspace .studio-asset-card,
+.studio-main-content .studio-workspace .studio-asset-preview,
+.studio-main-content .studio-workspace .studio-reference-glow-options label,
+.studio-main-content .studio-workspace .studio-reference-other-options label {
+  border-color: rgba(255,255,255,.14);
+}
+
+.studio-main-content .studio-workspace input:not([type="checkbox"]):not([type="radio"]),
+.studio-main-content .studio-workspace select,
+.studio-main-content .studio-workspace textarea,
+.studio-main-content .studio-workspace .studio-custom-url-mode,
+.studio-main-content .studio-workspace .studio-custom-url-icon {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  border-color: rgba(255,255,255,.17);
+}
+
+.studio-main-content .studio-workspace .studio-reference-color-grid input[type="color"] {
+  border-color: rgba(255,255,255,.18);
+}
+
+.studio-main-content .studio-workspace .editor-form label,
+.studio-main-content .studio-workspace .editor-form fieldset,
+.studio-main-content .studio-workspace .editor-form section {
+  min-width: 0;
+}
+
+.studio-main-content .studio-workspace .editor-publish-hint {
+  margin-top: .2rem;
+  color: #a6afa7;
+  font-size: .62rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .studio-main-content .studio-workspace .editor-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .studio-main-content .studio-workspace .editor-topbar > div,
+  .studio-main-content .studio-workspace .editor-topbar .actions {
+    width: 100%;
+  }
+
+  .studio-main-content .studio-workspace .editor-topbar .actions {
+    align-items: stretch;
+  }
+
+  .studio-main-content .studio-workspace .editor-topbar .actions > .button,
+  .studio-main-content .studio-workspace .editor-topbar .actions > .actions {
+    flex: 1 1 8.5rem;
+    min-width: 0;
+  }
+
+  .studio-main-content .studio-workspace .editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sidebar" "canvas" "inspector";
+  }
+
+  .studio-main-content .studio-workspace .editor-sidebar,
+  .studio-main-content .studio-workspace .preview,
+  .studio-main-content .studio-workspace .editor-column {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .studio-main-content .studio-workspace .editor-topbar {
+    padding: .65rem;
+  }
+
+  .studio-main-content .studio-workspace .editor-topbar .actions > .actions {
+    flex-basis: 100%;
+  }
+
+  .studio-main-content .studio-workspace .editor-grid {
+    gap: .6rem;
+  }
+
+  .studio-main-content .studio-workspace .editor-column,
+  .studio-main-content .studio-workspace .preview {
+    padding: .7rem;
+  }
+}
