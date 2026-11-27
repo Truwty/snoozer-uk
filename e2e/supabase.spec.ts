@@ -898,10 +898,9 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(1);
     expect(await publicPage.locator(".profile-links a").first()
       .evaluate((element) => parseFloat(getComputedStyle(element).borderRadius))).toBeGreaterThan(0);
-    await expect(publicPage.locator(".profile-callout h2")).toHaveText("Projects");
-    await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
-    await expect(publicPage.locator("figcaption")).toHaveText("Studio notebook");
-    await expect(publicPage.getByText("Literal <em>markup</em>.", { exact: false })).toBeVisible();
+    // Custom sections and blocks remain editable in Studio, but are deliberately
+    // not rendered on the compact reference-style public profile. Their values
+    // are verified after restoring the saved publication below.
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(publicPage.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await expect(publicPage.getByRole("checkbox", { name: "Disable profile effects" })).toHaveCount(0);
