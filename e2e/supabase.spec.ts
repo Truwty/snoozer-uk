@@ -501,7 +501,7 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     for (const label of ["Template Library","Favourite Templates","Last Used Templates","My Uploads"]) {
       await expect(page.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
-    await page.getByRole("button", { name: "Create Template", exact: true }).click();
+    await page.getByRole("link", { name: /Create Template/ }).click();
     await expect(page.getByRole("heading", { name: "Create Template", exact: true })).toBeVisible();
     await expect(page.getByText(/Only your theme, appearance and text-section structure are shared/)).toBeVisible();
     await page.getByLabel("Template name", { exact: true }).fill("Reference creator template");
