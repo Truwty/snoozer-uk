@@ -42,12 +42,6 @@ export async function proxy(request: NextRequest) {
   if (!localTestHost && (pathname === "/status" || pathname === "/status/")) {
     return NextResponse.redirect(new URL("https://status.snoozer.uk/"), { status: 308 });
   }
-  if (!localTestHost && (pathname === "/help" || pathname.startsWith("/help/"))) {
-    const path = pathname === "/help" ? "/" : pathname.slice("/help".length);
-    const destination = new URL(path, "https://help.snoozer.uk");
-    destination.search = request.nextUrl.search;
-    return NextResponse.redirect(destination, { status: 308 });
-  }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
   const plainTextPaste = /^\/paste\/[^/]+\/?$/.test(request.nextUrl.pathname);

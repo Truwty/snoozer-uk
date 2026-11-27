@@ -41,10 +41,10 @@ const english: HomeContent = {
     description: "Bring the things people come to find together, and give them a page that feels unmistakably yours.",
   },
   features: [
-    { title: "Your links", description: "Keep socials, websites, communities and projects together." },
-    { title: "Your look", description: "Make your page yours with themes, layouts, effects and widgets." },
-    { title: "Your media", description: "Showcase photos, creative work and supported profile media." },
-    { title: "Your control", description: "Choose what to publish and whether to opt into creator discovery." },
+    { title: "Members", description: "Verified Snoozer accounts." },
+    { title: "Published profiles", description: "Public pages ready to share." },
+    { title: "Recorded profile views", description: "Consented views across public profiles." },
+    { title: "Files hosted", description: "Images, audio and creator assets." },
   ],
   claim: {
     eyebrow: "MAKE IT YOURS",
@@ -127,10 +127,10 @@ const translations: Record<Exclude<AccountLocale, "en-US">, HomeContent> = {
       description: "Reúne todo lo que la gente busca y dales una página que sea inconfundiblemente tuya.",
     },
     features: [
-      { title: "Tus enlaces", description: "Reúne tus redes sociales, sitios web, comunidades y proyectos." },
-      { title: "Tu estilo", description: "Personaliza tu página con temas, diseños, efectos y widgets." },
-      { title: "Tu contenido", description: "Muestra fotos, trabajos creativos y contenido multimedia compatible." },
-      { title: "Tu control", description: "Elige qué publicar y si quieres aparecer en el directorio de creadores." },
+      { title: "Miembros", description: "Cuentas verificadas de Snoozer." },
+      { title: "Perfiles publicados", description: "Páginas públicas listas para compartir." },
+      { title: "Visitas registradas", description: "Visitas consentidas en perfiles públicos." },
+      { title: "Archivos alojados", description: "Imágenes, audio y recursos de creadores." },
     ],
     claim: {
       eyebrow: "HAZLO TUYO",
@@ -211,10 +211,10 @@ const translations: Record<Exclude<AccountLocale, "en-US">, HomeContent> = {
       description: "Reúna o que as pessoas procuram e ofereça uma página que tenha a sua identidade.",
     },
     features: [
-      { title: "Seus links", description: "Reúna redes sociais, sites, comunidades e projetos." },
-      { title: "Seu visual", description: "Personalize sua página com temas, layouts, efeitos e widgets." },
-      { title: "Sua mídia", description: "Mostre fotos, trabalhos criativos e mídias compatíveis com o perfil." },
-      { title: "Seu controle", description: "Escolha o que publicar e se deseja participar da descoberta de criadores." },
+      { title: "Membros", description: "Contas verificadas do Snoozer." },
+      { title: "Perfis publicados", description: "Páginas públicas prontas para compartilhar." },
+      { title: "Visualizações registradas", description: "Visualizações consentidas em perfis públicos." },
+      { title: "Arquivos hospedados", description: "Imagens, áudio e recursos de criadores." },
     ],
     claim: {
       eyebrow: "DEIXE COM A SUA CARA",
@@ -295,10 +295,10 @@ const translations: Record<Exclude<AccountLocale, "en-US">, HomeContent> = {
       description: "Rassemblez ce que les visiteurs viennent chercher et offrez-leur une page qui vous ressemble vraiment.",
     },
     features: [
-      { title: "Vos liens", description: "Rassemblez réseaux sociaux, sites web, communautés et projets." },
-      { title: "Votre style", description: "Personnalisez votre page avec des thèmes, mises en page, effets et widgets." },
-      { title: "Vos médias", description: "Présentez vos photos, créations et médias de profil compatibles." },
-      { title: "Votre contrôle", description: "Choisissez ce que vous publiez et votre participation à la découverte de créateurs." },
+      { title: "Membres", description: "Comptes Snoozer vérifiés." },
+      { title: "Profils publiés", description: "Pages publiques prêtes à être partagées." },
+      { title: "Vues enregistrées", description: "Vues consenties sur les profils publics." },
+      { title: "Fichiers hébergés", description: "Images, audio et ressources de créateurs." },
     ],
     claim: {
       eyebrow: "FAITES-EN VOTRE ESPACE",
@@ -379,10 +379,10 @@ const translations: Record<Exclude<AccountLocale, "en-US">, HomeContent> = {
       description: "Führe alles zusammen, wonach andere suchen, und gib ihnen eine Seite, die unverkennbar dir gehört.",
     },
     features: [
-      { title: "Deine Links", description: "Bündle soziale Netzwerke, Websites, Communities und Projekte." },
-      { title: "Dein Stil", description: "Gestalte deine Seite mit Designs, Layouts, Effekten und Widgets." },
-      { title: "Deine Medien", description: "Präsentiere Fotos, kreative Arbeiten und unterstützte Profilmedien." },
-      { title: "Deine Kontrolle", description: "Entscheide, was du veröffentlichst und ob du bei der Creator-Suche mitmachst." },
+      { title: "Mitglieder", description: "Bestätigte Snoozer-Konten." },
+      { title: "Veröffentlichte Profile", description: "Öffentliche Seiten zum Teilen." },
+      { title: "Erfasste Profilaufrufe", description: "Zugestimmte Aufrufe öffentlicher Profile." },
+      { title: "Gehostete Dateien", description: "Bilder, Audio und Creator-Dateien." },
     ],
     claim: {
       eyebrow: "MACH ES ZU DEINEM",
@@ -463,10 +463,10 @@ const translations: Record<Exclude<AccountLocale, "en-US">, HomeContent> = {
       description: "İnsanların aradığı her şeyi bir araya getir ve onlara tamamen sana ait bir sayfa sun.",
     },
     features: [
-      { title: "Bağlantıların", description: "Sosyal medya hesaplarını, web sitelerini, topluluklarını ve projelerini bir arada tut." },
-      { title: "Görünümün", description: "Temalar, düzenler, efektler ve bileşenlerle sayfanı kişiselleştir." },
-      { title: "Medyan", description: "Fotoğraflarını, yaratıcı çalışmalarını ve desteklenen profil medyalarını sergile." },
-      { title: "Kontrol sende", description: "Neleri yayınlayacağını ve içerik üretici keşfine katılıp katılmayacağını seç." },
+      { title: "Üyeler", description: "Doğrulanmış Snoozer hesapları." },
+      { title: "Yayımlanan profiller", description: "Paylaşılmaya hazır herkese açık sayfalar." },
+      { title: "Kaydedilen profil görüntülemeleri", description: "Herkese açık profillerde izinli görüntülemeler." },
+      { title: "Barındırılan dosyalar", description: "Görseller, sesler ve içerik üretici dosyaları." },
     ],
     claim: {
       eyebrow: "SANA AİT OLSUN",

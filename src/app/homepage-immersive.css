@@ -2244,3 +2244,85 @@
   }
 }
 
+
+
+/* Community figures strip — Snoozer's own live totals, not copied competitor metrics. */
+.home-immersive .home-social-proof {
+  width: min(100%, 78rem);
+  margin: clamp(2.6rem, 6vw, 5.2rem) auto;
+  padding: clamp(1.4rem, 3.6vw, 2.8rem) 0;
+}
+.home-immersive .home-social-proof .home-section-heading { margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
+.home-immersive .home-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 28%, var(--edge));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--edge));
+  border-radius: 0;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 72%);
+}
+.home-immersive .home-metric-card {
+  min-width: 0;
+  min-height: 10.5rem;
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  align-content: center;
+  justify-items: start;
+  gap: .55rem;
+  padding: clamp(1.25rem, 2.5vw, 2.1rem);
+  border: 0;
+  border-right: 1px solid #ffffff15;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.home-immersive .home-metric-card:last-child { border-right: 0; }
+.home-immersive .home-metric-value {
+  display: block;
+  color: var(--accent);
+  font-size: clamp(2rem, 4.2vw, 3.65rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -.075em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.home-immersive .home-metric-card h3 {
+  color: #f1f3ed;
+  font-size: .88rem;
+  font-weight: 750;
+  letter-spacing: -.015em;
+}
+.home-immersive .home-metric-card p {
+  max-width: 22ch;
+  color: #969b96;
+  font-size: .76rem;
+  line-height: 1.55;
+}
+.home-immersive .home-metric-card:hover {
+  transform: none;
+  border-color: #ffffff15;
+  background: #ffffff05;
+  box-shadow: none;
+}
+@media (max-width: 58rem) {
+  .home-immersive .home-metric-card { min-height: 9.2rem; padding: 1.35rem; }
+  .home-immersive .home-metric-value { font-size: clamp(1.9rem, 4.8vw, 3rem); }
+}
+@media (max-width: 42rem) {
+  .home-immersive .home-metric-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .home-immersive .home-metric-card {
+    min-height: 8rem;
+    padding: 1.1rem .9rem;
+    border-bottom: 1px solid #ffffff15;
+  }
+  .home-immersive .home-metric-card:nth-child(2) { border-right: 0; }
+  .home-immersive .home-metric-card:nth-child(3),
+  .home-immersive .home-metric-card:nth-child(4) { border-bottom: 0; }
+  .home-immersive .home-metric-value { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-immersive .home-metric-card { transition: none !important; }
+}

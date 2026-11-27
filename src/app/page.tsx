@@ -9,6 +9,7 @@ import { HomeFaq } from "@/components/home-faq";
 import { FooterLanguagePicker } from "@/components/footer-language-picker";
 import { getCurrentAccountLocale } from "@/lib/locale-server";
 import { homeContent } from "@/lib/home-translations";
+import { getHomepageStats } from "@/lib/homepage-stats";
 
 export const metadata = {
   title: "Snoozer — your page, your way",
@@ -18,7 +19,8 @@ export const metadata = {
 export default async function Home() {
   const locale = await getCurrentAccountLocale();
   const copy = homeContent(locale);
-  const featureNumbers = ["01", "02", "03", "04"];
+  const stats = await getHomepageStats();
+  const statValues = [stats?.members ?? null, stats?.profiles ?? null, stats?.views ?? null, stats?.uploads ?? null];
 
   return (
     <main className="shell home home-immersive">
@@ -50,9 +52,8 @@ export default async function Home() {
         <div className="home-metric-grid">
           {copy.features.map((feature, index) => (
             <article className="home-metric-card" key={feature.title}>
-              <span className="home-metric-index">{featureNumbers[index]}</span>
+              <strong className="home-metric-value">{statValues[index] === null ? "—" : new Intl.NumberFormat(locale).format(statValues[index]!)}</strong>
               <div><h3>{feature.title}</h3><p>{feature.description}</p></div>
-              <span className="home-metric-symbol" aria-hidden="true">{["↗", "✳", "▧", "⌘"][index]}</span>
             </article>
           ))}
         </div>

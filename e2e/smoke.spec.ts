@@ -234,7 +234,7 @@ test("the Snoozer topbar links to the standalone Help Centre and approved Premiu
   await expect(page.getByText("£30", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" })
-  ).toHaveAttribute("href", "https://help.snoozer.uk/");
+  ).toHaveAttribute("href", "/help");
   // Check the main site's responsive navigation separately from the pricing page's plan grid.
   await page.goto("/");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
