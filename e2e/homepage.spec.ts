@@ -85,3 +85,31 @@ test("homepage footer language selection is saved for the current browser", asyn
   await expect(page.locator("html")).toHaveAttribute("lang", "es-ES");
   await expect(picker).toContainText("Español (España)");
 });
+
+
+test("homepage translates visible content for every supported language and persists the choice", async ({ page }) => {
+  const cases = [
+    { button: /Español/, locale: "es-ES", heading: "Todo lo que quieres, aquí mismo.", faq: "Preguntas frecuentes", nav: "Centro de ayuda", username: "Nombre de usuario" },
+    { button: /Português/, locale: "pt-BR", heading: "Tudo o que você quer, em um só lugar.", faq: "Perguntas frequentes", nav: "Central de ajuda", username: "Nome de usuário" },
+    { button: /Français/, locale: "fr-FR", heading: "Tout ce que vous voulez, au même endroit.", faq: "Foire aux questions", nav: "Centre d’aide", username: "Nom d’utilisateur" },
+    { button: /Deutsch/, locale: "de-DE", heading: "Alles, was du willst. An einem Ort.", faq: "Häufig gestellte Fragen", nav: "Hilfezentrum", username: "Benutzername" },
+    { button: /Türkçe/, locale: "tr-TR", heading: "İstediğin her şey, tek bir yerde.", faq: "Sıkça Sorulan Sorular", nav: "Yardım Merkezi", username: "Kullanıcı adı" },
+  ] as const;
+
+  await page.goto("/");
+  for (const item of cases) {
+    const picker = page.locator(".home-footer-language");
+    await picker.locator("summary").click();
+    await picker.getByRole("button", { name: item.button }).click();
+
+    await expect(page.locator("html")).toHaveAttribute("lang", item.locale);
+    await expect(page.getByRole("heading", { level: 1, name: item.heading })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: item.faq })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: item.nav })).toBeVisible();
+    await expect(page.getByLabel(item.username, { exact: true })).toHaveCount(2);
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", item.locale);
+    await expect(page.getByRole("heading", { level: 1, name: item.heading })).toBeVisible();
+  }
+});

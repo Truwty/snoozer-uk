@@ -1,23 +1,9 @@
-import { cookies } from "next/headers";
-import { sessionClient } from "@/lib/supabase";
-import { accountLocale, accountLocales } from "@/lib/account-locale";
+import { accountLocales } from "@/lib/account-locale";
+import { getCurrentAccountLocale } from "@/lib/locale-server";
 import { saveHomepageLanguage } from "@/app/language/actions";
 
 export async function FooterLanguagePicker() {
-  const jar = await cookies();
-  const savedCookie = jar.get("snoozer_locale")?.value;
-  let locale = accountLocale(savedCookie);
-
-  if (!savedCookie) {
-    try {
-      const client = await sessionClient();
-      const { data } = await client.auth.getUser();
-      locale = accountLocale(data.user?.user_metadata?.snoozer_locale);
-    } catch {
-      // The footer remains available when Auth is temporarily unavailable.
-    }
-  }
-
+  const locale = await getCurrentAccountLocale();
   const selected = accountLocales.find((item) => item.value === locale) ?? accountLocales[0];
 
   return (
