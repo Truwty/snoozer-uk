@@ -670,8 +670,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("button", { name: "Apply template design", exact: true }).click();
     await expect(page.getByLabel("Section 1 heading")).toHaveValue("Projects");
     const designPreview = page.getByRole("region", { name: "Page preview" });
-    await expect(designPreview.locator(".profile-card")).toHaveAttribute("data-template-style", "forest");
-    await expect(designPreview.locator(".profile-card")).toHaveAttribute("data-layout", "centred");
+    await expect(designPreview).toHaveAttribute("data-template-style", "forest");
+    await expect(designPreview).toHaveAttribute("data-layout", "centred");
     await expect(page.getByLabel("Accent Color")).toBeVisible();
     await expect(page.getByLabel("Background Color")).toBeVisible();
     await editorTab(page, "Design");
@@ -681,11 +681,11 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByRole("checkbox", { name: "Show location on my profile" }).check();
     await expect(designPreview.locator(".profile-location")).toContainText("Studio North");
     await page.getByRole("checkbox", { name: "Monochrome Icons" }).check();
-    await expect(designPreview.locator(".profile-card")).toHaveAttribute("data-monochrome-icons", "true");
+    await expect(designPreview).toHaveAttribute("data-monochrome-icons", "true");
     await page.getByRole("checkbox", { name: "Animated Title" }).check();
-    await expect(designPreview.locator(".profile-card")).toHaveAttribute("data-animated-title", "true");
+    await expect(designPreview).toHaveAttribute("data-animated-title", "true");
     await page.getByRole("checkbox", { name: "Swap Box Colors" }).check();
-    await expect(designPreview.locator(".profile-card")).toHaveAttribute("data-swap-box-colors", "true");
+    await expect(designPreview).toHaveAttribute("data-swap-box-colors", "true");
     await editorTab(page, "Sections");
     await page.getByLabel("Section 1 type").selectOption("callout");
     await editorTab(page, "Sections");
