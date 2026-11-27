@@ -1581,3 +1581,435 @@
   .home-profile-preview--front .profile-links { display: grid; }
   .home-premium-tiers strong { font-size: 1.18rem; }
 }
+
+
+/* Homepage art direction: guns.lol-inspired flow, expressed in Snoozer's own visual language. */
+.home-immersive {
+  width: min(calc(100% - 2.5rem), 86rem);
+  isolation: isolate;
+}
+.home-immersive::before {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 48rem;
+  opacity: 1;
+  transform: none;
+  background-image:
+    radial-gradient(ellipse at 50% 50%, transparent 0 8px, #d8fb8615 9px 10px, transparent 11px),
+    linear-gradient(135deg, transparent 48.8%, #d8fb860b 49.2% 50%, transparent 50.4%);
+  background-size: 84px 84px, 84px 84px;
+  mask-image: linear-gradient(180deg, #000 0%, #000 20%, transparent 100%);
+}
+.home-immersive::after { display: none; }
+
+/* The capsule stays available while the visitor scrolls through the page. */
+.home-immersive .snoozer-global-header {
+  position: sticky;
+  top: .65rem;
+  z-index: 30;
+  padding-block: .65rem 0;
+}
+.home-immersive .snoozer-topbar {
+  border-color: #ffffff20;
+  background: #111416d9;
+  box-shadow: 0 .9rem 2.6rem #0008, inset 0 1px #ffffff0a;
+  backdrop-filter: blur(22px) saturate(145%);
+}
+
+/* Hero copy and fanned four-screen product preview. */
+.home-hero {
+  padding-top: clamp(3rem, 6vw, 5.8rem);
+  gap: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.home-hero::before,
+.home-hero::after { display: none; }
+.home-hero-copy {
+  max-width: 62rem;
+  gap: 1.15rem;
+}
+.home-offer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 2rem;
+  padding: .38rem .85rem;
+  border: 1px solid #d8fb863d;
+  border-radius: 999px;
+  background: #d8fb860d;
+  color: #dcebc8;
+  font-size: .72rem;
+  font-weight: 750;
+  letter-spacing: .09em;
+}
+.home-offer-badge span { color: var(--hi-lime); font-size: 1rem; }
+.home-hero h1 {
+  max-width: 16ch;
+  font-size: clamp(3.1rem, 7.4vw, 6.4rem);
+  line-height: .99;
+  letter-spacing: -.075em;
+}
+.home-hero-lead {
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.45vw, 1.18rem);
+  line-height: 1.7;
+}
+.home-hero-actions { margin-top: .5rem; gap: .75rem; }
+.home-hero-actions .button { min-width: 10rem; }
+.home-hero-note { display: block; color: #8f9a91; font-size: .78rem; }
+.home-hero-note span { color: var(--hi-lime); margin-right: .35rem; }
+.home-hero-showcase { width: 100%; }
+.home-profile-showcase {
+  width: min(100%, 86rem);
+  height: clamp(30rem, 39vw, 37rem);
+  margin-top: clamp(1.8rem, 3.8vw, 3.4rem);
+  overflow: visible;
+}
+.home-dashboard-preview {
+  top: 11%;
+  left: .5%;
+  width: 49%;
+  height: 25rem;
+  transform: rotate(-7deg) perspective(1400px) rotateY(7deg);
+  transform-origin: center;
+}
+.home-profile-showcase-cards {
+  top: 0;
+  right: 0;
+  left: 20%;
+  width: 80%;
+}
+.home-profile-preview--back-left {
+  z-index: 2;
+  top: 10%;
+  left: 7%;
+  width: 34%;
+  transform: rotate(-4deg) scale(.91);
+}
+.home-profile-preview--back-left .profile-card,
+.home-profile-preview--back-left .profile-inner {
+  min-height: 20.5rem;
+  height: 20.5rem;
+}
+.home-profile-preview--front {
+  z-index: 4;
+  top: 17%;
+  left: 42%;
+  width: 25%;
+  transform: rotate(3deg) scale(.96);
+}
+.home-profile-preview--back-right {
+  z-index: 3;
+  top: 7%;
+  right: 0;
+  width: 25%;
+  transform: rotate(9deg) scale(.91);
+}
+.home-profile-showcase:hover .home-profile-preview--back-left { transform: translateY(-.35rem) rotate(-4deg) scale(.93); }
+.home-profile-showcase:hover .home-profile-preview--front { transform: translateY(-.45rem) rotate(3deg) scale(.98); }
+.home-profile-showcase:hover .home-profile-preview--back-right { transform: translateY(-.3rem) rotate(9deg) scale(.93); }
+.home-profile-showcase-fade { height: 5rem; }
+
+/* Social-proof-style feature cards: no invented Snoozer user or upload counts. */
+.home-social-proof { padding-block: clamp(1.1rem, 2.2vw, 2rem) clamp(2.2rem, 4.8vw, 4.3rem); }
+.home-social-proof .home-section-heading { margin-bottom: clamp(1.4rem, 2.8vw, 2.2rem); }
+.home-social-proof .home-section-heading h2 { max-width: 22ch; }
+.home-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .8rem; }
+.home-metric-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: start;
+  gap: .9rem;
+  min-width: 0;
+  padding: 1.15rem 1rem;
+  border: 1px solid #ffffff16;
+  border-radius: .95rem;
+  background: linear-gradient(145deg, #1b1e1e, #131719);
+  box-shadow: inset 0 1px #ffffff08;
+}
+.home-metric-index {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border: 1px solid #d8fb8637;
+  border-radius: .75rem;
+  background: #d8fb8610;
+  color: var(--hi-lime);
+  font-size: .88rem;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+.home-metric-card h3 { margin: .12rem 0 .35rem; color: #f0f3ed; font-size: .95rem; letter-spacing: -.025em; }
+.home-metric-card p { color: #aab2a9; font-size: .76rem; line-height: 1.55; }
+.home-metric-symbol {
+  position: absolute;
+  top: .9rem;
+  right: .9rem;
+  color: #94a18e;
+  font-size: .82rem;
+}
+
+/* Username claim input has the action inside the right-hand end of the bar. */
+.home-claim {
+  grid-template-columns: minmax(0,.95fr) minmax(24rem,1.05fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  margin-block: 0 clamp(3rem, 6vw, 5rem);
+  padding: clamp(1.5rem, 3.8vw, 2.7rem);
+  border-color: #ffffff20;
+  background: radial-gradient(ellipse at 100% 0%, #d8fb8611, transparent 55%), linear-gradient(120deg,#1a1d1d,#141719 72%);
+}
+.home-claim-copy h2 { max-width: 16ch; font-size: clamp(1.8rem, 3.3vw, 2.65rem); }
+.home-claim-form,
+.home-final-form {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #ffffff1c;
+  border-radius: 1rem;
+  background: #0d1011;
+  box-shadow: inset 0 1px #ffffff07;
+}
+.home-claim-form .hero-claim,
+.home-final-form .hero-claim {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: .5rem;
+}
+.home-claim-label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0,0,0,0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.home-claim-form .hero-claim .address,
+.home-final-form .hero-claim .address {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem .85rem;
+  border: 1px solid #ffffff27;
+  border-radius: .75rem;
+  background: #181d1d;
+}
+.home-claim-form .hero-claim .address > span,
+.home-final-form .hero-claim .address > span {
+  color: #a5afa2;
+  font-size: .88rem;
+  white-space: nowrap;
+}
+.home-claim-form .hero-claim .address input,
+.home-final-form .hero-claim .address input {
+  min-width: 0;
+  min-height: 2.55rem;
+  padding: .35rem .1rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--hi-text);
+}
+.home-claim-form .hero-claim .address:focus-within,
+.home-final-form .hero-claim .address:focus-within { border-color: var(--hi-lime); box-shadow: 0 0 0 3px #d8fb8619; }
+.home-claim-form .hero-claim .actions,
+.home-final-form .hero-claim .actions { grid-column: 2; grid-row: 1; margin: 0; }
+.home-claim-form .hero-claim .actions .button,
+.home-final-form .hero-claim .actions .button {
+  min-height: 3.25rem;
+  min-width: 7.4rem;
+  padding-inline: 1rem;
+  border-radius: .75rem;
+  white-space: nowrap;
+}
+.home-claim-form .hero-claim .message,
+.home-final-form .hero-claim .message { grid-column: 1 / -1; margin: .1rem 0 0; text-align: left; }
+
+/* Plan cards keep Snoozer's actual GBP tiers and recurring billing structure. */
+.home-plans { padding-block: clamp(1.2rem, 3vw, 2rem) clamp(2.5rem, 5vw, 4.5rem); }
+.home-plans .home-section-heading h2 { max-width: 22ch; }
+.home-plan-grid { grid-template-columns: minmax(0,.88fr) minmax(0,1.12fr); gap: 1rem; }
+.home-plan-card { min-height: 100%; padding: clamp(1.35rem, 2.7vw, 2rem); }
+.home-plan-description { min-height: 0; }
+.home-plan-premium { padding-top: 2.15rem; }
+.home-plan-featured-label { top: .8rem; right: 1rem; }
+.home-premium-tiers { margin-block: .2rem; }
+.home-premium-tiers > div { padding: .85rem .7rem; }
+.home-plan-features { gap: .7rem; }
+.home-plan-button { margin-top: auto; }
+.home-faq { padding-block: clamp(2.5rem, 5vw, 4.5rem); }
+.home-faq-list { display: grid; gap: .65rem; }
+.home-faq-item {
+  overflow: hidden;
+  border: 1px solid #ffffff19;
+  border-radius: .85rem;
+  background: linear-gradient(140deg,#191d1d,#141719);
+  transition: border-color .2s ease, background .2s ease;
+}
+.home-faq-item:hover,
+.home-faq-item.is-open { border-color: #d8fb8645; background: #191e1d; }
+.home-faq-item h3 { margin: 0; }
+.home-faq-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 3.7rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1.1rem;
+  border: 0;
+  background: transparent;
+  color: #eef2eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: .93rem;
+  font-weight: 680;
+  text-align: left;
+}
+.home-faq-trigger svg { flex: none; color: #9ca995; transition: transform .24s ease, color .24s ease; }
+.home-faq-item.is-open .home-faq-trigger svg { transform: rotate(180deg); color: var(--hi-lime); }
+.home-faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .28s ease, opacity .22s ease;
+}
+.home-faq-item.is-open .home-faq-answer { grid-template-rows: 1fr; opacity: 1; }
+.home-faq-answer-inner { min-height: 0; overflow: hidden; }
+.home-faq-answer p { padding: 0 1.1rem 1.05rem; color: #aeb7ad; font-size: .86rem; line-height: 1.7; }
+
+/* Final sign-up banner and four-column footer. */
+.home-final-cta {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(24rem, .9fr);
+  align-items: center;
+  gap: clamp(1.3rem, 3vw, 2.7rem);
+  margin-block: clamp(1.4rem, 4vw, 3.1rem);
+  padding: clamp(1.7rem, 4.2vw, 3.4rem);
+}
+.home-final-copy { position: relative; z-index: 1; }
+.home-final-copy h2 { max-width: 17ch; font-size: clamp(2rem,4vw,3.2rem); }
+.home-final-form { position: relative; z-index: 1; }
+.home-footer-main {
+  grid-template-columns: minmax(12rem,1.5fr) repeat(4,minmax(7rem,1fr));
+  gap: clamp(.8rem,2.1vw,1.8rem);
+}
+.home-footer-bottom { align-items: center; }
+.home-footer-column nav a { min-height: 1.9rem; }
+@media (max-width: 66rem) {
+  .home-metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .home-profile-showcase { height: 33rem; }
+  .home-dashboard-preview { width: 50%; }
+  .home-profile-showcase-cards { left: 17%; width: 83%; }
+  .home-claim { grid-template-columns: minmax(0,1fr) minmax(21rem,1fr); }
+  .home-footer-main { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .home-footer-brand { grid-column: 1 / -1; max-width: 34rem; }
+}
+@media (max-width: 54rem) {
+  .home-immersive .snoozer-global-header { top: .4rem; }
+  .home-profile-showcase { height: 31rem; }
+  .home-dashboard-preview { width: 53%; height: 23rem; }
+  .home-profile-showcase-cards { left: 18%; width: 82%; }
+  .home-claim,
+  .home-final-cta { grid-template-columns: 1fr; }
+  .home-claim { gap: 1.2rem; }
+  .home-claim-copy h2 { max-width: 23ch; }
+  .home-final-form { max-width: 100%; }
+  .home-footer-main { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 42rem) {
+  .home-immersive { width: min(calc(100% - 1rem), 78rem); }
+  .home-hero { padding-top: 2.4rem; }
+  .home-hero h1 { max-width: 13ch; font-size: clamp(2.55rem, 11vw, 3.5rem); }
+  .home-hero-lead { max-width: 36ch; font-size: .92rem; }
+  .home-hero-actions .button { min-height: 2.8rem; padding-inline: .95rem; font-size: .8rem; }
+  .home-profile-showcase { height: 34rem; margin-top: 1.25rem; overflow: hidden; }
+  .home-dashboard-preview {
+    top: .3rem;
+    left: 0;
+    width: 100%;
+    height: 18rem;
+    grid-template-columns: 1fr;
+    transform: rotate(0) scale(.97);
+  }
+  .home-dashboard-sidebar { display: none; }
+  .home-dashboard-main { padding: .8rem; gap: .55rem; }
+  .home-dashboard-heading h3 { font-size: .92rem; }
+  .home-dashboard-stats { grid-template-columns: repeat(4,minmax(0,1fr)); gap: .25rem; }
+  .home-dashboard-stats > div { padding: .45rem .32rem; }
+  .home-dashboard-stats small { font-size: .4rem; }
+  .home-dashboard-stats strong { font-size: .56rem; }
+  .home-dashboard-lower { grid-template-columns: 1fr; }
+  .home-dashboard-chart { padding: .5rem; }
+  .home-dashboard-chart svg { height: 6.3rem; }
+  .home-dashboard-actions { display: none; }
+  .home-profile-showcase-cards { top: 12.2rem; right: 0; left: 0; width: 100%; height: 21rem; }
+  .home-profile-preview { width: 38%; }
+  .home-profile-preview .profile-card,
+  .home-profile-preview .profile-inner { min-height: 19.5rem; --card-pad: .7rem; --card-gap: .36rem; }
+  .home-profile-preview--back-left .profile-card,
+  .home-profile-preview--back-left .profile-inner { min-height: 18.5rem; height: 18.5rem; }
+  .home-profile-preview .avatar { width: 2.5rem; height: 2.5rem; }
+  .home-profile-preview .profile-identity .profile-name-heading { font-size: .92rem; }
+  .home-profile-preview .profile-bio { font-size: .52rem; }
+  .home-profile-preview .profile-social-link { width: 1.35rem; height: 1.35rem; }
+  .home-profile-preview .profile-social-mark,
+  .home-profile-preview .profile-social-mark svg { width: .65rem; height: .65rem; }
+  .home-profile-preview .profile-links a { min-height: 1.5rem; padding: .18rem; font-size: .47rem; }
+  .home-profile-preview .profile-sections { display: none; }
+  .home-profile-preview--back-left { top: 8%; left: 0; width: 38%; transform: rotate(-8deg) scale(.9); }
+  .home-profile-preview--front { top: 12%; left: 30%; width: 43%; transform: rotate(2deg) scale(1); }
+  .home-profile-preview--back-right { top: 16%; right: 0; width: 38%; transform: rotate(8deg) scale(.9); }
+  .home-profile-showcase:hover .home-profile-preview--back-left { transform: rotate(-8deg) scale(.9); }
+  .home-profile-showcase:hover .home-profile-preview--front { transform: rotate(2deg) scale(1); }
+  .home-profile-showcase:hover .home-profile-preview--back-right { transform: rotate(8deg) scale(.9); }
+  .home-metric-grid { grid-template-columns: 1fr; gap: .55rem; }
+  .home-metric-card { padding: .85rem; }
+  .home-claim { padding: 1.1rem; gap: .9rem; }
+  .home-claim-form, .home-final-form { padding: .7rem; }
+  .home-claim-form .hero-claim,
+  .home-final-form .hero-claim { grid-template-columns: minmax(0,1fr) auto; }
+  .home-claim-form .hero-claim .address,
+  .home-final-form .hero-claim .address { min-height: 2.85rem; gap: .3rem; padding-inline: .55rem; }
+  .home-claim-form .hero-claim .address > span,
+  .home-final-form .hero-claim .address > span { font-size: .73rem; }
+  .home-claim-form .hero-claim .actions .button,
+  .home-final-form .hero-claim .actions .button { min-width: 6.2rem; min-height: 2.85rem; padding-inline: .6rem; font-size: .76rem; }
+  .home-plan-grid { grid-template-columns: 1fr; }
+  .home-plan-card { padding: 1.2rem; }
+  .home-final-cta { padding: 1.35rem; }
+  .home-footer-main { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 22rem) {
+  .home-hero h1 { font-size: 2.4rem; }
+  .home-claim-form .hero-claim .address,
+  .home-final-form .hero-claim .address { gap: .18rem; padding-inline: .42rem; }
+  .home-claim-form .hero-claim .address > span,
+  .home-final-form .hero-claim .address > span { font-size: .66rem; }
+  .home-claim-form .hero-claim .actions .button,
+  .home-final-form .hero-claim .actions .button { min-width: 5.8rem; font-size: .7rem; }
+  .home-premium-tiers { gap: .28rem; }
+  .home-premium-tiers > div { padding: .6rem .42rem; }
+  .home-footer-main { gap: 1.2rem .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-immersive .snoozer-topbar,
+  .home-immersive .home-faq-item,
+  .home-immersive .home-faq-trigger svg,
+  .home-immersive .home-faq-answer { transition: none !important; }
+}
