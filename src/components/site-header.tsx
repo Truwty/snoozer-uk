@@ -6,9 +6,14 @@ import { currentSlot, storedAccounts } from "@/lib/account-session-server";
 import { sessionClient } from "@/lib/supabase";
 import { username as usernameShape } from "@/lib/profile";
 import { maxSavedAccounts } from "@/lib/account-sessions";
+import type { AccountLocale } from "@/lib/account-locale";
+import { getCurrentAccountLocale } from "@/lib/locale-server";
+import { homeContent } from "@/lib/home-translations";
 
-export async function SiteHeader() {
+export async function SiteHeader({ locale: suppliedLocale }: { locale?: AccountLocale } = {}) {
   const jar = await cookies();
+  const locale = suppliedLocale ?? await getCurrentAccountLocale();
+  const copy = homeContent(locale);
   const accounts = storedAccounts(jar);
   const activeSlot = currentSlot(jar);
   let current: { label: string; username?: string; avatar?: string; isOwner?: boolean } | null = null;
@@ -34,22 +39,19 @@ export async function SiteHeader() {
     // A temporary Auth/provider outage must not crash the public navigation.
   }
 
-  // Legacy Supabase session cookies have no account registry yet; still offer
-  // account switching and migration on the first successful explicit login.
-  // A brand-new anonymous visitor has no saved identity: don't expose the
-  // legacy primary-slot placeholder as a fake switchable account.
   const visibleAccounts = !current && accounts.length === 1
     && accounts[0].slot === "primary" && !accounts[0].userId
       ? [] : accounts.slice(0, maxSavedAccounts);
+
   return <header className="snoozer-global-header">
     <div className="snoozer-topbar">
       <Brand />
       <nav className="snoozer-header-links" aria-label="Primary navigation">
-        <Link href="/help">Help Center</Link>
-        <Link href="/templates">Templates</Link>
-        <Link href="/discover">Discover</Link>
-        <Link href="/leaderboard">Leaderboard</Link>
-        <Link href="/pricing">Pricing</Link>
+        <Link href="/help">{copy.nav.help}</Link>
+        <Link href="/templates">{copy.nav.templates}</Link>
+        <Link href="/discover">{copy.nav.discover}</Link>
+        <Link href="/leaderboard">{copy.nav.leaderboard}</Link>
+        <Link href="/pricing">{copy.nav.pricing}</Link>
       </nav>
       <AccountMenu accounts={visibleAccounts} activeSlot={activeSlot} current={current}/>
     </div>
