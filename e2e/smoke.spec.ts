@@ -119,7 +119,7 @@ test("homepage profile showcase uses the profile renderer and social brand icons
 test("handle availability, template choices and password controls work", async ({ page }) => {
   await page.route("**/api/v1/usernames/available-handle", (route) => route.fulfill({ json: { available: true } }));
   await page.goto("/");
-  await page.getByLabel("Username", { exact: true }).fill("available-handle");
+  await page.getByLabel("Username", { exact: true }).first().fill("available-handle");
   await expect(page.getByRole("status")).toContainText("Available. Claim it to reserve it.");
   await page.goto("/templates");
   await expect(page.getByRole("link", { name: "Customise this design", exact: true })).toHaveCount(24);
