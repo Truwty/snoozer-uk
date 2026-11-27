@@ -6,7 +6,7 @@ import { Countdown } from "./countdown";
 import { linkAccentColours } from "@/lib/link-accent";
 import { socialProviderForUrl, type SocialProviderId } from "@/lib/social-providers";
 import { normalizeProfilePageLayout, type ProfilePageLayoutItem } from "@/lib/profile-layout";
-import { profileBackgroundImage, profileBackgroundVideoId, safeLink, type PublishedProfile } from "@/lib/profile";
+import { profileBackgroundImage, profileBackgroundVideoId, safeLink, safeProfileLink, type PublishedProfile } from "@/lib/profile";
 
 
 
@@ -26,6 +26,8 @@ type SocialLink = { label: string; url: string; index: number; providerId: Socia
 const audioFilePattern = /\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
 
 function directAudioSource(value: string) {
+  const internalPath = /^\/media\/audio\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|m4a|ogg|wav|aac|flac)$/i;
+  if (internalPath.test(value)) return value;
   try {
     const url = new URL(value);
     return url.protocol === "https:" && audioFilePattern.test(url.pathname) ? url.toString() : null;
@@ -458,7 +460,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
 
   function renderLinks() {
     const valid = profile.links.map((item, index) => ({ ...item, index }))
-      .filter(({ url, hidden }) => safeLink(url) && !hidden);
+      .filter(({ url, hidden }) => safeProfileLink(url) && !hidden);
 
     const audioTracks = entryExperience ? valid.flatMap(({ label, url, audioCoverImage, index }) => {
       const src = directAudioSource(url);
@@ -588,7 +590,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
       onSelect={onSelectLayoutItem}>{child}</LayoutBlock>;
   }
 
-  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeLink(item.url) && Boolean(directAudioSource(item.url)));
+  const hasNativeAudio = entryExperience && profile.links.some((item) => !item.hidden && safeProfileLink(item.url) && Boolean(directAudioSource(item.url)));
 
   function enterProfile() {
     // Reveal the profile immediately in the same click that opens the native
