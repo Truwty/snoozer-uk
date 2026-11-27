@@ -2360,14 +2360,7 @@ body:has(> .public-page[data-background-image="true"]) {
   background: rgb(255 255 255 / 5%);
   box-shadow: none;
 }
-.profile-card--bio-experience .profile-more-content .profile-gallery {
-  gap: .6rem;
-  margin-top: .55rem;
-  text-align: center;
-}
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
-  gap: .45rem;
-}
+
 
 
 /* Keep the public bio stack centred even when the saved Studio layout is editorial. */
