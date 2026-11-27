@@ -22,7 +22,7 @@ test("billing export is account-scoped, private, and safe with no live Stripe cu
   await page.goto("/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password",{exact:true}).fill(password);
-  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await page.getByRole("button",{name:"Log in",exact:true}).click();
   await expect(page).toHaveURL("http://localhost:3000/studio");
   const response=await page.request.get("/api/v1/account/billing-export");
   expect(response.status()).toBe(200);
