@@ -1074,13 +1074,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await page.getByLabel("Username").fill(replacement);
     await page.getByRole("button", { name: "Claim address" }).click();
     await expect(page.getByRole("heading", { name: "Account Overview", exact: true })).toBeVisible();
-    const { data: newDraft } = await ownerClient.rpc("get_draft");
-    const { data: newScope } = await ownerClient.rpc("draft_media_scope", { p_expected: newDraft.revision });
+    // Re-authenticate the independent API client after the delete/reclaim lifecycle.
+    // The browser's authenticated Studio session has already confirmed the replacement
+    // profile; use a fresh JWT before checking it through the separate Supabase client.
+    const replacementOwnerClient = createClient(project!, publishableKey!, { auth: { persistSession: false } });
+    const { error: replacementSignInError } = await replacementOwnerClient.auth.signInWithPassword({ email, password: newPassword });
+    expect(replacementSignInError).toBeNull();
+    const { data: newDraft, error: newDraftError } = await replacementOwnerClient.rpc("get_draft");
+    expect(newDraftError).toBeNull();
+    expect(newDraft).toMatchObject({ username: replacement, revision: 2 });
+    const { data: newScope, error: newScopeError } = await replacementOwnerClient.rpc("draft_media_scope", { p_expected: newDraft!.revision });
+    expect(newScopeError).toBeNull();
+    expect(newScope).toMatch(/^[0-9a-f-]{36}$/);
     expect(newScope).not.toBe(oldScope);
-    expect((await ownerClient.storage.from("avatar-incoming").uploadToSignedUrl(
+    expect((await replacementOwnerClient.storage.from("avatar-incoming").uploadToSignedUrl(
       `${oldScope}/pending`, lateUpload!.token, image, { contentType: "image/png" },
     )).error).toBeNull();
-    expect((await incoming.upload(`${newScope}/pending`, image, { contentType: "image/png" })).error).toBeNull();
+    expect((await replacementOwnerClient.storage.from("avatar-incoming").upload(
+      `${newScope}/pending`, image, { contentType: "image/png" },
+    )).error).toBeNull();
 
     // Move the clock forward for this one test job in the disposable Docker database.
     execFileSync("docker", ["exec", "supabase_db_snoozer-uk", "psql", "-U", "postgres", "-d", "postgres",
