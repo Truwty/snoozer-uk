@@ -196,7 +196,7 @@ export async function holdImageHostLifetimePayment(stripe:Stripe,event:Stripe.Ev
     if(!charge.livemode||charge.amount_refunded<=0)return false;
     paymentIntent=typeof charge.payment_intent==="string"?charge.payment_intent:charge.payment_intent?.id??null;
     reason="refund";
-  }else if(event.type.startsWith("charge.dispute.")){
+  }else if(event.type==="charge.dispute.created"||event.type==="charge.dispute.closed"){
     const dispute=await stripe.disputes.retrieve(event.data.object.id);
     if(!dispute.livemode||dispute.id!==event.data.object.id)return false;
     const chargeId=typeof dispute.charge==="string"?dispute.charge:dispute.charge?.id;
