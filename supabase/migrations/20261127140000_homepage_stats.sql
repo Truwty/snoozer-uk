@@ -11,8 +11,7 @@ as $function$
     'members', (
       select count(*)::bigint
       from auth.users u
-      where coalesce(u.is_anonymous, false) = false
-        and (u.email_confirmed_at is not null or u.phone_confirmed_at is not null)
+      where u.email_confirmed_at is not null
     ),
     'profiles', (
       select count(distinct pp.profile_id)::bigint
@@ -35,8 +34,6 @@ as $function$
         'profile-background-videos',
         'custom-badges'
       )
-        and o.archived_at is null
-        and o.is_delete_marker is not true
     )
   );
 $function$;
