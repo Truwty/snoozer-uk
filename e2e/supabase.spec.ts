@@ -896,7 +896,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     expect(await bioCard.evaluate((element) => parseFloat(getComputedStyle(element).borderTopLeftRadius))).toBeGreaterThan(16);
     expect(await publicPage.locator(".profile-identity").evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(1);
-    expect(await publicPage.locator(".profile-more-content .profile-links a").first()
+    expect(await publicPage.locator(".profile-links a").first()
       .evaluate((element) => parseFloat(getComputedStyle(element).borderRadius))).toBeGreaterThan(0);
     await expect(publicPage.locator(".profile-callout h2")).toHaveText("Projects");
     await expect(publicPage.locator("blockquote")).toHaveText("Stay curious.");
