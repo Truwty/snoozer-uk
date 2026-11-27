@@ -123,8 +123,11 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
   const [duration, setDuration] = useState(0);
   const [shuffle, setShuffle] = useState(false);
   const [shuffleMessage, setShuffleMessage] = useState("");
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const resumeAfterChange = useRef(false);
+  const autoplayAttempted = useRef(false);
   const track = tracks[trackIndex] ?? tracks[0];
+  const artwork = track.cover ?? cover;
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
@@ -138,9 +141,17 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
     audio.load();
     setPosition(0);
     setDuration(0);
-    if (resumeAfterChange.current) {
-      resumeAfterChange.current = false;
-      void audio.play().catch(() => setPlaying(false));
+
+    const shouldStart = !autoplayAttempted.current || resumeAfterChange.current;
+    autoplayAttempted.current = true;
+    resumeAfterChange.current = false;
+    if (shouldStart) {
+      void audio.play().then(() => {
+        setAutoplayBlocked(false);
+      }).catch(() => {
+        setPlaying(false);
+        setAutoplayBlocked(true);
+      });
     }
   }, [audioRef, trackIndex]);
 
@@ -190,14 +201,20 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      try { await audio.play(); } catch { setPlaying(false); }
+      try {
+        await audio.play();
+        setAutoplayBlocked(false);
+      } catch {
+        setPlaying(false);
+        setAutoplayBlocked(true);
+      }
     } else audio.pause();
   }
 
-  return <section className="profile-audio-player" aria-label="Profile music player">
+  return <section className="profile-audio-player" aria-label="Profile music player" data-playing={playing ? "true" : "false"}>
     {shuffleMessage && <p className="profile-audio-shuffle-alert" role="alert">{shuffleMessage}</p>}
-    <audio ref={audioRef} src={track.src} preload="metadata"
-      onPlay={() => setPlaying(true)}
+    <audio ref={audioRef} src={track.src} preload="auto" autoPlay
+      onPlay={() => { setPlaying(true); setAutoplayBlocked(false); }}
       onPause={() => setPlaying(false)}
       onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
       onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
@@ -206,18 +223,48 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
         if (tracks.length > 1) nextTrack(true);
         else { setPlaying(false); setPosition(0); }
       }} />
-    {cover
-      // The selected image is already a same-origin, resized profile asset.
-      // eslint-disable-next-line @next/next/no-img-element
-      ? <img className="profile-audio-cover" src={cover} alt="" width={48} height={48} />
-      : <span className="profile-audio-cover profile-audio-cover--fallback" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-          </svg>
-        </span>}
-    <div className="profile-audio-details">
-      <strong title={track.title}>{track.title}</strong>
-      <span title={track.artist}>{track.artist}</span>
+    <div className="profile-audio-main">
+      {artwork
+        // Uploaded artwork is already a same-origin, resized profile asset.
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img className="profile-audio-cover" src={artwork} alt="" width={68} height={68} />
+        : <span className="profile-audio-cover profile-audio-cover--fallback" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+            </svg>
+          </span>}
+      <div className="profile-audio-details">
+        <span className="profile-audio-kicker">NOW PLAYING</span>
+        <strong title={track.title}>{track.title}</strong>
+        <span title={track.artist}>{track.artist}</span>
+        {autoplayBlocked && <span className="profile-audio-status" role="status">Tap play to start the music</span>}
+      </div>
+    </div>
+    <div className="profile-audio-transport" aria-label="Music controls">
+      <button className="profile-audio-step" type="button" onClick={previousTrack} disabled={tracks.length < 2}
+        aria-label="Previous track" title="Previous track">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 5v14M19 6 8 12l11 6V6Z" /></svg>
+      </button>
+      <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
+        aria-label={playing ? "Pause music" : "Play music"} title={playing ? "Pause" : "Play"}>
+        {playing
+          ? <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
+          : <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
+      </button>
+      <button className="profile-audio-step" type="button" onClick={() => nextTrack()} disabled={tracks.length < 2}
+        aria-label="Next track" title="Next track">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 5v14M5 6l11 6-11 6V6Z" /></svg>
+      </button>
+      <button className={"profile-audio-step profile-audio-shuffle" + (shuffle ? " is-active" : "")}
+        type="button" onClick={toggleShuffle} aria-pressed={shuffle}
+        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m16 3 4 4-4 4M4 7h2.5a4 4 0 0 1 3.2 1.6l4.6 6.8a4 4 0 0 0 3.2 1.6H20M16 17l4 4-4-4M4 17h2.5a4 4 0 0 0 2.1-.6" />
+        </svg>
+      </button>
+    </div>
+    <div className="profile-audio-timeline">
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)}</span>
       <input className="profile-audio-progress" type="range" min={0} max={Math.max(duration, 1)}
         step={0.1} value={Math.min(position, duration || 0)} disabled={!duration}
         aria-label="Track progress"
@@ -227,26 +274,11 @@ function ProfileAudioPlayer({ tracks, cover, volume, audioRef }: {
             setPosition(audioRef.current.currentTime);
           }
         }} />
-      <span className="profile-audio-time" aria-live="off">{formatAudioTime(position)} / {formatAudioTime(duration)} · {trackIndex + 1}/{tracks.length}</span>
+      <span className="profile-audio-time" aria-live="off">{formatAudioTime(duration)}</span>
     </div>
-    <div className="profile-audio-transport">
-      <button className="profile-audio-step" type="button" onClick={previousTrack} disabled={tracks.length < 2}
-        aria-label="Previous track" title="Previous track">|◀</button>
-      <button className="profile-audio-toggle" type="button" onClick={() => void togglePlayback()}
-        aria-label={playing ? "Pause music" : "Play music"}>
-        {playing
-          ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z" /></svg>
-          : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>}
-      </button>
-      <button className="profile-audio-step" type="button" onClick={() => nextTrack()} disabled={tracks.length < 2}
-        aria-label="Next track" title="Next track">▶|</button>
-      <button className={"profile-audio-step profile-audio-shuffle" + (shuffle ? " is-active" : "")}
-        type="button" onClick={toggleShuffle} aria-pressed={shuffle}
-        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"} title="Shuffle">SHUF</button>
-    </div>
+    {tracks.length > 1 && <span className="profile-audio-track-count">{trackIndex + 1} / {tracks.length} tracks</span>}
   </section>;
 }
-
 
 function LayoutBlock({
   item, position, total, preview, onMove, onSelect, children,
@@ -623,7 +655,7 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     data-effect-text={effects.enabled ? effects.text : "none"}
     data-effect-interaction={effects.enabled ? effects.interaction : "none"}
     data-effect-speed={effects.speed}>
-    {backgroundVideoSrc && <video className="profile-background-video" src={backgroundVideoSrc} muted autoPlay loop playsInline preload="metadata" aria-hidden="true" tabIndex={-1} />}
+    {preview && backgroundVideoSrc && <video className="profile-background-video profile-background-video--card" src={backgroundVideoSrc} muted autoPlay loop playsInline preload="metadata" aria-hidden="true" tabIndex={-1} />}
     <ProfileEffectsLayer effects={effects} />
     {effects.enabled && !entryExperience && <label className="profile-effects-toggle">
       <input type="checkbox" aria-label="Disable profile effects" />
@@ -640,6 +672,10 @@ export function ProfileCard({ profile, avatarSrc, galleryBase, preview = false, 
     </section>;
 
   return <>
+    {!preview && backgroundVideoSrc && <div className="profile-page-background" aria-hidden="true">
+      <video className="profile-background-video profile-background-video--viewport" src={backgroundVideoSrc}
+        muted autoPlay loop playsInline preload="auto" tabIndex={-1} />
+    </div>}
     {entryExperience ? <details ref={entryDetailsRef} className="profile-entry-shell" onToggle={handleEntryToggle}>
       <summary className="profile-entry-overlay" role="button"
         onClick={enterProfile} aria-label={"click to enter... @" + profile.username}>
