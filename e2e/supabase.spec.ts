@@ -560,11 +560,27 @@ test("reference dashboard pages, asset uploader, custom links and QR share match
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("button", { name: "Click to upload an audio cover", exact: true })).toBeVisible();
     await expect(addAudio.getByRole("textbox", { name: "Audio Title", exact: true })).toBeVisible();
-    await addAudio.getByRole("button", { name: "Close Add Audio", exact: true }).click();
+    await addAudio.locator('input[type="file"]').first().setInputFiles({
+      name: "studio-track.mp3",
+      mimeType: "audio/mpeg",
+      buffer: Buffer.from("ID3xxxxx"),
+    });
+    await addAudio.getByRole("textbox", { name: "Audio Title", exact: true }).fill("Snoozer upload test");
+    await addAudio.getByRole("button", { name: "Add Audio", exact: true }).click();
+    await expect(audioManager.getByRole("status").filter({ hasText: "Audio uploaded and added to your profile draft" })).toBeVisible();
+    await expect(audioManager.getByText("Snoozer upload test", { exact: true })).toBeVisible();
     await audioManager.getByRole("button", { name: "Close audio manager", exact: true }).click();
 
     await page.getByRole("button", { name: "Publish page", exact: true }).click();
     await expect(page.getByText("Live · Up to date", { exact: true })).toBeVisible();
+    const publishedProfile = await page.request.get("/" + name);
+    expect(publishedProfile.status()).toBe(200);
+    const publishedHtml = await publishedProfile.text();
+    expect(publishedHtml).toContain("Snoozer upload test");
+    const audioSrc = publishedHtml.match(/src="(\\/media\\/audio\\/[^"]+\\.mp3)"/)?.[1];
+    expect(audioSrc).toMatch(/^\\/media\\/audio\\/[0-9a-f-]{36}\\.mp3$/);
+    const audioResponse = await page.request.get("http://localhost:3000" + audioSrc!, { maxRedirects: 0 });
+    expect(audioResponse.status()).toBe(307);
     await page.reload();
     await page.getByRole("button", { name: "Share Your Profile", exact: true }).click();
     const shareDialog = page.getByRole("dialog", { name: "Share Your Profile", exact: true });
