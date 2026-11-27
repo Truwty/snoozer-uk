@@ -39,4 +39,7 @@ as $function$
 $function$;
 
 revoke all on function public.get_public_homepage_stats() from public, anon, authenticated;
+grant usage on schema snoozer to service_role;
+grant select on snoozer.profiles, snoozer.published_profiles, snoozer.profile_view_leaderboard to service_role;
+grant select on auth.users to service_role;
 grant execute on function public.get_public_homepage_stats() to service_role;
