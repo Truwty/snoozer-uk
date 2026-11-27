@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { siteUrl } from "@/lib/env";
 import { profileRevisionNumber } from "@/lib/profile";
-import { profileAudioExtension, profileAudioFinal, profileAudioIncoming, profileAudioMaxBytes, validProfileAudioBytes } from "@/lib/profile-audio";
+import { profileAudioExtension, profileAudioFormats, profileAudioFinal, profileAudioIncoming, profileAudioMaxBytes, validProfileAudioBytes } from "@/lib/profile-audio";
 import { requireAccount } from "@/lib/profiles-server";
 import { storageAdmin } from "@/lib/supabase";
 
@@ -17,18 +17,19 @@ const removeSchema=z.object({scope:z.uuid(),id:z.uuid(),extension:z.enum(["mp3",
 function changed(){return {error:"The profile draft changed. Refresh Studio and try again."};}
 function refresh(){revalidatePath("/studio");revalidatePath("/studio/customize");revalidatePath("/");}
 
-export async function startProfileAudioUpload(profileId:string,revision:number,title:string,artist:string,contentType:string,bytes:number){
+export async function startProfileAudioUpload(profileId:string,revision:number,title:string,artist:string,contentType:string,bytes:number,fileName?:string){
   if(!z.uuid().safeParse(profileId).success||!profileRevisionNumber.safeParse(revision).success
     ||!z.string().trim().min(1).max(80).safeParse(title).success
     ||!z.string().trim().min(1).max(80).safeParse(artist).success
     ||!Number.isInteger(bytes)||bytes<1||bytes>profileAudioMaxBytes)return {error:"Use a title and artist (up to 80 characters) and an audio file up to 15 MB."};
-  const extension=profileAudioExtension(contentType);
+  const extension=profileAudioExtension(contentType,fileName);
   if(!extension)return {error:"Choose an MP3, M4A, OGG, WAV, AAC or FLAC audio file."};
+  const canonicalContentType=profileAudioFormats[extension].contentType;
   const {user}=await requireAccount("/studio/customize");
   const admin=storageAdmin();
   const {data,error}=await admin.rpc("prepare_profile_audio_upload",{
     p_owner:user.id,p_profile:profileId,p_expected:revision,p_title:title,p_artist:artist,
-    p_extension:extension,p_content_type:contentType,p_bytes:bytes,
+    p_extension:extension,p_content_type:canonicalContentType,p_bytes:bytes,
   });
   if(error?.code==="P1103")return {error:"You have reached the daily audio upload limit. Try again after midnight UTC."};
   if(error?.code==="P1104")return {error:"Your plan's media storage allowance has been reached."};
@@ -39,7 +40,7 @@ export async function startProfileAudioUpload(profileId:string,revision:number,t
   const path=`${stage.data.scope}/${stage.data.id}.${stage.data.extension}`;
   const {data:signed,error:signError}=await admin.storage.from(profileAudioIncoming).createSignedUploadUrl(path,{upsert:false});
   if(signError||!signed)return {error:"Could not prepare the private upload. Try again."};
-  return {id:stage.data.id,path,token:signed.token,extension,contentType};
+  return {id:stage.data.id,path,token:signed.token,extension,contentType:canonicalContentType};
 }
 
 export async function finishProfileAudioUpload(profileId:string,revision:number,id:string){
