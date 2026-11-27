@@ -21,6 +21,7 @@ import type { PublicationSchedule } from "@/lib/publication-schedule";
 import { Unpublish } from "./unpublish";
 import { ActionMessage } from "./action-message";
 import { ProfileCard } from "./profile-card";
+import { ImageHostPurchase } from "@/components/image-host-purchase";
 import { SocialProviderIcon } from "./social-provider-icon";
 import { TextSectionsEditor } from "./text-sections-editor";
 import { ProfileBlocksEditor } from "./profile-blocks-editor";
@@ -53,7 +54,7 @@ const blockLibrary: { id: BuilderBlock; label: string; description: string; symb
   { id: "block-quote", label: "Quote block", description: "Add a styled quotation", symbol: "“" },
 ];
 
-export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
+export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOffer = null, imageHostActive = false, initialTemplateId = "", initialTab = "Profile", panelOnly = false, avatar, settings, schedule }: { effectTier: EffectTier; schedule?: { current: PublicationSchedule | null; automatic: boolean; enabled: boolean }; avatar: ReactNode; settings: ReactNode; draft: DraftProfile; linkLimit: number; galleryHref: string; imageHostOffer?: { price_id:string; currency:"eur"; unit_amount:499 } | null; imageHostActive?: boolean; initialTemplateId?: string; initialTab?: "Profile" | "Design" | "Links" | "Sections" | "Widgets" | "Settings"; panelOnly?: boolean }) {
   const { saved, edits, edit, pending, conflict, message, commit, discardAndReload, refreshSaved, travel, canUndo, canRedo } = useDraftEditor(draft);
   const tabs = ["Profile", "Design", "Links", "Sections", "Blocks", "Widgets", "Settings"] as const;
   const [tab, setTab] = useState<typeof tabs[number]>(initialTemplateId ? "Design" : initialTab);
@@ -619,6 +620,11 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, initialTempl
         <Link className="button small" href={"/studio/widgets/guestbook?profile=" + encodeURIComponent(saved.profile_id)}>Moderate Guestbook messages</Link>
       </section>
       <section role="tabpanel" aria-labelledby="editor-tab-Links" id="editor-panel-Links" data-editor-panel="Links" hidden={tab !== "Links"} className="editor-panel stack">
+        <section className="studio-links-image-host-card">
+          <div><p className="eyebrow">IMAGE HOST / LIFETIME ADD-ON</p><strong>Host and share your own profile assets</strong>
+            <p className="muted">Custom domains, secure uploads, advanced galleries, text pastes and upload analytics.</p></div>
+          <ImageHostPurchase offer={imageHostOffer} active={imageHostActive}/>
+        </section>
         <section className="studio-links-catalogue stack" aria-labelledby="social-catalogue-title">
           <div className="studio-links-catalogue-heading">
             <div><p className="eyebrow">ADD A LINK</p><h2 id="social-catalogue-title">Social profiles</h2></div>
