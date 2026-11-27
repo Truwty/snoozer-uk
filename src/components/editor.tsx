@@ -475,6 +475,12 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
                 <option value="mono">Monospace</option>
               </select>
             </label>
+            <label>Link colour
+              <select aria-label="Link colour" value={content.appearance.accent}
+                onChange={(event)=>set("appearance",{...content.appearance,accent:event.target.value as ProfileContent["appearance"]["accent"]})}>
+                {linkAccents.map((accent)=><option key={accent} value={accent}>{linkAccentLabels[accent]}</option>)}
+              </select>
+            </label>
           </div>
         </fieldset>
         <section className="studio-assets-uploader stack" aria-labelledby="studio-assets-title">
