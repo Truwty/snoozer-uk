@@ -10,7 +10,6 @@ import { storageAdmin } from "./supabase";
 const priceId=z.string().regex(/^price_[A-Za-z0-9]{1,128}$/);
 const productId=z.string().regex(/^prod_[A-Za-z0-9]{1,128}$/);
 const sessionId=z.string().regex(/^cs_live_[A-Za-z0-9]{1,128}$/);
-const paymentIntentId=z.string().regex(/^pi_[A-Za-z0-9]{1,128}$/);
 const offerSchema=z.object({
   price_id:priceId,
   product_id:productId,
@@ -41,7 +40,8 @@ export async function imageHostLiveOffers(){
   if(!imageHostCheckoutConfig())return [];
   const {data,error}=await storageAdmin().rpc("list_image_host_addon_offers");
   if(error||!data)return [];
-  return z.array(offerSchema).max(1).parse(data);
+  const parsed=z.array(offerSchema).max(1).safeParse(data);
+  return parsed.success?parsed.data:[];
 }
 
 export async function openImageHostLifetimeCheckout(ownerId:string,email:string|null,rawPrice:string){
@@ -68,8 +68,9 @@ export async function openImageHostLifetimeCheckout(ownerId:string,email:string|
   const price=await stripe.prices.retrieve(attempt.priceId);
   const actualProduct=typeof price.product==="string"?price.product:price.product.id;
   if(!price.livemode||!price.active||price.type!=="one_time"
-    ||price.currency!=="eur"||price.unit_amount!==499||actualProduct!==attempt.productId)
-    throw new Error("Stripe Price does not match the approved EUR 4.99 one-time product.");
+    ||price.currency!=="eur"||price.unit_amount!==499
+    ||!price.tax_behavior||price.tax_behavior==="unspecified"||actualProduct!==attempt.productId)
+    throw new Error("Stripe Price does not match the approved EUR 4.99 one-time product or reviewed tax behaviour.");
   const product=await stripe.products.retrieve(attempt.productId);
   if(!product.livemode||!product.active||product.metadata.snoozer_image_host!=="true")
     throw new Error("Stripe Product is not marked as the approved Snoozer Image Host product.");
@@ -151,10 +152,14 @@ export async function completeImageHostLifetimePurchase(stripe:Stripe,rawSession
   const price=await stripe.prices.retrieve(linePriceId);
   const productId=typeof price.product==="string"?price.product:price.product.id;
   const product=await stripe.products.retrieve(productId);
-  if(!price.livemode||!price.active||price.type!=="one_time"
+  const sessionCustomer=typeof session.customer==="string"?session.customer:session.customer?.id;
+  const paymentCustomer=typeof pi.customer==="string"?pi.customer:pi.customer?.id;
+  if(!price.livemode||price.type!=="one_time"
     ||price.currency!=="eur"||price.unit_amount!==499
-    ||!product.livemode||!product.active||product.metadata.snoozer_image_host!=="true"
-    ||pi.customer!==session.customer)throw new Error("Image Host Stripe Price and Product proof does not match.");
+    ||!price.tax_behavior||price.tax_behavior==="unspecified"
+    ||!product.livemode||product.metadata.snoozer_image_host!=="true"
+    ||!sessionCustomer||paymentCustomer!==sessionCustomer)
+    throw new Error("Image Host Stripe Price, Product and payment ownership proof does not match.");
   const completed=await admin.rpc("complete_image_host_purchase",{
     p_owner:owner,p_attempt:attempt,p_session:id,p_payment_intent:paymentIntent,
     p_price:linePriceId,p_currency:"eur",p_amount:499,p_paid:true,
