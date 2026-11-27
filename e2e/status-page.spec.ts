@@ -7,7 +7,7 @@ test("public status page shows real service checks and incident history", async 
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Core services" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Incident history" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Incident history", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh status" })).toBeVisible();
 
   const services = page.locator(".status-service");
