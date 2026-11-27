@@ -161,8 +161,7 @@ begin
     for update;
   if not found then return false; end if;
   select * into offer from snoozer.image_host_prices
-    where price_id=p_price and currency=p_currency and unit_amount=p_amount
-      and retired_at is null;
+    where price_id=p_price and currency=p_currency and unit_amount=p_amount;
   if not found then return false; end if;
   if exists(select 1 from snoozer.image_host_payment_holds
     where payment_intent_id=p_payment_intent) then return false; end if;
