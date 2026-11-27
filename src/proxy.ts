@@ -9,7 +9,7 @@ import { anonymousClient } from "@/lib/supabase";
 import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge } from "@/lib/account-sessions";
 import { canonicalUsername, username } from "@/lib/profile";
 
-const topLevelPages = new Set(["sign-in", "sign-up", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "discover", "pricing", "legal", "owner", "appeal", "report", "account-restricted", "maintenance"]);
+const topLevelPages = new Set(["sign-in", "sign-up", "help", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "discover", "pricing", "legal", "owner", "appeal", "report", "account-restricted", "maintenance"]);
 // Creator marketplace removed. Keep Snoozer-owned Premium subscriptions under /studio/plan
 // and /api/v1/billing intact. Historical test-purchase records are retained, but provider-side recovery
 // is intentionally disabled. Never reopen seller onboarding.
