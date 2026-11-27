@@ -12,7 +12,7 @@ import { safeLink } from "@/lib/safe-link";
 import { profileCorners, profileDensities, profileEntrances, profileLayouts, themes, type DraftProfile, type ProfileContent } from "@/lib/profile";
 import type { EffectTier } from "@/lib/profile-effects";
 import { makeProfileBlock, type ProfileBlock } from "@/lib/profile-blocks";
-import { linkAccents, linkAccentColours, linkAccentLabels } from "@/lib/link-accent";
+import { linkAccents, linkAccentLabels } from "@/lib/link-accent";
 import { filterSocialProviders, socialProviderCategories, socialProviderForUrl, type SocialProvider, type SocialProviderCategory } from "@/lib/social-providers";
 import { studioTemplates } from "@/lib/studio-templates";
 import { CopyLink } from "./copy-link";
@@ -79,7 +79,6 @@ export function Editor({ draft, effectTier, linkLimit, galleryHref, imageHostOff
   const addLink = useRef<HTMLButtonElement>(null);
   const content = edits?.content ?? saved;
   const removeAvatar = edits?.removeAvatar ?? false;
-  const linkColours = linkAccentColours(content.appearance.accent);
   const customColours = content.appearance.colors ?? {};
   const galleryWarning = galleryMemoryWarning(saved.gallery);
   const pageLayout = normalizeProfilePageLayout(content.pageLayout, { ...content, gallery: saved.gallery });
