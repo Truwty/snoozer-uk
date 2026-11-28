@@ -592,7 +592,7 @@ async announceServerBoost(member) {
 
     if (channelPrefix === "ticket") {
       const openTicket = channels.find(item => item.type === 0 && typeof item.topic === "string"
-        && new RegExp("SNOOZER_TICKET:v[12](?: id=[0-9a-f-]+)? owner=" + openerId + " status=open(?:\\\\s|$)").test(item.topic));
+        && new RegExp("SNOOZER_TICKET:v[12](?: id=[0-9a-f-]+)? owner=" + openerId + " status=open(?:\\s|$)").test(item.topic));
       if (openTicket) return { existing: true, channel: openTicket };
     }
 
