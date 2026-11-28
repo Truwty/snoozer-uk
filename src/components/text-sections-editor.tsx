@@ -36,7 +36,7 @@ export function TextSectionsEditor({ sections, onChange }: {
 
   return <fieldset className="stack" ref={list}>
     <legend className="section-title">Text sections <small>{sections.length}/{textSectionLimits.count}</small></legend>
-    <p className="muted">Add text, highlight an update with a callout, share a quote, count down to an event, or showcase a project. Sections appear above your links. Drag a section or use its Move buttons.</p>
+    <p className="muted">Add text, highlight an update with a callout, share a quote, count down to an event, or showcase a project. Sections appear above your links. Starter sections added from the builder begin hidden so sample copy is not published accidentally. Review the content and switch off Hide when it is ready. Drag a section or use its Move buttons.</p>
     <p className="sr-only" aria-live="polite">{announcement}</p>
     {sections.map((section, index) => <div key={index} className="link-editor stack" data-reorder-index={index}
       data-drop-target={dropIndex === index || undefined}>

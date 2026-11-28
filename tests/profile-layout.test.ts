@@ -85,6 +85,27 @@ describe("profile page layout", () => {
     ]);
   });
 
+  it("keeps new hidden example blocks out of the live layout until made visible", () => {
+    const id = "00000000-0000-4000-8000-000000000024";
+    const hidden = normalizeProfilePageLayout({ version: 1, items: [] }, content({
+      sections: [], links: [], blocks: [{ id, hidden: true }],
+      widgets: {
+        guestbook: { enabled: false }, testimonials: { enabled: false },
+        poll: { enabled: false }, faq: { enabled: false },
+      },
+    }));
+    expect(hidden.items).toEqual([]);
+
+    const visible = normalizeProfilePageLayout({ version: 1, items: [] }, content({
+      sections: [], links: [], blocks: [{ id, hidden: false }],
+      widgets: {
+        guestbook: { enabled: false }, testimonials: { enabled: false },
+        poll: { enabled: false }, faq: { enabled: false },
+      },
+    }));
+    expect(visible.items).toEqual([{ type: "block", id }]);
+  });
+
   it("preserves multiple distinct custom block references and ignores hidden blocks", () => {
     const first = "00000000-0000-4000-8000-000000000021";
     const second = "00000000-0000-4000-8000-000000000022";

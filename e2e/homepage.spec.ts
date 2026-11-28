@@ -16,12 +16,18 @@ for (const width of [320, 375, 768, 1440]) {
     await expect(page.getByRole("heading", { name: /Explore your options/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Frequently Asked Questions/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Everything you want, right here/i }).last()).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "/help");
+    const navigation = page.getByRole("navigation", { name: "Primary navigation" });
+    await expect(navigation.getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "/help");
+    const discord = navigation.getByRole("link", { name: "Join Discord" });
+    await expect(discord).toHaveAttribute("href", "https://discord.gg/PVk9UskfjD");
+    await expect(discord).toHaveAttribute("target", "_blank");
+    await expect(discord).toHaveAttribute("rel", "noopener noreferrer");
     await expect(page.locator(".home-metric-card")).toHaveCount(4);
     await expect(page.locator(".home-metric-value")).toHaveCount(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
+
 
 test("homepage FAQ behaves as a single-open accordion", async ({ page }) => {
   await page.goto("/");
@@ -114,4 +120,15 @@ test("homepage translates visible content for every supported language and persi
     await expect(page.locator("html")).toHaveAttribute("lang", item.locale);
     await expect(page.getByRole("heading", { level: 1, name: item.heading })).toBeVisible();
   }
+});
+
+
+test("public template gallery previews are labelled and non-interactive", async ({ page }) => {
+  await page.goto("/templates");
+  await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+  const preview = page.getByRole("img", { name: /profile preview$/ }).first();
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute("inert");
+  await expect(preview).toHaveCSS("pointer-events", "none");
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first()).toBeVisible();
 });

@@ -2326,3 +2326,32 @@
 @media (prefers-reduced-motion: reduce) {
   .home-immersive .home-metric-card { transition: none !important; }
 }
+
+
+/* Keep the Discord call-to-action distinct from the lime navigation links. */
+.home-immersive .snoozer-header-links a.discord-server-button,
+.home-immersive .snoozer-header-links a.discord-server-button:hover {
+  border: 1px solid #5865f2;
+  background: #5865f2;
+  color: #fff;
+}
+.home-immersive .snoozer-header-links a.discord-server-button:hover {
+  border-color: #4752c4;
+  background: #4752c4;
+  color: #fff;
+}
+@media (max-width: 42rem) {
+  .home-immersive .snoozer-header-links a.discord-server-button {
+    min-height: 34px;
+    padding-inline: .5rem;
+    font-size: .68rem;
+  }
+}
+@media (max-width: 22rem) {
+  .home-immersive .snoozer-header-links a.discord-server-button {
+    min-height: 32px;
+    gap: .22rem;
+    padding-inline: .38rem;
+    font-size: .62rem;
+  }
+}

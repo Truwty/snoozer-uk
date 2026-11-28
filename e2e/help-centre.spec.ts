@@ -77,3 +77,15 @@ for (const width of [320, 375, 768, 1440]) {
     }
   });
 }
+
+
+test("legacy Status URLs redirect to the standalone Status Page", async ({ request }) => {
+  for (const [route, destination] of [
+    ["/status", "https://status.snoozer.uk/"],
+    ["/status/incidents/current", "https://status.snoozer.uk/incidents/current"],
+  ] as const) {
+    const response = await request.get(route, { maxRedirects: 0 });
+    expect(response.status(), route).toBe(308);
+    expect(response.headers().location, route).toBe(destination);
+  }
+});

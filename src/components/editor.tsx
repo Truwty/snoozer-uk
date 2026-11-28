@@ -248,8 +248,8 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
       return;
     }
     const index = content.links.length;
-    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
-    setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
+    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: true }]);
+    setAnnouncement(provider.label + " link added as hidden. Enter your profile or invite address, then switch Visible on when it is ready.");
     focusLink(index);
   }
 
@@ -271,7 +271,7 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
       const block = makeProfileBlock(nativeType);
       set("blocks", [...content.blocks, block]);
       setTab("Blocks");
-      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added. Edit it in the Blocks panel.");
+      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added as hidden. Edit it in the Blocks panel, then make it visible when the content is ready.");
       return;
     }
 
@@ -282,13 +282,13 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
         return;
       }
       const section = kind === "text"
-        ? { heading: "New section", body: "Add your content here." }
+        ? { heading: "New section", body: "Add your content here.", hidden: true }
         : kind === "callout"
-          ? { kind: "callout" as const, heading: "Announcement", body: "Share an update with visitors." }
-          : { kind: "quote" as const, heading: "Your name", body: "Add your quote here." };
+          ? { kind: "callout" as const, heading: "Announcement", body: "Share an update with visitors.", hidden: true }
+          : { kind: "quote" as const, heading: "Your name", body: "Add your quote here.", hidden: true };
       set("sections", [...content.sections, section]);
       setTab("Sections");
-      setAnnouncement(kind[0].toUpperCase() + kind.slice(1) + " added to your page. Edit the new section in the Sections panel.");
+      setAnnouncement(kind[0].toUpperCase() + kind.slice(1) + " added as hidden. Edit the sample content in the Sections panel, then make it visible when it is ready.");
       return;
     }
 
@@ -298,9 +298,9 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
         setAnnouncement("Your current plan's link limit has been reached.");
         return;
       }
-      set("links", [...content.links, { label: "New link", url: "https://snoozer.uk" }]);
+      set("links", [...content.links, { label: "New link", url: "https://snoozer.uk", hidden: true }]);
       setTab("Links");
-      setAnnouncement("A new link has been added. Update its label and destination in the Links panel.");
+      setAnnouncement("A new link has been added as hidden. Update its label and destination, then switch Visible on when it is ready.");
       focusLink(content.links.length);
       return;
     }

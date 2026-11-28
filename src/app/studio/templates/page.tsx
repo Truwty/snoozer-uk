@@ -4,7 +4,7 @@ import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
+import { findTemplates, getTemplatePage, studioTemplates, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
 import { rateStudioTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
 import { z } from "zod";
@@ -112,7 +112,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     <header className="studio-page-heading">
       <div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
         <p className="muted">Browse profile designs, save favourites, rate templates and return to your recent choices.</p>
-        <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
+        <div className="template-library-stats"><span><strong>{studioTemplates.length}</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
       </div>
       <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
     </header>
@@ -174,7 +174,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
         const previewPath="/studio/templates/preview?template="+encodeURIComponent(template.id);
         return <li className="template-item stack" key={template.id}>
           <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
-          <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={templatePreviewProfile(template.theme,template.appearance,template.sections)}/></div>
+          <div className="template-preview-frame" role="img" aria-label={template.name + " profile preview"} inert><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={templatePreviewProfile(template.theme,template.appearance,template.sections)}/></div>
           <div className="template-card-meta"><span className="template-card-creator">By Snoozer</span><span>{uses.toLocaleString("en-GB")} uses</span>
             <span aria-label={ratingLabel(average,count)}>{ratingLabel(average,count)}</span>{weekly>=3&&<span className="template-trending">Trending</span>}</div>
           <div className="template-card-tags"><span>{template.categoryLabel}</span><span>{template.palette}</span><span>{layoutLabels[template.appearance.layout]}</span></div>
@@ -213,7 +213,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
           const style=template.config.appearance.templateStyle;
           return <li className="template-item stack" key={template.id}>
             <div className="template-item-heading"><p className="eyebrow">COMMUNITY · {template.config.theme}</p><h2>{template.title}</h2><p className="muted">{template.description}</p></div>
-            <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.title+" preview"} profile={templatePreviewProfile(template.config.theme,template.config.appearance,template.config.sections)}/></div>
+            <div className="template-preview-frame" role="img" aria-label={template.title + " profile preview"} inert><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.title+" preview"} profile={templatePreviewProfile(template.config.theme,template.config.appearance,template.config.sections)}/></div>
             <div className="template-card-meta"><span className="template-card-creator">By @{template.creator_username}</span><span>{uses.toLocaleString("en-GB")} uses</span>
               <span>{ratingLabel(average,ratingCount)}</span>{(metric?.weekly_uses??template.weekly_uses)>=3&&<span className="template-trending">Trending</span>}</div>
             <div className="template-card-tags"><span>Community</span><span>{style??"Custom design"}</span><span>{layoutLabels[template.config.appearance.layout]}</span></div>

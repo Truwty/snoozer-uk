@@ -260,6 +260,10 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("tab", { name: "Design" }).click();
     await page.getByRole("link", { name: "Templates", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+    const templatePreview = page.locator(".template-preview-frame").first();
+    await expect(templatePreview).toHaveAttribute("role", "img");
+    await expect(templatePreview).toHaveAttribute("inert");
+    await expect(templatePreview).toHaveCSS("pointer-events", "none");
     await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
     await page.goto("/studio/customize?profile=" + selectedProfile);
     await page.getByRole("button", { name: "Publish page" }).click();
@@ -940,15 +944,21 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const kofiProvider = page.getByRole("button", { name: "Ko-fi", exact: true });
     await expect(kofiProvider).toBeVisible();
     await kofiProvider.click();
+    const kofiRow = page.locator(".link-row").nth(2);
     await expect(page.getByLabel("Link 3 label")).toHaveValue("Ko-fi");
     await expect(page.getByLabel("Link 3 URL")).toHaveValue("https://ko-fi.com/");
+    await expect(kofiRow.getByLabel("Visible on profile")).not.toBeChecked();
     await page.getByLabel("Link 3 URL").fill("https://ko-fi.com/creator");
     await page.getByLabel("Link 3 label").fill("Support my projects");
+    await kofiRow.getByLabel("Visible on profile").check();
     await page.getByRole("button", { name: "Developer", exact: true }).click();
     await page.getByRole("button", { name: "GitHub", exact: true }).click();
+    const githubRow = page.locator(".link-row").nth(3);
     await page.getByLabel("Link 4 label").fill("Developer notes");
     await page.getByLabel("Link 4 URL").fill("https://github.com/example");
-    await page.locator(".link-row").nth(3).getByLabel("Display mode").selectOption("text");
+    await expect(githubRow.getByLabel("Visible on profile")).not.toBeChecked();
+    await githubRow.getByLabel("Visible on profile").check();
+    await githubRow.getByLabel("Display mode").selectOption("text");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 

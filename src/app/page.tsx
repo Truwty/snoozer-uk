@@ -150,7 +150,7 @@ export default async function Home() {
               <Link href="/help">{copy.footer.help}</Link>
               <Link href="/templates">{copy.footer.templates}</Link>
               <Link href="/discover">{copy.footer.discover}</Link>
-              <Link href="/status">Status</Link>
+              <a href="https://status.snoozer.uk/">Status</a>
             </nav>
           </div>
           <div className="home-footer-column">
