@@ -81,7 +81,7 @@ The command creates the Snoozer role set (`Snoozer Admin`, `Moderator`, `Support
 
 The hidden `INTERNAL` category contains `#snoozer-setup-state`. Its channel topic stores `SNOOZER_SERVER_SETUP_COMPLETE:v1` after every setup step succeeds. A later invocation checks this marker and makes no changes. If a request fails before completion, the command can be retried: existing roles and channels are reused, existing messages are checked for their setup footer, and nothing is deleted or renamed. Do not delete the hidden marker channel if you want to preserve the one-time lock.
 
-The command does not assign roles to people, sync Premium subscriptions, run a ticket system or enable automated moderation. Assign staff and cosmetic roles manually after setup. Existing channels and roles are preserved rather than reconfigured; inspect their permissions if you are reusing an established server.
+The command does not assign roles to people, sync Premium subscriptions, run a ticket system or enable automated moderation. Assign staff and cosmetic roles manually after setup. Existing channels and roles are preserved rather than reconfigured; inspect their permissions if you are reusing an established server. Keep `DISCORD_SERVER_SETUP_ENABLED=true` while the command should remain available. It is safe to leave Presence disabled; the bot stays connected only for guild events and the setup interaction.
 
 The command is available while `DISCORD_SERVER_SETUP_ENABLED=true` and the worker is running. It does not require `DISCORD_PRESENCE_ENABLED`, the Presence intent, `SNOOZER_PRESENCE_URL` or the HMAC secret. It registers against `DISCORD_PRESENCE_GUILD_ID`; do not point the same bot process at a different guild to provision a second server.
 
