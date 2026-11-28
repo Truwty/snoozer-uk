@@ -154,6 +154,6 @@ export function ProfileBlocksEditor({ blocks, onChange }: Props) {
         </fieldset>
       </article>)}
     </div>}
-    <p className="muted studio-blocks-note">Hidden blocks stay in your draft and publication history. Locked blocks cannot be edited or removed until unlocked.</p>
+    <p className="muted studio-blocks-note">New blocks start hidden so example copy is never published by accident. Replace the example content, then switch Visible on when the block is ready. Hidden blocks stay in your draft and publication history. Locked blocks cannot be edited or removed until unlocked.</p>
   </section>;
 }
