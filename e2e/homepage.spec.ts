@@ -17,7 +17,7 @@ for (const width of [320, 375, 768, 1440]) {
     await expect(page.getByRole("heading", { name: /Frequently Asked Questions/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Everything you want, right here/i }).last()).toBeVisible();
     const navigation = page.getByRole("navigation", { name: "Primary navigation" });
-    await expect(navigation.getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "https://help.snoozer.uk/");
+    await expect(navigation.getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "/help");
     const discord = navigation.getByRole("link", { name: "Join Discord" });
     await expect(discord).toHaveAttribute("href", "https://discord.gg/PVk9UskfjD");
     await expect(discord).toHaveAttribute("target", "_blank");
