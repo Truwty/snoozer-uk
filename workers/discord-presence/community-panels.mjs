@@ -95,6 +95,66 @@ export class DiscordCommunityPanels{
     if(this.onResourcesUpdated)await this.onResourcesUpdated(this.resources,this.roleIds);
     return this.resources;
   }
+  async ensureCreatorVerificationChannel(){
+    await this.refreshResources();
+    if(SF.test(this.resources.creator_verification??""))return this.resources.creator_verification;
+    const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
+    if(!Array.isArray(channels))throw new Error("Discord did not return the server channel inventory.");
+    let channel=channels.find(item=>item.type===0&&["✨・creator-verification","creator-verification"].includes(item.name));
+    if(!channel){
+      const parent=this.resources.category_internal;
+      if(!SF.test(parent??"")){this.logger.warn("[discord-panels] Creator verification channel not created because the private INTERNAL category is not registered.");return null;}
+      const staffIds=[this.roleIds.admin,this.roleIds.developer].filter(id=>SF.test(id??""));
+      const viewSend=P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks;
+      const overwrites=[
+        {id:this.guildId,type:0,allow:"0",deny:P.viewChannel.toString()},
+        ...staffIds.map(id=>({id,type:0,allow:viewSend.toString(),deny:"0"})),
+        {id:this.botUserId,type:1,allow:(viewSend|(1n<<15n)).toString(),deny:"0"},
+      ];
+      channel=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
+        name:"✨・creator-verification",type:0,parent_id:parent,
+        topic:"Private Creator verification review queue. Only authorised Snoozer staff can view submissions.",
+        permission_overwrites:overwrites,
+      }});
+    }
+    if(!SF.test(channel?.id??""))throw new Error("Discord did not return a valid Creator verification channel.");
+    const registry=await this.store.getResources(this.guildId);
+    const rows=(Array.isArray(registry?.rows)?registry.rows:[]).filter(item=>item.resource_key!=="creator_verification");
+    rows.push({resource_key:"creator_verification",resource_type:"text",discord_id:channel.id,name:channel.name??"✨・creator-verification"});
+    if(await this.store.registerResources(this.guildId,rows)!==true)throw new Error("Creator verification channel was created but could not be registered in Supabase.");
+    await this.refreshResources();
+    try{await this.logEvent?.({title:"Creator verification review channel ready",description:"Private review channel: <#"+channel.id+">",severity:"info"});}catch{}
+    return channel.id;
+  }
+
+  async publishCreatorQueue(){
+    const channelId=this.resources.creator_verification;
+    if(!SF.test(channelId??""))return {posted:0,errors:["Creator verification channel is not configured."]};
+    const items=await this.store.creatorQueue(50);
+    if(!Array.isArray(items)||!items.length)return {posted:0,errors:[]};
+    const config=await this.store.getConfig(this.guildId);
+    let posted=0;const errors=[];
+    for(const item of items){
+      const key="creator_"+String(item.id).replaceAll("-","");
+      const prior=config?.[key];
+      const embed={title:"✨ Creator verification request",description:
+        "**Profile:** "+clean(item.profile_url,250)+"\n**Member:** <@"+item.discord_user_id+">\n**Submitted:** <t:"+Math.floor(Date.parse(item.created_at)/1000)+":R>\n\n**Creator information**\n"+clean(item.reason,2200)+"\n\n**Reference:** "+item.id,
+        color:0x8b72d9,footer:{text:"Pending Creator verification · "+item.id},timestamp:item.created_at};
+      const body={embeds:[embed],components:[row(btn("creator:approve:"+item.id,"Approve",3,"✅"),btn("creator:reject:"+item.id,"Reject",4,"❌"))],allowed_mentions:{parse:[]}};
+      try{
+        if(SF.test(prior?.channel_id??"")&&SF.test(prior?.message_id??"")){
+          await this.api.request("/channels/"+prior.channel_id+"/messages/"+prior.message_id,{method:"PATCH",body});
+        }else{
+          const msg=await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body});
+          if(!SF.test(msg?.id??""))throw new Error("Discord did not return the Creator review message ID.");
+          await this.store.setConfig(this.guildId,key,{channel_id:channelId,message_id:msg.id});
+        }
+        posted++;
+      }catch(error){errors.push(item.id+": "+clean(error?.message??"Unknown error",180));}
+    }
+    return {posted,errors};
+  }
+
   staff(i,keys=STAFF){
     if(has(i.member?.permissions,P.administrator)||has(i.member?.permissions,P.manageMessages))return true;
     const roles=new Set(i.member?.roles??[]);return keys.some(k=>this.roleIds[k]&&roles.has(this.roleIds[k]));
@@ -454,10 +514,35 @@ export class DiscordCommunityPanels{
     {id:"reason",label:"Tell us about your creator work",min:15,max:1500,style:2,placeholder:"Explain what you create."},
   ]));}
   async submitCreator(i){
-    const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300),reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
-    const id=await this.store.creatorRequest(uid(i),profile,reason);
-    return this.reply(i,{content:"Creator verification submitted. Reference: "+id+"."},true);
+    const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300);
+    const reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
+    const result=await this.store.creatorRequest(uid(i),profile,reason);
+    if(!result?.created){
+      if(result?.reason==="pending")return this.reply(i,{content:"You already have a pending Creator verification request. Your existing request is awaiting staff review."},true);
+      if(result?.reason==="cooldown"){
+        const seconds=Math.max(1,Number(result.retry_after_seconds??0));
+        return this.reply(i,{content:"Creator verification requests are limited to one per 7 days. You can submit another request in approximately "+Math.max(1,Math.ceil(seconds/86400))+" day(s)."},true);
+      }
+      if(result?.reason==="already_approved")return this.reply(i,{content:"Your Snoozer account is already Creator verified."},true);
+      throw new Error("Creator verification request could not be accepted.");
+    }
+    const id=result.request_id;
+    if(!UUID.test(id??""))throw new Error("The Creator verification request was saved without a valid reference.");
+    const channelId=this.resources.creator_verification;
+    if(SF.test(channelId??"")){
+      const msg=await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body:{
+        embeds:[{title:"✨ Creator verification request",description:
+          "**Profile:** "+profile+"\n**Member:** <@"+uid(i)+">\n**Submitted:** <t:"+Math.floor(Date.now()/1000)+":R>\n\n**Creator information**\n"+reason+"\n\n**Reference:** "+id,
+          color:0x8b72d9,footer:{text:"Pending Creator verification · "+id}}],
+        components:[row(btn("creator:approve:"+id,"Approve",3,"✅"),btn("creator:reject:"+id,"Reject",4,"❌"))],
+        allowed_mentions:{parse:[]},
+      }});
+      if(SF.test(msg?.id??""))await this.store.setConfig(this.guildId,"creator_"+id.replaceAll("-",""),{channel_id:channelId,message_id:msg.id});
+    }else this.logger.warn("[discord-panels] Creator request saved but its review channel is unavailable",id);
+    try{await this.logEvent?.({title:"Creator verification submitted",description:"Member: <@"+uid(i)+">\nProfile: "+profile+"\nReference: "+id,severity:"info"});}catch{}
+    return this.reply(i,{content:"Creator verification submitted. The team will review it in #creator-verification. Reference: "+id+"."},true);
   }
+
   async createSubmissionModal(i,kind){
     return this.showModal(i,mkModal(kind+":submit",kind==="bug"?"Submit a bug report":"Submit a suggestion",[
       {id:"title",label:kind==="bug"?"Bug summary":"Suggestion title",min:4,max:120,placeholder:"Short title"},
@@ -806,8 +891,21 @@ export class DiscordCommunityPanels{
     this.requireAdmin(i);
     if(!UUID.test(id)||!["approved","rejected"].includes(decision))throw new Error("Invalid Creator review.");
     if(!await this.store.creatorReview(id,uid(i),decision))throw new Error("This Creator request was already reviewed.");
+    const key="creator_"+id.replaceAll("-","");
+    const config=await this.store.getConfig(this.guildId),messageRef=config?.[key];
+    if(SF.test(messageRef?.channel_id??"")&&SF.test(messageRef?.message_id??"")){
+      try{
+        const message=await this.api.request("/channels/"+messageRef.channel_id+"/messages/"+messageRef.message_id);
+        const embed=Array.isArray(message?.embeds)?message.embeds[0]:null;
+        if(embed)await this.api.request("/channels/"+messageRef.channel_id+"/messages/"+messageRef.message_id,{method:"PATCH",body:{
+          embeds:[{...embed,title:"Creator verification "+decision,color:decision==="approved"?0x43a982:0xd65a68,
+            footer:{text:"Reviewed "+decision+" by "+uid(i)+" · "+id},timestamp:new Date().toISOString()}],
+          components:[],allowed_mentions:{parse:[]},
+        }});
+      }catch(error){this.logger.warn("[discord-panels] Creator review card could not be updated",error?.message??error);}
+    }
     await this.store.recordSecurityEvent({guildId:this.guildId,action:"creator_verification_"+decision,actorId:uid(i),severity:"info",metadata:{request_id:id}});
-    await this.reply(i,{content:"Creator verification "+decision+"."},true);
+    return this.reply(i,{content:"Creator verification "+decision+". The member's Creator role will be synchronised automatically."},true);
   }
   async openGiveaway(i){
     this.requireStaff(i,["admin","community_manager","event_host"]);
@@ -1148,8 +1246,10 @@ export class DiscordCommunityPanels{
     if(this.timer)return;
     this.timer=setInterval(()=>void this.tick(),30000);
     this.timer.unref?.();
-    void this.publishPermanentPanels().then(result=>{
+    void this.ensureCreatorVerificationChannel().then(()=>this.publishPermanentPanels()).then(async result=>{
       if(result.errors.length)this.logger.warn("[discord-panels] some permanent panels could not be published",result.errors);
+      const queue=await this.publishCreatorQueue();
+      if(queue.errors.length)this.logger.warn("[discord-panels] Creator verification queue could not be fully published",queue.errors);
     }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error))
       .finally(()=>void this.tick());
   }
@@ -1224,9 +1324,7 @@ export class DiscordCommunityPanels{
         {id:"profile",label:"Snoozer profile URL",min:8,max:300,placeholder:"https://snoozer.uk/yourname"},
         {id:"reason",label:"Tell us about your creator work",min:15,max:1500,style:2,placeholder:"What do you create?"},
       ]));
-      else if(id==="creator:submit"){
-        const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300),reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
-        const ref=await this.store.creatorRequest(uid(i),profile,reason);await this.reply(i,{content:"Creator verification request submitted. Reference: "+ref+"."},true);
+      else if(id==="creator:submit")await this.submitCreator(i);
       }else if(id==="member:cases"){
         const list=await this.store.caseHistory(this.guildId,uid(i),10);
         if(!Array.isArray(list)||!list.length)await this.reply(i,{content:"No moderation cases found."},true);
