@@ -66,7 +66,7 @@ export async function StudioEditorPage({ searchParams, mode }: { searchParams: P
     </header>
     {params.restored === "1" && <p className="message" role="status">Version restored to your draft.</p>}
     <Editor key={draft.profile_id + ":" + mode} draft={draft}
-      effectTier={plan.success ? plan.data.plan : "free"}
+      effectTier={plan.success && plan.data.capabilities.advancedEffects ? plan.data.plan : "free"}
       linkLimit={linkLimit}
       imageHostOffer={imageHostOffer} imageHostActive={imageHostActive}
       initialTemplateId={template?.id ?? ""} initialTab={config.tab} panelOnly={config.panelOnly}
