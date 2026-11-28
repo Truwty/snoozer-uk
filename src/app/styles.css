@@ -3063,3 +3063,28 @@ body:has(> .public-page[data-background-image="true"]) {
  .profile-card[data-effect-interaction="magnetic"] .profile-links a,
  .profile-card[data-effect-interaction="parallax"] .profile-effects-layer { transform:none !important; }
 }
+
+
+/* Plan guide for the expanded animation catalogue. */
+.effects-editor-plan-guide {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));
+  gap:.45rem;
+  padding:.7rem;
+  border:1px solid var(--edge);
+  border-radius:.75rem;
+  background:var(--surface);
+}
+.effects-editor-plan-guide span {
+  display:grid;
+  gap:.1rem;
+  color:var(--muted);
+  font-size:.76rem;
+}
+.effects-editor-plan-guide strong {
+  color:var(--ink);
+  font-size:.68rem;
+  letter-spacing:.09em;
+}
+.effects-editor-help { font-size:.82rem; }
+.effects-editor option:disabled { color:var(--muted); }
