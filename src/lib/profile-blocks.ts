@@ -31,7 +31,9 @@ export const profileBlocks = z.array(profileBlock).max(32).superRefine((blocks, 
 
 export function makeProfileBlock(type: ProfileBlock["type"]): ProfileBlock {
   const id = crypto.randomUUID();
-  const common = { id, hidden: false, locked: false, width: "full" as const, align: "start" as const, variant: "surface" as const };
+  // New blocks use example copy as editing guidance; keep them out of public pages
+  // until the owner has replaced that copy and explicitly makes the block visible.
+  const common = { id, hidden: true, locked: false, width: "full" as const, align: "start" as const, variant: "surface" as const };
   switch (type) {
     case "heading": return { ...common, type, text: "Section heading", level: "h2" };
     case "about": return { ...common, type, heading: "About me", body: "Write a short introduction." };
