@@ -271,7 +271,7 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
       const block = makeProfileBlock(nativeType);
       set("blocks", [...content.blocks, block]);
       setTab("Blocks");
-      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added. Edit it in the Blocks panel.");
+      setAnnouncement(block.type[0].toUpperCase() + block.type.slice(1) + " block added as hidden. Edit it in the Blocks panel, then make it visible when the content is ready.");
       return;
     }
 
