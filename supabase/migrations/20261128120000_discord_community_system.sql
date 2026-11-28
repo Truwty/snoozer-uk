@@ -586,6 +586,7 @@ grant execute on function public.discord_bot_register_resources(text,jsonb),
   public.discord_bot_submission_create(text,text,text,text,text,jsonb),public.discord_bot_submission_vote(uuid,text,text),
   public.discord_bot_role_sync_targets(text),public.discord_bot_member_summary(text),
   public.discord_bot_claim_jobs(text,integer),public.discord_bot_finish_job(uuid,boolean,text),
+  public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz),
   public.discord_bot_config_get(text),public.discord_bot_config_set(text,text,jsonb),
   public.discord_bot_record_interaction(text,text) to service_role;
 
