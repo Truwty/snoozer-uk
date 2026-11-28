@@ -168,6 +168,8 @@
 .leaderboard-podium-card--1 { grid-area: first; border-color: rgb(190 158 92 / 48%); }
 .leaderboard-podium-card--2 { grid-area: second; }
 .leaderboard-podium-card--3 { grid-area: third; }
+.leaderboard-podium--count-1 .leaderboard-podium-card,
+.leaderboard-podium--count-2 .leaderboard-podium-card { grid-area: auto; }
 .leaderboard-podium-link {
   display: flex;
   min-height: 15.5rem;
