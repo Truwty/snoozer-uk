@@ -1177,3 +1177,13 @@ test("ticket deletion jobs are accepted by the database constraint and enqueue R
   assert.match(sql, /revoke all on function public\.discord_bot_enqueue_job[\s\S]*?from public, anon, authenticated/i);
   assert.match(sql, /grant execute on function public\.discord_bot_enqueue_job[\s\S]*?to service_role/i);
 });
+
+
+test("automation worker restores the earliest pending job through a service-only RPC", async () => {
+  const sql = await readFile(new URL("../supabase/migrations/20261128122657_discord_bot_next_job_due.sql", import.meta.url), "utf8");
+  assert.match(sql, /create or replace function public\.discord_bot_next_job_due\(p_guild_id text\)/i);
+  assert.match(sql, /where guild_id\s*=\s*p_guild_id[\s\S]*?and status\s*=\s*'pending'/i);
+  assert.match(sql, /select min\(run_at\)/i);
+  assert.match(sql, /revoke all on function public\.discord_bot_next_job_due\(text\)[\s\S]*?from public, anon, authenticated/i);
+  assert.match(sql, /grant execute on function public\.discord_bot_next_job_due\(text\)[\s\S]*?to service_role/i);
+});
