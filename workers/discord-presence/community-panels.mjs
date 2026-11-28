@@ -1059,7 +1059,15 @@ export class DiscordCommunityPanels{
       const jobs=await this.store.claimJobs(this.guildId,20);if(Array.isArray(jobs))for(const job of jobs)await this.runJob(job);
     }catch(e){this.logger.error("[discord-panels] automation tick failed",e?.message??e);}finally{this.busy=false;}
   }
-  start(){if(this.timer)return;this.timer=setInterval(()=>void this.tick(),30000);this.timer.unref?.();void this.tick();}
+  start(){
+    if(this.timer)return;
+    this.timer=setInterval(()=>void this.tick(),30000);
+    this.timer.unref?.();
+    void this.publishPermanentPanels().then(result=>{
+      if(result.errors.length)this.logger.warn("[discord-panels] some permanent panels could not be published",result.errors);
+    }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error));
+    void this.tick();
+  }
   stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
 
   async handleSlash(i){
