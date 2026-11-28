@@ -68,19 +68,56 @@ function createApi({ channels = [], roles = [], memberRoles = [] } = {}) {
 
 function botFixture(options = {}) {
   const { api, state } = createApi(options);
+  state.tickets = [];
+  state.jobs = [];
+  const ticketId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";
+  const store = options.store ?? {
+    async ticketPreflight(_guildId, ownerId) {
+      const active = state.tickets.find(ticket => ticket.owner_discord_id === ownerId && ["open","claimed","waiting_member","waiting_staff"].includes(ticket.status));
+      if (active) return { allowed: false, reason: "active", channel_id: active.channel_id, ticket_id: active.id };
+      const latest = state.tickets.filter(ticket => ticket.owner_discord_id === ownerId).sort((a,b) => b.createdAt-a.createdAt)[0];
+      if (latest && Date.now() - latest.createdAt < 60_000) {
+        return { allowed: false, reason: "cooldown", retry_after_seconds: Math.ceil(60_000 - (Date.now() - latest.createdAt)) / 1000 };
+      }
+      return { allowed: true };
+    },
+    async openTicket(input) {
+      const existing = state.tickets.find(ticket => ticket.owner_discord_id === input.ownerId && ["open","claimed","waiting_member","waiting_staff"].includes(ticket.status));
+      if (existing) return { created: false, channel_id: existing.channel_id, ticket_id: existing.id, reason: "active" };
+      const ticket = {
+        id: ticketId, ticket_id: ticketId, guild_id: input.guildId, channel_id: input.channelId,
+        owner_discord_id: input.ownerId, status: "open", createdAt: Date.now(),
+      };
+      state.tickets.push(ticket);
+      return { created: true, ticket_id: ticketId, channel_id: input.channelId, status: "open" };
+    },
+    async getTicket(id) { return state.tickets.find(ticket => ticket.id === id) ?? null; },
+    async ticketAction(id, _actor, action) {
+      const ticket = state.tickets.find(item => item.id === id);
+      if (ticket && action === "close") ticket.status = "closed";
+      return true;
+    },
+    async enqueueJob(job) { state.jobs.push(structuredClone(job)); return true; },
+  };
+  const wakeups = [];
   return {
     bot: new DiscordCommunityBot({
       guildId,
       botUserId,
       applicationId,
+      roleIds: options.roleIds ?? {},
       channelIds: options.channelIds ?? {},
     }, {
       api,
+      store,
+      scheduleJobWake: runAt => wakeups.push(runAt),
       fetcher: options.fetcher ?? globalThis.fetch,
       logger: { info() {}, warn() {}, error() {} },
     }),
     api,
     state,
+    store,
+    wakeups,
   };
 }
 
@@ -284,7 +321,7 @@ test("support ticket creates a private channel, notifies support and prevents du
   ]));
   assert.match(first, /private support ticket has been created/);
 
-  const ticket = state.channels.find(channel => channel.topic?.includes("SNOOZER_TICKET:v1"));
+  const ticket = state.channels.find(channel => channel.topic?.includes("SNOOZER_TICKET:v2"));
   assert.ok(ticket);
   const publicDeny = ticket.permission_overwrites.find(entry => entry.id === guildId && entry.type === 0);
   const ownerAllow = ticket.permission_overwrites.find(entry => entry.id === memberId && entry.type === 1);
@@ -322,15 +359,45 @@ test("ticket close is limited to the owner or staff and locks the owner's send p
   const result = await bot.closeTicket(interaction("snoozer-ticket-close", [], {
     channel_id: ticketId,
   }));
-  assert.equal(result, "The ticket has been closed.");
+  assert.equal(result, "The ticket has been closed and will be deleted in 10 seconds.");
   const closed = state.channels.find(item => item.id === ticketId);
   assert.equal(closed.name, "closed-ticket-community-member-555555");
   assert.match(closed.topic, /status=closed/);
   const owner = closed.permission_overwrites.find(entry => entry.id === memberId && entry.type === 1);
   assert.equal(owner.deny, String(1n << 11n));
   assert.ok(state.calls.some(call => call.path === "/channels/" + ticketId + "/messages" && call.method === "POST"));
+  assert.equal(state.jobs.length, 1);
+  assert.equal(state.jobs[0].jobType, "ticket_delete");
+  assert.ok(state.jobs[0].runAt);
 });
 
+
+test("slash ticket close recognises registered staff roles with decorated Discord role names", async () => {
+  const ticketChannelId = "630000000000000002";
+  const supportRoleId = "610000000000000012";
+  const channel = {
+    id: ticketChannelId,
+    name: "ticket-account-member-555556",
+    type: 0,
+    topic: "SNOOZER_TICKET:v1 owner=" + memberId + " status=open created_at=2026-11-28T10:00:00.000Z",
+    permission_overwrites: [{ id: memberId, type: 1, allow: "117760", deny: "0" }],
+  };
+  const { bot, state } = botFixture({
+    channels: [channel],
+    roles: [{ id: supportRoleId, name: "🎧・Support Team" }],
+    roleIds: { support_team: supportRoleId },
+  });
+  const result = await bot.closeTicket(interaction("snoozer-ticket-close", [], {
+    channel_id: ticketChannelId,
+    member: { user: { id: moderatorId, username: "support-agent" }, permissions: "0", roles: [supportRoleId] },
+  }));
+
+  assert.match(result, /deleted in 10 seconds/i);
+  const closed = state.channels.find(item => item.id === ticketChannelId);
+  assert.match(closed.topic, /status=closed/);
+  assert.equal(state.jobs.length, 1);
+  assert.equal(state.jobs[0].jobType, "ticket_delete");
+});
 
 test("private member reports notify moderators but do not grant Support Team access", async () => {
   const roles = [
@@ -448,7 +515,7 @@ test("concurrent ticket requests from one member cannot create duplicate private
   assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
   assert.equal(results.filter(result => result.status === "rejected").length, 1);
   assert.match(results.find(result => result.status === "rejected").reason.message, /already being opened/);
-  assert.equal(state.channels.filter(channel => channel.topic?.includes("SNOOZER_TICKET:v1")).length, 1);
+  assert.equal(state.channels.filter(channel => channel.topic?.includes("SNOOZER_TICKET:v2")).length, 1);
 });
 
 test("status announcements retry after Discord rejects a message instead of losing the transition", async () => {
@@ -499,5 +566,5 @@ test("ticket creation remains usable when Discord rejects the opening message", 
     { name: "details", value: "I cannot sign into the site using the normal flow." },
   ]));
   assert.match(result, /channel exists, but Discord rejected its opening message/);
-  assert.ok(state.channels.some(channel => channel.topic?.includes("SNOOZER_TICKET:v1")));
+  assert.ok(state.channels.some(channel => channel.topic?.includes("SNOOZER_TICKET:v2")));
 });
