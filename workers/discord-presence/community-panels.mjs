@@ -97,27 +97,43 @@ export class DiscordCommunityPanels{
   }
   async ensureCreatorVerificationChannel(){
     await this.refreshResources();
-    if(SF.test(this.resources.creator_verification??""))return this.resources.creator_verification;
+    const parent=this.resources.category_internal;
+    if(!SF.test(parent??"")){
+      this.logger.warn("[discord-panels] Creator verification channel not created because the private INTERNAL category is not registered.");
+      return null;
+    }
+
     const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
     if(!Array.isArray(channels))throw new Error("Discord did not return the server channel inventory.");
-    let channel=channels.find(item=>item.type===0&&["✨・creator-verification","creator-verification"].includes(item.name));
-    if(!channel){
-      const parent=this.resources.category_internal;
-      if(!SF.test(parent??"")){this.logger.warn("[discord-panels] Creator verification channel not created because the private INTERNAL category is not registered.");return null;}
-      const staffIds=[this.roleIds.admin,this.roleIds.developer].filter(id=>SF.test(id??""));
-      const viewSend=P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks;
-      const overwrites=[
-        {id:this.guildId,type:0,allow:"0",deny:P.viewChannel.toString()},
-        ...staffIds.map(id=>({id,type:0,allow:viewSend.toString(),deny:"0"})),
-        {id:this.botUserId,type:1,allow:(viewSend|(1n<<15n)).toString(),deny:"0"},
-      ];
+    const registeredId=this.resources.creator_verification;
+    let channel=registeredId?channels.find(item=>item.type===0&&item.id===registeredId):null;
+    if(!channel)channel=channels.find(item=>item.type===0&&["✨・creator-verification","creator-verification"].includes(item.name));
+
+    const adminId=this.roleIds.admin;
+    const viewSend=P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks;
+    const overwrites=[
+      {id:this.guildId,type:0,allow:"0",deny:P.viewChannel.toString()},
+      ...(SF.test(adminId??"")?[{id:adminId,type:0,allow:viewSend.toString(),deny:"0"}]:[]),
+      {id:this.botUserId,type:1,allow:(viewSend|(1n<<15n)).toString(),deny:"0"},
+    ];
+
+    if(channel){
+      // An old or manually-created channel with the same name is moved into INTERNAL
+      // and its overwrites are replaced so submissions are never left in a public room.
+      channel=await this.api.request("/channels/"+channel.id,{method:"PATCH",body:{
+        parent_id:parent,
+        topic:"Private Creator verification review queue. Only Snoozer Admins and the bot can view submissions.",
+        permission_overwrites:overwrites,
+      }});
+    }else{
       channel=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
         name:"✨・creator-verification",type:0,parent_id:parent,
-        topic:"Private Creator verification review queue. Only authorised Snoozer staff can view submissions.",
+        topic:"Private Creator verification review queue. Only Snoozer Admins and the bot can view submissions.",
         permission_overwrites:overwrites,
       }});
     }
     if(!SF.test(channel?.id??""))throw new Error("Discord did not return a valid Creator verification channel.");
+
     const registry=await this.store.getResources(this.guildId);
     const rows=(Array.isArray(registry?.rows)?registry.rows:[]).filter(item=>item.resource_key!=="creator_verification");
     rows.push({resource_key:"creator_verification",resource_type:"text",discord_id:channel.id,name:channel.name??"✨・creator-verification"});
