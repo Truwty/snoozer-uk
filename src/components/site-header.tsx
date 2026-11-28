@@ -57,7 +57,6 @@ export async function SiteHeader({ locale: suppliedLocale }: { locale?: AccountL
           href="https://discord.gg/PVk9UskfjD"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Join the Snoozer Discord server"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
             <path d="M7.5 6.1a16.9 16.9 0 0 1 9 0l.7 1.2c.9.3 1.8.7 2.6 1.2l1.1 7.2a2 2 0 0 1-1.1 2.1l-2.2 1.1-1.1-1.7c.7-.2 1.3-.6 1.8-1a13.8 13.8 0 0 1-12.6 0c.5.4 1.1.8 1.8 1l-1.1 1.7-2.2-1.1a2 2 0 0 1-1.1-2.1l1.1-7.2c.8-.5 1.7-.9 2.6-1.2l.7-1.2Zm2.1 5.1a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Zm4.8 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z"/>
