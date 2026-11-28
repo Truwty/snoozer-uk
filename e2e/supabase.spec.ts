@@ -858,9 +858,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await editorTab(page, "Links");
       await page.getByLabel(`Link ${index + 1} URL`).fill(`https://example.com/${label}`);
     }
-    await linkMenu(page, 2);
+    const reorderedLinkActions = page.getByRole("group", { name: "Actions for link 2", exact: true });
+    await expect(reorderedLinkActions).toBeVisible();
     await page.getByRole("button", { name: "Move up (link 2)" }).press("Enter");
-    expect(await page.getByLabel("Actions for link 2", { exact: true }).evaluate((element) => element.parentElement?.hasAttribute("open"))).toBe(false);
+    await expect(reorderedLinkActions).toBeVisible();
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
     await page.getByRole("button", { name: "Undo edit" }).press("Enter");
