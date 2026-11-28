@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  accountCookieOptions, maxSavedAccounts, primarySlot,
+  accountCookieOptions, isSessionCookieName, maxSavedAccounts, primarySlot,
   readSavedAccounts, remainingAccounts, selectedAccountSlot, sessionStorageName,
   validAccountSlot,
 } from "@/lib/account-sessions";
@@ -13,6 +13,16 @@ describe("browser-local account slots", () => {
     expect(sessionStorageName(primarySlot)).toBeUndefined();
     expect(readSavedAccounts(undefined)).toEqual([{ slot: primarySlot, label: "My account" }]);
     expect(selectedAccountSlot(undefined, readSavedAccounts(undefined))).toBe(primarySlot);
+  });
+  it("recognises default and numbered Supabase session cookie chunks", () => {
+    expect(isSessionCookieName("sb-project-auth-token")).toBe(true);
+    expect(isSessionCookieName("sb-project-auth-token.0")).toBe(true);
+    expect(isSessionCookieName("sb-project-auth-token.12")).toBe(true);
+    expect(isSessionCookieName("sb-project-auth-token.bad")).toBe(false);
+    expect(isSessionCookieName("sb-project-auth-token-extra")).toBe(false);
+    expect(isSessionCookieName("snoozer-session-slot", "snoozer-session-slot")).toBe(true);
+    expect(isSessionCookieName("snoozer-session-slot.0", "snoozer-session-slot")).toBe(true);
+    expect(isSessionCookieName("sb-project-auth-token", "snoozer-session-slot")).toBe(false);
   });
   it("isolates independently signed-in accounts into different HttpOnly cookie namespaces", () => {
     expect(sessionStorageName(a)).toBe(`snoozer-session-${a}`);
