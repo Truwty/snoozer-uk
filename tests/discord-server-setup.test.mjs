@@ -6,7 +6,7 @@ import {
   SNOOZER_SETUP_COMMAND,
   hasAdministratorPermission,
 } from "../workers/discord-presence/server-setup.mjs";
-import { DiscordPresenceWorker } from "../workers/discord-presence/worker.mjs";
+import { DiscordPresenceWorker, loadConfig } from "../workers/discord-presence/worker.mjs";
 
 const guildId = "222222222222222222";
 const botUserId = "333333333333333333";
@@ -286,4 +286,45 @@ test("Gateway command interactions are routed to the Snoozer setup handler", asy
 
   assert.equal(received?.guild_id, guildId);
   assert.equal(received?.data?.name, "snoozer-setup");
+});
+
+test("server setup can run without enabling or configuring public Presence", () => {
+  const config = loadConfig({
+    DISCORD_SERVER_SETUP_ENABLED: "true",
+    DISCORD_PRESENCE_ENABLED: "false",
+    DISCORD_BOT_TOKEN: "test-token",
+    DISCORD_PRESENCE_GUILD_ID: guildId,
+  });
+  assert.equal(config.serverSetupEnabled, true);
+  assert.equal(config.presenceEnabled, false);
+  assert.equal(config.baseUrl, "");
+  assert.equal(config.secret, "");
+  assert.throws(() => loadConfig({
+    DISCORD_SERVER_SETUP_ENABLED: "false",
+    DISCORD_PRESENCE_ENABLED: "false",
+    DISCORD_BOT_TOKEN: "test-token",
+    DISCORD_PRESENCE_GUILD_ID: guildId,
+  }), /Enable DISCORD_SERVER_SETUP_ENABLED or DISCORD_PRESENCE_ENABLED/);
+});
+
+test("setup-only mode identifies with the GUILDS intent and not the privileged Presence intent", async () => {
+  const gatewayMessages = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    guildId,
+    presenceEnabled: false,
+    serverSetupEnabled: true,
+  }, {
+    fetcher: async () => new Response(null, { status: 204 }),
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.socket = {
+    readyState: 1,
+    send: payload => gatewayMessages.push(JSON.parse(payload)),
+  };
+
+  await worker.handleMessage(JSON.stringify({ op: 10, d: { heartbeat_interval: 45_000 } }));
+  const identify = gatewayMessages.find(message => message.op === 2);
+  assert.equal(identify.d.intents, 1);
+  worker.stopHeartbeat();
 });
