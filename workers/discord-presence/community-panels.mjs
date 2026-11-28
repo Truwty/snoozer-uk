@@ -905,7 +905,8 @@ export class DiscordCommunityPanels{
       if(!Number.isInteger(values[key])||values[key]<min||values[key]>max)throw new Error(key+" must be between "+min+" and "+max+".");
     }
     const config=await this.store.getConfig(this.guildId);
-    await this.store.setConfig(this.guildId,"security",{...(config?.security??{}),...values});
+    this.securitySettings={...(config?.security??{}),...values};
+    await this.store.setConfig(this.guildId,"security",this.securitySettings);
     await this.reply(i,{content:"Server protection thresholds saved. The security monitor will load them on its next cycle."},true);
   }
 
