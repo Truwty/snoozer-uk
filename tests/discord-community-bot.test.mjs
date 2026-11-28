@@ -433,10 +433,13 @@ test("public feedback submissions are rate limited per member to prevent command
 test("concurrent ticket requests from one member cannot create duplicate private channels", async () => {
   const roles = [
     { id: "610000000000000001", name: "Snoozer Admin" },
-    { id: "610000000000000002", name: "Moderator" },
-    { id: "610000000000000003", name: "Support Team" },
+    { id: "610000000000000002", name: "Senior Moderator" },
+    { id: "610000000000000003", name: "Moderator" },
+    { id: "610000000000000004", name: "Support Team" },
+    { id: "610000000000000005", name: "Support Manager" },
+    { id: "610000000000000006", name: "Ticket Support" },
   ];
-  const channels = [{ id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 }];
+  const channels = [{ id: "620000000000000001", name: "TICKETS", type: 4 }];
   const { bot, state } = botFixture({ roles, channels });
   const create = () => bot.submitTicket(interaction("snoozer-ticket", [
     { name: "subject", value: "Cannot update profile" },
@@ -477,10 +480,13 @@ test("status announcements retry after Discord rejects a message instead of losi
 test("ticket creation remains usable when Discord rejects the opening message", async () => {
   const roles = [
     { id: "610000000000000001", name: "Snoozer Admin" },
-    { id: "610000000000000002", name: "Moderator" },
-    { id: "610000000000000003", name: "Support Team" },
+    { id: "610000000000000002", name: "Senior Moderator" },
+    { id: "610000000000000003", name: "Moderator" },
+    { id: "610000000000000004", name: "Support Team" },
+    { id: "610000000000000005", name: "Support Manager" },
+    { id: "610000000000000006", name: "Ticket Support" },
   ];
-  const channels = [{ id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 }];
+  const channels = [{ id: "620000000000000001", name: "TICKETS", type: 4 }];
   const { bot, api, state } = botFixture({ roles, channels });
   const original = api.request.bind(api);
   api.request = async (path, options = {}) => {
