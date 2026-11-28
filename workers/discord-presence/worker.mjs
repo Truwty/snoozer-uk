@@ -314,26 +314,28 @@ export class DiscordPresenceWorker {
       type: 4,
       data: { content, flags: 64 },
     });
-
-    if (!hasAdministratorPermission(interaction.member?.permissions)) {
-      await reply("Only a server administrator can run the Snoozer server setup.");
-      return;
-    }
-
-    const confirm = interaction.data?.options?.find(option => option.name === "confirm")?.value;
-    if (confirm !== true) {
-      await reply("Nothing was changed. Run /snoozer-setup again and set confirm to true when you are ready.");
-      return;
-    }
-
-    if (this.serverSetupRunning) {
-      await reply("The Snoozer server setup is already running. Please do not start another run.");
-      return;
-    }
-
-    this.serverSetupRunning = true;
+    let ownsLock = false;
     let deferred = false;
+
     try {
+      if (!hasAdministratorPermission(interaction.member?.permissions)) {
+        await reply("Only a server administrator can run the Snoozer server setup.");
+        return;
+      }
+
+      const confirm = interaction.data?.options?.find(option => option.name === "confirm")?.value;
+      if (confirm !== true) {
+        await reply("Nothing was changed. Run /snoozer-setup again and set confirm to true when you are ready.");
+        return;
+      }
+
+      if (this.serverSetupRunning) {
+        await reply("The Snoozer server setup is already running. Please do not start another run.");
+        return;
+      }
+
+      this.serverSetupRunning = true;
+      ownsLock = true;
       await this.sendSetupInteractionResponse(interaction, { type: 5, data: { flags: 64 } });
       deferred = true;
       const result = await new DiscordGuildSetup({
@@ -357,10 +359,9 @@ export class DiscordPresenceWorker {
         this.logger.error("[discord-presence] failed to report server setup outcome:", responseError?.message ?? responseError);
       }
     } finally {
-      this.serverSetupRunning = false;
+      if (ownsLock) this.serverSetupRunning = false;
     }
   }
-
   async dispatch(event) {
     const data = event.d ?? {};
     switch (event.t) {
@@ -415,7 +416,7 @@ export class DiscordPresenceWorker {
         break;
       case "INTERACTION_CREATE":
         if (data.type === 2 && data.data?.name === SNOOZER_SETUP_COMMAND.name) {
-          void this.handleServerSetupInteraction(data);
+          await this.handleServerSetupInteraction(data);
         }
         break;
       case "RATE_LIMITED":
