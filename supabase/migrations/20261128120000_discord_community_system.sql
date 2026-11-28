@@ -514,164 +514,23 @@ end $$;
 
 create or replace function public.discord_bot_enqueue_job(
   p_guild_id text,p_job_type text,p_dedupe_key text,p_payload jsonb default '{}'::jsonb,p_run_at timestamptz default now()
-) returns uuid language plpgsql security definer set search_path='' as $
+) returns uuid language plpgsql security definer set search_path='' as $discord_bot$
 declare result uuid;
 begin
-  if p_guild_id !~ '^[1-9][0-9]{16,19}
-returns jsonb language sql stable security definer set search_path='' as $$
-  select coalesce(jsonb_object_agg(config_key,config),'{}'::jsonb)
-  from snoozer.discord_bot_config where guild_id=p_guild_id
-$$;
-
-create or replace function public.discord_bot_config_set(p_guild_id text,p_key text,p_config jsonb)
-returns boolean language plpgsql security definer set search_path='' as $$
-begin
-  if p_guild_id !~ '^[1-9][0-9]{16,19}$' or p_key !~ '^[a-z][a-z0-9_]{1,79}$'
-    or jsonb_typeof(p_config)<>'object' or octet_length(p_config::text)>16384 then return false; end if;
-  insert into snoozer.discord_bot_config(guild_id,config_key,config) values(p_guild_id,p_key,p_config)
-    on conflict(guild_id,config_key) do update set config=excluded.config,updated_at=now();
-  return true;
-end $$;
-
-create or replace function public.discord_bot_record_interaction(p_id text,p_type text)
-returns boolean language plpgsql security definer set search_path='' as $$
-begin
-  if p_id !~ '^[1-9][0-9]{16,19}$' or length(coalesce(p_type,'')) not between 1 and 80 then return false; end if;
-  insert into snoozer.discord_bot_interaction_receipts(interaction_id,interaction_type) values(p_id,p_type)
-    on conflict(interaction_id) do nothing;
-  return found;
-end $$;
-
-create or replace function public.discord_bot_entitlement_sync_enqueue()
-returns trigger language plpgsql security definer set search_path='' as $$
-declare owner uuid;
-begin
-  if tg_op='DELETE' then owner:=old.owner_id; else owner:=new.owner_id; end if;
-  insert into snoozer.discord_bot_jobs(guild_id,job_type,dedupe_key,payload)
-    select r.discord_id,'premium_role_sync','premium-role-sync:'||owner::text,
-      jsonb_build_object('owner_id',owner)
-    from snoozer.discord_bot_resources r
-    where r.resource_key='guild' and r.resource_type='category'
-    on conflict(dedupe_key) do update set
-      payload=excluded.payload,status='pending',run_at=now(),locked_at=null,updated_at=now();
-  if tg_op='DELETE' then return old; end if;
-  return new;
-end $$;
-
-drop trigger if exists discord_bot_entitlement_sync on snoozer.entitlement_grants;
-create trigger discord_bot_entitlement_sync
-after insert or update or delete on snoozer.entitlement_grants
-for each row execute function public.discord_bot_entitlement_sync_enqueue();
-
--- Functions are exposed only as service-role operations. They must never be called from a browser.
-revoke all on function public.discord_bot_register_resources(text,jsonb),
-  public.discord_bot_get_resources(text),public.discord_bot_save_backup(text,text,jsonb),
-  public.discord_bot_open_ticket(text,text,text,text,text,text),public.discord_bot_ticket_action(uuid,text,text,jsonb),
-  public.discord_bot_ticket_queue(text,integer),public.discord_bot_create_case(text,text,text,text,text,integer,integer,jsonb),
-  public.discord_bot_case_history(text,text,integer),public.discord_bot_create_appeal(uuid,text,text),
-  public.discord_bot_creator_request(text,text,text),public.discord_bot_creator_review(uuid,text,text,text),
-  public.discord_bot_submission_create(text,text,text,text,text,jsonb),public.discord_bot_submission_vote(uuid,text,text),
-  public.discord_bot_role_sync_targets(text),public.discord_bot_member_summary(text),
-  public.discord_bot_claim_jobs(text,integer),public.discord_bot_finish_job(uuid,boolean,text),
-  public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz),
-  public.discord_bot_config_get(text),public.discord_bot_config_set(text,text,jsonb),
-  public.discord_bot_record_interaction(text,text),public.discord_bot_entitlement_sync_enqueue()
-from public,anon,authenticated;
-grant execute on function public.discord_bot_register_resources(text,jsonb),
-  public.discord_bot_get_resources(text),public.discord_bot_save_backup(text,text,jsonb),
-  public.discord_bot_open_ticket(text,text,text,text,text,text),public.discord_bot_ticket_action(uuid,text,text,jsonb),
-  public.discord_bot_ticket_queue(text,integer),public.discord_bot_create_case(text,text,text,text,text,integer,integer,jsonb),
-  public.discord_bot_case_history(text,text,integer),public.discord_bot_create_appeal(uuid,text,text),
-  public.discord_bot_creator_request(text,text,text),public.discord_bot_creator_review(uuid,text,text,text),
-  public.discord_bot_submission_create(text,text,text,text,text,jsonb),public.discord_bot_submission_vote(uuid,text,text),
-  public.discord_bot_role_sync_targets(text),public.discord_bot_member_summary(text),
-  public.discord_bot_claim_jobs(text,integer),public.discord_bot_finish_job(uuid,boolean,text),
-  public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz),
-  public.discord_bot_config_get(text),public.discord_bot_config_set(text,text,jsonb),
-  public.discord_bot_record_interaction(text,text) to service_role;
-
-revoke all on function public.discord_bot_entitlement_sync_enqueue() from service_role;
-
-    or length(coalesce(p_choice,'')) not between 1 and 100 then raise exception 'Invalid vote'; end if;
-  if not exists(select 1 from snoozer.discord_bot_submissions where id=p_id and status in ('open','approved')) then
-    raise exception 'Submission is not open for voting';
+  if p_guild_id !~ '^[1-9][0-9]{16,19}$'
+    or p_job_type not in ('premium_role_sync','creator_role_sync','announcement','ticket_reminder','scheduled_event','giveaway_finish','backup','health_check','role_reconcile','tempban_unban')
+    or length(coalesce(p_dedupe_key,'')) not between 1 and 200
+    or jsonb_typeof(coalesce(p_payload,'{}'::jsonb))<>'object'
+    or octet_length(coalesce(p_payload,'{}'::jsonb)::text)>32768 then
+    raise exception 'Invalid Discord automation job';
   end if;
-  insert into snoozer.discord_bot_votes(submission_id,voter_discord_id,choice) values(p_id,p_voter,p_choice)
-    on conflict(submission_id,voter_discord_id) do update set choice=excluded.choice,created_at=now();
-  select count(*) into total from snoozer.discord_bot_votes where submission_id=p_id;
-  return jsonb_build_object('votes',total,
-    'upvotes',(select count(*) from snoozer.discord_bot_votes where submission_id=p_id and choice='up'));
-end $$;
-
-create or replace function public.discord_bot_role_sync_targets(p_guild_id text)
-returns jsonb language sql stable security definer set search_path='' as $$
-  select coalesce(jsonb_agg(jsonb_build_object(
-    'discord_user_id',i.provider_id,
-    'premium',exists(select 1 from snoozer.entitlement_grants e
-      where e.owner_id=i.user_id and e.revoked_at is null and e.starts_at<=now()
-        and (e.expires_at is null or e.expires_at>now()) and not coalesce(e.payment_held,false)
-        and e.plan in ('plus','pro','studio')),
-    'creator',exists(select 1 from snoozer.discord_bot_creator_verifications v
-      where v.discord_user_id=i.provider_id and v.status='approved')
-  )),'[]'::jsonb)
-  from auth.identities i
-  where i.provider='discord' and i.provider_id ~ '^[1-9][0-9]{16,19}$'
-    and exists(select 1 from auth.users u where u.id=i.user_id)
-$$;
-
-create or replace function public.discord_bot_member_summary(p_discord_user_id text)
-returns jsonb language plpgsql stable security definer set search_path='' as $$
-declare owner uuid;
-declare profile_name text;
-declare display_name text;
-declare plan_name text;
-declare premium boolean;
-declare creator boolean;
-begin
-  if p_discord_user_id !~ '^[1-9][0-9]{16,19}$' then return null; end if;
-  select user_id into owner from auth.identities where provider='discord' and provider_id=p_discord_user_id limit 1;
-  if owner is null then return jsonb_build_object('linked',false); end if;
-  select username,display_name into profile_name,display_name from snoozer.profiles where owner_id=owner order by created_at limit 1;
-  select plan into plan_name from snoozer.entitlement_grants
-    where owner_id=owner and revoked_at is null and starts_at<=now()
-      and (expires_at is null or expires_at>now()) and not coalesce(payment_held,false)
-      and plan in ('plus','pro','studio')
-    order by case plan when 'studio' then 1 when 'pro' then 2 else 3 end limit 1;
-  premium:=plan_name is not null;
-  select exists(select 1 from snoozer.discord_bot_creator_verifications where discord_user_id=p_discord_user_id and status='approved') into creator;
-  return jsonb_build_object('linked',true,'username',profile_name,'display_name',display_name,
-    'premium',premium,'plan',plan_name,'creator',creator,'profile_url',case when profile_name is null then null else 'https://snoozer.uk/'||profile_name end);
-end $$;
-
-create or replace function public.discord_bot_claim_jobs(p_guild_id text,p_limit integer default 20)
-returns jsonb language plpgsql security definer set search_path='' as $$
-declare result jsonb;
-begin
-  with picked as (
-    select id from snoozer.discord_bot_jobs
-    where guild_id=p_guild_id and run_at<=now()
-      and (status='pending' or (status='processing' and locked_at<now()-interval '5 minutes'))
-    order by run_at,created_at limit least(greatest(coalesce(p_limit,20),1),50)
-    for update skip locked
-  ), changed as (
-    update snoozer.discord_bot_jobs j set status='processing',locked_at=now(),attempts=attempts+1,updated_at=now()
-    from picked where j.id=picked.id returning j.*
-  )
-  select coalesce(jsonb_agg(to_jsonb(changed)),'[]'::jsonb) into result from changed;
+  insert into snoozer.discord_bot_jobs(guild_id,job_type,dedupe_key,payload,run_at)
+    values(p_guild_id,p_job_type,p_dedupe_key,coalesce(p_payload,'{}'::jsonb),coalesce(p_run_at,now()))
+    on conflict(dedupe_key) do update set guild_id=excluded.guild_id,job_type=excluded.job_type,
+      payload=excluded.payload,run_at=excluded.run_at,status='pending',locked_at=null,updated_at=now()
+    returning id into result;
   return result;
-end $$;
-
-create or replace function public.discord_bot_finish_job(p_id uuid,p_success boolean,p_error text default null)
-returns boolean language plpgsql security definer set search_path='' as $$
-begin
-  update snoozer.discord_bot_jobs set
-    status=case when p_success then 'done' when attempts>=8 then 'failed' else 'pending' end,
-    run_at=case when p_success then run_at else now()+make_interval(secs=>least(3600,30*(2^least(attempts,6))::integer)) end,
-    locked_at=null,last_error=case when p_success then null else left(coalesce(p_error,'Failed'),1000) end,updated_at=now()
-  where id=p_id and status='processing';
-  return found;
-end $$;
-
+end $discord_bot$;
 create or replace function public.discord_bot_config_get(p_guild_id text)
 returns jsonb language sql stable security definer set search_path='' as $$
   select coalesce(jsonb_object_agg(config_key,config),'{}'::jsonb)
@@ -740,6 +599,7 @@ grant execute on function public.discord_bot_register_resources(text,jsonb),
   public.discord_bot_submission_create(text,text,text,text,text,jsonb),public.discord_bot_submission_vote(uuid,text,text),
   public.discord_bot_role_sync_targets(text),public.discord_bot_member_summary(text),
   public.discord_bot_claim_jobs(text,integer),public.discord_bot_finish_job(uuid,boolean,text),
+  public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz),
   public.discord_bot_config_get(text),public.discord_bot_config_set(text,text,jsonb),
   public.discord_bot_record_interaction(text,text) to service_role;
 
