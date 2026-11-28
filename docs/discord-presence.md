@@ -5,7 +5,7 @@
 
 ## Runtime model
 
-The current main web service starts the Next.js server first. When `DISCORD_PRESENCE_ENABLED=true` and all required credentials are present, `scripts/start.mjs` waits for `/health/live` and then launches `workers/discord-presence/worker.mjs` as a child process. If the worker exits, the website remains available. The GitHub Actions keep-awake workflow pings the public homepage every ten minutes on the Render Free service; this is a best-effort wake-up workaround, not an always-on guarantee.
+The current main web service starts the Next.js server first. When either `DISCORD_SERVER_SETUP_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`, `scripts/start.mjs` waits for `/health/live` and then launches `workers/discord-presence/worker.mjs` as a child process. Server setup can run independently with only the bot token and guild ID; it uses the standard `GUILDS` intent and does not ingest presence data. Presence additionally requires its URL, HMAC secret and privileged Presence intent. If the worker exits, the website remains available. The GitHub Actions keep-awake workflow pings the public homepage every ten minutes on the Render Free service; this is a best-effort wake-up workaround, not an always-on guarantee.
 
 `render.presence-worker.yaml` describes an alternative standalone paid background worker deployment. Do not run that worker and the embedded child process against the same bot credentials at the same time: doing so can create two Gateway connections and duplicate ingestion. Choose one operating model deliberately.
 
@@ -65,11 +65,25 @@ For email/password Snoozer accounts, Discord identity linking also needs the Dis
 
 1. Create or select a Discord application that will own the presence bot.
 2. Add a bot user.
-3. In **Bot → Privileged Gateway Intents**, enable **Presence Intent**. Do not enable Message Content or Server Members for this integration.
-4. Invite the bot to the single shared Snoozer Discord server. It needs no channel permissions for presence observation; keep its permissions minimal.
+3. Only when enabling Presence, turn on **Presence Intent** in **Bot → Privileged Gateway Intents**. Server setup alone does not require any privileged intents. Do not enable Message Content or Server Members for this integration.
+4. Invite the bot to the single shared Snoozer Discord server with the `bot` and `applications.commands` scopes. Presence observation itself needs no channel permissions, but the one-time server setup command needs **Manage Channels**, **Manage Roles**, **View Channels**, **Send Messages**, **Embed Links** and **Read Message History**. Give the bot role these permissions and place it above the roles it will manage. The combined permission bitfield is `268520464`.
 5. Copy the server ID with Discord Developer Mode enabled. This becomes `DISCORD_PRESENCE_GUILD_ID`.
 6. Publish the server invite in `DISCORD_PRESENCE_INVITE_URL` so creators know where they must be members.
 7. Keep the bot token private. Never put it in GitHub, source code, browser configuration or ChatGPT messages.
+
+## One-time Snoozer server setup
+
+The bot cannot create a brand-new Discord guild. Create the Snoozer server in Discord first, invite the bot to it, and configure that server ID as `DISCORD_PRESENCE_GUILD_ID`.
+
+When the Discord worker starts with `DISCORD_SERVER_SETUP_ENABLED=true`, it registers a server-scoped `/snoozer-setup` application command in that configured guild. The command is restricted to members with the Discord **Administrator** permission and requires the explicit `confirm: true` option. It uses Gateway interactions; it does not require Message Content or the Guild Members privileged intent.
+
+The command creates the Snoozer role set (`Snoozer Admin`, `Moderator`, `Support Team`, `Developer`, `Premium`, `Creator`, `Member` and `Bots`), the START HERE, SNOOZER UPDATES, COMMUNITY, SUPPORT & FEEDBACK and STAFF HQ categories, their text and voice channels, read-only announcement areas, private staff channels, and starter welcome, rules and FAQ embeds. Account-specific support is directed to the Help Centre; users are told not to share passwords or payment information in Discord.
+
+The hidden `INTERNAL` category contains `#snoozer-setup-state`. Its channel topic stores `SNOOZER_SERVER_SETUP_COMPLETE:v1` after every setup step succeeds. A later invocation checks this marker and makes no changes. If a request fails before completion, the command can be retried: existing roles and channels are reused, existing messages are checked for their setup footer, and nothing is deleted or renamed. Do not delete the hidden marker channel if you want to preserve the one-time lock.
+
+The command does not assign roles to people, sync Premium subscriptions, run a ticket system or enable automated moderation. Assign staff and cosmetic roles manually after setup. Existing channels and roles are preserved rather than reconfigured; inspect their permissions if you are reusing an established server. Keep `DISCORD_SERVER_SETUP_ENABLED=true` while the command should remain available. It is safe to leave Presence disabled; the bot stays connected only for guild events and the setup interaction.
+
+The command is available while `DISCORD_SERVER_SETUP_ENABLED=true` and the worker is running. It does not require `DISCORD_PRESENCE_ENABLED`, the Presence intent, `SNOOZER_PRESENCE_URL` or the HMAC secret. It registers against `DISCORD_PRESENCE_GUILD_ID`; do not point the same bot process at a different guild to provision a second server.
 
 Discord's 10 June 2026 privileged-intent rules use the number of unique users who can access the app across all installed servers, not the number of servers. Apps accessible to fewer than 10,000 users may enable Presence Intent using the Developer Portal toggle. At 10,000 users, Discord notifies the owner and requires a privileged-intent review request within 90 days; apps granted access through review must reapply annually when notified. Check the Developer Portal for the app's current eligibility and any review notice before launch. These intent-access rules do not resolve the separate policy question about displaying Discord API Data inside Snoozer's wider paid SaaS; obtain written confirmation from Discord before enabling public presence.
 
@@ -101,7 +115,7 @@ Set the same value in the Snoozer web service and the worker.
 
 ## Render worker
 
-The default deployment runs the Discord Gateway worker as a child process alongside the Next.js web server on the existing free Render web service. `scripts/start.mjs` starts both processes when `DISCORD_PRESENCE_ENABLED=true`; when the flag is false, it starts only the web server. No Docker image, extra npm dependency or paid Background Worker is required for this sleep-and-wake setup.
+The default deployment can run the Discord Gateway worker as a child process alongside the Next.js web server on the existing free Render web service. `scripts/start.mjs` starts the worker when either `DISCORD_SERVER_SETUP_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`. Setup-only mode does not send presence data to Snoozer. No Docker image, extra npm dependency or paid Background Worker is required for this sleep-and-wake setup.
 
 Render's free web service can sleep after inactivity. `.github/workflows/keep-snoozer-awake.yml` sends an HTTP request to `https://snoozer.uk/` every 10 minutes. That request wakes the web service, which starts both Next.js and the Discord worker. The Gateway reconnect logic restores the Discord connection after a sleep/restart. GitHub scheduled workflows can be delayed or skipped, so this is best-effort rather than an always-on guarantee; presence updates can have gaps during sleep or wake-up.
 

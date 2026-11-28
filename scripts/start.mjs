@@ -40,21 +40,21 @@ function launchWebServer() {
   });
 }
 
-function launchPresenceWorker() {
-  console.info("[startup] Starting Discord Presence worker after web readiness.");
+function launchDiscordWorker() {
+  console.info("[startup] Starting Discord worker after web readiness.");
   const child = spawn(process.execPath, ["workers/discord-presence/worker.mjs"], {
     stdio: "inherit",
     env: process.env,
   });
   children.add(child);
   child.on("error", error => {
-    console.error("[startup] Discord Presence worker failed to start:", error);
+    console.error("[startup] Discord worker failed to start:", error);
     children.delete(child);
   });
   child.on("exit", (code, signal) => {
     children.delete(child);
     if (!shuttingDown) {
-      console.error(`[startup] Discord Presence worker exited (code=${code}, signal=${signal}); the website will remain available.`);
+      console.error(`[startup] Discord worker exited (code=${code}, signal=${signal}); the website will remain available.`);
     }
   });
 }
@@ -75,7 +75,7 @@ async function waitForWebReady() {
     }
     await new Promise(resolve => setTimeout(resolve, 1_000));
   }
-  console.error("[startup] Web service did not become healthy within 90 seconds; Presence worker will not start.");
+  console.error("[startup] Web service did not become healthy within 90 seconds; Discord worker will not start.");
   return false;
 }
 
@@ -84,14 +84,18 @@ process.on("SIGINT", () => stop(0));
 
 launchWebServer();
 
-if (process.env.DISCORD_PRESENCE_ENABLED === "true") {
-  const required = ["DISCORD_BOT_TOKEN", "DISCORD_PRESENCE_GUILD_ID", "SNOOZER_PRESENCE_URL", "DISCORD_PRESENCE_INGEST_SECRET"];
+const presenceEnabled = process.env.DISCORD_PRESENCE_ENABLED === "true";
+const serverSetupEnabled = process.env.DISCORD_SERVER_SETUP_ENABLED === "true";
+
+if (presenceEnabled || serverSetupEnabled) {
+  const required = ["DISCORD_BOT_TOKEN", "DISCORD_PRESENCE_GUILD_ID"];
+  if (presenceEnabled) required.push("SNOOZER_PRESENCE_URL", "DISCORD_PRESENCE_INGEST_SECRET");
   const missing = required.filter(key => !process.env[key]);
   if (missing.length) {
-    console.error(`[startup] Discord Presence is enabled but configuration is missing: ${missing.join(", ")}. Website will start without the worker.`);
+    console.error(`[startup] Discord worker is enabled but configuration is missing: ${missing.join(", ")}. Website will start without the worker.`);
   } else if (await waitForWebReady()) {
-    launchPresenceWorker();
+    launchDiscordWorker();
   }
 } else {
-  console.info("[startup] Discord Presence worker is disabled by DISCORD_PRESENCE_ENABLED.");
+  console.info("[startup] Discord worker is disabled by DISCORD_PRESENCE_ENABLED and DISCORD_SERVER_SETUP_ENABLED.");
 }
