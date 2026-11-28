@@ -57,9 +57,6 @@ function channelOverwrites(guildId,botUserId,roleIds,category,channel) {
   ];
   return categoryOverwrites(guildId,botUserId,roleIds,category.visibility);
 }
-function isKnownLegacyRole(role) {
-  return LEGACY_ROLE_NAMES.has(normaliseRole(role.name));
-}
 function safeSnapshot(roles,channels,guildId) {
   if(!Array.isArray(roles)||!Array.isArray(channels)
     ||roles.length>250||channels.length>500
