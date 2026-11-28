@@ -75,6 +75,9 @@ test.beforeEach(async ({ context }) => {
 
 async function editorTab(page: Page, name: string) {
   const tab = page.getByRole("tab", { name, exact: true });
+  // Missing tabs should fail with a useful, bounded timeout rather than
+  // consuming the enclosing 90-second journey timeout.
+  await expect(tab).toBeVisible({ timeout: 15_000 });
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
 
@@ -902,6 +905,25 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1100 });
+
+    // Regression: the sticky preview must not cover the link actions popover.
+    await editorTab(page, "Links");
+    await page.getByRole("button", { name: "Add link", exact: true }).click();
+    await page.getByLabel("Link 3 label").fill("Temporary link");
+    await page.getByLabel("Link 3 URL").fill("https://example.com/temporary");
+    await linkMenu(page, 3);
+    const removeLink = page.getByRole("button", { name: "Remove link 3", exact: true });
+    await expect(removeLink).toBeVisible();
+    const removeIsTopmost = await removeLink.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return hit === element || Boolean(hit && element.contains(hit));
+    });
+    expect(removeIsTopmost).toBe(true);
+    await removeLink.click();
+    await expect(page.getByLabel("Link 3 label")).toHaveCount(0);
+    await expect(page.locator(".link-row")).toHaveCount(2);
+
     await editorTab(page, "Sections");
     const lock = page.getByRole("checkbox", { name: "Lock section 2" });
     await lock.check();

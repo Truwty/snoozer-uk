@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect,useState } from "react";
+import { createPortal } from "react-dom";
 import { startImageHostLifetimeCheckout } from "@/app/studio/image-host/actions";
 
 type Offer={price_id:string;currency:"eur";unit_amount:499};
@@ -35,7 +36,8 @@ export function ImageHostPurchase({offer,active}:Props){
   <button type="button" className="button primary" onClick={()=>setOpen(true)}>
    {active?"Image Host Lifetime Access":"Purchase Image Host"}
   </button>
-  {open&&<div className="studio-image-host-purchase-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
+  {open && typeof document !== "undefined" && createPortal(
+   <div className="studio-image-host-purchase-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
    <section className="studio-image-host-purchase-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-image-host-purchase-title">
     <button type="button" className="studio-profile-qr-close" aria-label="Close Image Host purchase" onClick={()=>setOpen(false)}>×</button>
     <p className="eyebrow">SNOOZER / IMAGE HOST</p>
@@ -66,6 +68,8 @@ export function ImageHostPurchase({offer,active}:Props){
      </div>}
     <p className="studio-image-host-small-print">One-time payment. Access is activated only after Snoozer verifies the completed live Stripe payment.</p>
    </section>
-  </div>}
+   </div>,
+   document.body,
+  )}
  </>;
 }
