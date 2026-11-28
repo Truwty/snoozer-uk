@@ -667,7 +667,7 @@ async announceServerBoost(member) {
       });
       if (result.existing) return "You already have an open support ticket: <#" + result.channel.id + ">.";
       await this.logSupportTicket(interaction, result.channel, subject);
-      try { await this.logEvent?.({ title:"Support ticket opened", description:"Member: <@"+openerId+">\\nChannel: <#"+result.channel.id+">\\nSubject: "+cleanText(subject,80), severity:"info" }); } catch {}
+      try { await this.logEvent?.({ title:"Support ticket opened", description:"Member: <@"+openerId+">\nChannel: <#"+result.channel.id+">\nSubject: "+cleanText(subject,80), severity:"info" }); } catch {}
       return "Your private support ticket has been created: <#" + result.channel.id + ">." +
         (result.welcomeMessageSent ? "" : " The channel exists, but Discord rejected its opening message; please send your request details again inside the ticket.");
     } finally {
@@ -752,7 +752,7 @@ async announceServerBoost(member) {
       closeNoticeSent = false;
       this.logger.error("[discord-community] ticket was closed but its transcript notice failed: " + (error?.message ?? error));
     }
-    try { await this.logEvent?.({ title:"Support ticket closed", description:"Channel: <#"+channelId+">\\nClosed by: <@"+actorId+">\\nOwner: <@"+ownerId+">", severity:"info" }); } catch {}
+    try { await this.logEvent?.({ title:"Support ticket closed", description:"Channel: <#"+channelId+">\nClosed by: <@"+actorId+">\nOwner: <@"+ownerId+">", severity:"info" }); } catch {}
     return "The ticket has been closed." + (closeNoticeSent ? "" : " Discord rejected the closing notice, but the ticket permissions and status have been updated.");
   }
 
