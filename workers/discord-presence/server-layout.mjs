@@ -1,5 +1,5 @@
 export const SNOOZER_ROLE_LAYOUT = [
-  { key: "admin", name: "👑・Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: ["manageGuild","manageChannels","manageRoles","viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
+  { key: "admin", name: "👑・Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: ["manageGuild","manageChannels","manageRoles","manageEvents","viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "senior_moderator", name: "🛡️・Senior Moderator", color: 0xb94b63, hoist: true, permissions: ["viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "moderator", name: "🛡️・Moderator", color: 0xd65a68, hoist: true, permissions: ["viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "community_manager", name: "💼・Community Manager", color: 0x438f9b, hoist: true, permissions: ["manageMessages"] },
@@ -14,6 +14,9 @@ export const SNOOZER_ROLE_LAYOUT = [
   { key: "member", name: "👤・Member", color: 0x7a8493, hoist: false, permissions: [] },
   { key: "bots", name: "🤖・Bots", color: 0x596579, hoist: false, permissions: [] },
   { key: "booster", name: "🚀・Server Booster", color: 0xf47fff, hoist: true, permissions: [] },
+  { key: "notify_updates", name: "🔔・Snoozer Updates", color: 0x438f9b, hoist: false, permissions: [] },
+  { key: "notify_events", name: "📅・Community Events", color: 0xc27b42, hoist: false, permissions: [] },
+  { key: "notify_giveaways", name: "🎉・Giveaways", color: 0xc69a43, hoist: false, permissions: [] },
 ];
 
 const readOnly = (key,name,topic) => ({ key,name,type:"text",topic,mode:"readonly" });
@@ -49,6 +52,7 @@ export const SNOOZER_SERVER_LAYOUT = [
       publicChat("introductions","🙋・introductions","Introduce yourself and tell the community what you are building."),
       publicChat("creator_showcase","🎨・creator-showcase","Share your Snoozer profile, projects and creative work."),
       publicChat("off_topic","💤・off-topic","Friendly conversation outside the main Snoozer topics."),
+      readOnly("server_boosts","🚀・server-boosts","Thank-you messages for community boosters and milestones."),
       readOnly("polls_votes","📊・polls-and-votes","Community polls and published voting panels."),
       publicChat("suggestions","💡・suggestions","Submit and vote on Snoozer feature suggestions."),
       readOnly("giveaways","🎉・giveaways","Official community giveaways and winner announcements."),

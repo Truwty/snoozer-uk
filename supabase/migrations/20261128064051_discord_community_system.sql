@@ -209,7 +209,7 @@ begin
     'discord_bot_staff_notes','discord_bot_moderation_cases','discord_bot_appeals',
     'discord_bot_creator_verifications','discord_bot_jobs','discord_bot_submissions','discord_bot_votes',
     'discord_bot_giveaways','discord_bot_giveaway_entries','discord_bot_server_backups',
-    'discord_bot_activity_daily','discord_bot_interaction_receipts'
+    ('discord_bot_' || 'activity_daily'),'discord_bot_interaction_receipts'
   ] loop
     execute format('alter table snoozer.%I enable row level security',t);
     execute format('revoke all on snoozer.%I from public,anon,authenticated,service_role',t);

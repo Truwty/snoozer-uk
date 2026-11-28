@@ -5,6 +5,7 @@ import { SNOOZER_ROLE_LAYOUT, SNOOZER_SERVER_LAYOUT, SNOOZER_RESOURCE_KEYS } fro
 import { DiscordStore } from "../workers/discord-presence/discord-store.mjs";
 import { DiscordServerRebuilder } from "../workers/discord-presence/server-rebuilder.mjs";
 import { DiscordCommunityPanels, SNOOZER_REBUILD_COMMAND } from "../workers/discord-presence/community-panels.mjs";
+import { DiscordSecurityGuard } from "../workers/discord-presence/security-guard.mjs";
 
 const guildId = "1574262035519115284";
 const botUserId = "1574262035519115285";
@@ -149,4 +150,97 @@ test("rebuild command uses the full confirmation phrase and button controls are 
   assert.equal(typeof DiscordCommunityPanels.prototype.ticketAction, "function");
   assert.equal(typeof DiscordCommunityPanels.prototype.publishPermanentPanels, "function");
   assert.ok(snowflake(guildId));
+});
+
+
+test("security guard locks public chat after a join burst and restores exact overwrites", async () => {
+  const state = { config: { security: { raidJoinThreshold: 2, raidLockdownSeconds: 300 } }, writes: [], events: [] };
+  const channels = [{
+    id: "1574262035519115401", type: 0, parent_id: "1574262035519115410", permission_overwrites: [],
+  },{
+    id: "1574262035519115402", type: 0, parent_id: "1574262035519115410",
+    permission_overwrites: [{ id: guildId, type: 0, allow: "1024", deny: "0" }],
+  }];
+  const api = {
+    async request(path, options = {}) {
+      if (path === "/guilds/" + guildId) return { owner_id: "1574262035519115299" };
+      if (path === "/guilds/" + guildId + "/channels") return structuredClone(channels);
+      if (path.startsWith("/channels/") && options.method === "PATCH") {
+        state.writes.push({ path, body: structuredClone(options.body) });
+        return {};
+      }
+      if (path.startsWith("/channels/") && options.method === "POST") return {};
+      throw new Error("unexpected API request " + path);
+    },
+  };
+  const store = {
+    async getConfig() { return structuredClone(state.config); },
+    async setConfig(guild,key,value) { state.config = { ...state.config, [key]: structuredClone(value) }; return true; },
+    async recordSecurityEvent(event) { state.events.push(event); return "event-id"; },
+  };
+  const guard = new DiscordSecurityGuard({ guildId, botUserId }, {
+    api, store,
+    getResources: () => ({ category_community: "1574262035519115410", security_alerts: "1574262035519115420" }),
+  });
+  await guard.initialise();
+  await guard.handleMemberJoin({ user: { id: "1574262035519115321", bot: false } });
+  await guard.handleMemberJoin({ user: { id: "1574262035519115322", bot: false } });
+  assert.equal(state.config.raid_lockdown.active, true);
+  assert.equal(state.writes.length, 2);
+  const deny = BigInt(state.writes[0].body.permission_overwrites[0].deny);
+  assert.ok((deny & (1n << 11n)) !== 0n);
+  state.config.raid_lockdown.expires_at = new Date(0).toISOString();
+  await guard.restoreExpiredLockdown();
+  assert.equal(state.config.raid_lockdown.active, false);
+  assert.deepEqual(state.writes[2].body.permission_overwrites, []);
+  assert.deepEqual(state.writes[3].body.permission_overwrites, channels[1].permission_overwrites);
+});
+
+test("security guard records and removes an emergency mass-mention message", async () => {
+  const calls = [];
+  const store = {
+    async recordSecurityEvent(event) { calls.push({ kind: "event", event }); },
+    async getConfig() { return {}; },
+    async setConfig() { return true; },
+  };
+  const api = { async request(path, options = {}) { calls.push({ path, method: options.method ?? "GET" }); return {}; } };
+  const guard = new DiscordSecurityGuard({ guildId, botUserId }, {
+    api, store, getResources: () => ({ security_alerts: "1574262035519115420" }),
+  });
+  const removed = await guard.handleMessage({
+    guild_id: guildId, id: "1574262035519115330", channel_id: "1574262035519115401",
+    author: { id: "1574262035519115331", bot: false },
+    content: "", mention_everyone: true, mentions: [], mention_roles: [],
+  });
+  assert.equal(removed, true);
+  assert.ok(calls.some(call => call.path === "/channels/1574262035519115401/messages/1574262035519115330" && call.method === "DELETE"));
+  assert.ok(calls.some(call => call.kind === "event" && call.event.action === "automod_spam"));
+});
+
+test("security guard raises a temporary lockdown after repeated destructive audit actions", async () => {
+  const config = { security: { antiNukeActions: 2, antiNukeWindowSeconds: 30, raidLockdownSeconds: 120 } };
+  const patches = [];
+  const api = {
+    async request(path, options = {}) {
+      if (path === "/guilds/" + guildId) return { owner_id: "1574262035519115299" };
+      if (path === "/guilds/" + guildId + "/channels") return [{
+        id: "1574262035519115401", type: 0, parent_id: "1574262035519115410", permission_overwrites: [],
+      }];
+      if (path.startsWith("/channels/") && options.method === "PATCH") patches.push(path);
+      return {};
+    },
+  };
+  const store = {
+    async getConfig() { return structuredClone(config); },
+    async setConfig(guild,key,value) { config[key] = structuredClone(value); return true; },
+    async recordSecurityEvent() { return "event-id"; },
+  };
+  const guard = new DiscordSecurityGuard({ guildId, botUserId }, {
+    api, store, getResources: () => ({ category_community: "1574262035519115410", security_alerts: "1574262035519115420" }),
+  });
+  await guard.initialise();
+  await guard.handleAuditEntry({ guild_id:guildId,id:"1574262035519115501",user_id:"1574262035519115510",target_id:"1574262035519115520",action_type:12 });
+  await guard.handleAuditEntry({ guild_id:guildId,id:"1574262035519115502",user_id:"1574262035519115510",target_id:"1574262035519115521",action_type:12 });
+  assert.equal(config.raid_lockdown.active, true);
+  assert.equal(patches.length, 1);
 });

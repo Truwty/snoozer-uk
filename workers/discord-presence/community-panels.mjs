@@ -1,6 +1,6 @@
 import { DiscordServerRebuilder } from "./server-rebuilder.mjs";
 
-const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embedLinks:1n<<14n,readMessageHistory:1n<<16n,kickMembers:1n<<1n,banMembers:1n<<2n,moderateMembers:1n<<40n};
+const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embedLinks:1n<<14n,readMessageHistory:1n<<16n,manageGuild:1n<<5n,manageEvents:1n<<33n,kickMembers:1n<<1n,banMembers:1n<<2n,moderateMembers:1n<<40n};
 const SF=/^[1-9][0-9]{16,19}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const clean=(v,n=1000)=>typeof v==="string"?v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,"").trim().slice(0,n):"";
@@ -16,9 +16,25 @@ const has=(v,p)=>{try{const b=BigInt(v??"0");return (b&P.administrator)===P.admi
 const STAFF=["admin","senior_moderator","moderator","support_manager","support_team","ticket_support"];
 const FOOTER=k=>"SNOOZER_PANEL:"+k+":v2";
 
+
+export const SNOOZER_MEMBER_COMMANDS=[
+  {name:"snoozer-profile",description:"Show your linked public Snoozer profile.",type:1},
+  {name:"snoozer-account",description:"Show your linked Snoozer account and membership.",type:1},
+  {name:"snoozer-leaderboard",description:"Show the community activity leaderboard.",type:1},
+];
+export const SNOOZER_ADMIN_COMMANDS=[
+  {name:"snoozer-settings",description:"Open the Snoozer Discord administration controls.",type:1,default_member_permissions:String(1n<<5n)},
+  {name:"snoozer-automod-setup",description:"Install the official Snoozer Discord AutoMod rules.",type:1,default_member_permissions:String(1n<<5n)},
+];
+export const SNOOZER_RESTORE_COMMAND={
+  name:"snoozer-restore-server",description:"Restore missing roles and channels from the latest backup.",
+  type:1,default_member_permissions:String(1n<<5n),
+  options:[{type:3,name:"confirmation",description:"Type RESTORE LATEST SNOOZER BACKUP to confirm.",required:true,min_length:29,max_length:29}],
+};
+
 export const SNOOZER_REBUILD_COMMAND={
   name:"snoozer-rebuild-server",description:"Replace the current server layout with the approved Snoozer design.",
-  type:1,default_member_permissions:"8",
+  type:1,default_member_permissions:String(1n<<5n),
   options:[{type:3,name:"confirmation",description:"Type REBUILD SNOOZER SERVER to confirm.",required:true,min_length:22,max_length:22}],
 };
 
@@ -26,14 +42,16 @@ export class DiscordCommunityPanels{
   constructor(config,deps={}){
     this.guildId=config.guildId;this.botUserId=config.botUserId;this.applicationId=config.applicationId;
     this.api=deps.api;this.store=deps.store;this.logger=deps.logger??console;
-    this.resources={};this.roleIds={};this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
+    this.resources={};this.roleIds={};this.onResourcesUpdated=deps.onResourcesUpdated??null;this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
     this.timer=null;this.busy=false;this.lastRoleSync=0;
   }
   async refreshResources(){
-    const r=await this.store.getResources(this.guildId);this.resources=r.map??{};this.roleIds={};
+    const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
+    this.resources=r.map??{};this.roleIds={};
     for(const [k,v] of Object.entries(this.resources))if(k.startsWith("role_"))this.roleIds[k.slice(5)]=v;
+    for(const [key,value] of Object.entries(config??{}))if(key.startsWith("channel_override_")&&SF.test(value?.channel_id??""))this.resources[key.slice("channel_override_".length)]=value.channel_id;
     if(this.onResourcesUpdated)await this.onResourcesUpdated(this.resources,this.roleIds);
     return this.resources;
   }
@@ -61,7 +79,9 @@ export class DiscordCommunityPanels{
       ["getting_started","getting_started",{title:"Welcome to Snoozer",description:"Your guide to the Snoozer platform and community.\n\nRead the rules, explore the community and use the member hub to connect your account.",color:0x8b72d9,fields:[{name:"Website",value:"https://snoozer.uk",inline:true},{name:"Help Centre",value:"https://help.snoozer.uk",inline:true},{name:"Service status",value:"https://status.snoozer.uk",inline:true}]},[row(link("https://snoozer.uk","Open Snoozer","🌐"),link("https://help.snoozer.uk","Help Centre","📚")),row(btn("member:profile","My profile",1,"👤"),btn("ticket:start","Get support",2,"🎫"))]],
       ["member_hub","member_hub",{title:"Snoozer Member Hub",description:"Connect your account and manage community membership. Premium is verified against Snoozer's entitlement records.",color:0x8b72d9,fields:[{name:"Account",value:"Link your identity through Snoozer OAuth."},{name:"Membership",value:"View your verified Premium status."},{name:"Community",value:"Manage optional notification roles and creator verification."}]},[row(link("https://snoozer.uk/studio/discord","Link account","🔗"),btn("member:profile","My profile",2,"👤"),btn("member:premium","Premium",2,"💎")),row(btn("member:roles","Manage roles",2,"🎭"),btn("member:creator","Creator verification",2,"✨"),btn("member:cases","My cases",2,"⚖️"))]],
       ["ticket_panel","ticket_panel",{title:"Snoozer Support Desk",description:"Choose the support category. A private ticket will be created for you.\n\nNever share passwords, authentication codes or payment card details.",color:0x438f9b},[row(btn("ticket:start","Open a ticket",1,"🎫"),link("https://help.snoozer.uk","Help Centre","📚"))]],
-      ["bot_control","bot_control",{title:"Snoozer Administration",description:"Private staff control panel. Every action is permission-checked and recorded.",color:0x596579,fields:[{name:"Support",value:"View and manage tickets.",inline:true},{name:"Moderation",value:"Review cases and take staff actions.",inline:true},{name:"Server",value:"Refresh panels or run the approved server rebuild.",inline:true}]},[row(btn("admin:tickets","Ticket queue",2,"🎫"),btn("admin:moderation","Moderation",2,"🛡️"),btn("admin:refresh","Refresh panels",2,"🔄")),row(btn("admin:rebuild:start","Rebuild server",4,"⚠️"))]],
+      ["bot_control","bot_control",{title:"Snoozer Administration",description:"Private staff controls for support, moderation, community, security and server management.",color:0x596579,fields:[{name:"Support",value:"View and manage tickets.",inline:true},{name:"Moderation",value:"Review cases and appeals.",inline:true},{name:"Security",value:"Configure AutoMod and server protection.",inline:true}]},[row(btn("admin:tickets","Ticket queue",2,"🎫"),btn("admin:moderation","Moderation",2,"🛡️"),btn("admin:refresh","Refresh panels",2,"🔄")),row(btn("admin:config","Bot settings",2,"⚙️"),btn("admin:creators","Creator reviews",2,"✨"),btn("admin:automod","Enable AutoMod",2,"🛡️"),btn("admin:giveaway","Create giveaway",2,"🎉"),btn("admin:event","Schedule event",2,"📅")),row(btn("admin:leaderboard","Activity stats",2,"📊"),btn("admin:restore","Restore backup",1,"♻️"),btn("admin:rebuild:start","Rebuild server",4,"⚠️"))]],
+      ["events","events",{title:"Snoozer Community Events",description:"Find upcoming community events and join through Discord Scheduled Events.",color:0x438f9b},[row(btn("event:info","View upcoming events",2,"📅"))]],
+      ["giveaways","giveaways",{title:"Snoozer Giveaways",description:"Official community giveaways are posted here. Use the entry button on an active giveaway to participate.",color:0xc69a43},[row(btn("giveaway:info","Giveaway information",2,"🎉"))]],
       ["suggestions","suggestions",{title:"Have an idea for Snoozer?",description:"Submit a feature suggestion and let the community vote.",color:0x43a982},[row(btn("suggestion:open","Submit suggestion",1,"💡"))]],
       ["bug_reports","bug_reports",{title:"Report a Snoozer bug",description:"Submit reproducible steps. Do not include passwords or private account information.",color:0xd65a68},[row(btn("bug:open","Submit bug report",1,"🐛"))]],
       ["polls_votes","polls_votes",{title:"Community polls",description:"Take part in official Snoozer community polls.",color:0x4d91c9},[row(btn("poll:create","Create poll",2,"➕"),btn("poll:info","How voting works",2,"📊"))]],
@@ -366,28 +386,185 @@ export class DiscordCommunityPanels{
     throw new Error("Unsupported ticket action.");
   }
 
-  async handleSlash(i){
-    if(i.data?.name!==SNOOZER_REBUILD_COMMAND.name)return false;
-    const authorised=has(i.member?.permissions,P.administrator)||(i.member?.roles??[]).includes(this.roleIds.admin);
-    if(!authorised){await this.reply(i,{content:"Only a server Administrator or Snoozer Admin can rebuild the server."},true);return true;}
-    if(opt(i,"confirmation")!=="REBUILD SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation text did not match."},true);return true;}
-    await this.defer(i);
-    try{
-      const result=await this.rebuilder.rebuild(uid(i));
-      await this.refreshResources();
-      await this.complete(i,{content:[
-        result.complete?"Snoozer server rebuild completed.":"Server rebuild has outstanding failures.",
-        "New categories: "+result.categoryCount+" · channels: "+result.channelCount+" · roles: "+result.roleCount,
-        "Members checked: "+result.memberCount+" · role assignments migrated: "+result.memberRolesMigrated,
-        "Old channels deleted: "+result.channelsDeleted+" · old roles deleted: "+result.rolesDeleted,
-        "Premium/Creator roles updated: "+result.roleSync.updated+" of "+result.roleSync.checked,
-        "Configuration backup: `"+result.backupId+"`",
-      ].join("\\n")});
-    }catch(error){
-      this.logger.error("[discord-panels] server rebuild failed",error?.message??error);
-      await this.complete(i,{content:"Server rebuild did not complete: "+clean(error?.message,700)});
+
+  isAdmin(i){
+    return has(i.member?.permissions,P.administrator)||has(i.member?.permissions,P.manageGuild)
+      ||(i.member?.roles??[]).includes(this.roleIds.admin);
+  }
+  requireAdmin(i){if(!this.isAdmin(i))throw new Error("Only Snoozer Admins or Discord server administrators can use this control.");}
+
+  async adminSettings(i){
+    this.requireAdmin(i);
+    await this.reply(i,{embeds:[{title:"Snoozer bot settings",description:"Choose a notification channel or configure community protection. All settings are saved to Supabase.",color:0x596579}],
+      components:[
+        row(btn("admin:channel:security_alerts","Security alerts"),btn("admin:channel:moderation_log","Moderation log"),btn("admin:channel:ticket_queue","Ticket queue")),
+        row(btn("admin:channel:changelog","Changelog"),btn("admin:channel:service_status","Service status"),btn("admin:channel:events","Events"),btn("admin:channel:giveaways","Giveaways")),
+        row(btn("admin:toggle:antiRaidEnabled","Toggle anti-raid"),btn("admin:toggle:antiNukeEnabled","Toggle anti-nuke"),btn("admin:automod","Configure AutoMod")),
+      ]},true);
+  }
+  async chooseChannel(i,key){
+    this.requireAdmin(i);
+    if(!["security_alerts","moderation_log","ticket_queue","changelog","service_status","events","giveaways","appeals_queue"].includes(key))throw new Error("Unknown channel setting.");
+    await this.reply(i,{content:"Choose the text channel for "+key.replaceAll("_"," ")+".",
+      components:[row({type:8,custom_id:"admin:channel-set:"+key,placeholder:"Select a server text channel",min_values:1,max_values:1,channel_types:[0]})]},true);
+  }
+  async saveChannel(i,key){
+    this.requireAdmin(i);
+    const id=i.data?.values?.[0];
+    if(!SF.test(id??""))throw new Error("Select a valid Discord channel.");
+    const channel=await this.api.request("/channels/"+id);
+    if(channel?.guild_id!==this.guildId||channel.type!==0)throw new Error("The selected channel must be a text channel in this server.");
+    await this.store.setConfig(this.guildId,"channel_override_"+key,{channel_id:id});
+    await this.refreshResources();
+    await this.reply(i,{content:"The "+key.replaceAll("_"," ")+" notification channel has been updated."},true);
+  }
+  async toggleSecurity(i,key){
+    this.requireAdmin(i);
+    if(!["antiRaidEnabled","antiNukeEnabled"].includes(key))throw new Error("Unknown security setting.");
+    const config=await this.store.getConfig(this.guildId),security={...(config?.security??{})};
+    security[key]=security[key]===false;
+    await this.store.setConfig(this.guildId,"security",security);
+    await this.reply(i,{content:key.replace("Enabled","")+" is now "+(security[key]?"enabled":"disabled")+". The monitor will apply this setting on its next cycle."},true);
+  }
+  async setupAutoMod(i){
+    this.requireAdmin(i);
+    const rules=await this.api.request("/guilds/"+this.guildId+"/auto-moderation/rules");
+    const definitions=[
+      {name:"Snoozer · Spam Protection",event_type:1,trigger_type:3,actions:[{type:1,metadata:{custom_message:"Snoozer automatically blocked this message as spam."}}],enabled:true,exempt_roles:[],exempt_channels:[]},
+      {name:"Snoozer · Mention Spam",event_type:1,trigger_type:5,trigger_metadata:{mention_total_limit:5,mention_raid_protection_enabled:true},actions:[{type:1,metadata:{custom_message:"Please avoid mass mentions in the Snoozer community."}}],enabled:true,exempt_roles:[],exempt_channels:[]},
+    ];
+    let created=0,updated=0;
+    for(const definition of definitions){
+      const existing=Array.isArray(rules)?rules.find(rule=>rule.name===definition.name):null;
+      if(existing?.id){await this.api.request("/guilds/"+this.guildId+"/auto-moderation/rules/"+existing.id,{method:"PATCH",body:definition});updated++;}
+      else{await this.api.request("/guilds/"+this.guildId+"/auto-moderation/rules",{method:"POST",body:definition});created++;}
     }
-    return true;
+    await this.store.recordSecurityEvent({guildId:this.guildId,action:"automod_rules_configured",actorId:uid(i),severity:"info",metadata:{created,updated}});
+    await this.reply(i,{content:"Discord AutoMod is configured. Created "+created+" rules and updated "+updated+" existing rules."},true);
+  }
+  async creatorQueue(i){
+    this.requireAdmin(i);
+    const items=await this.store.creatorQueue(10);
+    if(!Array.isArray(items)||!items.length)return this.reply(i,{content:"There are no pending Creator verification requests."},true);
+    const description=items.map(item=>"**"+clean(item.profile_url,120)+"** · <@"+item.discord_user_id+">
+"+clean(item.reason,220)+"
+Request: "+item.id).join("
+
+").slice(0,3900);
+    const rows=items.slice(0,5).map(item=>row(btn("creator:approve:"+item.id,"Approve",3,"✅"),btn("creator:reject:"+item.id,"Reject",4,"❌")));
+    await this.reply(i,{embeds:[{title:"Pending Creator verification",description,color:0x8b72d9}],components:rows},true);
+  }
+  async reviewCreator(i,id,decision){
+    this.requireAdmin(i);
+    if(!UUID.test(id)||!["approved","rejected"].includes(decision))throw new Error("Invalid Creator review.");
+    if(!await this.store.creatorReview(id,uid(i),decision))throw new Error("This Creator request was already reviewed.");
+    await this.store.recordSecurityEvent({guildId:this.guildId,action:"creator_verification_"+decision,actorId:uid(i),severity:"info",metadata:{request_id:id}});
+    await this.reply(i,{content:"Creator verification "+decision+"."},true);
+  }
+  async openGiveaway(i){
+    this.requireStaff(i,["admin","community_manager","event_host"]);
+    await this.showModal(i,mkModal("giveaway:submit","Create a community giveaway",[
+      {id:"title",label:"Giveaway title",min:4,max:140,placeholder:"Snoozer Community Giveaway"},
+      {id:"prize",label:"Prize",min:2,max:300,placeholder:"Describe the prize"},
+      {id:"hours",label:"Duration in hours",min:1,max:3,placeholder:"24"},
+      {id:"winners",label:"Number of winners",min:1,max:2,placeholder:"1"},
+    ]));
+  }
+  async submitGiveaway(i){
+    this.requireStaff(i,["admin","community_manager","event_host"]);
+    const title=clean(i.data?.components?.[0]?.components?.[0]?.value,140);
+    const prize=clean(i.data?.components?.[1]?.components?.[0]?.value,300);
+    const hours=Number(clean(i.data?.components?.[2]?.components?.[0]?.value,3));
+    const winners=Number(clean(i.data?.components?.[3]?.components?.[0]?.value,2));
+    if(!Number.isInteger(hours)||hours<1||hours>720||!Number.isInteger(winners)||winners<1||winners>20)throw new Error("Giveaway duration must be 1–720 hours and winners must be 1–20.");
+    const channelId=this.resources.giveaways;
+    if(!SF.test(channelId??""))throw new Error("The giveaways channel has not been configured.");
+    const endsAt=new Date(Date.now()+hours*3600_000).toISOString();
+    const id=await this.store.createGiveaway({guildId:this.guildId,channelId,title,prize,winnerCount:winners,endsAt,actorId:uid(i)});
+    await this.store.enqueueJob({guildId:this.guildId,jobType:"giveaway_finish",dedupeKey:"giveaway-finish:"+id,payload:{giveaway_id:id,channel_id:channelId},runAt:endsAt});
+    await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body:{
+      embeds:[{title:"🎉 "+title,description:"**Prize:** "+prize+"
+**Winners:** "+winners+"
+**Ends:** <t:"+Math.floor(Date.parse(endsAt)/1000)+":R>
+
+Press Enter Giveaway to join.",color:0xc69a43,footer:{text:"Giveaway ID "+id}}],
+      components:[row(btn("giveaway:enter:"+id+":all","Enter giveaway",1,"🎉"))],allowed_mentions:{parse:[]},
+    }});
+    await this.reply(i,{content:"Giveaway created in <#"+channelId+">. Winners will be selected automatically when it ends."},true);
+  }
+  async enterGiveaway(i,id,roleId){
+    if(!UUID.test(id))throw new Error("Invalid giveaway reference.");
+    let eligible=true;
+    if(roleId&&roleId!=="all"){
+      if(!SF.test(roleId))throw new Error("Invalid giveaway role requirement.");
+      const member=await this.api.request("/guilds/"+this.guildId+"/members/"+uid(i));
+      eligible=(member.roles??[]).includes(roleId);
+    }
+    const result=await this.store.enterGiveaway(id,uid(i),eligible);
+    await this.reply(i,{content:result?.entered?"You have entered the giveaway. Current entries: "+result.entries+".":"You were already entered. Current entries: "+result?.entries+"."},true);
+  }
+  async openEvent(i){
+    this.requireStaff(i,["admin","community_manager","event_host"]);
+    await this.showModal(i,mkModal("event:submit","Schedule a community event",[
+      {id:"name",label:"Event name",min:4,max:100,placeholder:"Snoozer Community Meetup"},
+      {id:"description",label:"Description",min:10,max:1000,style:2,placeholder:"What will happen at this event?"},
+      {id:"starts",label:"Start time (ISO 8601 UTC)",min:20,max:30,placeholder:"2026-12-01T19:00:00Z"},
+      {id:"ends",label:"End time (ISO 8601 UTC)",min:20,max:30,placeholder:"2026-12-01T20:00:00Z"},
+    ]));
+  }
+  async submitEvent(i){
+    this.requireStaff(i,["admin","community_manager","event_host"]);
+    const name=clean(i.data?.components?.[0]?.components?.[0]?.value,100);
+    const description=clean(i.data?.components?.[1]?.components?.[0]?.value,1000);
+    const starts=Date.parse(clean(i.data?.components?.[2]?.components?.[0]?.value,30));
+    const ends=Date.parse(clean(i.data?.components?.[3]?.components?.[0]?.value,30));
+    if(!Number.isFinite(starts)||!Number.isFinite(ends)||starts<Date.now()+10*60_000||ends<=starts)throw new Error("Use future ISO 8601 UTC dates. Start must be at least 10 minutes away.");
+    const event=await this.api.request("/guilds/"+this.guildId+"/scheduled-events",{method:"POST",body:{
+      name,privacy_level:2,scheduled_start_time:new Date(starts).toISOString(),scheduled_end_time:new Date(ends).toISOString(),
+      description,entity_type:3,entity_metadata:{location:"Snoozer community"},
+    }});
+    if(!SF.test(event?.id??""))throw new Error("Discord did not return a scheduled event ID.");
+    const channelId=this.resources.events??null;
+    await this.store.createScheduledEvent({guildId:this.guildId,discordEventId:event.id,channelId,actorId:uid(i),name,description,
+      startsAt:new Date(starts).toISOString(),endsAt:new Date(ends).toISOString()});
+    const reminderAt=new Date(Math.max(Date.now()+5000,starts-15*60_000)).toISOString();
+    await this.store.enqueueJob({guildId:this.guildId,jobType:"scheduled_event",dedupeKey:"event-reminder:"+event.id,
+      payload:{channel_id:channelId,event_id:event.id,name,description,starts_at:new Date(starts).toISOString()},runAt:reminderAt});
+    await this.reply(i,{content:"Discord Scheduled Event created: https://discord.com/events/"+this.guildId+"/"+event.id},true);
+  }
+  async showLeaderboard(i){
+    const rows=await this.store.activityLeaderboard(this.guildId,30,10);
+    if(!Array.isArray(rows)||!rows.length)return this.reply(i,{content:"There is no recorded community activity yet."},true);
+    const description=rows.map((entry,index)=>"**"+(index+1)+".** <@"+entry.discord_user_id+"> · "+entry.messages+" messages · "+entry.voice_minutes+" voice minutes · score "+entry.score).join("
+");
+    await this.reply(i,{embeds:[{title:"Snoozer community activity · last 30 days",description,color:0x4d91c9}]},true);
+  }
+
+
+  async handleSlash(i){
+    const name=i.data?.name;
+    if(name==="snoozer-profile"||name==="snoozer-account"){await this.memberSummary(i);return true;}
+    if(name==="snoozer-leaderboard"){await this.showLeaderboard(i);return true;}
+    if(name==="snoozer-settings"){await this.adminSettings(i);return true;}
+    if(name==="snoozer-automod-setup"){await this.setupAutoMod(i);return true;}
+    if(name==="snoozer-rebuild-server"||name==="snoozer-restore-server"){
+      if(!this.isAdmin(i)){await this.reply(i,{content:"Only a server Administrator or Snoozer Admin can perform this action."},true);return true;}
+      const rebuild=name==="snoozer-rebuild-server";
+      const phrase=rebuild?"REBUILD SNOOZER SERVER":"RESTORE LATEST SNOOZER BACKUP";
+      if(opt(i,"confirmation")!==phrase){await this.reply(i,{content:"No changes were made. The confirmation text did not match."},true);return true;}
+      await this.defer(i);
+      try{
+        if(rebuild){
+          const result=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
+          await this.complete(i,{content:"Server rebuild "+(result.complete?"completed":"finished with outstanding failures")+". Categories: "+result.categoryCount+" · channels: "+result.channelCount+" · roles: "+result.roleCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId});
+        }else{
+          const result=await this.rebuilder.restoreLatest(uid(i));
+          await this.complete(i,{content:"Server recovery completed. Restored "+result.rolesRestored+" missing roles and "+result.channelsRestored+" missing channels from backup "+result.backupId+". Existing channels were not deleted or overwritten."});
+        }
+      }catch(error){this.logger.error("[discord-panels] server operation failed",error?.message??error);await this.complete(i,{content:"Server operation did not complete: "+clean(error?.message,700)});}
+      return true;
+    }
+    return false;
   }
 
   async roleSync(){
@@ -408,10 +585,30 @@ export class DiscordCommunityPanels{
     try{
       if(["premium_role_sync","creator_role_sync","role_reconcile"].includes(job.job_type))await this.roleSync();
       else if(job.job_type==="tempban_unban"&&SF.test(job.payload?.user_id??""))await this.api.request("/guilds/"+this.guildId+"/bans/"+job.payload.user_id,{method:"DELETE"});
-      else if(job.job_type==="announcement"){
-        const channel=this.resources[job.payload?.channel_key];if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
-      }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??""))await this.api.request("/channels/"+job.payload.channel_id+"/messages",{method:"POST",body:{content:"This support ticket is waiting for an update. Please reply when you can.",allowed_mentions:{parse:[]}}});
-      else if(job.job_type==="scheduled_event"||job.job_type==="giveaway_finish"||job.job_type==="backup"||job.job_type==="health_check")throw new Error("This scheduled job type is registered but its execution module is not yet enabled.");
+      else if(job.job_type==="giveaway_finish"){
+        const result=await this.store.finishGiveaway(job.payload?.giveaway_id);
+        if(result?.status==="ended"){
+          const winnerIds=Array.isArray(result.winners)?result.winners.map(item=>item.discord_user_id).filter(id=>SF.test(id)):[];
+          await this.api.request("/channels/"+result.channel_id+"/messages",{method:"POST",body:{
+            embeds:[{title:"Giveaway ended: "+clean(result.title,140),description:"**Prize:** "+clean(result.prize,250)+"\n"+(winnerIds.length?"**Winner(s):** "+winnerIds.map(id=>"<@"+id+">").join(", "):"No valid entries were received."),
+              color:0xc69a43,footer:{text:"Giveaway "+result.id}}],
+            allowed_mentions:{parse:[],users:winnerIds},
+          }});
+        }
+      }else if(job.job_type==="scheduled_event"){
+        const channel=job.payload?.channel_id,event=job.payload?.event_id;
+        if(SF.test(channel??"")&&SF.test(event??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{
+          embeds:[{title:"Upcoming Snoozer event: "+clean(job.payload?.name,100),
+            description:clean(job.payload?.description,900)+"\n\nStarts <t:"+Math.floor(Date.parse(job.payload?.starts_at)/1000)+":R> · [Open event](https://discord.com/events/"+this.guildId+"/"+event+")",
+            color:0x438f9b}],
+          allowed_mentions:{parse:[]},
+        }});
+      }else if(job.job_type==="announcement"){
+        const channel=this.resources[job.payload?.channel_key];
+        if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
+      }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??"")){
+        await this.api.request("/channels/"+job.payload.channel_id+"/messages",{method:"POST",body:{content:"This support ticket is waiting for an update. Please reply when you can.",allowed_mentions:{parse:[]}}});
+      }
       await this.store.finishJob(job.id,true,null);
     }catch(e){this.logger.error("[discord-panels] job failed",job.job_type,e?.message??e);await this.store.finishJob(job.id,false,String(e?.message??e));}
   }
@@ -597,6 +794,40 @@ export class DiscordCommunityPanels{
         if(phrase!=="REBUILD SNOOZER SERVER")throw new Error("Confirmation did not match. No changes were made.");
         await this.defer(i);const r=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
         await this.complete(i,{content:r.complete?"The Snoozer server rebuild completed.":"The rebuild has outstanding errors. Check #bot-logs."});
+      }else if(id==="admin:config")await this.adminSettings(i);
+      else if(id.startsWith("admin:channel:"))await this.chooseChannel(i,id.split(":")[2]);
+      else if(id.startsWith("admin:channel-set:"))await this.saveChannel(i,id.split(":")[2]);
+      else if(id.startsWith("admin:toggle:"))await this.toggleSecurity(i,id.split(":")[2]);
+      else if(id==="admin:automod")await this.setupAutoMod(i);
+      else if(id==="admin:creators")await this.creatorQueue(i);
+      else if(id.startsWith("creator:approve:"))await this.reviewCreator(i,id.split(":")[2],"approved");
+      else if(id.startsWith("creator:reject:"))await this.reviewCreator(i,id.split(":")[2],"rejected");
+      else if(id==="admin:giveaway")await this.openGiveaway(i);
+      else if(id==="giveaway:submit")await this.submitGiveaway(i);
+      else if(id.startsWith("giveaway:enter:")){
+        const parts=id.split(":");await this.enterGiveaway(i,parts[2],parts[3]??"all");
+      }else if(id==="admin:event")await this.openEvent(i);
+      else if(id==="event:submit")await this.submitEvent(i);
+      else if(id==="admin:leaderboard"||id==="member:leaderboard")await this.showLeaderboard(i);
+      else if(id==="admin:restore"){
+        this.requireAdmin(i);
+        await this.showModal(i,mkModal("admin:restore:confirm","Confirm server recovery",[
+          {id:"phrase",label:"Type RESTORE LATEST SNOOZER BACKUP",min:29,max:29,placeholder:"RESTORE LATEST SNOOZER BACKUP"},
+        ]));
+      }else if(id==="admin:restore:confirm"){
+        this.requireAdmin(i);
+        if(clean(i.data?.components?.[0]?.components?.[0]?.value,40)!=="RESTORE LATEST SNOOZER BACKUP")throw new Error("Confirmation did not match. No changes were made.");
+        await this.defer(i);
+        const result=await this.rebuilder.restoreLatest(uid(i));
+        await this.complete(i,{content:"Backup recovery completed. Restored "+result.rolesRestored+" missing roles and "+result.channelsRestored+" missing channels. Existing channels were not removed or overwritten."});
+      }else if(id==="giveaway:info")await this.reply(i,{content:"Official giveaways are posted in this channel. Press Enter Giveaway on an active post to join. Entries are stored persistently and winners are selected automatically when the giveaway ends."},true);
+      else if(id==="event:info"){
+        const events=await this.store.scheduledEventQueue(this.guildId,10);
+        const description=Array.isArray(events)&&events.length?events.map(event=>"**"+clean(event.name,100)+"** · <t:"+Math.floor(Date.parse(event.starts_at)/1000)+":F>
+https://discord.com/events/"+this.guildId+"/"+event.discord_event_id).join("
+
+"):"There are no upcoming Snoozer events.";
+        await this.reply(i,{embeds:[{title:"Upcoming Snoozer events",description,color:0x438f9b}]},true);
       }else{
         return false;
       }

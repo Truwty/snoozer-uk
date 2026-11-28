@@ -93,7 +93,7 @@ export class DiscordServerRebuilder {
     const botRoles=[this.guildId,...botMember.roles].map(id=>roleMap.get(id)).filter(Boolean);
     const botTop=Math.max(0,...botRoles.map(role=>Number(role.position??0)));
     const perms=botRoles.reduce((value,role)=>value|BigInt(role.permissions??"0"),0n);
-    const required=["manageChannels","manageRoles","viewChannel","sendMessages","embedLinks","readMessageHistory"];
+    const required=["manageChannels","manageRoles","manageEvents","viewChannel","sendMessages","embedLinks","readMessageHistory"];
     const missing=required.filter(key=>(perms&P[key])!==P[key]);
     if(missing.length) throw new Error("The bot is missing required permissions: "+missing.join(", ")+". No server changes were made.");
     const blockedLegacy=roles.filter(isKnownLegacyRole).filter(role=>!role.managed&&Number(role.position)>=botTop);
@@ -271,6 +271,71 @@ export class DiscordServerRebuilder {
       catch(error) { errors.push({name:role.name,id:role.id,error:String(error?.message??error).slice(0,200)}); }
     }
     return {deleted:targets.length-errors.length,remaining:errors};
+  }
+
+
+  async restoreLatest(actorId) {
+    if(!validSnowflake(actorId)) throw new Error("A valid administrator account is required.");
+    const backup=await this.store.latestBackup(this.guildId);
+    if(!backup?.snapshot||!Array.isArray(backup.snapshot.roles)||!Array.isArray(backup.snapshot.channels)) {
+      throw new Error("No usable Snoozer server configuration backup exists.");
+    }
+    const [currentRoles,currentChannels]=await Promise.all([
+      this.api.request("/guilds/"+this.guildId+"/roles"),
+      this.api.request("/guilds/"+this.guildId+"/channels"),
+    ]);
+    if(!Array.isArray(currentRoles)||!Array.isArray(currentChannels)) throw new Error("The current Discord server inventory could not be read.");
+    const roleMap=new Map([[this.guildId,this.guildId],[this.botUserId,this.botUserId]]);
+    const rolesByName=new Map(currentRoles.map(role=>[String(role.name).toLowerCase(),role]));
+    let rolesRestored=0;
+    for(const previous of backup.snapshot.roles) {
+      if(!previous||previous.id===this.guildId||previous.managed||!previous.name) continue;
+      let existing=rolesByName.get(String(previous.name).toLowerCase());
+      if(!existing) {
+        existing=await this.api.request("/guilds/"+this.guildId+"/roles",{method:"POST",body:{
+          name:previous.name,permissions:String(previous.permissions??"0"),color:Number(previous.color??0),
+          hoist:Boolean(previous.hoist),mentionable:Boolean(previous.mentionable),
+        }});
+        if(!validSnowflake(existing?.id)) throw new Error("Discord failed to restore role "+previous.name+".");
+        rolesByName.set(String(previous.name).toLowerCase(),existing);rolesRestored++;
+      }
+      roleMap.set(previous.id,existing.id);
+    }
+    const categoryMap=new Map([[this.guildId,this.guildId]]);
+    let channelsRestored=0;
+    const categories=backup.snapshot.channels.filter(channel=>channel?.type===4);
+    const others=backup.snapshot.channels.filter(channel=>channel&&channel.type!==4);
+    const findExisting=(previous)=>currentChannels.find(channel=>channel.type===previous.type&&String(channel.name).toLowerCase()===String(previous.name).toLowerCase());
+    for(const previous of categories) {
+      let existing=findExisting(previous);
+      if(!existing) {
+        existing=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
+          name:previous.name,type:4,permission_overwrites:(previous.permission_overwrites??[]).map(item=>({
+            id:roleMap.get(item.id)??item.id,type:item.type,allow:item.allow,deny:item.deny,
+          })).filter(item=>item.id===this.guildId||item.id===this.botUserId||[...roleMap.values()].includes(item.id)),
+        }});
+        if(!validSnowflake(existing?.id)) throw new Error("Discord failed to restore category "+previous.name+".");
+        channelsRestored++;
+      }
+      categoryMap.set(previous.id,existing.id);
+    }
+    for(const previous of others) {
+      let existing=findExisting(previous);
+      if(existing) continue;
+      const overwrites=(previous.permission_overwrites??[]).map(item=>({
+        id:roleMap.get(item.id)??item.id,type:item.type,allow:item.allow,deny:item.deny,
+      })).filter(item=>item.id===this.guildId||item.id===this.botUserId||[...roleMap.values()].includes(item.id));
+      const body={
+        name:previous.name,type:previous.type,
+        parent_id:categoryMap.get(previous.parent_id)??null,
+        permission_overwrites:overwrites,
+      };
+      if(previous.topic) body.topic=previous.topic;
+      existing=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body});
+      if(!validSnowflake(existing?.id)) throw new Error("Discord failed to restore channel "+previous.name+".");
+      channelsRestored++;
+    }
+    return {backupId:backup.id,rolesRestored,channelsRestored,sourceCreatedAt:backup.created_at};
   }
 
   async rebuild(actorId) {

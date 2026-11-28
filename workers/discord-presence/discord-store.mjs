@@ -138,6 +138,38 @@ export class DiscordStore {
     return this.rpc("discord_bot_config_set", { p_guild_id:guildId,p_key:key,p_config:config });
   }
 
+
+  recordSecurityEvent(input) {
+    return this.rpc("discord_bot_record_security_event", {
+      p_guild_id:input.guildId,p_action:input.action,p_actor:input.actorId??null,
+      p_target:input.targetId??null,p_severity:input.severity??"warning",p_metadata:input.metadata??{},
+    });
+  }
+  latestBackup(guildId) { return this.rpc("discord_bot_latest_backup", { p_guild_id:guildId }); }
+  creatorQueue(limit=25) { return this.rpc("discord_bot_creator_queue", { p_limit:limit }); }
+  activeWarningPoints(guildId,targetId) { return this.rpc("discord_bot_active_warning_points", { p_guild_id:guildId,p_target:targetId }); }
+  activityIncrement(guildId,userId,messages=0,voiceMinutes=0) {
+    return this.rpc("discord_bot_activity_increment", { p_guild_id:guildId,p_user:userId,p_messages:messages,p_voice_minutes:voiceMinutes });
+  }
+  activityLeaderboard(guildId,days=30,limit=25) {
+    return this.rpc("discord_bot_activity_leaderboard", { p_guild_id:guildId,p_days:days,p_limit:limit });
+  }
+  createScheduledEvent(input) {
+    return this.rpc("discord_bot_create_scheduled_event", {
+      p_guild_id:input.guildId,p_discord_event_id:input.discordEventId,p_channel_id:input.channelId??null,
+      p_actor:input.actorId,p_name:input.name,p_description:input.description,p_starts_at:input.startsAt,p_ends_at:input.endsAt,
+    });
+  }
+  scheduledEventQueue(guildId,limit=25) { return this.rpc("discord_bot_scheduled_event_queue", { p_guild_id:guildId,p_limit:limit }); }
+  createGiveaway(input) {
+    return this.rpc("discord_bot_create_giveaway", {
+      p_guild_id:input.guildId,p_channel_id:input.channelId,p_title:input.title,p_prize:input.prize,
+      p_winner_count:input.winnerCount,p_ends_at:input.endsAt,p_minimum_role_id:input.minimumRoleId??null,p_actor:input.actorId,
+    });
+  }
+  enterGiveaway(id,userId,eligible=true) { return this.rpc("discord_bot_giveaway_enter", { p_id:id,p_user:userId,p_eligible:eligible }); }
+  finishGiveaway(id) { return this.rpc("discord_bot_finish_giveaway", { p_id:id }); }
+
   recordInteraction(interactionId,interactionType) {
     return this.rpc("discord_bot_record_interaction", { p_id:interactionId,p_type:interactionType });
   }
