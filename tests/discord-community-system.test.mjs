@@ -244,3 +244,36 @@ test("security guard raises a temporary lockdown after repeated destructive audi
   assert.equal(config.raid_lockdown.active, true);
   assert.equal(patches.length, 1);
 });
+
+
+test("anti-nuke trusts the Snoozer Admin and Developer roles", async () => {
+  const config = { security: { antiNukeActions: 2, antiNukeWindowSeconds: 30 } };
+  const calls = [];
+  const actorId = "1574262035519115601";
+  const adminRoleId = "1574262035519115602";
+  const api = {
+    async request(path, options = {}) {
+      calls.push({ path, method: options.method ?? "GET" });
+      if (path === "/guilds/" + guildId) return { owner_id: "1574262035519115299" };
+      if (path === "/guilds/" + guildId + "/members/" + actorId) return { roles: [adminRoleId] };
+      if (path === "/guilds/" + guildId + "/channels") return [];
+      return {};
+    },
+  };
+  const store = {
+    async getConfig() { return structuredClone(config); },
+    async setConfig(_guild,key,value) { config[key] = structuredClone(value); return true; },
+    async recordSecurityEvent() { throw new Error("trusted actor must not create a security incident"); },
+  };
+  const guard = new DiscordSecurityGuard({ guildId, botUserId }, {
+    api, store, getResources: () => ({}), getRoleIds: () => ({ admin: adminRoleId }),
+  });
+  await guard.initialise();
+  const handled = await guard.handleAuditEntry({
+    guild_id:guildId,id:"1574262035519115610",user_id:actorId,
+    target_id:"1574262035519115611",action_type:12,
+  });
+  assert.equal(handled, false);
+  assert.equal(config.raid_lockdown, undefined);
+  assert.ok(calls.some(call => call.path === "/guilds/" + guildId + "/members/" + actorId));
+});

@@ -446,14 +446,17 @@ export class DiscordCommunityPanels{
     this.requireAdmin(i);
     const items=await this.store.creatorQueue(10);
     if(!Array.isArray(items)||!items.length)return this.reply(i,{content:"There are no pending Creator verification requests."},true);
-    const description=items.map(item=>"**"+clean(item.profile_url,120)+"** · <@"+item.discord_user_id+">
-"+clean(item.reason,220)+"
-Request: "+item.id).join("
-
-").slice(0,3900);
-    const rows=items.slice(0,5).map(item=>row(btn("creator:approve:"+item.id,"Approve",3,"✅"),btn("creator:reject:"+item.id,"Reject",4,"❌")));
+    const description=items.map(item=>
+      "**"+clean(item.profile_url,120)+"** · <@"+item.discord_user_id+">\n"+
+      clean(item.reason,220)+"\nRequest: "+item.id
+    ).join("\n\n").slice(0,3900);
+    const rows=items.slice(0,5).map(item=>row(
+      btn("creator:approve:"+item.id,"Approve",3,"✅"),
+      btn("creator:reject:"+item.id,"Reject",4,"❌")
+    ));
     await this.reply(i,{embeds:[{title:"Pending Creator verification",description,color:0x8b72d9}],components:rows},true);
   }
+
   async reviewCreator(i,id,decision){
     this.requireAdmin(i);
     if(!UUID.test(id)||!["approved","rejected"].includes(decision))throw new Error("Invalid Creator review.");
@@ -481,17 +484,17 @@ Request: "+item.id).join("
     if(!SF.test(channelId??""))throw new Error("The giveaways channel has not been configured.");
     const endsAt=new Date(Date.now()+hours*3600_000).toISOString();
     const id=await this.store.createGiveaway({guildId:this.guildId,channelId,title,prize,winnerCount:winners,endsAt,actorId:uid(i)});
-    await this.store.enqueueJob({guildId:this.guildId,jobType:"giveaway_finish",dedupeKey:"giveaway-finish:"+id,payload:{giveaway_id:id,channel_id:channelId},runAt:endsAt});
+    await this.store.enqueueJob({guildId:this.guildId,jobType:"giveaway_finish",dedupeKey:"giveaway-finish:"+id,
+      payload:{giveaway_id:id,channel_id:channelId},runAt:endsAt});
     await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body:{
-      embeds:[{title:"🎉 "+title,description:"**Prize:** "+prize+"
-**Winners:** "+winners+"
-**Ends:** <t:"+Math.floor(Date.parse(endsAt)/1000)+":R>
-
-Press Enter Giveaway to join.",color:0xc69a43,footer:{text:"Giveaway ID "+id}}],
+      embeds:[{title:"🎉 "+title,description:"**Prize:** "+prize+"\n**Winners:** "+winners+
+        "\n**Ends:** <t:"+Math.floor(Date.parse(endsAt)/1000)+":R>\n\nPress Enter Giveaway to join.",
+        color:0xc69a43,footer:{text:"Giveaway ID "+id}}],
       components:[row(btn("giveaway:enter:"+id+":all","Enter giveaway",1,"🎉"))],allowed_mentions:{parse:[]},
     }});
     await this.reply(i,{content:"Giveaway created in <#"+channelId+">. Winners will be selected automatically when it ends."},true);
   }
+
   async enterGiveaway(i,id,roleId){
     if(!UUID.test(id))throw new Error("Invalid giveaway reference.");
     let eligible=true;
@@ -535,11 +538,12 @@ Press Enter Giveaway to join.",color:0xc69a43,footer:{text:"Giveaway ID "+id}}],
   async showLeaderboard(i){
     const rows=await this.store.activityLeaderboard(this.guildId,30,10);
     if(!Array.isArray(rows)||!rows.length)return this.reply(i,{content:"There is no recorded community activity yet."},true);
-    const description=rows.map((entry,index)=>"**"+(index+1)+".** <@"+entry.discord_user_id+"> · "+entry.messages+" messages · "+entry.voice_minutes+" voice minutes · score "+entry.score).join("
-");
+    const description=rows.map((entry,index)=>
+      "**"+(index+1)+".** <@"+entry.discord_user_id+"> · "+entry.messages+
+      " messages · "+entry.voice_minutes+" voice minutes · score "+entry.score
+    ).join("\n");
     await this.reply(i,{embeds:[{title:"Snoozer community activity · last 30 days",description,color:0x4d91c9}]},true);
   }
-
 
   async handleSlash(i){
     const name=i.data?.name;
@@ -823,10 +827,10 @@ Press Enter Giveaway to join.",color:0xc69a43,footer:{text:"Giveaway ID "+id}}],
       }else if(id==="giveaway:info")await this.reply(i,{content:"Official giveaways are posted in this channel. Press Enter Giveaway on an active post to join. Entries are stored persistently and winners are selected automatically when the giveaway ends."},true);
       else if(id==="event:info"){
         const events=await this.store.scheduledEventQueue(this.guildId,10);
-        const description=Array.isArray(events)&&events.length?events.map(event=>"**"+clean(event.name,100)+"** · <t:"+Math.floor(Date.parse(event.starts_at)/1000)+":F>
-https://discord.com/events/"+this.guildId+"/"+event.discord_event_id).join("
-
-"):"There are no upcoming Snoozer events.";
+        const description=Array.isArray(events)&&events.length?events.map(event=>
+          "**"+clean(event.name,100)+"** · <t:"+Math.floor(Date.parse(event.starts_at)/1000)+":F>\n"+
+          "https://discord.com/events/"+this.guildId+"/"+event.discord_event_id
+        ).join("\n\n"):"There are no upcoming Snoozer events.";
         await this.reply(i,{embeds:[{title:"Upcoming Snoozer events",description,color:0x438f9b}]},true);
       }else{
         return false;

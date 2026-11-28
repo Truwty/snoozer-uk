@@ -12,12 +12,20 @@ const PERMISSIONS = {
   embedLinks: 1n << 14n,
   attachFiles: 1n << 15n,
   manageChannels: 1n << 4n,
+  manageGuild: 1n << 5n,
+  viewAuditLog: 1n << 7n,
   manageRoles: 1n << 28n,
+  manageWebhooks: 1n << 29n,
+  manageEvents: 1n << 33n,
 };
 
 const STAFF_ROLE_NAMES = ["Snoozer Admin", "Senior Moderator", "Moderator", "Support Team", "Support Manager", "Ticket Support"];
 const REQUIRED_BOT_PERMISSIONS = [
+  ["Manage Server", PERMISSIONS.manageGuild],
+  ["View Audit Log", PERMISSIONS.viewAuditLog],
   ["Manage Channels", PERMISSIONS.manageChannels],
+  ["Manage Webhooks", PERMISSIONS.manageWebhooks],
+  ["Manage Events", PERMISSIONS.manageEvents],
   ["Manage Roles", PERMISSIONS.manageRoles],
   ["View Channels", PERMISSIONS.viewChannel],
   ["Send Messages", PERMISSIONS.sendMessages],

@@ -1,6 +1,6 @@
 const SF=/^[1-9][0-9]{16,19}$/;
 const PERM={sendMessages:1n<<11n,manageChannels:1n<<4n,administrator:1n<<3n,manageGuild:1n<<5n,manageRoles:1n<<28n};
-const DESTRUCTIVE_ACTIONS=new Set([12,15,22,32,52,62,73,80,82,92,102,112,142]);
+const DESTRUCTIVE_ACTIONS=new Set([12,15,32,52,62,73,80,82,92,102,112,142]);
 const RELEVANT_ACTIONS=new Map([
   [12,"Channel deleted"],[14,"Channel overwrite changed"],[15,"Channel overwrite removed"],
   [22,"Member banned"],[30,"Role created"],[31,"Role permissions changed"],[32,"Role deleted"],

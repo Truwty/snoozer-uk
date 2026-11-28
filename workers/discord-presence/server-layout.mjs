@@ -1,5 +1,5 @@
 export const SNOOZER_ROLE_LAYOUT = [
-  { key: "admin", name: "👑・Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: ["manageGuild","manageChannels","manageRoles","manageEvents","viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
+  { key: "admin", name: "👑・Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: ["manageGuild","manageChannels","manageRoles","manageEvents","manageWebhooks","viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "senior_moderator", name: "🛡️・Senior Moderator", color: 0xb94b63, hoist: true, permissions: ["viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "moderator", name: "🛡️・Moderator", color: 0xd65a68, hoist: true, permissions: ["viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "community_manager", name: "💼・Community Manager", color: 0x438f9b, hoist: true, permissions: ["manageMessages"] },

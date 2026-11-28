@@ -93,7 +93,7 @@ export class DiscordServerRebuilder {
     const botRoles=[this.guildId,...botMember.roles].map(id=>roleMap.get(id)).filter(Boolean);
     const botTop=Math.max(0,...botRoles.map(role=>Number(role.position??0)));
     const perms=botRoles.reduce((value,role)=>value|BigInt(role.permissions??"0"),0n);
-    const required=["manageChannels","manageRoles","manageEvents","viewChannel","sendMessages","embedLinks","readMessageHistory"];
+    const required=["manageChannels","manageRoles","manageGuild","manageEvents","manageWebhooks","viewAuditLog","kickMembers","banMembers","moderateMembers","viewChannel","sendMessages","embedLinks","readMessageHistory"];
     const missing=required.filter(key=>(perms&P[key])!==P[key]);
     if(missing.length) throw new Error("The bot is missing required permissions: "+missing.join(", ")+". No server changes were made.");
     const blockedLegacy=roles.filter(isKnownLegacyRole).filter(role=>!role.managed&&Number(role.position)>=botTop);
