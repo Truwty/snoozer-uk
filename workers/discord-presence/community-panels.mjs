@@ -20,7 +20,7 @@ const asPermissionBits=value=>{
   try {
     if(typeof value==="bigint")return value;
     if(typeof value==="number"&&Number.isSafeInteger(value))return BigInt(value);
-    if(typeof value==="string"&&/^\\d+$/.test(value))return BigInt(value);
+    if(typeof value==="string"&&/^\d+$/.test(value))return BigInt(value);
   } catch {}
   return null;
 };
@@ -544,7 +544,7 @@ export class DiscordCommunityPanels{
       this.store.pollResults(id),
     ]);
     const previous=Array.isArray(message?.embeds)?message.embeds[0]:null;
-    const title=clean(poll.title??String(previous?.title??"").replace(/^📊\\s*/,""),120)||"Community poll";
+    const title=clean(poll.title??String(previous?.title??"").replace(/^📊\s*/,""),120)||"Community poll";
     const options=Array.isArray(poll.options)?poll.options:[];
     const resultRows=Array.isArray(results?.options)?results.options:[];
     const fields=options.slice(0,5).map((choice,index)=>{
