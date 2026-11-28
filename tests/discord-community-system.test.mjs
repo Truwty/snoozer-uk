@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 import { SNOOZER_ROLE_LAYOUT, SNOOZER_SERVER_LAYOUT, SNOOZER_RESOURCE_KEYS } from "../workers/discord-presence/server-layout.mjs";
@@ -120,6 +121,26 @@ test("DiscordStore routes ticket and Creator submissions through persistent cool
     p_profile_url: "https://snoozer.uk/testcreator",
     p_reason: "I create useful community projects and tutorials.",
   });
+});
+
+test("ticket reliability migration matches the existing ticket event and job constraints", async () => {
+  const sql = await readFile(new URL("../supabase/migrations/20261128101500_discord_bot_reliability_and_cooldowns.sql", import.meta.url), "utf8");
+  const actionStart = sql.indexOf("create or replace function public.discord_bot_ticket_action");
+  const enqueueStart = sql.indexOf("create or replace function public.discord_bot_enqueue_job", actionStart);
+  assert.ok(actionStart >= 0 && enqueueStart > actionStart);
+  const actionSql = sql.slice(actionStart, enqueueStart);
+  assert.match(actionSql, /when 'claim' then 'claimed'/);
+  assert.match(actionSql, /when 'assign' then 'assigned'/);
+  assert.match(actionSql, /when 'close' then 'closed'/);
+  assert.match(actionSql, /when 'reopen' then 'reopened'/);
+  assert.match(actionSql, /when 'escalate' then 'escalated'/);
+  assert.doesNotMatch(actionSql, /revoke all on function|grant execute on function/);
+
+  const enqueueSql = sql.slice(enqueueStart);
+  assert.match(enqueueSql, /'tempban_unban','ticket_delete'/);
+  assert.match(sql, /revoke all on function public\\.discord_bot_enqueue_job/);
+  assert.match(sql, /grant execute on function public\\.discord_bot_enqueue_job/);
+  assert.equal((sql.match(/\\$\\$/g) ?? []).length % 2, 0);
 });
 
 test("DiscordStore reads poll results through the service-only RPC", async () => {
@@ -916,7 +937,6 @@ test("ticket modal creates a private channel with string permission overwrites a
   const queueChannelId = "1574262035519115809";
   const calls = [];
   const logs = [];
-  const replies = [];
   const sequence = [];
   const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
     api: {
@@ -937,8 +957,6 @@ test("ticket modal creates a private channel with string permission overwrites a
   });
   panels.resources.category_tickets = "1574262035519115802";
   panels.resources.ticket_queue = queueChannelId;
-  panels.complete = async (_interaction, payload) => { replies.push(payload); return {}; };
-  panels.reply = async (_interaction, payload) => { replies.push(payload); return {}; };
 
   await panels.handle({
     guild_id: guildId,
@@ -967,7 +985,13 @@ test("ticket modal creates a private channel with string permission overwrites a
   assert.ok(create.options.body.permission_overwrites.every(item =>
     typeof item.allow === "string" && typeof item.deny === "string"));
   assert.ok(logs.some(event => event.title === "Support ticket opened" && event.description.includes(ticketChannelId)));
-  assert.match(replies.at(-1).content, /ticket has been created/i);
+  const initialCallbacks = calls.filter(call => call.path.startsWith("/interactions/") && call.path.endsWith("/callback"));
+  assert.equal(initialCallbacks.length, 1);
+  assert.equal(initialCallbacks[0].options.body.type, 5);
+  assert.equal(calls.some(call => call.path.startsWith("/interactions/") && call.options.body?.type === 4), false);
+  const followUp = calls.find(call => call.path === "/webhooks/" + applicationId + "/test-interaction-token/messages/@original");
+  assert.ok(followUp, "final response should edit the deferred interaction instead of sending a second initial callback");
+  assert.match(followUp.options.body.content, /ticket has been created/i);
 });
 
 test("ticket deletion waits for the durable ticket close state and retries while it is still active", async () => {
