@@ -1222,18 +1222,44 @@ export class DiscordCommunityPanels{
         if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
       }else if(job.job_type==="ticket_delete"&&SF.test(job.payload?.channel_id??"")){
         const channelId=job.payload.channel_id,ticketId=job.payload?.ticket_id;
-        let shouldDelete=false;
+        const retryCount=Math.max(0,Number(job.payload?.retry_count??0));
+        const activeStatuses=["open","claimed","waiting_member","waiting_staff"];
+        let shouldDelete=false,shouldRetry=false;
         if(UUID.test(ticketId??"")){
           const ticket=await this.store.getTicket(ticketId);
-          shouldDelete=Boolean(ticket&&ticket.channel_id===channelId&&["closed","resolved"].includes(ticket.status));
+          if(ticket&&ticket.channel_id===channelId){
+            shouldDelete=["closed","resolved"].includes(ticket.status);
+            shouldRetry=activeStatuses.includes(ticket.status);
+          }
         }else if(job.payload?.legacy===true){
-          try{const channel=await this.api.request("/channels/"+channelId);shouldDelete=typeof channel?.topic==="string"&&channel.topic.includes("SNOOZER_TICKET:v1")&&channel.topic.includes("status=closed");}
-          catch(error){if(String(error?.message??error).includes("HTTP 404"))shouldDelete=false;else throw error;}
+          try{
+            const channel=await this.api.request("/channels/"+channelId);
+            const validTicket=typeof channel?.topic==="string"&&/^SNOOZER_TICKET:v[12]\b/.test(channel.topic);
+            shouldDelete=Boolean(validTicket&&channel.topic.includes("status=closed"));
+            shouldRetry=Boolean(validTicket&&!shouldDelete);
+          }catch(error){
+            if(String(error?.message??error).includes("HTTP 404"))shouldDelete=false;
+            else throw error;
+          }
         }
-        if(shouldDelete){
+
+        // A close operation is persisted before the Discord PATCH. If the 10-second
+        // timer fires while that state transition is still in flight, retry briefly
+        // instead of silently losing the deletion job or deleting an open ticket.
+        if(shouldRetry&&retryCount<15){
+          const runAt=new Date(Date.now()+1000).toISOString();
+          const retryKey="ticket-delete-retry:"+(UUID.test(ticketId??"")?ticketId:channelId)+":"+(retryCount+1);
+          await this.store.enqueueJob({
+            guildId:this.guildId,jobType:"ticket_delete",dedupeKey:retryKey,
+            payload:{...job.payload,retry_count:retryCount+1},runAt,
+          });
+          this.scheduleJobWake(runAt,retryKey);
+        }else if(shouldDelete){
           try{await this.api.request("/channels/"+channelId,{method:"DELETE"});}
           catch(error){if(!String(error?.message??error).includes("HTTP 404"))throw error;}
           try{await this.logEvent?.({title:"Closed ticket channel deleted",description:"Channel ID: "+channelId+"\nTicket reference: "+(UUID.test(ticketId??"")?ticketId:"legacy"),severity:"info"});}catch{}
+        }else if(shouldRetry){
+          await this.logEvent?.({title:"Ticket deletion requires administrator review",description:"Channel: <#"+channelId+">\nReference: "+(UUID.test(ticketId??"")?ticketId:"legacy")+"\nThe ticket remained active after retrying deletion.",severity:"warning"});
         }
       }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??"")&&UUID.test(job.payload?.ticket_id??"")){
         const ticket=await this.store.getTicket(job.payload.ticket_id);
