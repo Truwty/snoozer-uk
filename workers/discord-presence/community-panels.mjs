@@ -85,7 +85,7 @@ export class DiscordCommunityPanels{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
     this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
-    this.deferredInteractions=new Set();this.jobWakeTimers=new Map();this.jobWakeSequence=0;
+    this.deferredInteractions=new Set();this.respondedInteractions=new Set();this.jobWakeTimers=new Map();this.jobWakeSequence=0;
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
@@ -112,6 +112,7 @@ export class DiscordCommunityPanels{
   }
   async showModal(i,data){
     const result=await this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:9,data}});
+    this.respondedInteractions.add(i.id);
     const customId=i.data?.custom_id;
     if(typeof customId==="string")void this.store.recordInteraction(i.id,customId).catch(error=>this.logger.warn("[discord-panels] modal interaction receipt failed",error?.message??error));
     return result;
@@ -957,7 +958,8 @@ export class DiscordCommunityPanels{
 
   async handleCommunitySlash(i){
     const name=i.data?.name;
-    if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70)))return true;
+    await this.defer(i);
+    if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70))){await this.complete(i,{content:"This command has already been processed."});return true;}
     if(name==="snoozer-profile"||name==="snoozer-account"){await this.memberSummary(i);return true;}
     if(name==="snoozer-leaderboard"){await this.showLeaderboard(i);return true;}
     if(name==="snoozer-settings"){await this.adminSettings(i);return true;}
@@ -1384,19 +1386,20 @@ export class DiscordCommunityPanels{
         ).join("\n\n"):"There are no upcoming Snoozer events.";
         await this.reply(i,{embeds:[{title:"Upcoming Snoozer events",description,color:0x438f9b}]},true);
       }else{
-        return false;
+        await this.reply(i,{content:"This control is no longer available. Refresh the Snoozer panel and try again."},true);
       }
+      this.respondedInteractions.delete(i.id);
       return true;
     }catch(e){
+      this.respondedInteractions.delete(i.id);
       this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
       try{await this.logEvent?.({title:"Bot interaction failed",description:"Action: "+clean(id,120)+"\nMember: <@"+uid(i)+">\nError: "+clean(e?.message??"Unknown error",500),severity:"error"});}catch{}
       try{
         const message={content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)};
         if(this.deferredInteractions.has(i.id))await this.complete(i,message);
-        else if(!modalLaunch)await this.reply(i,message,true);
+        else if(!this.respondedInteractions.has(i.id))await this.reply(i,message,true);
       }catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
       return true;
     }
-  }
   }
 }
