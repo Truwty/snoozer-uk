@@ -203,8 +203,10 @@ test("welcome and server boost events post to their configured channels with saf
   assert.match(welcomePost.body.content, new RegExp("<@" + memberId + ">"));
   assert.deepEqual(welcomePost.body.allowed_mentions.users, [memberId]);
 
-  const firstBoost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:00:00.000Z" });
-  const secondUpdate = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:00:00.000Z" });
+  bot.startedAt = Date.now() - 60_000;
+  const newBoostAt = new Date(Date.now() - 30_000).toISOString();
+  const firstBoost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: newBoostAt });
+  const secondUpdate = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: newBoostAt });
   assert.equal(firstBoost, true);
   assert.equal(secondUpdate, false);
   const boostPosts = state.calls.filter(call => call.path === "/channels/610000000000000012/messages" && call.method === "POST");
@@ -213,7 +215,7 @@ test("welcome and server boost events post to their configured channels with saf
   assert.deepEqual(boostPosts[0].body.allowed_mentions.users, [targetId]);
 
   await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: null });
-  const reboost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:30:00.000Z" });
+  const reboost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: new Date(Date.now() - 10_000).toISOString() });
   assert.equal(reboost, true);
   assert.equal(state.calls.filter(call => call.path === "/channels/610000000000000012/messages" && call.method === "POST").length, 2);
 });
