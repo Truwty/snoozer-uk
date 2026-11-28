@@ -221,20 +221,18 @@ begin
 end
 $$;
 
--- Correct action names to the constrained event vocabulary used by discord_bot_ticket_events.
+-- Translate action button names to the constrained event names used by ticket_events.
 create or replace function public.discord_bot_ticket_action(
   p_ticket_id uuid,p_actor text,p_action text,p_payload jsonb default '{}'::jsonb
-) returns jsonb language plpgsql security definer set search_path='' as $
+) returns jsonb
+language plpgsql
+security definer
+set search_path=''
+as $$
 declare ticket snoozer.discord_bot_tickets;
 declare event_type text;
 begin
-  if p_ticket_id is null or coalesce(p_actor,'') !~ '^[1-9][0-9]{16,19}revoke all on function public.discord_bot_open_ticket(text,text,text,text,text,text) from public,anon,authenticated;
-revoke all on function public.discord_bot_creator_request_limited(text,text,text) from public,anon,authenticated;
-
-grant execute on function public.discord_bot_ticket_preflight(text,text) to service_role;
-grant execute on function public.discord_bot_open_ticket(text,text,text,text,text,text) to service_role;
-grant execute on function public.discord_bot_creator_request_limited(text,text,text) to service_role;
-
+  if p_ticket_id is null or coalesce(p_actor,'') !~ '^[1-9][0-9]{16,19}$'
     or p_action not in ('claim','assign','priority','close','reopen','waiting_member','waiting_staff','resolve','note','rating','escalate','transcript')
     or jsonb_typeof(coalesce(p_payload,'{}'::jsonb))<>'object' then
     raise exception 'Invalid ticket action';
@@ -244,6 +242,8 @@ grant execute on function public.discord_bot_creator_request_limited(text,text,t
   if not found then raise exception 'Ticket not found'; end if;
 
   event_type:=case p_action
+    when 'claim' then 'claimed'
+    when 'assign' then 'assigned'
     when 'close' then 'closed'
     when 'resolve' then 'closed'
     when 'reopen' then 'reopened'
@@ -256,13 +256,7 @@ grant execute on function public.discord_bot_creator_request_limited(text,text,t
   if p_action='claim' then
     update snoozer.discord_bot_tickets set claimed_by=p_actor,assigned_to=p_actor,status='claimed',updated_at=now() where id=p_ticket_id;
   elsif p_action='assign' then
-    if coalesce(p_payload->>'assigned_to','') !~ '^[1-9][0-9]{16,19}revoke all on function public.discord_bot_open_ticket(text,text,text,text,text,text) from public,anon,authenticated;
-revoke all on function public.discord_bot_creator_request_limited(text,text,text) from public,anon,authenticated;
-
-grant execute on function public.discord_bot_ticket_preflight(text,text) to service_role;
-grant execute on function public.discord_bot_open_ticket(text,text,text,text,text,text) to service_role;
-grant execute on function public.discord_bot_creator_request_limited(text,text,text) to service_role;
- then raise exception 'Invalid assignee'; end if;
+    if coalesce(p_payload->>'assigned_to','') !~ '^[1-9][0-9]{16,19}$' then raise exception 'Invalid assignee'; end if;
     update snoozer.discord_bot_tickets set assigned_to=p_payload->>'assigned_to',updated_at=now() where id=p_ticket_id;
   elsif p_action='priority' then
     if p_payload->>'priority' not in ('low','normal','high','urgent') then raise exception 'Invalid priority'; end if;
@@ -291,25 +285,20 @@ grant execute on function public.discord_bot_creator_request_limited(text,text,t
 
   select * into ticket from snoozer.discord_bot_tickets where id=p_ticket_id;
   return to_jsonb(ticket);
-end $;
+end
+$$;
 
--- Extend the enqueue RPC allow-list as well as the table constraint for delayed ticket deletion.
 create or replace function public.discord_bot_enqueue_job(
   p_guild_id text,p_job_type text,p_dedupe_key text,
   p_payload jsonb default '{}'::jsonb,p_run_at timestamptz default now()
-) returns uuid language plpgsql security definer set search_path='' as $
+) returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $$
 declare result uuid;
 begin
-  if coalesce(p_guild_id,'') !~ '^[1-9][0-9]{16,19}grant execute on function public.discord_bot_ticket_action(uuid,text,text,jsonb) to service_role;
-
-revoke all on function public.discord_bot_ticket_preflight(text,text) from public,anon,authenticated;
-revoke all on function public.discord_bot_open_ticket(text,text,text,text,text,text) from public,anon,authenticated;
-revoke all on function public.discord_bot_creator_request_limited(text,text,text) from public,anon,authenticated;
-
-grant execute on function public.discord_bot_ticket_preflight(text,text) to service_role;
-grant execute on function public.discord_bot_open_ticket(text,text,text,text,text,text) to service_role;
-grant execute on function public.discord_bot_creator_request_limited(text,text,text) to service_role;
-
+  if coalesce(p_guild_id,'') !~ '^[1-9][0-9]{16,19}$'
     or coalesce(p_job_type,'') not in (
       'premium_role_sync','creator_role_sync','announcement','ticket_reminder',
       'scheduled_event','giveaway_finish','backup','health_check','role_reconcile',
@@ -328,18 +317,16 @@ grant execute on function public.discord_bot_creator_request_limited(text,text,t
     returning id into result;
   return result;
 end
-$;
-
-revoke all on function public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz) from public,anon,authenticated;
-grant execute on function public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz) to service_role;
-
-revoke all on function public.discord_bot_ticket_action(uuid,text,text,jsonb) from public,anon,authenticated;
-grant execute on function public.discord_bot_ticket_action(uuid,text,text,jsonb) to service_role;
+$$;
 
 revoke all on function public.discord_bot_ticket_preflight(text,text) from public,anon,authenticated;
 revoke all on function public.discord_bot_open_ticket(text,text,text,text,text,text) from public,anon,authenticated;
 revoke all on function public.discord_bot_creator_request_limited(text,text,text) from public,anon,authenticated;
+revoke all on function public.discord_bot_ticket_action(uuid,text,text,jsonb) from public,anon,authenticated;
+revoke all on function public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz) from public,anon,authenticated;
 
 grant execute on function public.discord_bot_ticket_preflight(text,text) to service_role;
 grant execute on function public.discord_bot_open_ticket(text,text,text,text,text,text) to service_role;
 grant execute on function public.discord_bot_creator_request_limited(text,text,text) to service_role;
+grant execute on function public.discord_bot_ticket_action(uuid,text,text,jsonb) to service_role;
+grant execute on function public.discord_bot_enqueue_job(text,text,text,jsonb,timestamptz) to service_role;
