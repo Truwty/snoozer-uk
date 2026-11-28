@@ -240,6 +240,23 @@ export class DiscordCommunityPanels{
     },delay);
     timer.unref?.();this.jobWakeTimers.set(key,timer);return timer;
   }
+  async scheduleNextJobWake(){
+    const key="database-next-job";
+    try{
+      const next=await this.store.nextJobDue(this.guildId);
+      if(typeof next==="string"&&Number.isFinite(Date.parse(next))){
+        this.scheduleJobWake(next,key);
+      }else{
+        const previous=this.jobWakeTimers.get(key);
+        if(previous)clearTimeout(previous);
+        this.jobWakeTimers.delete(key);
+      }
+      return next;
+    }catch(error){
+      this.logger.warn("[discord-panels] could not recover the next automation wake-up",error?.message??error);
+      return null;
+    }
+  }
   async scheduleTicketDeletion(ticketId,channelId,actorId){
     if(!UUID.test(ticketId??"")||!SF.test(channelId??""))throw new Error("The ticket deletion job could not be validated.");
     const runAt=new Date(Date.now()+TICKET_DELETE_DELAY_MS).toISOString();
@@ -1324,7 +1341,10 @@ export class DiscordCommunityPanels{
       try{await this.scheduleRecurringJob("backup","daily_backup",24*60*60_000);}catch(error){this.logger.error("[discord-panels] daily backup scheduling failed",error?.message??error);}
       try{await this.scheduleRecurringJob("health_check","health_check",5*60_000);}catch(error){this.logger.error("[discord-panels] health check scheduling failed",error?.message??error);}
       const jobs=await this.store.claimJobs(this.guildId,20);if(Array.isArray(jobs))for(const job of jobs)await this.runJob(job);
-    }catch(e){this.logger.error("[discord-panels] automation tick failed",e?.message??e);}finally{this.busy=false;}
+    }catch(e){this.logger.error("[discord-panels] automation tick failed",e?.message??e);}finally{
+      this.busy=false;
+      void this.scheduleNextJobWake();
+    }
   }
   start(){
     if(this.timer)return;
