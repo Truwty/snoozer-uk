@@ -943,6 +943,7 @@ test("Discord server activity is posted to the configured bot logs channel witho
     config: { guildId },
     communityPanels: { resources: { bot_logs: logChannelId } },
     discordApi: { async request(path, options) { requests.push({ path, options }); return {}; } },
+    logServerEvent: DiscordPresenceWorker.prototype.logServerEvent,
     logger: { warn() {} },
     recordActivity() {},
     securityGuard: null,
