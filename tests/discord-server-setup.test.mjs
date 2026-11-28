@@ -240,6 +240,7 @@ test("worker registers /snoozer-setup only in the configured guild", async () =>
     secret: "s".repeat(64),
     guildId,
     baseUrl: "https://snoozer.example",
+    serverSetupEnabled: true,
   }, {
     fetcher: async () => new Response(null, { status: 204 }),
     discordFetcher: async (url, options) => {
