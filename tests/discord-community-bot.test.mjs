@@ -224,8 +224,10 @@ test("currently boosted members are seeded at gateway ready and do not receive a
   const { bot, state } = botFixture({
     channels: [{ id: "610000000000000012", name: "server-boosts", type: 0 }],
   });
-  bot.seedKnownBoosters([{ user: { id: targetId }, premium_since: "2026-11-28T04:00:00.000Z" }]);
-  assert.equal(await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T04:00:00.000Z" }), false);
+  bot.startedAt = Date.now() - 60_000;
+  const existingBoostAt = new Date(Date.now() - 30_000).toISOString();
+  bot.seedKnownBoosters([{ user: { id: targetId }, premium_since: existingBoostAt }]);
+  assert.equal(await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: existingBoostAt }), false);
   assert.equal(state.calls.some(call => call.path.endsWith("/messages") && call.method === "POST"), false);
 });
 
