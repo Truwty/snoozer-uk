@@ -176,7 +176,9 @@ export class DiscordServerRebuilder {
     for(const role of oldRoles) {
       if(role.managed) continue;
       const key=LEGACY_ROLE_NAMES.get(normaliseRole(role.name));
-      if(key) oldMap.set(role.id,key);
+      // Premium and Creator are security-sensitive entitlements. Never migrate them by name;
+      // only the verified Supabase entitlement/approval reconciliation may grant them.
+      if(key && key!=="premium" && key!=="creator") oldMap.set(role.id,key);
     }
     let updated=0;
     for(const member of members) {

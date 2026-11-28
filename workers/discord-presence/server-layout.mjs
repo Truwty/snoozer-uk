@@ -80,7 +80,7 @@ export const SNOOZER_SERVER_LAYOUT = [
       staffChat("staff_notes","📝・staff-notes","Restricted internal notes. Do not store credentials or payment card details."),
       staffChat("security_alerts","🚨・security-alerts","Anti-raid, anti-nuke and dangerous administrator-action alerts."),
       staffChat("bot_control","⚙️・bot-control","Interactive Snoozer bot administration dashboard."),
-      staffChat("staff_room","🔒・staff-room","Private staff voice room."),
+      voice("staff_room","🔒・staff-room","Private staff voice room."),
     ],
   },
   {

@@ -7,9 +7,12 @@ import {
   DiscordCommunityBot,
   SERVICE_STATUS_POLL_MS,
 } from "./community-bot.mjs";
+import { DiscordStore } from "./discord-store.mjs";
+import { DiscordCommunityPanels, SNOOZER_REBUILD_COMMAND } from "./community-panels.mjs";
 
 const GUILDS_INTENT = 1 << 0;
 const GUILD_MEMBERS_INTENT = 1 << 1;
+const GUILD_MODERATION_INTENT = 1 << 2;
 const GUILD_PRESENCES_INTENT = 1 << 8;
 const SNAPSHOT_REFRESH_MS = 5 * 60_000;
 const SUBSCRIPTION_REFRESH_MS = 60_000;
@@ -106,6 +109,8 @@ export class DiscordPresenceWorker {
     this.discordFetcher = dependencies.discordFetcher ?? globalThis.fetch;
     this.statusFetcher = dependencies.statusFetcher ?? globalThis.fetch;
     this.communityBot = null;
+    this.communityPanels = null;
+    this.discordStore = null;
     this.communityStatusTimer = null;
     this.discordApi = new DiscordApiClient(config.token, this.discordFetcher, { logger: this.logger });
     this.applicationId = null;
@@ -306,21 +311,46 @@ export class DiscordPresenceWorker {
     this.botUserId = botUser.id;
     this.applicationId = application.id;
     const commands = [];
-    if (this.config.serverSetupEnabled) commands.push(SNOOZER_SETUP_COMMAND);
-    if (this.config.botEnabled) commands.push(...DISCORD_COMMUNITY_COMMANDS);
+    // The complete rebuild replaces the old one-time setup command when the community bot is enabled.
+    if (this.config.serverSetupEnabled && !this.config.botEnabled) commands.push(SNOOZER_SETUP_COMMAND);
+    if (this.config.botEnabled) commands.push(...DISCORD_COMMUNITY_COMMANDS, SNOOZER_REBUILD_COMMAND);
     if (commands.length === 0) throw new Error("No Discord guild commands are enabled.");
     const commandPath = "/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands";
     for (const command of commands) {
-      await this.discordApi.request(commandPath, {
-        method: "POST",
-        body: command,
-      });
+      await this.discordApi.request(commandPath, { method: "POST", body: command });
     }
     if (this.config.botEnabled) {
+      this.discordStore = new DiscordStore({
+        url: this.config.supabaseUrl,
+        serviceKey: this.config.supabaseServiceRoleKey,
+      }, { fetcher: this.fetcher });
+      this.communityPanels = new DiscordCommunityPanels({
+        guildId: this.config.guildId,
+        botUserId: this.botUserId,
+        applicationId: this.applicationId,
+      }, { api: this.discordApi, store: this.discordStore, logger: this.logger });
+      await this.communityPanels.refreshResources();
+      this.communityPanels.start();
+
+      const resources = this.communityPanels.resources;
+      const roleIds = this.communityPanels.roleIds;
       this.communityBot = new DiscordCommunityBot({
         guildId: this.config.guildId,
         botUserId: this.botUserId,
         applicationId: this.applicationId,
+        channelIds: {
+          welcome: resources.welcome,
+          changelog: resources.changelog,
+          serviceStatus: resources.service_status,
+          serverBoosts: resources.server_boosts,
+          ticketQueue: resources.ticket_queue,
+          moderationLog: resources.moderation_log,
+        },
+        categoryIds: {
+          tickets: resources.category_tickets,
+          teamHq: resources.category_team_hq,
+        },
+        roleIds,
       }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger });
       try {
         await this.communityBot.preflightPermissions();
@@ -329,7 +359,7 @@ export class DiscordPresenceWorker {
       }
       await this.communityBot.primeStatusBaseline();
       this.communityStatusTimer = setInterval(() => void this.communityBot?.checkAndAnnounceStatus(), SERVICE_STATUS_POLL_MS);
-      this.logger.info("[discord-presence] Registered " + DISCORD_COMMUNITY_COMMANDS.length + " Snoozer community commands.");
+      this.logger.info("[discord-presence] Registered " + DISCORD_COMMUNITY_COMMANDS.length + " community commands and the button-first rebuild entry point.");
     }
     if (this.config.serverSetupEnabled) {
       this.logger.info("[discord-presence] Registered the administrator-only /snoozer-setup command.");
@@ -474,10 +504,23 @@ export class DiscordPresenceWorker {
         if (data.guild_id === this.config.guildId) await this.handleChunk(data);
         break;
       case "INTERACTION_CREATE":
-        if (data.type === 2 && data.data?.name === SNOOZER_SETUP_COMMAND.name) {
+        if (this.communityPanels && (data.type === 3 || data.type === 5
+          || (data.type === 2 && data.data?.name === SNOOZER_REBUILD_COMMAND.name))) {
+          await this.communityPanels.handle(data);
+        } else if (data.type === 2 && data.data?.name === SNOOZER_SETUP_COMMAND.name) {
           await this.handleServerSetupInteraction(data);
         } else if (data.type === 2 && this.communityBot && DISCORD_COMMUNITY_COMMAND_NAMES.has(data.data?.name)) {
           await this.communityBot.handle(data);
+        }
+        break;
+      case "GUILD_AUDIT_LOG_ENTRY_CREATE":
+        if (data.guild_id === this.config.guildId && this.securityGuard) {
+          await this.securityGuard.handleAuditEntry(data);
+        }
+        break;
+      case "AUTO_MODERATION_ACTION_EXECUTION":
+        if (data.guild_id === this.config.guildId && this.securityGuard) {
+          await this.securityGuard.handleAutoModeration(data);
         }
         break;
       case "RATE_LIMITED":
@@ -633,6 +676,7 @@ export class DiscordPresenceWorker {
     this.reconnectTimer = null;
     if (this.communityStatusTimer) clearInterval(this.communityStatusTimer);
     this.communityStatusTimer = null;
+    this.communityPanels?.stop();
     this.stopHeartbeat();
     this.socket?.close(1000, "Worker shutting down");
     if ((this.config.presenceEnabled !== false)) await this.heartbeat(false, false);
@@ -647,8 +691,13 @@ export function loadConfig(env = process.env) {
   const guildId = env.DISCORD_PRESENCE_GUILD_ID ?? "";
   const baseUrl = env.SNOOZER_PRESENCE_URL ?? "";
   const secret = env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? env.SUPABASE_URL ?? "";
+  const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY ?? "";
   if ((!presenceEnabled && !serverSetupEnabled && !botEnabled) || !token || !/^[1-9][0-9]{16,19}$/.test(guildId)) {
     throw new Error("Enable DISCORD_SERVER_SETUP_ENABLED, DISCORD_BOT_ENABLED or DISCORD_PRESENCE_ENABLED, and configure DISCORD_BOT_TOKEN and DISCORD_PRESENCE_GUILD_ID.");
+  }
+  if (botEnabled && (!/^https:\/\/[a-z0-9.-]+$/i.test(supabaseUrl) || !supabaseServiceRoleKey)) {
+    throw new Error("The interactive Discord bot requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the existing Render service.");
   }
   if (presenceEnabled && (!/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || !/^[a-f0-9]{64}$/i.test(secret))) {
     throw new Error("Discord Presence requires SNOOZER_PRESENCE_URL and the shared 64-character DISCORD_PRESENCE_INGEST_SECRET.");
@@ -661,6 +710,8 @@ export function loadConfig(env = process.env) {
     presenceEnabled,
     serverSetupEnabled,
     botEnabled,
+    supabaseUrl,
+    supabaseServiceRoleKey,
   };
 }
 

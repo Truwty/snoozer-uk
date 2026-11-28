@@ -119,6 +119,13 @@ export class DiscordStore {
     return this.rpc("discord_bot_claim_jobs", { p_guild_id:guildId,p_limit:limit });
   }
 
+  enqueueJob(input) {
+    return this.rpc("discord_bot_enqueue_job", {
+      p_guild_id:input.guildId,p_job_type:input.jobType,p_dedupe_key:input.dedupeKey,
+      p_payload:input.payload??{},p_run_at:input.runAt??new Date().toISOString(),
+    });
+  }
+
   finishJob(id,success,error=null) {
     return this.rpc("discord_bot_finish_job", { p_id:id,p_success:success,p_error:error });
   }

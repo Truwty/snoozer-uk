@@ -19,7 +19,7 @@ const FOOTER=k=>"SNOOZER_PANEL:"+k+":v2";
 export const SNOOZER_REBUILD_COMMAND={
   name:"snoozer-rebuild-server",description:"Replace the current server layout with the approved Snoozer design.",
   type:1,default_member_permissions:"8",
-  options:[{type:3,name:"confirmation",description:"Type REBUILD SNOOZER SERVER to confirm.",required:true,min_length:21,max_length:21}],
+  options:[{type:3,name:"confirmation",description:"Type REBUILD SNOOZER SERVER to confirm.",required:true,min_length:22,max_length:22}],
 };
 
 export class DiscordCommunityPanels{
@@ -326,6 +326,69 @@ export class DiscordCommunityPanels{
     await this.store.voteSubmission(id,uid(i),choice);
     return this.reply(i,{content:"Your vote for **"+choice+"** has been recorded."},true);
   }
+
+  async ticketAction(i,id,action){
+    if(action==="priority"){
+      if(!this.staff(i))throw new Error("Only support staff can change ticket priority.");
+      if(i.data?.component_type===3){
+        const priority=i.data?.values?.[0];
+        if(!["low","normal","high","urgent"].includes(priority))throw new Error("Invalid ticket priority.");
+        await this.store.ticketAction(id,uid(i),"priority",{priority});
+        return this.reply(i,{content:"Ticket priority updated to **"+priority.toUpperCase()+"**."},true);
+      }
+      return this.reply(i,{content:"Choose a priority.",components:[row(select("ticket:priority:"+id,"Set ticket priority",[
+        {label:"LOW",value:"low"},{label:"NORMAL",value:"normal"},{label:"HIGH",value:"high"},{label:"URGENT",value:"urgent"},
+      ]))]},true);
+    }
+    if(action==="note"){
+      if(!this.staff(i))throw new Error("Only support staff can add internal notes.");
+      return this.showModal(i,mkModal("ticket:note-submit:"+id,"Add staff-only note",[
+        {id:"body",label:"Internal note",min:1,max:3000,style:2,placeholder:"Visible only to authorised staff."},
+      ]));
+    }
+    if(action==="reopen"){
+      if(!this.staff(i))throw new Error("Only support staff can reopen tickets.");
+      if(!UUID.test(id))throw new Error("Invalid ticket reference.");
+      const channel=await this.api.request("/channels/"+i.channel_id);
+      if(typeof channel?.topic!=="string"||!channel.topic.includes("id="+id))throw new Error("This message is not inside the matching ticket.");
+      const owner=channel.topic.match(/\\bowner=([1-9][0-9]{16,19})\\b/)?.[1];
+      const overwrites=(channel.permission_overwrites??[]).filter(entry=>!(entry.id===owner&&entry.type===1));
+      if(owner)overwrites.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory|P.sendMessages|(1n<<15n)).toString(),deny:"0"});
+      await this.store.ticketAction(id,uid(i),"reopen",{});
+      await this.api.request("/channels/"+channel.id,{method:"PATCH",body:{
+        name:clean(channel.name,100).replace(/^closed-/,""),
+        topic:String(channel.topic).replace("status=closed","status=open"),
+        permission_overwrites:overwrites,
+      }});
+      return this.reply(i,{content:"Ticket reopened. The member can reply again."},true);
+    }
+    throw new Error("Unsupported ticket action.");
+  }
+
+  async handleSlash(i){
+    if(i.data?.name!==SNOOZER_REBUILD_COMMAND.name)return false;
+    const authorised=has(i.member?.permissions,P.administrator)||(i.member?.roles??[]).includes(this.roleIds.admin);
+    if(!authorised){await this.reply(i,{content:"Only a server Administrator or Snoozer Admin can rebuild the server."},true);return true;}
+    if(opt(i,"confirmation")!=="REBUILD SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation text did not match."},true);return true;}
+    await this.defer(i);
+    try{
+      const result=await this.rebuilder.rebuild(uid(i));
+      await this.refreshResources();
+      await this.complete(i,{content:[
+        result.complete?"Snoozer server rebuild completed.":"Server rebuild has outstanding failures.",
+        "New categories: "+result.categoryCount+" · channels: "+result.channelCount+" · roles: "+result.roleCount,
+        "Members checked: "+result.memberCount+" · role assignments migrated: "+result.memberRolesMigrated,
+        "Old channels deleted: "+result.channelsDeleted+" · old roles deleted: "+result.rolesDeleted,
+        "Premium/Creator roles updated: "+result.roleSync.updated+" of "+result.roleSync.checked,
+        "Configuration backup: `"+result.backupId+"`",
+      ].join("\\n")});
+    }catch(error){
+      this.logger.error("[discord-panels] server rebuild failed",error?.message??error);
+      await this.complete(i,{content:"Server rebuild did not complete: "+clean(error?.message,700)});
+    }
+    return true;
+  }
+
   async roleSync(){
     const targets=await this.store.roleSyncTargets(this.guildId);if(!Array.isArray(targets))return;
     for(const target of targets){
@@ -525,11 +588,11 @@ export class DiscordCommunityPanels{
         this.requireStaff(i,["admin","developer"]);await this.defer(i);const r=await this.publishPermanentPanels();
         await this.complete(i,{content:"Panels refreshed: "+r.posted+". Errors: "+(r.errors.length?r.errors.join("; "):"none")});
       }else if(id==="admin:rebuild:start"){
-        this.requireStaff(i,["admin"]);await this.showModal(i,mkModal("admin:rebuild:confirm","Confirm complete server reset",[
-          {id:"phrase",label:"Type REBUILD SNOOZER SERVER",min:21,max:21,placeholder:"REBUILD SNOOZER SERVER"},
+        if(!has(i.member?.permissions,P.administrator)&&!(i.member?.roles??[]).includes(this.roleIds.admin))throw new Error("Only a server Administrator or Snoozer Admin can rebuild the server.");await this.showModal(i,mkModal("admin:rebuild:confirm","Confirm complete server reset",[
+          {id:"phrase",label:"Type REBUILD SNOOZER SERVER",min:22,max:22,placeholder:"REBUILD SNOOZER SERVER"},
         ]));
       }else if(id==="admin:rebuild:confirm"){
-        this.requireStaff(i,["admin"]);const phrase=clean(i.data?.components?.[0]?.components?.[0]?.value,40);
+        if(!has(i.member?.permissions,P.administrator)&&!(i.member?.roles??[]).includes(this.roleIds.admin))throw new Error("Only a server Administrator or Snoozer Admin can rebuild the server.");const phrase=clean(i.data?.components?.[0]?.components?.[0]?.value,40);
         if(phrase!=="REBUILD SNOOZER SERVER")throw new Error("Confirmation did not match. No changes were made.");
         await this.defer(i);const r=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
         await this.complete(i,{content:r.complete?"The Snoozer server rebuild completed.":"The rebuild has outstanding errors. Check #bot-logs."});
