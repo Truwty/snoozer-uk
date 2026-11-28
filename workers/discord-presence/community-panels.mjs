@@ -364,9 +364,10 @@ export class DiscordCommunityPanels{
   }
 
   async closeTicket(i,id){
-    const t=await this.getTicket(i,id);const actor=uid(i);
+    const t=await this.getTicket(i,id),actor=uid(i);
     const owner=t.channel.topic?.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1]??t.ticket?.owner_discord_id;
     if(actor!==owner&&!this.staff(i))throw new Error("Only the ticket owner or support staff can close this ticket.");
+    if(["closed","resolved"].includes(t.ticket.status))throw new Error("This ticket is already closed.");
     const messages=await this.api.request("/channels/"+t.channelId+"/messages?limit=100");
     const transcript=(Array.isArray(messages)?messages:[]).reverse().map(m=>{
       let content=clean(m.content,2000);
@@ -376,23 +377,26 @@ export class DiscordCommunityPanels{
     }).slice(-100);
     await this.store.ticketAction(id,actor,"transcript",{transcript});
     await this.store.ticketAction(id,actor,"close",{});
-    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\nClosed by: <@"+actor+">\nReference: "+id,severity:"info"});}catch{}
+    const deleteAt=await this.scheduleTicketDeletion(id,t.channelId,actor);
     const overwrites=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));
-    if(owner)overwrites.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory).toString(),deny:P.sendMessages.toString()});
+    if(owner)overwrites.push({id:owner,type:1,allow:TICKET_PERMISSION_BITS.closedOwnerAllow,deny:TICKET_PERMISSION_BITS.closedOwnerDeny});
     await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{
       name:("closed-"+clean(t.channel.name,90)).slice(0,100),
       topic:String(t.channel.topic??"").replace("status=open","status=closed")+" closed_at="+new Date().toISOString(),
       permission_overwrites:overwrites,
     }});
-    await this.api.request("/channels/"+t.channelId+"/messages",{method:"POST",body:{
-      embeds:[{title:"Ticket closed",description:"Closed by <@"+actor+">. A redacted transcript has been saved to restricted support records.",color:0x7a8493}],
-      components:[row(btn("ticket:rate:"+id+":1","1 ★",2),btn("ticket:rate:"+id+":2","2 ★",2),btn("ticket:rate:"+id+":3","3 ★",2),btn("ticket:rate:"+id+":4","4 ★",2),btn("ticket:rate:"+id+":5","5 ★",2)),row(btn("ticket:reopen:"+id,"Reopen ticket",1,"🔓"))],allowed_mentions:{parse:[]},
-    }});
-    await this.reply(i,{content:"Ticket closed. The restricted transcript has been saved."},true);
+    try{await this.api.request("/channels/"+t.channelId+"/messages",{method:"POST",body:{
+      embeds:[{title:"Ticket closed",description:"Closed by <@"+actor+">. A redacted transcript has been saved to restricted support records.\n\nThis channel will be automatically deleted <t:"+Math.floor(Date.parse(deleteAt)/1000)+":R>.",color:0x7a8493}],
+      components:[row(btn("ticket:rate:"+id+":1","1 ★",2),btn("ticket:rate:"+id+":2","2 ★",2),btn("ticket:rate:"+id+":3","3 ★",2),btn("ticket:rate:"+id+":4","4 ★",2),btn("ticket:rate:"+id+":5","5 ★",2))],allowed_mentions:{parse:[]},
+    }});}catch(error){this.logger.warn("[discord-panels] ticket closure notice failed; deletion remains scheduled",error?.message??error);}
+    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\nClosed by: <@"+actor+">\nReference: "+id+"\nScheduled deletion: "+deleteAt,severity:"info"});}catch{}
+    await this.reply(i,{content:"Ticket closed. The restricted transcript has been saved. This channel will be deleted in 10 seconds."},true);
   }
+
   async ticketAction(i,id,action){
     if(action==="claim"){if(!this.staff(i))throw new Error("Only support staff can claim tickets.");await this.store.ticketAction(id,uid(i),"claim",{});return this.reply(i,{content:"Ticket claimed by <@"+uid(i)+">."},true);}
-    if(action==="reopen"){if(!this.staff(i))throw new Error("Only support staff can reopen tickets.");const t=await this.getTicket(i,id);const owner=t.channel.topic?.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1];const ow=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));if(owner)ow.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory|P.sendMessages| (1n<<15n)).toString(),deny:"0"});await this.store.ticketAction(id,uid(i),"reopen",{});await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{name:clean(t.channel.name,100).replace(/^closed-/,""),topic:String(t.channel.topic??"").replace("status=closed","status=open"),permission_overwrites:ow}});return this.reply(i,{content:"Ticket reopened."},true);}
+    if(action==="reopen")throw new Error("Closed tickets are permanently queued for deletion 10 seconds after closure and cannot be reopened.");
+
     if(action==="priority"){
       if(!this.staff(i))throw new Error("Only support staff can change priority.");
       if(i.type===3){const priority=i.data?.values?.[0];if(!["low","normal","high","urgent"].includes(priority))throw new Error("Invalid priority.");await this.store.ticketAction(id,uid(i),"priority",{priority});return this.reply(i,{content:"Ticket priority set to "+priority.toUpperCase()+"."},true);}
@@ -422,7 +426,7 @@ export class DiscordCommunityPanels{
   async selectedTicket(i){
     this.requireStaff(i);const id=i.data?.values?.[0];if(!UUID.test(id??""))throw new Error("Choose a valid ticket.");
     return this.reply(i,{embeds:[{title:"Ticket controls",description:"Ticket reference "+id,color:0x8b72d9}],
-      components:[row(btn("ticket:claim:"+id,"Claim",2),btn("ticket:close:"+id,"Close",4),btn("ticket:reopen:"+id,"Reopen",1))]},true);
+      components:[row(btn("ticket:claim:"+id,"Claim",2),btn("ticket:close:"+id,"Close",4))]},true);
   }
   async memberSummary(i){
     const s=await this.store.memberSummary(uid(i));
@@ -1062,6 +1066,21 @@ export class DiscordCommunityPanels{
       }else if(job.job_type==="announcement"){
         const channel=this.resources[job.payload?.channel_key];
         if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
+      }else if(job.job_type==="ticket_delete"&&SF.test(job.payload?.channel_id??"")){
+        const channelId=job.payload.channel_id,ticketId=job.payload?.ticket_id;
+        let shouldDelete=false;
+        if(UUID.test(ticketId??"")){
+          const ticket=await this.store.getTicket(ticketId);
+          shouldDelete=Boolean(ticket&&ticket.channel_id===channelId&&["closed","resolved"].includes(ticket.status));
+        }else if(job.payload?.legacy===true){
+          try{const channel=await this.api.request("/channels/"+channelId);shouldDelete=typeof channel?.topic==="string"&&channel.topic.includes("SNOOZER_TICKET:v1")&&channel.topic.includes("status=closed");}
+          catch(error){if(String(error?.message??error).includes("HTTP 404"))shouldDelete=false;else throw error;}
+        }
+        if(shouldDelete){
+          try{await this.api.request("/channels/"+channelId,{method:"DELETE"});}
+          catch(error){if(!String(error?.message??error).includes("HTTP 404"))throw error;}
+          try{await this.logEvent?.({title:"Closed ticket channel deleted",description:"Channel ID: "+channelId+"\nTicket reference: "+(UUID.test(ticketId??"")?ticketId:"legacy"),severity:"info"});}catch{}
+        }
       }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??"")&&UUID.test(job.payload?.ticket_id??"")){
         const ticket=await this.store.getTicket(job.payload.ticket_id);
         const reminderNumber=Number(job.payload.reminder_number??1);
@@ -1132,7 +1151,7 @@ export class DiscordCommunityPanels{
     }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error))
       .finally(()=>void this.tick());
   }
-  stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
+  stop(){if(this.timer)clearInterval(this.timer);this.timer=null;for(const timer of this.jobWakeTimers.values())clearTimeout(timer);this.jobWakeTimers.clear();}
 
   async handleSlash(i){
     try{return await this.handleCommunitySlash(i);}
