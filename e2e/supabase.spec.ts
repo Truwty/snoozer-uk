@@ -940,15 +940,21 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const kofiProvider = page.getByRole("button", { name: "Ko-fi", exact: true });
     await expect(kofiProvider).toBeVisible();
     await kofiProvider.click();
+    const kofiRow = page.locator(".link-row").nth(2);
     await expect(page.getByLabel("Link 3 label")).toHaveValue("Ko-fi");
     await expect(page.getByLabel("Link 3 URL")).toHaveValue("https://ko-fi.com/");
+    await expect(kofiRow.getByLabel("Visible on profile")).not.toBeChecked();
     await page.getByLabel("Link 3 URL").fill("https://ko-fi.com/creator");
     await page.getByLabel("Link 3 label").fill("Support my projects");
+    await kofiRow.getByLabel("Visible on profile").check();
     await page.getByRole("button", { name: "Developer", exact: true }).click();
     await page.getByRole("button", { name: "GitHub", exact: true }).click();
+    const githubRow = page.locator(".link-row").nth(3);
     await page.getByLabel("Link 4 label").fill("Developer notes");
     await page.getByLabel("Link 4 URL").fill("https://github.com/example");
-    await page.locator(".link-row").nth(3).getByLabel("Display mode").selectOption("text");
+    await expect(githubRow.getByLabel("Visible on profile")).not.toBeChecked();
+    await githubRow.getByLabel("Visible on profile").check();
+    await githubRow.getByLabel("Display mode").selectOption("text");
     await page.getByRole("button", { name: "Save draft" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Draft saved" })).toBeVisible();
 
