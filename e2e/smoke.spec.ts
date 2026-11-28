@@ -56,7 +56,13 @@ test("homepage leaderboard link opens both Top 50 period tabs", async ({ page })
   await page.getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: "Leaderboard" }).click();
   await expect(page).toHaveURL("/leaderboard");
-  await expect(page.getByRole("heading", { name: "Views Leaderboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Views leaderboard" })).toBeVisible();
+  await expect(page.locator(".leaderboard-meta")).toContainText("Recorded profile views");
+  await expect(page.locator(".leaderboard-meta")).toContainText("Top 50 profiles");
+  await expect(page.locator("[data-leaderboard-state]")).toHaveAttribute(
+    "data-leaderboard-state",
+    /^(unavailable|empty|ranked)$/
+  );
   const periods = page.getByRole("navigation", { name: "Leaderboard period" });
   const all = periods.getByRole("link", { name: "All Time Views" });
   const month = periods.getByRole("link", { name: "Monthly Top Views" });

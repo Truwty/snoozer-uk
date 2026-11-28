@@ -1235,6 +1235,13 @@ test("background images upload through the direct button and publish without a p
   await page.getByLabel("Username").fill(name);
   await page.getByRole("button", { name: "Claim address" }).click();
 
+  // The claim action redirects to Studio only after the profile RPC commits.
+  // Wait for that completed state before navigating directly to the editor;
+  // otherwise CI can race the server action and be redirected back to Overview.
+  await expect(page).toHaveURL(/\/studio\/?$/);
+  await expect(page.getByRole("heading", { name: "Account Overview" })).toBeVisible();
+  await expect(page.getByText("@" + name, { exact: true })).toBeVisible();
+
   await page.goto("/studio/customize");
   await editorTab(page, "Design");
   await expect(page.getByRole("heading", { name: "Assets Uploader", exact: true })).toBeVisible();
