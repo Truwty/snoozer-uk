@@ -174,7 +174,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
         const previewPath="/studio/templates/preview?template="+encodeURIComponent(template.id);
         return <li className="template-item stack" key={template.id}>
           <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
-          <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={templatePreviewProfile(template.theme,template.appearance,template.sections)}/></div>
+          <div className="template-preview-frame" role="img" aria-label={template.name + " profile preview"} inert><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name+" preview"} profile={templatePreviewProfile(template.theme,template.appearance,template.sections)}/></div>
           <div className="template-card-meta"><span className="template-card-creator">By Snoozer</span><span>{uses.toLocaleString("en-GB")} uses</span>
             <span aria-label={ratingLabel(average,count)}>{ratingLabel(average,count)}</span>{weekly>=3&&<span className="template-trending">Trending</span>}</div>
           <div className="template-card-tags"><span>{template.categoryLabel}</span><span>{template.palette}</span><span>{layoutLabels[template.appearance.layout]}</span></div>
@@ -213,7 +213,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
           const style=template.config.appearance.templateStyle;
           return <li className="template-item stack" key={template.id}>
             <div className="template-item-heading"><p className="eyebrow">COMMUNITY · {template.config.theme}</p><h2>{template.title}</h2><p className="muted">{template.description}</p></div>
-            <div className="template-preview-frame"><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.title+" preview"} profile={templatePreviewProfile(template.config.theme,template.config.appearance,template.config.sections)}/></div>
+            <div className="template-preview-frame" role="img" aria-label={template.title + " profile preview"} inert><ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.title+" preview"} profile={templatePreviewProfile(template.config.theme,template.config.appearance,template.config.sections)}/></div>
             <div className="template-card-meta"><span className="template-card-creator">By @{template.creator_username}</span><span>{uses.toLocaleString("en-GB")} uses</span>
               <span>{ratingLabel(average,ratingCount)}</span>{(metric?.weekly_uses??template.weekly_uses)>=3&&<span className="template-trending">Trending</span>}</div>
             <div className="template-card-tags"><span>Community</span><span>{style??"Custom design"}</span><span>{layoutLabels[template.config.appearance.layout]}</span></div>
