@@ -183,6 +183,8 @@ export class DiscordCommunityBot {
     this.statusBaseline = null;
     this.cooldowns = new Map();
     this.ticketCreationLocks = new Set();
+    this.startedAt = Date.now();
+    this.knownMembers = new Set();
     this.boostedMembers = new Set();
     this.boostAnnouncementLocks = new Set();
   }
@@ -212,17 +214,28 @@ export class DiscordCommunityBot {
   }
 
   seedKnownBoosters(members) {
-    if (Array.isArray(members)) this.boostedMembers.clear();
+    if (Array.isArray(members)) {
+      this.knownMembers.clear();
+      this.boostedMembers.clear();
+    }
     for (const member of Array.isArray(members) ? members : []) {
       const userId = member?.user?.id;
-      if (safeSnowflake(userId) && member.premium_since) this.boostedMembers.add(userId);
+      if (!safeSnowflake(userId)) continue;
+      this.knownMembers.add(userId);
+      if (member.premium_since) this.boostedMembers.add(userId);
     }
   }
 
   async welcomeMember(member) {
     const user = member?.user ?? {};
     const userId = user.id;
-    if (!safeSnowflake(userId) || user.bot) return false;
+    if (!safeSnowflake(userId) || user.bot || this.knownMembers.has(userId)) return false;
+    const joinedAt = Date.parse(member?.joined_at ?? "");
+    if (Number.isFinite(joinedAt) && joinedAt < this.startedAt - 1_000) {
+      this.knownMembers.add(userId);
+      return false;
+    }
+    this.knownMembers.add(userId);
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "welcome", "welcome");
     if (!channel?.id) {
@@ -274,6 +287,11 @@ export class DiscordCommunityBot {
     if (!Object.hasOwn(member, "premium_since")) return false;
     if (!member.premium_since) {
       this.boostedMembers.delete(userId);
+      return false;
+    }
+    const boostStartedAt = Date.parse(member.premium_since);
+    if (Number.isFinite(boostStartedAt) && boostStartedAt < this.startedAt - 1_000) {
+      this.boostedMembers.add(userId);
       return false;
     }
     if (this.boostedMembers.has(userId) || this.boostAnnouncementLocks.has(userId)) return false;
