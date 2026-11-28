@@ -101,7 +101,9 @@ test("DiscordStore routes ticket and Creator submissions through persistent cool
       calls.push({ url, body: JSON.parse(options.body) });
       const result = url.endsWith("/discord_bot_ticket_preflight")
         ? { allowed: true }
-        : { created: false, reason: "cooldown", retry_after_seconds: 86_400 };
+        : url.endsWith("/discord_bot_next_job_due")
+          ? "2026-11-28T10:30:00.000Z"
+          : { created: false, reason: "cooldown", retry_after_seconds: 86_400 };
       return new Response(JSON.stringify(result), { status: 200, headers: { "content-type": "application/json" } });
     },
   });
@@ -110,8 +112,10 @@ test("DiscordStore routes ticket and Creator submissions through persistent cool
   const discordId = "1574262035519115836";
   const ticket = await store.ticketPreflight(guildId, ownerId);
   const creator = await store.creatorRequest(discordId, "https://snoozer.uk/testcreator", "I create useful community projects and tutorials.");
+  const nextJob = await store.nextJobDue(guildId);
 
   assert.deepEqual(ticket, { allowed: true });
+  assert.equal(nextJob, "2026-11-28T10:30:00.000Z");
   assert.deepEqual(creator, { created: false, reason: "cooldown", retry_after_seconds: 86_400 });
   assert.equal(calls[0].url, "https://example.supabase.co/rest/v1/rpc/discord_bot_ticket_preflight");
   assert.deepEqual(calls[0].body, { p_guild_id: guildId, p_owner_discord_id: ownerId });
@@ -121,6 +125,8 @@ test("DiscordStore routes ticket and Creator submissions through persistent cool
     p_profile_url: "https://snoozer.uk/testcreator",
     p_reason: "I create useful community projects and tutorials.",
   });
+  assert.equal(calls[2].url, "https://example.supabase.co/rest/v1/rpc/discord_bot_next_job_due");
+  assert.deepEqual(calls[2].body, { p_guild_id: guildId });
 });
 
 test("ticket reliability migration matches the existing ticket event and job constraints", async () => {
@@ -140,8 +146,10 @@ test("ticket reliability migration matches the existing ticket event and job con
   assert.match(enqueueSql, /'tempban_unban','ticket_delete'/);
   assert.match(sql, /revoke all on function public\.discord_bot_enqueue_job/);
   assert.match(sql, /grant execute on function public\.discord_bot_enqueue_job/);
-  assert.equal((sql.match(/as \$\$/g) ?? []).length, 5);
-  assert.equal((sql.match(/^\$\$/gm) ?? []).length, 5);
+  assert.match(sql, /revoke all on function public\\.discord_bot_next_job_due/);
+  assert.match(sql, /grant execute on function public\\.discord_bot_next_job_due/);
+  assert.equal((sql.match(/as \\$\\$/g) ?? []).length, 6);
+  assert.equal((sql.match(/^\\$\\$/gm) ?? []).length, 6);
 });
 
 test("DiscordStore reads poll results through the service-only RPC", async () => {
@@ -994,6 +1002,21 @@ test("ticket modal creates a private channel with string permission overwrites a
   const followUp = calls.find(call => call.path === "/webhooks/" + applicationId + "/test-interaction-token/messages/@original");
   assert.ok(followUp, "final response should edit the deferred interaction instead of sending a second initial callback");
   assert.match(followUp.options.body.content, /ticket has been created/i);
+});
+
+test("pending job schedule is restored from Supabase after a worker restart", async () => {
+  const runAt = new Date(Date.now() + 10_000).toISOString();
+  const wakes = [];
+  const panel = Object.create(DiscordCommunityPanels.prototype);
+  panel.guildId = guildId;
+  panel.store = { async nextJobDue(id) { assert.equal(id, guildId); return runAt; } };
+  panel.jobWakeTimers = new Map();
+  panel.jobWakeSequence = 0;
+  panel.scheduleJobWake = (value, key) => wakes.push({ value, key });
+
+  const result = await panel.scheduleNextJobWake();
+  assert.equal(result, runAt);
+  assert.deepEqual(wakes, [{ value: runAt, key: "database-next-job" }]);
 });
 
 test("ticket deletion waits for the durable ticket close state and retries while it is still active", async () => {
