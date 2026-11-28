@@ -64,6 +64,14 @@ export class DiscordStore {
     return this.rpc("discord_bot_save_backup", { p_guild_id:guildId,p_actor:actorId,p_snapshot:snapshot });
   }
 
+  ticketPreflight(guildId,ownerId) {
+    return this.rpc("discord_bot_ticket_preflight", { p_guild_id:guildId,p_owner_discord_id:ownerId });
+  }
+
+  nextJobDue(guildId) {
+    return this.rpc("discord_bot_next_job_due", { p_guild_id:guildId });
+  }
+
   openTicket(input) {
     return this.rpc("discord_bot_open_ticket", {
       p_guild_id:input.guildId,p_channel_id:input.channelId,p_owner_discord_id:input.ownerId,
@@ -110,7 +118,7 @@ export class DiscordStore {
   }
 
   creatorRequest(discordUserId,profileUrl,reason) {
-    return this.rpc("discord_bot_creator_request", { p_discord_user_id:discordUserId,p_profile_url:profileUrl,p_reason:reason });
+    return this.rpc("discord_bot_creator_request_limited", { p_discord_user_id:discordUserId,p_profile_url:profileUrl,p_reason:reason });
   }
 
   creatorReview(requestId,reviewerId,decision,note) {

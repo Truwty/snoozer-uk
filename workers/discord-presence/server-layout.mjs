@@ -97,6 +97,7 @@ export const SNOOZER_SERVER_LAYOUT = [
     channels:[
       internalChat("setup_state","snoozer-setup-state",SETUP_COMPLETE_MARKER+" | This private channel stores the one-time setup completion marker. Do not delete it."),
       staffChat("bot_logs","📡・bot-logs","Internal bot diagnostics and structured events."),
+      staffChat("creator_verification","✨・creator-verification","Private Creator verification submissions. Admins and authorised developers review requests here."),
       staffChat("health_monitor","💓・health-monitor","Gateway, worker, queue and dependency health."),
       staffChat("backup_registry","🗄️・backup-registry","Server configuration backup records."),
       staffChat("automation_queue","📋・automation-queue","Scheduled jobs and automation failures."),

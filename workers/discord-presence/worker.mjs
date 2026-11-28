@@ -412,7 +412,7 @@ export class DiscordPresenceWorker {
           teamHq: resources.category_team_hq,
         },
         roleIds,
-      }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger, logEvent: event => this.logServerEvent(event) });
+      }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger, store: this.discordStore, scheduleJobWake: runAt => this.communityPanels?.scheduleJobWake(runAt), logEvent: event => this.logServerEvent(event) });
       this.communityPanels.onResourcesUpdated = (resourceMap, nextRoleIds) => {
         if (!this.communityBot) return;
         this.communityBot.roleIds = nextRoleIds;
