@@ -121,3 +121,14 @@ test("homepage translates visible content for every supported language and persi
     await expect(page.getByRole("heading", { level: 1, name: item.heading })).toBeVisible();
   }
 });
+
+
+test("public template gallery previews are labelled and non-interactive", async ({ page }) => {
+  await page.goto("/templates");
+  await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
+  const preview = page.getByRole("img", { name: /profile preview$/ }).first();
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute("inert");
+  await expect(preview).toHaveCSS("pointer-events", "none");
+  await expect(page.getByRole("link", { name: "Customise this design", exact: true }).first()).toBeVisible();
+});
