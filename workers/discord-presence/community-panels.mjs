@@ -1391,7 +1391,6 @@ export class DiscordCommunityPanels{
       this.respondedInteractions.delete(i.id);
       return true;
     }catch(e){
-      this.respondedInteractions.delete(i.id);
       this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
       try{await this.logEvent?.({title:"Bot interaction failed",description:"Action: "+clean(id,120)+"\nMember: <@"+uid(i)+">\nError: "+clean(e?.message??"Unknown error",500),severity:"error"});}catch{}
       try{
@@ -1399,6 +1398,7 @@ export class DiscordCommunityPanels{
         if(this.deferredInteractions.has(i.id))await this.complete(i,message);
         else if(!this.respondedInteractions.has(i.id))await this.reply(i,message,true);
       }catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
+      this.respondedInteractions.delete(i.id);
       return true;
     }
   }
