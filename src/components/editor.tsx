@@ -248,8 +248,8 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
       return;
     }
     const index = content.links.length;
-    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: false }]);
-    setAnnouncement(provider.label + " link added. Enter the correct profile or invite address.");
+    set("links", [...content.links, { label: provider.label, url: provider.baseUrl, hidden: true }]);
+    setAnnouncement(provider.label + " link added as hidden. Enter your profile or invite address, then switch Visible on when it is ready.");
     focusLink(index);
   }
 
@@ -298,9 +298,9 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
         setAnnouncement("Your current plan's link limit has been reached.");
         return;
       }
-      set("links", [...content.links, { label: "New link", url: "https://snoozer.uk" }]);
+      set("links", [...content.links, { label: "New link", url: "https://snoozer.uk", hidden: true }]);
       setTab("Links");
-      setAnnouncement("A new link has been added. Update its label and destination in the Links panel.");
+      setAnnouncement("A new link has been added as hidden. Update its label and destination, then switch Visible on when it is ready.");
       focusLink(content.links.length);
       return;
     }
