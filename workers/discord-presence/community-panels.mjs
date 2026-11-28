@@ -833,8 +833,8 @@ export class DiscordCommunityPanels{
       await this.defer(i);
       try{
         if(rebuild){
-          const result=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
-          await this.complete(i,{content:"Server rebuild "+(result.complete?"completed":"finished with outstanding failures")+". Categories: "+result.categoryCount+" · channels: "+result.channelCount+" · roles: "+result.roleCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId});
+          const result=await this.rebuilder.rebuild(uid(i),{invocationChannelId:i.channel_id});await this.refreshResources();
+          await this.complete(i,{content:"Server rebuild "+(result.complete?"completed":"finished with outstanding failures")+". Categories: "+result.categoryCount+" · new channels: "+result.channelCount+" · preserved required channels: "+(result.channelsPreserved?.length??0)+" · roles: "+result.roleCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId});
         }else{
           const result=await this.rebuilder.restoreLatest(uid(i));
           await this.complete(i,{content:"Server recovery completed. Restored "+result.rolesRestored+" missing roles and "+result.channelsRestored+" missing channels from backup "+result.backupId+". Existing channels were not deleted or overwritten."});
@@ -1137,8 +1137,8 @@ export class DiscordCommunityPanels{
       }else if(id==="admin:rebuild:confirm"){
         if(!has(i.member?.permissions,P.administrator)&&!(i.member?.roles??[]).includes(this.roleIds.admin))throw new Error("Only a server Administrator or Snoozer Admin can rebuild the server.");const phrase=clean(i.data?.components?.[0]?.components?.[0]?.value,40);
         if(phrase!=="REBUILD SNOOZER SERVER")throw new Error("Confirmation did not match. No changes were made.");
-        await this.defer(i);const r=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
-        await this.complete(i,{content:r.complete?"The Snoozer server rebuild completed.":"The rebuild has outstanding errors. Check #bot-logs."});
+        await this.defer(i);const r=await this.rebuilder.rebuild(uid(i),{invocationChannelId:i.channel_id});await this.refreshResources();
+        await this.complete(i,{content:r.complete?"The Snoozer server rebuild completed. Preserved "+(r.channelsPreserved?.length??0)+" required Discord channels.":"The rebuild has outstanding errors. Check #bot-logs."});
       }else if(id==="admin:usage")await this.showUsageStats(i);else if(id==="admin:config")await this.adminSettings(i);
       else if(id.startsWith("admin:channel:"))await this.chooseChannel(i,id.split(":")[2]);
       else if(id.startsWith("admin:channel-set:"))await this.saveChannel(i,id.split(":")[2]);

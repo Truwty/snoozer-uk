@@ -6,7 +6,7 @@ import { DiscordStore } from "../workers/discord-presence/discord-store.mjs";
 import { DiscordServerRebuilder } from "../workers/discord-presence/server-rebuilder.mjs";
 import { DiscordCommunityPanels, SNOOZER_REBUILD_COMMAND } from "../workers/discord-presence/community-panels.mjs";
 import { DiscordSecurityGuard } from "../workers/discord-presence/security-guard.mjs";
-import { DiscordApiClient } from "../workers/discord-presence/server-setup.mjs";
+import { DiscordApiClient, SETUP_COMPLETE_MARKER } from "../workers/discord-presence/server-setup.mjs";
 import { buildGuildCommands } from "../workers/discord-presence/worker.mjs";
 
 const guildId = "1574262035519115284";
@@ -86,6 +86,7 @@ test("server reset preflight stops before writes when the bot lacks permissions"
       if (path.endsWith("/roles")) return [{ id: guildId, permissions: "0", position: 0 }];
       if (path.endsWith("/members/" + botUserId)) return { roles: [] };
       if (path.endsWith("/channels")) return [];
+      if (path === "/guilds/" + guildId) return {};
       writes.push({ path, options });
       return {};
     },
@@ -107,6 +108,7 @@ test("server reset preflight accepts the Discord Administrator permission", asyn
       ];
       if (path.endsWith("/members/" + botUserId)) return { roles: ["1574262035519115286"] };
       if (path.endsWith("/channels")) return [];
+      if (path === "/guilds/" + guildId) return {};
       throw new Error("unexpected request " + path);
     },
   };
@@ -129,11 +131,58 @@ test("server reset preflight refuses a bot role below any replaceable custom rol
       ];
       if (path.endsWith("/members/" + botUserId)) return { roles: ["1574262035519115286"] };
       if (path.endsWith("/channels")) return [];
+      if (path === "/guilds/" + guildId) return {};
       throw new Error("unexpected request " + path);
     },
   };
   const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, { api, store: {} });
   await assert.rejects(rebuilder.permissionPreflight(), /Move the bot's highest role above/i);
+});
+
+test("server reset preflight protects Community channels, setup marker and invocation channel", async () => {
+  const rulesId = "1574262035519115701";
+  const updatesId = "1574262035519115702";
+  const safetyId = "1574262035519115703";
+  const systemId = "1574262035519115704";
+  const afkId = "1574262035519115705";
+  const markerId = "1574262035519115706";
+  const invocationId = "1574262035519115707";
+  const channels = [
+    { id: rulesId, name: "rules", type: 0 },
+    { id: updatesId, name: "community-updates", type: 0 },
+    { id: safetyId, name: "safety-alerts", type: 0 },
+    { id: systemId, name: "welcome", type: 0 },
+    { id: afkId, name: "afk", type: 2 },
+    { id: markerId, name: "snoozer-setup-state", type: 0 },
+    { id: invocationId, name: "general", type: 0 },
+  ];
+  const api = {
+    async request(path) {
+      if (path === "/guilds/" + guildId + "/roles") return [
+        { id: guildId, permissions: "0", position: 0, name: "@everyone" },
+        { id: "1574262035519115710", permissions: String(1n << 3n), position: 10, name: "Snoozer Bot" },
+      ];
+      if (path === "/guilds/" + guildId + "/members/" + botUserId) return { roles: ["1574262035519115710"] };
+      if (path === "/guilds/" + guildId + "/channels") return channels;
+      if (path === "/guilds/" + guildId) return {
+        rules_channel_id: rulesId,
+        public_updates_channel_id: updatesId,
+        safety_alerts_channel_id: safetyId,
+        system_channel_id: systemId,
+        afk_channel_id: afkId,
+      };
+      throw new Error("unexpected request " + path);
+    },
+  };
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, { api, store: {} });
+  const result = await rebuilder.permissionPreflight({ invocationChannelId: invocationId });
+  assert.deepEqual(new Set(result.protectedChannelIds), new Set([
+    rulesId, updatesId, safetyId, systemId, afkId, markerId, invocationId,
+  ]));
+  assert.equal(result.protectedChannels.find(item => item.id === markerId).reason, "Snoozer one-time setup marker");
+  assert.equal(result.protectedChannels.find(item => item.id === invocationId).reason, "Channel where the rebuild command was invoked");
+  assert.ok(SNOOZER_SERVER_LAYOUT.flatMap(category => category.channels).some(channel =>
+    channel.key === "setup_state" && channel.name === "snoozer-setup-state" && channel.topic.includes(SETUP_COMPLETE_MARKER)));
 });
 
 test("member-role migration never copies unverified Premium or Creator roles", async () => {
@@ -515,6 +564,43 @@ test("community slash commands reach the complete router as well as rebuild", as
 
 
 
+test("slash rebuild protects the channel where the command was invoked", async () => {
+  const applicationId = "1574262035519115288";
+  const invocationChannelId = "1574262035519115730";
+  let received;
+  const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
+    api: { async request() { return {}; } },
+    store: { async recordInteraction() { return true; } },
+  });
+  panels.isAdmin = () => true;
+  panels.defer = async () => {};
+  panels.complete = async () => {};
+  panels.refreshResources = async () => {};
+  panels.rebuilder.rebuild = async (actorId, options) => {
+    received = { actorId, options };
+    return {
+      complete: true, categoryCount: 1, channelCount: 1, roleCount: 1,
+      memberRolesMigrated: 0, backupId: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90",
+      channelsPreserved: [],
+    };
+  };
+  await panels.handleCommunitySlash({
+    guild_id: guildId,
+    application_id: applicationId,
+    channel_id: invocationChannelId,
+    type: 2,
+    id: "1574262035519115731",
+    token: "test-interaction-token",
+    user: { id: botUserId },
+    member: { user: { id: botUserId }, permissions: String(1n << 3n), roles: [] },
+    data: {
+      name: "snoozer-rebuild-server",
+      options: [{ name: "confirmation", value: "REBUILD SNOOZER SERVER" }],
+    },
+  });
+  assert.deepEqual(received, { actorId: botUserId, options: { invocationChannelId } });
+});
+
 test("voice channel creation omits the text-only topic field", async () => {
   const posted = [];
   const api = {
@@ -577,6 +663,31 @@ test("full reset deletes every replaceable custom role but preserves bot and man
   assert.equal(result.preserved, 3);
 });
 
+test("channel reset skips preprotected channels and treats Discord 50074 Community protection as preserved", async () => {
+  const protectedMarker = { id: "1574262035519115720", name: "snoozer-setup-state", type: 0 };
+  const rules = { id: "1574262035519115721", name: "rules", type: 0, parent_id: "1574262035519115723" };
+  const ordinary = { id: "1574262035519115722", name: "old-general", type: 0 };
+  const category = { id: "1574262035519115723", name: "old-category", type: 4 };
+  const deleted = [];
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, {
+    api: { async request(path, options = {}) {
+      if (options.method !== "DELETE") throw new Error("unexpected request " + path);
+      if (path === "/channels/" + rules.id) {
+        throw new Error("Discord API DELETE /channels/" + rules.id + " failed with HTTP 400 (Discord code 50074): Cannot delete a channel required for community servers.");
+      }
+      deleted.push(path);
+      return null;
+    } },
+    store: {},
+  });
+  const result = await rebuilder.deleteOldChannels([protectedMarker, rules, ordinary, category], [protectedMarker.id]);
+  assert.deepEqual(deleted, ["/channels/" + ordinary.id, "/channels/" + category.id]);
+  assert.equal(result.deleted, 2);
+  assert.deepEqual(result.remaining, []);
+  assert.deepEqual(result.preserved.map(item => item.id).sort(), [protectedMarker.id, rules.id].sort());
+  assert.equal(result.preserved.find(item => item.id === rules.id).reason, "Discord requires this channel for Community");
+});
+
 test("full server rebuild deletes channels and replaceable roles before creating the new layout", async () => {
   const events = [];
   const everyone = { id: guildId, name: "@everyone", permissions: "0", position: 0, managed: false };
@@ -592,17 +703,19 @@ test("full server rebuild deletes channels and replaceable roles before creating
     },
     onPanelsReady: async () => { events.push("panels"); return { posted: 1, errors: [] }; },
   });
-  rebuilder.permissionPreflight = async () => ({
+  rebuilder.permissionPreflight = async ({ invocationChannelId } = {}) => ({
     roles: [everyone, oldRole, botRole],
     channels: [oldChannel],
     botMember: { roles: [botRole.id] },
     protectedRoleIds: new Set([botRole.id]),
+    protectedChannelIds: new Set([invocationChannelId]),
   });
   rebuilder.listMembers = async () => [];
-  rebuilder.deleteOldChannels = async channels => {
+  rebuilder.deleteOldChannels = async (channels, protectedIds) => {
     events.push("delete-channels");
     assert.deepEqual(channels.map(channel => channel.id), [oldChannel.id]);
-    return { deleted: channels.length, remaining: [] };
+    assert.ok(protectedIds.has("1574262035519115642"));
+    return { deleted: channels.length, remaining: [], preserved: [] };
   };
   rebuilder.deleteOldRoles = async (roles, protectedIds) => {
     events.push("delete-roles");
@@ -621,7 +734,7 @@ test("full server rebuild deletes channels and replaceable roles before creating
   };
   rebuilder.syncMembershipRoles = async () => { events.push("sync-entitlements"); return { checked: 0, updated: 0 }; };
 
-  const result = await rebuilder.rebuild(botUserId);
+  const result = await rebuilder.rebuild(botUserId,{invocationChannelId:"1574262035519115642"});
   assert.deepEqual(events, [
     "backup", "prune", "delete-channels", "delete-roles",
     "create-layout", "migrate-members", "sync-entitlements", "panels",

@@ -92,13 +92,14 @@ export class DiscordServerRebuilder {
     this.onPanelsReady=dependencies.onPanelsReady??(async()=>({posted:0,errors:[]}));
   }
 
-  async permissionPreflight() {
-    const [roles,botMember,channels]=await Promise.all([
+  async permissionPreflight({invocationChannelId=null}={}) {
+    const [roles,botMember,channels,guild]=await Promise.all([
       this.api.request("/guilds/"+this.guildId+"/roles"),
       this.api.request("/guilds/"+this.guildId+"/members/"+this.botUserId),
       this.api.request("/guilds/"+this.guildId+"/channels"),
+      this.api.request("/guilds/"+this.guildId),
     ]);
-    if(!Array.isArray(roles)||!Array.isArray(botMember?.roles)||!Array.isArray(channels))
+    if(!Array.isArray(roles)||!Array.isArray(botMember?.roles)||!Array.isArray(channels)||!guild||typeof guild!=="object")
       throw new Error("Discord server inventory could not be read; no server changes were made.");
     const roleMap=new Map(roles.map(role=>[role.id,role]));
     const botRoles=[this.guildId,...botMember.roles].map(id=>roleMap.get(id)).filter(Boolean);
@@ -115,7 +116,31 @@ export class DiscordServerRebuilder {
     const replaceableRoles=roles.filter(role=>role.id!==this.guildId&&!role.managed&&!protectedRoleIds.has(role.id));
     const blockedRoles=replaceableRoles.filter(role=>Number(role.position??0)>=botTop);
     if(blockedRoles.length) throw new Error("The bot role is below or level with roles that must be removed: "+blockedRoles.map(role=>role.name).join(", ")+". Move the bot's highest role above every ordinary server role, then retry. No server changes were made.");
-    return {roles,channels,botMember,botTop,permissions:perms,protectedRoleIds,replaceableRoles};
+
+    // Discord Community guilds require their Rules/Guidelines and Community Updates channels to remain.
+    // Also keep safety/system destinations, the invocation channel, and Snoozer's one-time setup marker.
+    const protectedChannelReasons=new Map();
+    const addProtectedChannel=(id,reason)=>{
+      if(typeof id!=="string"||!validSnowflake(id))return;
+      const channel=channels.find(item=>item.id===id);
+      if(channel&&!protectedChannelReasons.has(id))protectedChannelReasons.set(id,reason);
+    };
+    for(const [field,reason] of [
+      ["rules_channel_id","Discord Community rules/guidelines channel"],
+      ["public_updates_channel_id","Discord Community updates channel"],
+      ["safety_alerts_channel_id","Discord Community safety-alerts channel"],
+      ["system_channel_id","Discord server system channel"],
+      ["afk_channel_id","Discord AFK channel"],
+    ]) addProtectedChannel(guild[field],reason);
+    for(const channel of channels) {
+      if(normaliseRole(String(channel.name??"").replaceAll("-"," "))==="snoozer setup state")
+        addProtectedChannel(channel.id,"Snoozer one-time setup marker");
+    }
+    addProtectedChannel(invocationChannelId,"Channel where the rebuild command was invoked");
+    const protectedChannelIds=new Set(protectedChannelReasons.keys());
+    return {roles,channels,guild,botMember,botTop,permissions:perms,protectedRoleIds,replaceableRoles,
+      protectedChannelIds,protectedChannels:channels.filter(channel=>protectedChannelIds.has(channel.id))
+        .map(channel=>({id:channel.id,name:channel.name,type:channel.type,reason:protectedChannelReasons.get(channel.id)}))};
   }
 
   async listMembers() {
@@ -273,15 +298,32 @@ export class DiscordServerRebuilder {
     return {checked:targets.length,updated};
   }
 
-  async deleteOldChannels(oldChannels) {
+  async deleteOldChannels(oldChannels,initiallyProtectedIds=[]) {
+    const protectedIds=new Set(initiallyProtectedIds);
+    const preservedById=new Map(oldChannels.filter(channel=>protectedIds.has(channel.id))
+      .map(channel=>[channel.id,{name:channel.name,id:channel.id,reason:"Discord Community/system channel or required Snoozer channel"}]));
     const nonCategories=oldChannels.filter(channel=>channel.type!==4);
     const categories=oldChannels.filter(channel=>channel.type===4);
     const errors=[];
+    let deleted=0;
     for(const channel of [...nonCategories,...categories]) {
-      try { await this.api.request("/channels/"+channel.id,{method:"DELETE"}); }
-      catch(error) { errors.push({name:channel.name,id:channel.id,error:String(error?.message??error).slice(0,200)}); }
+      if(protectedIds.has(channel.id))continue;
+      try {
+        await this.api.request("/channels/"+channel.id,{method:"DELETE"});
+        deleted++;
+      } catch(error) {
+        const detail=String(error?.message??error);
+        // Discord may identify a required Community channel even if the guild payload omitted its ID.
+        // 50074 is expected protection, not a failed deletion that should abort the rebuild.
+        if(detail.includes("Discord code 50074")||detail.toLowerCase().includes("cannot delete a channel required for community")) {
+          protectedIds.add(channel.id);
+          preservedById.set(channel.id,{name:channel.name,id:channel.id,reason:"Discord requires this channel for Community"});
+          continue;
+        }
+        errors.push({name:channel.name,id:channel.id,error:detail.slice(0,500)});
+      }
     }
-    return {deleted:oldChannels.length-errors.length,remaining:errors};
+    return {deleted,remaining:errors,preserved:[...preservedById.values()]};
   }
 
   async deleteOldRoles(oldRoles,protectedRoleIds=[]) {
@@ -419,9 +461,9 @@ export class DiscordServerRebuilder {
     };
   }
 
-  async rebuild(actorId) {
+  async rebuild(actorId,{invocationChannelId=null}={}) {
     if(!validSnowflake(actorId)) throw new Error("A valid administrator account is required.");
-    const before=await this.permissionPreflight();
+    const before=await this.permissionPreflight({invocationChannelId});
     const members=await this.listMembers();
     const snapshot=safeSnapshot(before.roles,before.channels,this.guildId);
     const backupId=await this.store.saveBackup(this.guildId,actorId,snapshot);
@@ -430,10 +472,11 @@ export class DiscordServerRebuilder {
 
     // Empty the existing layout before creating anything new. Keep @everyone,
     // integration-managed roles, and the bot's own assigned roles so it retains access.
-    const channelResult=await this.deleteOldChannels(before.channels);
+    const channelResult=await this.deleteOldChannels(before.channels,before.protectedChannelIds??[]);
     if(channelResult.remaining.length) {
       const failures=channelResult.remaining.map(item=>item.name+" ("+item.id+"): "+item.error).join("; ");
-      throw new Error("The reset stopped before rebuilding because "+channelResult.remaining.length+" of "+before.channels.length+" channels could not be deleted. Removed "+channelResult.deleted+". Failures: "+failures+". The configuration backup is "+backupId+".");
+      const deletableChannels=before.channels.length-(channelResult.preserved?.length??0);
+      throw new Error("The reset stopped before rebuilding because "+channelResult.remaining.length+" of "+deletableChannels+" deletable channels could not be deleted. Removed "+channelResult.deleted+" and preserved "+(channelResult.preserved?.length??0)+" required channels. Failures: "+failures+". The configuration backup is "+backupId+".");
     }
 
     const roleResult=await this.deleteOldRoles(before.roles,before.protectedRoleIds??before.botMember?.roles??[]);
@@ -454,7 +497,8 @@ export class DiscordServerRebuilder {
       channelCount:Object.keys(created.channelIds).length,
       roleCount:Object.keys(created.roleIds).length,
       memberCount:members.length,memberRolesMigrated,
-      channelsDeleted:channelResult.deleted,channelDeletionErrors:channelResult.remaining,
+      channelsDeleted:channelResult.deleted,channelsPreserved:channelResult.preserved,
+      channelDeletionErrors:channelResult.remaining,
       rolesDeleted:roleResult.deleted,rolesPreserved:roleResult.preserved,roleDeletionErrors:roleResult.remaining,
       roleSync,panelResult,
       complete:channelResult.remaining.length===0&&roleResult.remaining.length===0&&panelResult.errors.length===0,
