@@ -89,7 +89,7 @@ test("DiscordStore surfaces useful PostgREST details for failed storage operatio
   });
   await assert.rejects(
     store.memberSummary("1574262035519115287"),
-    /HTTP 400.*42702.*display_name.*PL\\/pgSQL variable/,
+    /HTTP 400.*42702.*display_name.*ambiguous/,
   );
 });
 
@@ -186,6 +186,7 @@ test("poll voting refreshes the poll embed with voter mentions and suppresses me
       ] }; },
     },
   });
+  panel.reply = async () => true;
   await panel.handle({
     guild_id: guildId, application_id: "1574262035519115288", type: 3,
     id: "1574262035519115813", token: "test-interaction-token",
