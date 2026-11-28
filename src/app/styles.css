@@ -300,20 +300,6 @@ input[type=file]::file-selector-button { min-height: 44px; background: var(--sur
 .link-row > label { font-size: .875rem; }
 .link-row .reorder-handle { font-size: 0; width: 24px; padding: 0; }
 .link-row .reorder-handle::before { content: "⠿"; font-size: 1.375rem; color: var(--text-muted); }
-.row-menu { position: relative; }
-.row-menu > .actions { min-width: 10rem; padding: var(--s3); background: var(--surface-2); border: 1px solid var(--border); position: absolute; inset-inline-end: 0; z-index: 3; }
-.row-menu summary { font-size: .875rem; }
-
-/* Keep link action popovers above the adjacent sticky profile preview. */
-@media (min-width: 54.01rem) {
-  .editor-grid > .editor-column {
-    position: relative;
-    z-index: 2;
-  }
-  .editor-grid > .preview {
-    z-index: 1;
-  }
-}
 .visual-select { position: relative; display: grid; gap: var(--s3); }
 .visual-select select { position: absolute; width: 1px; min-height: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .visual-select:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-input); }
@@ -333,7 +319,6 @@ input[type=file]::file-selector-button { min-height: 44px; background: var(--sur
  .link-row > label { grid-column: 2; }
  .link-row > label:first-of-type { grid-row: 1; }
  .link-row > label:last-of-type { grid-row: 2; }
- .link-row .row-menu { grid-column: 3; grid-row: 1 / span 2; align-self: start; }
  .link-row .reorder-handle { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
 }
 
