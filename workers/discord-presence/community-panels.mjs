@@ -272,6 +272,14 @@ export class DiscordCommunityPanels{
       const owner=uid(i),parent=this.resources.category_tickets;
       if(subject.length<4||details.length<10)throw new Error("Please provide a subject and at least 10 characters of detail.");
       if(!SF.test(owner)||!SF.test(parent??""))throw new Error("The private ticket category or member ID is unavailable.");
+      stage="check ticket rate limit";
+      const preflight=await this.store.ticketPreflight(this.guildId,owner);
+      if(preflight?.allowed===false){
+        if(preflight.reason==="active"&&SF.test(preflight.channel_id??""))await this.reply(i,{content:"You already have an open support ticket: <#"+preflight.channel_id+">."},true);
+        else if(preflight.reason==="cooldown")await this.reply(i,{content:"To prevent duplicate tickets, wait "+Math.max(1,Number(preflight.retry_after_seconds??1))+" second(s) before opening another ticket."},true);
+        else throw new Error("A support ticket is already active or a recent ticket is still being processed.");
+        return;
+      }
       const roles=STAFF.map(k=>this.roleIds[k]).filter(id=>SF.test(id??""));
       const overwrites=[
         {id:this.guildId,type:0,allow:"0",deny:TICKET_PERMISSION_BITS.everyoneDenyView},
