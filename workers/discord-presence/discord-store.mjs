@@ -30,7 +30,15 @@ export class DiscordStore {
     });
     const body = await response.text();
     if (!response.ok) {
-      throw new Error("Discord storage operation " + name + " failed with HTTP " + response.status + ".");
+      let failure = null;
+      try { failure = body ? JSON.parse(body) : null; } catch { failure = { message: body }; }
+      const detail = [failure?.code, failure?.message, failure?.details, failure?.hint]
+        .filter(value => typeof value === "string" && value.trim())
+        .join(" · ")
+        .replace(/[\\u0000-\\u001f\\u007f]/g, " ")
+        .slice(0, 600);
+      throw new Error("Discord storage operation " + name + " failed with HTTP " + response.status
+        + (detail ? " (" + detail + ")" : "") + ".");
     }
     if (!body) return null;
     try { return JSON.parse(body); } catch { throw new Error("Discord storage returned invalid JSON for " + name + "."); }
@@ -118,6 +126,10 @@ export class DiscordStore {
 
   voteSubmission(id,voterId,choice="up") {
     return this.rpc("discord_bot_submission_vote", { p_id:id,p_voter:voterId,p_choice:choice });
+  }
+
+  pollResults(id) {
+    return this.rpc("discord_bot_poll_results", { p_id:id });
   }
 
   memberSummary(discordUserId) {
