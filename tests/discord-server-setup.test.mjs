@@ -93,6 +93,38 @@ test("server setup creates the Snoozer roles, channel layout and starter posts o
   assert.equal(state.calls.filter(call => call.method !== "GET").length, writeCount);
 });
 
+test("an identically named channel outside a category is not reused for a private staff channel", async () => {
+  const state = createGuildApi();
+  state.channels.push(
+    { id: "600000000000000001", name: "OLDER CATEGORY", type: 4 },
+    { id: "600000000000000002", name: "staff-chat", type: 0, parent_id: "600000000000000001" },
+  );
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+    api: state.api,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await setup.run();
+  const staffCategory = state.channels.find(channel => channel.type === 4 && channel.name === "STAFF HQ");
+  const staffChat = state.channels.find(channel => channel.type === 0 && channel.name === "staff-chat" && channel.parent_id === staffCategory.id);
+  assert.ok(staffChat, "setup should create a separate staff-chat channel under STAFF HQ");
+  assert.notEqual(staffChat.id, "600000000000000002");
+  assert.ok(staffChat.permission_overwrites.some(entry => entry.id === guildId && entry.d !== "0"));
+});
+
+test("a public or misplaced setup-state channel is rejected rather than trusted", async () => {
+  const state = createGuildApi();
+  state.channels.push(
+    { id: "600000000000000003", name: "snoozer-setup-state", type: 0, topic: SETUP_COMPLETE_MARKER, parent_id: null },
+  );
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+    api: state.api,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await assert.rejects(setup.run(), /already exists outside the private INTERNAL category/);
+});
+
 test("an interrupted setup can be safely resumed without duplicating existing resources", async () => {
   const state = createGuildApi();
   const originalRequest = state.api.request.bind(state.api);
