@@ -1320,6 +1320,7 @@ export class DiscordCommunityPanels{
       return true;
     }catch(e){
       this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
+      try{await this.logEvent?.({title:"Bot interaction failed",description:"Action: "+clean(id,120)+"\nMember: <@"+uid(i)+">\nError: "+clean(e?.message??"Unknown error",500),severity:"error"});}catch{}
       try{await this.reply(i,{content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)},true);}catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
       return true;
     }
