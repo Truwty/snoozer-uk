@@ -298,3 +298,101 @@ test("DiscordStore exposes persistent ticket statistics and staff review RPCs", 
   const review=calls.find(call=>call.url.endsWith("/discord_bot_submission_review"));
   assert.deepEqual(review.body,{p_id:"2b74a90f-b239-4c62-8f43-e3cd5eaf3f3c",p_actor:botUserId,p_decision:"approved",p_note:"Looks good"});
 });
+
+
+test("server configuration backup includes every channel, not just the first 250", async () => {
+  let saved;
+  const roles=[{id:guildId,name:"@everyone",permissions:"0",position:0}];
+  const channels=Array.from({length:270},(_,index)=>({
+    id:String(BigInt(guildId)+BigInt(index+10)),name:"channel-"+index,type:0,
+    topic:"topic "+index,permission_overwrites:[],
+  }));
+  const api={async request(path){
+    if(path==="/guilds/"+guildId+"/roles")return roles;
+    if(path==="/guilds/"+guildId+"/channels")return channels;
+    throw new Error("unexpected request "+path);
+  }};
+  const store={async saveBackup(_guild,_actor,snapshot){saved=snapshot;return "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";},async pruneBackups(_guild,keep){assert.equal(keep,30);}};
+  const result=await new DiscordServerRebuilder({guildId,botUserId},{api,store}).createBackup(botUserId);
+  assert.equal(result.channelCount,270);
+  assert.equal(saved.channels.length,270);
+  assert.equal(saved.channels[269].topic,"topic 269");
+  assert.equal(saved.version,2);
+});
+
+test("server backup rejects an incomplete Discord inventory without saving it", async () => {
+  let saves=0;
+  const api={async request(path){
+    if(path==="/guilds/"+guildId+"/roles")return [{id:guildId,name:"@everyone"}];
+    if(path==="/guilds/"+guildId+"/channels")return [{id:"not-a-snowflake",name:"invalid",type:0}];
+    throw new Error("unexpected request "+path);
+  }};
+  const store={async saveBackup(){saves++;return "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";}};
+  const rebuilder=new DiscordServerRebuilder({guildId,botUserId},{api,store});
+  await assert.rejects(rebuilder.createBackup(botUserId),/cannot be represented safely/i);
+  assert.equal(saves,0);
+});
+
+test("safe reconciliation preserves the current server and registers unique resource keys", async () => {
+  let saved,registered,deleted=false;
+  const roleIds=Object.fromEntries(SNOOZER_ROLE_LAYOUT.map((role,index)=>[
+    role.key,String(BigInt(guildId)+BigInt(100+index)),
+  ]));
+  const rebuilder=new DiscordServerRebuilder({guildId,botUserId},{
+    api:{async request(){throw new Error("unexpected API call");}},
+    store:{
+      async saveBackup(_guild,_actor,snapshot){saved=snapshot;return "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";},
+      async registerResources(_guild,resources){registered=resources;return true;},
+      async roleSyncTargets(){return [];},
+    },
+    onPanelsReady:async()=>({posted:2,errors:[]}),
+  });
+  const existingRoles=[{id:guildId,name:"@everyone",permissions:"0",position:0}];
+  const existingChannels=[{id:"1574262035519115901",name:"general",type:0,permission_overwrites:[]}];
+  rebuilder.permissionPreflight=async()=>({roles:existingRoles,channels:existingChannels,botMember:{roles:[]}});
+  rebuilder.listMembers=async()=>[];
+  rebuilder.ensureRoles=async()=>roleIds;
+  rebuilder.positionManagedRoles=async()=>{};
+  rebuilder.ensureCategory=async category=>({id:String(BigInt(guildId)+BigInt(1000+SNOOZER_SERVER_LAYOUT.findIndex(item=>item.key===category.key)))});
+  let sequence=0;
+  rebuilder.ensureChannel=async()=>({id:String(BigInt(guildId)+BigInt(2000+sequence++))});
+  const result=await rebuilder.reconcile(botUserId);
+  assert.ok(saved);
+  assert.equal(deleted,false);
+  assert.equal(new Set(registered.map(item=>item.resource_key)).size,registered.length);
+  assert.equal(registered.filter(item=>item.resource_key==="category_tickets").length,1);
+  assert.equal(result.complete,true);
+});
+
+test("DiscordStore calls the private backup retention RPC", async () => {
+  let request;
+  const store=new DiscordStore({url:"https://example.supabase.co",serviceKey:"test-key"},{
+    fetcher:async(url,options)=>{
+      request={url,body:JSON.parse(options.body)};
+      return new Response("0",{status:200,headers:{"content-type":"application/json"}});
+    },
+  });
+  await store.pruneBackups(guildId,30);
+  assert.ok(request.url.endsWith("/discord_bot_prune_backups"));
+  assert.deepEqual(request.body,{p_guild_id:guildId,p_keep:30});
+});
+
+test("server rebuilder registers the Tickets category only once", async () => {
+  let registered;
+  const roleIds=Object.fromEntries(SNOOZER_ROLE_LAYOUT.map((role,index)=>[
+    role.key,String(BigInt(guildId)+BigInt(300+index)),
+  ]));
+  const rebuilder=new DiscordServerRebuilder({guildId,botUserId},{
+    api:{async request(path){if(path==="/guilds/"+guildId+"/roles")return [{id:guildId,name:"@everyone",permissions:"0",position:0}];throw new Error("unexpected API call "+path);}},
+    store:{async registerResources(_guild,resources){registered=resources;return true;},async roleSyncTargets(){return []; }},
+  });
+  rebuilder.ensureRoles=async()=>roleIds;
+  rebuilder.positionManagedRoles=async()=>{};
+  rebuilder.ensureCategory=async category=>({id:String(BigInt(guildId)+BigInt(4000+SNOOZER_SERVER_LAYOUT.findIndex(item=>item.key===category.key)))});
+  rebuilder.ensureChannel=async()=>({id:String(BigInt(guildId)+BigInt(5000))});
+  rebuilder.syncMembershipRoles=async()=>({checked:1,updated:0});
+  await rebuilder.createNewStructure();
+  const keys=registered.map(resource=>resource.resource_key);
+  assert.equal(keys.length,new Set(keys).size);
+  assert.equal(keys.filter(key=>key==="category_tickets").length,1);
+});

@@ -52,8 +52,6 @@ export class DiscordStore {
     return { rows:resources, map };
   }
 
-  pruneBackups(guildId,keep=30) { return this.rpc("discord_bot_prune_backups",{p_guild_id:guildId,p_keep:keep}); }
-
   saveBackup(guildId, actorId, snapshot) {
     return this.rpc("discord_bot_save_backup", { p_guild_id:guildId,p_actor:actorId,p_snapshot:snapshot });
   }
@@ -160,6 +158,9 @@ export class DiscordStore {
       p_guild_id:input.guildId,p_action:input.action,p_actor:input.actorId??null,
       p_target:input.targetId??null,p_severity:input.severity??"warning",p_metadata:input.metadata??{},
     });
+  }
+  pruneBackups(guildId,keep=30) {
+    return this.rpc("discord_bot_prune_backups", { p_guild_id:guildId,p_keep:keep });
   }
   latestBackup(guildId) { return this.rpc("discord_bot_latest_backup", { p_guild_id:guildId }); }
   creatorQueue(limit=25) { return this.rpc("discord_bot_creator_queue", { p_limit:limit }); }

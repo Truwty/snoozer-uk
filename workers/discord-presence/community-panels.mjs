@@ -398,9 +398,9 @@ export class DiscordCommunityPanels{
     if(!appeal)throw new Error("This appeal is no longer pending or does not belong to this server.");
     if(decision==="accepted"){
       if(["ban","tempban"].includes(appeal.action)){
-        await this.api.request("/guilds/"+this.guildId+"/bans/"+appeal.appellant_discord_id,{method:"DELETE"});
+        await this.api.request("/guilds/"+this.guildId+"/bans/"+appeal.target_discord_id,{method:"DELETE"});
       }else if(appeal.action==="timeout"){
-        await this.api.request("/guilds/"+this.guildId+"/members/"+appeal.appellant_discord_id,{method:"PATCH",body:{communication_disabled_until:null}});
+        await this.api.request("/guilds/"+this.guildId+"/members/"+appeal.target_discord_id,{method:"PATCH",body:{communication_disabled_until:null}});
       }
     }
     const result=await this.store.reviewAppeal(id,uid(i),decision);
@@ -884,8 +884,7 @@ export class DiscordCommunityPanels{
       else if(job.job_type==="tempban_unban"&&SF.test(job.payload?.user_id??""))await this.api.request("/guilds/"+this.guildId+"/bans/"+job.payload.user_id,{method:"DELETE"});
       else if(job.job_type==="backup"){
         const result=await this.rebuilder.createBackup(this.botUserId);
-        const pruned=await this.store.pruneBackups(this.guildId,30);
-        this.logger.info("[discord-panels] scheduled server backup completed",result.backupId,"old backups pruned",pruned);
+        this.logger.info("[discord-panels] scheduled server backup completed",result.backupId);
       }else if(job.job_type==="health_check"){
         const [bot,resources]=await Promise.all([this.api.request("/users/@me"),this.store.getResources(this.guildId)]);
         if(!SF.test(bot?.id??""))throw new Error("Discord REST health check did not return a valid bot identity.");

@@ -61,14 +61,27 @@ function isKnownLegacyRole(role) {
   return LEGACY_ROLE_NAMES.has(normaliseRole(role.name));
 }
 function safeSnapshot(roles,channels,guildId) {
+  if(!Array.isArray(roles)||!Array.isArray(channels)
+    ||roles.length>250||channels.length>500
+    ||roles.some(role=>!validSnowflake(role?.id)||typeof role.name!=="string")
+    ||channels.some(channel=>!validSnowflake(channel?.id)||typeof channel.name!=="string"||!Number.isInteger(channel.type))) {
+    throw new Error("The Discord server inventory cannot be represented safely in a complete backup.");
+  }
   return {
-    version:1,guild_id:guildId,captured_at:new Date().toISOString(),
-    roles:roles.slice(0,250).map(role=>({id:role.id,name:role.name,permissions:role.permissions,color:role.color,
-      hoist:role.hoist,mentionable:role.mentionable,position:role.position,managed:role.managed})),
-    channels:channels.slice(0,250).map(channel=>({id:channel.id,name:channel.name,type:channel.type,
-      parent_id:channel.parent_id??null,position:channel.position,topic:channel.topic??null,
-      permission_overwrites:channel.permission_overwrites??[]})),
-    warning:"Discord channel deletion permanently removes the old channel message history. This configuration snapshot does not contain messages.",
+    version:2,guild_id:guildId,captured_at:new Date().toISOString(),
+    roles:roles.map(role=>({id:role.id,name:role.name,permissions:String(role.permissions??"0"),color:Number(role.color??0),
+      hoist:Boolean(role.hoist),mentionable:Boolean(role.mentionable),position:Number(role.position??0),managed:Boolean(role.managed)})),
+    channels:channels.map(channel=>({
+      id:channel.id,name:channel.name,type:channel.type,parent_id:channel.parent_id??null,
+      position:Number(channel.position??0),topic:channel.topic??null,nsfw:Boolean(channel.nsfw),
+      rate_limit_per_user:Number(channel.rate_limit_per_user??0),bitrate:Number(channel.bitrate??0),
+      user_limit:Number(channel.user_limit??0),rtc_region:channel.rtc_region??null,
+      video_quality_mode:channel.video_quality_mode??null,
+      default_auto_archive_duration:channel.default_auto_archive_duration??null,
+      default_thread_rate_limit_per_user:Number(channel.default_thread_rate_limit_per_user??0),
+      permission_overwrites:Array.isArray(channel.permission_overwrites)?channel.permission_overwrites:[],
+    })),
+    warning:"Discord channel deletion permanently removes message history. This configuration snapshot contains roles, channels, topics, settings and permission overwrites, but not messages.",
   };
 }
 
@@ -186,10 +199,6 @@ export class DiscordServerRebuilder {
         resources.push({resource_key:channel.key,resource_type:channel.type==="voice"?"voice":"text",discord_id:created.id,name:channel.name});
       }
     }
-    const ticketCategory={key:"tickets",name:"🔒・𝗧𝗜𝗖𝗞𝗘𝗧𝗦",visibility:"private",channels:[]};
-    const tickets=await this.ensureCategory(ticketCategory,roleIds);
-    categories.tickets=tickets;
-    resources.push({resource_key:"category_tickets",resource_type:"category",discord_id:tickets.id,name:ticketCategory.name});
     for(const role of SNOOZER_ROLE_LAYOUT) {
       resources.push({resource_key:"role_"+role.key,resource_type:"role",discord_id:roleIds[role.key],name:role.name});
     }
@@ -334,12 +343,26 @@ export class DiscordServerRebuilder {
         parent_id:categoryMap.get(previous.parent_id)??null,
         permission_overwrites:overwrites,
       };
-      if(previous.topic) body.topic=previous.topic;
+      if(previous.topic!==null&&previous.topic!==undefined)body.topic=previous.topic;
+      if(previous.nsfw!==undefined)body.nsfw=Boolean(previous.nsfw);
+      if(previous.rate_limit_per_user!==undefined)body.rate_limit_per_user=Number(previous.rate_limit_per_user);
+      if(previous.bitrate!==undefined&&Number(previous.bitrate)>0)body.bitrate=Number(previous.bitrate);
+      if(previous.user_limit!==undefined&&Number(previous.user_limit)>0)body.user_limit=Number(previous.user_limit);
+      if(previous.rtc_region)body.rtc_region=previous.rtc_region;
+      if(previous.video_quality_mode!==null&&previous.video_quality_mode!==undefined)body.video_quality_mode=previous.video_quality_mode;
+      if(previous.default_auto_archive_duration)body.default_auto_archive_duration=previous.default_auto_archive_duration;
+      if(previous.default_thread_rate_limit_per_user!==undefined)body.default_thread_rate_limit_per_user=Number(previous.default_thread_rate_limit_per_user);
       existing=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body});
       if(!validSnowflake(existing?.id)) throw new Error("Discord failed to restore channel "+previous.name+".");
       channelsRestored++;
     }
     return {backupId:backup.id,rolesRestored,channelsRestored,sourceCreatedAt:backup.created_at};
+  }
+
+  async pruneOldBackups(){
+    if(typeof this.store.pruneBackups!=="function")return 0;
+    try{return await this.store.pruneBackups(this.guildId,30);}
+    catch(error){this.logger.warn("[discord-server] backup retention cleanup failed",error?.message??error);return 0;}
   }
 
   async createBackup(actorId) {
@@ -351,7 +374,8 @@ export class DiscordServerRebuilder {
     if(!Array.isArray(roles)||!Array.isArray(channels)) throw new Error("Discord server inventory could not be read.");
     const snapshot=safeSnapshot(roles,channels,this.guildId);
     const backupId=await this.store.saveBackup(this.guildId,actorId,snapshot);
-    if(!backupId)throw new Error("The server configuration backup could not be saved.");
+    if(typeof backupId!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(backupId))throw new Error("The server configuration backup could not be saved.");
+    await this.pruneOldBackups();
     return {backupId,roleCount:snapshot.roles.length,channelCount:snapshot.channels.length};
   }
 
@@ -361,6 +385,7 @@ export class DiscordServerRebuilder {
     const members=await this.listMembers();
     const backup=await this.store.saveBackup(this.guildId,actorId,safeSnapshot(before.roles,before.channels,this.guildId));
     if(!backup)throw new Error("The pre-reconcile backup could not be saved. No server changes were made.");
+    await this.pruneOldBackups();
     const created=await this.createNewStructure();
     const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds);
     const roleSync=await this.syncMembershipRoles(created.roleIds);
@@ -387,6 +412,7 @@ export class DiscordServerRebuilder {
     const snapshot=safeSnapshot(before.roles,before.channels,this.guildId);
     const backupId=await this.store.saveBackup(this.guildId,actorId,snapshot);
     if(!backupId) throw new Error("The old server configuration backup was not saved. No server changes were made.");
+    await this.pruneOldBackups();
     const created=await this.createNewStructure();
     const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds);
     const newResourceIds=new Set(created.resources.map(resource=>resource.discord_id));
