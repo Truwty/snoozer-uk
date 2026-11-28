@@ -6,6 +6,8 @@ import { DiscordStore } from "../workers/discord-presence/discord-store.mjs";
 import { DiscordServerRebuilder } from "../workers/discord-presence/server-rebuilder.mjs";
 import { DiscordCommunityPanels, SNOOZER_REBUILD_COMMAND } from "../workers/discord-presence/community-panels.mjs";
 import { DiscordSecurityGuard } from "../workers/discord-presence/security-guard.mjs";
+import { DiscordApiClient } from "../workers/discord-presence/server-setup.mjs";
+import { buildGuildCommands } from "../workers/discord-presence/worker.mjs";
 
 const guildId = "1574262035519115284";
 const botUserId = "1574262035519115285";
@@ -114,7 +116,7 @@ test("server reset preflight accepts the Discord Administrator permission", asyn
   assert.equal(result.botTop, 10);
 });
 
-test("server reset preflight refuses a bot role below managed legacy roles", async () => {
+test("server reset preflight refuses a bot role below any replaceable custom role", async () => {
   const permissionBits = (1n << 1n) | (1n << 2n) | (1n << 4n) | (1n << 5n) | (1n << 7n)
     | (1n << 10n) | (1n << 11n) | (1n << 13n) | (1n << 14n) | (1n << 16n)
     | (1n << 28n) | (1n << 29n) | (1n << 33n) | (1n << 40n);
@@ -123,7 +125,7 @@ test("server reset preflight refuses a bot role below managed legacy roles", asy
       if (path.endsWith("/roles")) return [
         { id: guildId, permissions: "0", position: 0, name: "@everyone" },
         { id: "1574262035519115286", permissions: permissionBits.toString(), position: 10, name: "Snoozer Bot" },
-        { id: "1574262035519115287", permissions: "0", position: 11, name: "Snoozer Admin" },
+        { id: "1574262035519115287", permissions: "0", position: 11, name: "Unrelated Custom Role" },
       ];
       if (path.endsWith("/members/" + botUserId)) return { roles: ["1574262035519115286"] };
       if (path.endsWith("/channels")) return [];
@@ -140,6 +142,7 @@ test("member-role migration never copies unverified Premium or Creator roles", a
     { id: "1574262035519115302", name: "Creator" },
     { id: "1574262035519115303", name: "Member" },
     { id: "1574262035519115304", name: "Snoozer Admin" },
+    { id: "1574262035519115305", name: "Old Custom Role" },
   ];
   let patch;
   const api = {
@@ -157,13 +160,14 @@ test("member-role migration never copies unverified Premium or Creator roles", a
     creator: "1574262035519115322",
     member: "1574262035519115323",
     admin: "1574262035519115324",
-  });
+  }, oldRoles.map(role => role.id));
   assert.ok(patch.roles.includes("1574262035519115323"));
   assert.ok(patch.roles.includes("1574262035519115324"));
   assert.ok(!patch.roles.includes("1574262035519115301"));
   assert.ok(!patch.roles.includes("1574262035519115302"));
   assert.ok(!patch.roles.includes("1574262035519115321"));
   assert.ok(!patch.roles.includes("1574262035519115322"));
+  assert.ok(!patch.roles.includes("1574262035519115305"));
 });
 
 test("rebuild command uses the full confirmation phrase and button controls are present", () => {
@@ -509,3 +513,135 @@ test("community slash commands reach the complete router as well as rebuild", as
   assert.deepEqual(handled, ["health"]);
 });
 
+
+
+test("voice channel creation omits the text-only topic field", async () => {
+  const posted = [];
+  const api = {
+    async request(path, options = {}) {
+      if (path === "/guilds/" + guildId + "/channels" && !options.method) return [];
+      if (path === "/guilds/" + guildId + "/channels" && options.method === "POST") {
+        posted.push(structuredClone(options.body));
+        return { id: "1574262035519115601" };
+      }
+      throw new Error("unexpected Discord request " + path);
+    },
+  };
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, { api, store: {} });
+  const category = SNOOZER_SERVER_LAYOUT.find(item => item.key === "community");
+  const voice = category.channels.find(item => item.type === "voice");
+  const text = category.channels.find(item => item.type === "text");
+  const parent = { id: "1574262035519115602" };
+
+  await rebuilder.ensureChannel(category, voice, parent, {});
+  await rebuilder.ensureChannel(category, text, parent, {});
+
+  assert.equal(posted.length, 2);
+  assert.equal(Object.hasOwn(posted[0], "topic"), false);
+  assert.equal(posted[0].type, 2);
+  assert.equal(posted[1].topic, text.topic);
+  assert.equal(posted[1].type, 0);
+});
+
+test("Discord API errors include field-level Invalid Form Body details", async () => {
+  const client = new DiscordApiClient("test-token", async () => new Response(JSON.stringify({
+    message: "Invalid Form Body",
+    code: 50035,
+    errors: {
+      topic: { _errors: [{ code: "BASE_TYPE_FIELD_INVALID", message: "This field is not supported for voice channels." }] },
+    },
+  }), { status: 400, headers: { "content-type": "application/json" } }));
+  await assert.rejects(
+    client.request("/guilds/" + guildId + "/channels", { method: "POST", body: { name: "voice-room", topic: "invalid" } }),
+    /body\.topic: This field is not supported for voice channels/,
+  );
+});
+
+test("full reset deletes every replaceable custom role but preserves bot and managed roles", async () => {
+  const everyone = { id: guildId, name: "@everyone", managed: false };
+  const custom = { id: "1574262035519115610", name: "Old Custom Role", managed: false };
+  const botRole = { id: "1574262035519115611", name: "Snoozer Bot", managed: false };
+  const integration = { id: "1574262035519115612", name: "Integration Role", managed: true };
+  const deleted = [];
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, {
+    api: { async request(path, options = {}) {
+      if (options.method === "DELETE") { deleted.push(path); return null; }
+      throw new Error("unexpected API request " + path);
+    } },
+    store: {},
+  });
+  const result = await rebuilder.deleteOldRoles([everyone, custom, botRole, integration], [botRole.id]);
+  assert.deepEqual(deleted, ["/guilds/" + guildId + "/roles/" + custom.id]);
+  assert.deepEqual(result.deletedIds, [custom.id]);
+  assert.equal(result.deleted, 1);
+  assert.equal(result.preserved, 3);
+});
+
+test("full server rebuild deletes channels and replaceable roles before creating the new layout", async () => {
+  const events = [];
+  const everyone = { id: guildId, name: "@everyone", permissions: "0", position: 0, managed: false };
+  const oldRole = { id: "1574262035519115620", name: "Old Custom Role", permissions: "0", position: 2, managed: false };
+  const botRole = { id: "1574262035519115621", name: "Snoozer Bot", permissions: String(1n << 3n), position: 10, managed: false };
+  const oldChannel = { id: "1574262035519115630", name: "old-general", type: 0, permission_overwrites: [] };
+  const backupId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, {
+    api: { async request() { throw new Error("unexpected API request"); } },
+    store: {
+      async saveBackup(_guild, _actor, snapshot) { events.push("backup"); assert.equal(snapshot.channels.length, 1); return backupId; },
+      async pruneBackups() { events.push("prune"); },
+    },
+    onPanelsReady: async () => { events.push("panels"); return { posted: 1, errors: [] }; },
+  });
+  rebuilder.permissionPreflight = async () => ({
+    roles: [everyone, oldRole, botRole],
+    channels: [oldChannel],
+    botMember: { roles: [botRole.id] },
+    protectedRoleIds: new Set([botRole.id]),
+  });
+  rebuilder.listMembers = async () => [];
+  rebuilder.deleteOldChannels = async channels => {
+    events.push("delete-channels");
+    assert.deepEqual(channels.map(channel => channel.id), [oldChannel.id]);
+    return { deleted: channels.length, remaining: [] };
+  };
+  rebuilder.deleteOldRoles = async (roles, protectedIds) => {
+    events.push("delete-roles");
+    assert.ok(new Set(protectedIds).has(botRole.id));
+    return { deleted: 1, deletedIds: [oldRole.id], preserved: 2, remaining: [] };
+  };
+  rebuilder.createNewStructure = async () => {
+    events.push("create-layout");
+    return { roleIds: { member: "1574262035519115640" }, channelIds: { welcome: "1574262035519115641" },
+      categories: { start_here: {} }, resources: [] };
+  };
+  rebuilder.migrateMemberRoles = async (_members, _oldRoles, _newIds, deletedIds) => {
+    events.push("migrate-members");
+    assert.deepEqual(deletedIds, [oldRole.id]);
+    return 0;
+  };
+  rebuilder.syncMembershipRoles = async () => { events.push("sync-entitlements"); return { checked: 0, updated: 0 }; };
+
+  const result = await rebuilder.rebuild(botUserId);
+  assert.deepEqual(events, [
+    "backup", "prune", "delete-channels", "delete-roles",
+    "create-layout", "migrate-members", "sync-entitlements", "panels",
+  ]);
+  assert.equal(result.channelsDeleted, 1);
+  assert.equal(result.rolesDeleted, 1);
+  assert.equal(result.rolesPreserved, 2);
+  assert.equal(result.complete, true);
+});
+
+test("Discord guild command bulk list excludes retired commands and replaces legacy setup", () => {
+  const commands = buildGuildCommands({ serverSetupEnabled: true, botEnabled: true });
+  const names = commands.map(command => command.name);
+  assert.ok(names.includes("snoozer-rebuild-server"));
+  assert.ok(names.includes("snoozer-restore-server"));
+  assert.ok(!names.includes("snoozer-repair"));
+  assert.ok(!names.includes("snoozer-setup"));
+  assert.equal(new Set(names).size, names.length);
+  assert.deepEqual(
+    buildGuildCommands({ serverSetupEnabled: true, botEnabled: false }).map(command => command.name),
+    ["snoozer-setup"],
+  );
+});
