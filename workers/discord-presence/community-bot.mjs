@@ -760,11 +760,11 @@ async announceServerBoost(member) {
     const channelId = interaction.channel_id;
     if (!safeSnowflake(channelId)) throw new Error("Run this command inside the ticket channel you want to close.");
     const channel = await this.api.request("/channels/" + channelId);
-    if (typeof channel?.topic !== "string" || !/^SNOOZER_TICKET:v[12]\\b/.test(channel.topic)) {
+    if (typeof channel?.topic !== "string" || !/^SNOOZER_TICKET:v[12]\b/.test(channel.topic)) {
       throw new Error("This channel is not a Snoozer support ticket.");
     }
     if (channel.topic.includes("status=closed")) return "This ticket is already closed.";
-    const ownerId = channel.topic.match(/\\bowner=([1-9][0-9]{16,19})\\b/)?.[1];
+    const ownerId = channel.topic.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1];
     const actorId = interaction.member?.user?.id ?? interaction.user?.id;
     const memberRoles = new Set(interaction.member?.roles ?? []);
     const roles = await this.api.request("/guilds/" + this.guildId + "/roles");
@@ -772,12 +772,12 @@ async announceServerBoost(member) {
     const isStaff = staffIds.some(id => memberRoles.has(id)) || hasPermission(interaction.member?.permissions, PERMISSIONS.manageMessages);
     if (actorId !== ownerId && !isStaff) throw new Error("Only the ticket owner or Snoozer staff can close this ticket.");
 
-    const ticketId = channel.topic.match(/\\bid=([0-9a-f-]{36})\\b/)?.[1] ?? null;
+    const ticketId = channel.topic.match(/\bid=([0-9a-f-]{36})\b/)?.[1] ?? null;
     const messages = await this.api.request("/channels/" + channelId + "/messages?limit=100");
     const transcript = (Array.isArray(messages) ? messages : []).reverse().map(message => {
       let content = cleanText(message.content, 2000);
-      content = content.replace(/\\b(password|passcode|one[- ]time code|2fa|api key|secret|card number)\\b\\s*[:=]\\s*\\S+/gi, "$1: [REDACTED]");
-      content = content.replace(/\\b(?:\\d[ -]*?){13,19}\\b/g, "[POSSIBLE PAYMENT NUMBER REDACTED]");
+      content = content.replace(/\b(password|passcode|one[- ]time code|2fa|api key|secret|card number)\b\s*[:=]\s*\S+/gi, "$1: [REDACTED]");
+      content = content.replace(/\b(?:\d[ -]*?){13,19}\b/g, "[POSSIBLE PAYMENT NUMBER REDACTED]");
       return {
         id: message.id,
         author_id: message.author?.id ?? null,
