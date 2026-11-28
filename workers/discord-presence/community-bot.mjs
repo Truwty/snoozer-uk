@@ -787,10 +787,22 @@ async announceServerBoost(member) {
       };
     }).slice(-100);
 
-    if (ticketId && this.store) {
-      await this.store.ticketAction(ticketId, actorId, "transcript", { transcript });
-      await this.store.ticketAction(ticketId, actorId, "close", {});
+    if (!this.store || typeof this.store.enqueueJob !== "function") {
+      throw new Error("Persistent ticket closure is temporarily unavailable. Please try again shortly.");
     }
+    if (ticketId) await this.store.ticketAction(ticketId, actorId, "transcript", { transcript });
+
+    const deleteAt = new Date(Date.now() + 10_000).toISOString();
+    await this.store.enqueueJob({
+      guildId: this.guildId,
+      jobType: "ticket_delete",
+      dedupeKey: "ticket-delete:" + (ticketId ?? channelId),
+      payload: ticketId
+        ? { ticket_id: ticketId, channel_id: channelId, closed_by: actorId }
+        : { legacy: true, channel_id: channelId, closed_by: actorId },
+      runAt: deleteAt,
+    });
+    if (ticketId) await this.store.ticketAction(ticketId, actorId, "close", {});
 
     const overwrites = (Array.isArray(channel.permission_overwrites) ? channel.permission_overwrites : [])
       .filter(entry => entry.id !== ownerId || entry.type !== 1);
@@ -811,19 +823,6 @@ async announceServerBoost(member) {
       },
     });
 
-    if (!this.store || typeof this.store.enqueueJob !== "function") {
-      throw new Error("The ticket was closed, but automatic deletion could not be queued. Please contact an administrator.");
-    }
-    const deleteAt = new Date(Date.now() + 10_000).toISOString();
-    await this.store.enqueueJob({
-      guildId: this.guildId,
-      jobType: "ticket_delete",
-      dedupeKey: "ticket-delete:" + (ticketId ?? channelId),
-      payload: ticketId
-        ? { ticket_id: ticketId, channel_id: channelId, closed_by: actorId }
-        : { legacy: true, channel_id: channelId, closed_by: actorId },
-      runAt: deleteAt,
-    });
     this.scheduleJobWake?.(deleteAt);
 
     let closeNoticeSent = true;
