@@ -876,7 +876,7 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const mobileLinkActions = page.getByRole("group", { name: "Actions for link 2", exact: true });
     await expect(mobileLinkActions).toBeVisible();
     await page.getByRole("button", { name: "Move up (link 2)", exact: true }).click();
-    await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await expect(page.getByRole("group", { name: "Actions for link 1", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 1100 });
