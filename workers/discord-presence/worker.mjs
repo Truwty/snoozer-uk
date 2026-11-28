@@ -177,7 +177,7 @@ export class DiscordPresenceWorker {
     const channelId = this.communityPanels?.resources?.bot_logs;
     if (!/^[1-9][0-9]{16,19}$/.test(channelId ?? "")) return false;
     const clean = (value, max = 500) => typeof value === "string"
-      ? value.replace(/\\r\\n?/g, "\\n").replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]/g, " ").replace(/[ \\t]+/g, " ").trim().slice(0, max)
+      ? value.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ").replace(/[ \t]+/g, " ").trim().slice(0, max)
       : "";
     const title = clean(event.title, 240) || "Server activity";
     const description = clean(event.description, 3500) || "A server event was received.";
@@ -565,13 +565,13 @@ export class DiscordPresenceWorker {
       const minutes=Math.floor(Math.max(0,Date.now()-previous.joinedAt)/60_000);
       if(minutes>0)this.recordActivity(userId,0,minutes);
       if(nextChannel){
-        await this.logServerEvent({title:"Member moved voice channels",description:"Member: <@"+userId+">\\nFrom: <#"+previous.channelId+">\\nTo: <#"+nextChannel+">"});
+        await this.logServerEvent({title:"Member moved voice channels",description:"Member: <@"+userId+">\nFrom: <#"+previous.channelId+">\nTo: <#"+nextChannel+">"});
       }else{
-        await this.logServerEvent({title:"Member left voice",description:"Member: <@"+userId+">\\nChannel: <#"+previous.channelId+">\\nTime in voice: "+minutes+" minute(s)"});
+        await this.logServerEvent({title:"Member left voice",description:"Member: <@"+userId+">\nChannel: <#"+previous.channelId+">\nTime in voice: "+minutes+" minute(s)"});
       }
       this.voiceSessions.delete(userId);
     }else if(!previous&&nextChannel){
-      await this.logServerEvent({title:"Member joined voice",description:"Member: <@"+userId+">\\nChannel: <#"+nextChannel+">"});
+      await this.logServerEvent({title:"Member joined voice",description:"Member: <@"+userId+">\nChannel: <#"+nextChannel+">"});
     }
     if(nextChannel)this.voiceSessions.set(userId,{channelId:nextChannel,joinedAt:Date.now()});
   }
@@ -631,7 +631,7 @@ export class DiscordPresenceWorker {
       case "GUILD_MEMBER_ADD":
         if(data.guild_id===this.config.guildId){
           const userId=data.user?.id;
-          await this.logServerEvent({title:"Member joined the server",description:"Member: "+(userId?"<@"+userId+">":"Unknown member")+"\\nAccount: "+(data.user?.username??"unknown")});
+          await this.logServerEvent({title:"Member joined the server",description:"Member: "+(userId?"<@"+userId+">":"Unknown member")+"\nAccount: "+(data.user?.username??"unknown")});
           if(this.securityGuard)await this.securityGuard.handleMemberJoin(data);
           if(this.communityBot){
             await this.communityBot.welcomeMember(data);
@@ -642,7 +642,7 @@ export class DiscordPresenceWorker {
       case "GUILD_MEMBER_REMOVE":
         if(data.guild_id===this.config.guildId){
           const userId=data.user?.id;
-          await this.logServerEvent({title:"Member left the server",description:"Member: "+(userId?"<@"+userId+">":"Unknown member")+"\\nAccount: "+(data.user?.username??"unknown")});
+          await this.logServerEvent({title:"Member left the server",description:"Member: "+(userId?"<@"+userId+">":"Unknown member")+"\nAccount: "+(data.user?.username??"unknown")});
           if(this.communityBot){
             try{await this.communityBot.goodbyeMember(data);}
             catch(error){this.logger.warn("[discord-presence] goodbye message failed:",error?.message??error);}
@@ -653,7 +653,7 @@ export class DiscordPresenceWorker {
       case "GUILD_MEMBER_UPDATE":
         if(data.guild_id===this.config.guildId){
           if(Object.prototype.hasOwnProperty.call(data,"nick")||Array.isArray(data.roles)){
-            await this.logServerEvent({title:"Member profile or roles updated",description:"Member: <@"+(data.user?.id??"unknown")+">\\nNickname: "+(data.nick??"none")+"\\nAssigned roles: "+(data.roles?.length??"not supplied")});
+            await this.logServerEvent({title:"Member profile or roles updated",description:"Member: <@"+(data.user?.id??"unknown")+">\nNickname: "+(data.nick??"none")+"\nAssigned roles: "+(data.roles?.length??"not supplied")});
           }
           if(this.communityBot)await this.communityBot.handleMemberUpdate(data);
         }
@@ -663,14 +663,14 @@ export class DiscordPresenceWorker {
       case "CHANNEL_DELETE":
         if(data.guild_id===this.config.guildId){
           const action=event.t.replace("CHANNEL_","").toLowerCase();
-          await this.logServerEvent({title:"Channel "+action,description:"Channel: "+(data.name??"unknown")+"\\nID: "+(data.id??"unknown")+"\\nType: "+(data.type??"unknown")+"\\nParent: "+(data.parent_id?"<#"+data.parent_id+">":"none")});
+          await this.logServerEvent({title:"Channel "+action,description:"Channel: "+(data.name??"unknown")+"\nID: "+(data.id??"unknown")+"\nType: "+(data.type??"unknown")+"\nParent: "+(data.parent_id?"<#"+data.parent_id+">":"none")});
         }
         break;
       case "GUILD_ROLE_CREATE":
       case "GUILD_ROLE_UPDATE":
         if(data.guild_id===this.config.guildId){
           const role=data.role??{};
-          await this.logServerEvent({title:"Server role "+event.t.replace("GUILD_ROLE_","").toLowerCase(),description:"Role: "+(role.name??"unknown")+"\\nID: "+(role.id??"unknown")+"\\nPosition: "+(role.position??"unknown")});
+          await this.logServerEvent({title:"Server role "+event.t.replace("GUILD_ROLE_","").toLowerCase(),description:"Role: "+(role.name??"unknown")+"\nID: "+(role.id??"unknown")+"\nPosition: "+(role.position??"unknown")});
         }
         break;
       case "GUILD_ROLE_DELETE":
@@ -682,7 +682,7 @@ export class DiscordPresenceWorker {
       case "GUILD_BAN_REMOVE":
         if(data.guild_id===this.config.guildId){
           const added=event.t==="GUILD_BAN_ADD";
-          await this.logServerEvent({title:added?"Member banned":"Member unbanned",description:"Member: "+(data.user?.id?"<@"+data.user.id+">":"Unknown member")+"\\nAccount: "+(data.user?.username??"unknown"),severity:added?"warning":"info"});
+          await this.logServerEvent({title:added?"Member banned":"Member unbanned",description:"Member: "+(data.user?.id?"<@"+data.user.id+">":"Unknown member")+"\nAccount: "+(data.user?.username??"unknown"),severity:added?"warning":"info"});
         }
         break;
       case "GUILD_MEMBERS_CHUNK":
@@ -692,24 +692,24 @@ export class DiscordPresenceWorker {
         if(data.guild_id===this.config.guildId){
           if(data.author?.id&&!data.author.bot){
             this.recordActivity(data.author.id,1,0);
-            await this.logServerEvent({title:"Message sent",description:"Member: <@"+data.author.id+">\\nChannel: <#"+data.channel_id+">\\nMessage ID: "+data.id+"\\nAttachments: "+(data.attachments?.length??0)+" · embeds: "+(data.embeds?.length??0)});
+            await this.logServerEvent({title:"Message sent",description:"Member: <@"+data.author.id+">\nChannel: <#"+data.channel_id+">\nMessage ID: "+data.id+"\nAttachments: "+(data.attachments?.length??0)+" · embeds: "+(data.embeds?.length??0)});
           }
           if(this.securityGuard)await this.securityGuard.handleMessage(data);
         }
         break;
       case "MESSAGE_UPDATE":
         if(data.guild_id===this.config.guildId&&!data.author?.bot){
-          await this.logServerEvent({title:"Message edited",description:"Member: "+(data.author?.id?"<@"+data.author.id+">":"Unknown author")+"\\nChannel: <#"+data.channel_id+">\\nMessage ID: "+data.id+"\\nMessage contents are intentionally not copied into logs."});
+          await this.logServerEvent({title:"Message edited",description:"Member: "+(data.author?.id?"<@"+data.author.id+">":"Unknown author")+"\nChannel: <#"+data.channel_id+">\nMessage ID: "+data.id+"\nMessage contents are intentionally not copied into logs."});
         }
         break;
       case "MESSAGE_DELETE":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Message deleted",description:"Channel: <#"+data.channel_id+">\\nMessage ID: "+data.id+"\\nAuthor ID: "+(data.author_id??"not supplied")});
+          await this.logServerEvent({title:"Message deleted",description:"Channel: <#"+data.channel_id+">\nMessage ID: "+data.id+"\nAuthor ID: "+(data.author_id??"not supplied")});
         }
         break;
       case "MESSAGE_DELETE_BULK":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Messages bulk deleted",description:"Channel: <#"+data.channel_id+">\\nMessages removed: "+(data.ids?.length??0),severity:"warning"});
+          await this.logServerEvent({title:"Messages bulk deleted",description:"Channel: <#"+data.channel_id+">\nMessages removed: "+(data.ids?.length??0),severity:"warning"});
         }
         break;
       case "MESSAGE_REACTION_ADD":
@@ -717,20 +717,20 @@ export class DiscordPresenceWorker {
         if(data.guild_id===this.config.guildId){
           const added=event.t==="MESSAGE_REACTION_ADD";
           const emoji=data.emoji?.name??"unknown";
-          await this.logServerEvent({title:added?"Reaction added":"Reaction removed",description:"Member: "+(data.user_id?"<@"+data.user_id+">":"Unknown member")+"\\nChannel: <#"+data.channel_id+">\\nMessage ID: "+data.message_id+"\\nEmoji: "+emoji});
+          await this.logServerEvent({title:added?"Reaction added":"Reaction removed",description:"Member: "+(data.user_id?"<@"+data.user_id+">":"Unknown member")+"\nChannel: <#"+data.channel_id+">\nMessage ID: "+data.message_id+"\nEmoji: "+emoji});
         }
         break;
       case "MESSAGE_REACTION_REMOVE_ALL":
       case "MESSAGE_REACTION_REMOVE_EMOJI":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Message reactions cleared",description:"Channel: <#"+data.channel_id+">\\nMessage ID: "+data.message_id+"\\nEmoji: "+(data.emoji?.name??"all reactions")});
+          await this.logServerEvent({title:"Message reactions cleared",description:"Channel: <#"+data.channel_id+">\nMessage ID: "+data.message_id+"\nEmoji: "+(data.emoji?.name??"all reactions")});
         }
         break;
       case "INVITE_CREATE":
       case "INVITE_DELETE":
         if(data.guild_id===this.config.guildId){
           const created=event.t==="INVITE_CREATE";
-          await this.logServerEvent({title:created?"Server invite created":"Server invite deleted",description:"Code: "+(data.code??"unknown")+"\\nChannel: "+(data.channel_id?"<#"+data.channel_id+">":"unknown")+"\\nInviter: "+(data.inviter?.id?"<@"+data.inviter.id+">":"unknown")});
+          await this.logServerEvent({title:created?"Server invite created":"Server invite deleted",description:"Code: "+(data.code??"unknown")+"\nChannel: "+(data.channel_id?"<#"+data.channel_id+">":"unknown")+"\nInviter: "+(data.inviter?.id?"<@"+data.inviter.id+">":"unknown")});
         }
         break;
       case "GUILD_INTEGRATIONS_UPDATE":
@@ -748,14 +748,14 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_UPDATE":
         if(data.id===this.config.guildId){
-          await this.logServerEvent({title:"Server settings updated",description:"Server name: "+(data.name??"unchanged")+"\\nVerification level: "+(data.verification_level??"not supplied")+"\\nDefault notifications: "+(data.default_message_notifications??"not supplied")});
+          await this.logServerEvent({title:"Server settings updated",description:"Server name: "+(data.name??"unchanged")+"\nVerification level: "+(data.verification_level??"not supplied")+"\nDefault notifications: "+(data.default_message_notifications??"not supplied")});
         }
         break;
       case "THREAD_CREATE":
       case "THREAD_UPDATE":
       case "THREAD_DELETE":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Thread "+event.t.replace("THREAD_","").toLowerCase(),description:"Thread: "+(data.name??"unknown")+"\\nID: "+(data.id??"unknown")+"\\nParent channel: "+(data.parent_id?"<#"+data.parent_id+">":"unknown")});
+          await this.logServerEvent({title:"Thread "+event.t.replace("THREAD_","").toLowerCase(),description:"Thread: "+(data.name??"unknown")+"\nID: "+(data.id??"unknown")+"\nParent channel: "+(data.parent_id?"<#"+data.parent_id+">":"unknown")});
         }
         break;
       case "GUILD_SCHEDULED_EVENT_CREATE":
@@ -764,14 +764,14 @@ export class DiscordPresenceWorker {
       case "GUILD_SCHEDULED_EVENT_USER_ADD":
       case "GUILD_SCHEDULED_EVENT_USER_REMOVE":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Scheduled event "+event.t.replace("GUILD_SCHEDULED_EVENT_","").toLowerCase(),description:"Event: "+(data.name??data.guild_scheduled_event_id??data.id??"unknown")+"\\nEvent ID: "+(data.id??data.guild_scheduled_event_id??"unknown")+"\\nUser: "+(data.user_id?"<@"+data.user_id+">":"not applicable")});
+          await this.logServerEvent({title:"Scheduled event "+event.t.replace("GUILD_SCHEDULED_EVENT_","").toLowerCase(),description:"Event: "+(data.name??data.guild_scheduled_event_id??data.id??"unknown")+"\nEvent ID: "+(data.id??data.guild_scheduled_event_id??"unknown")+"\nUser: "+(data.user_id?"<@"+data.user_id+">":"not applicable")});
         }
         break;
       case "STAGE_INSTANCE_CREATE":
       case "STAGE_INSTANCE_UPDATE":
       case "STAGE_INSTANCE_DELETE":
         if(data.guild_id===this.config.guildId){
-          await this.logServerEvent({title:"Stage instance "+event.t.replace("STAGE_INSTANCE_","").toLowerCase(),description:"Stage channel: "+(data.channel_id?"<#"+data.channel_id+">":"unknown")+"\\nTopic: "+(data.topic??"not supplied")});
+          await this.logServerEvent({title:"Stage instance "+event.t.replace("STAGE_INSTANCE_","").toLowerCase(),description:"Stage channel: "+(data.channel_id?"<#"+data.channel_id+">":"unknown")+"\nTopic: "+(data.topic??"not supplied")});
         }
         break;
       case "VOICE_STATE_UPDATE":
