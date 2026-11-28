@@ -44,7 +44,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
     <header className="page-header stack">
       <p className="eyebrow">SNOOZER STUDIO · DESIGN LIBRARY</p>
       <h1>Find your profile style.</h1>
-      <p className="muted">120 original starting points across ten styles of self-expression. Pick a complete composition, then make the details yours in Studio.</p>
+      <p className="muted">Explore {studioTemplates.length} original starting points across {compositionCount} compositions and {categoryCount} creative categories. Pick a design, then make the details yours in Studio.</p>
       <div className="template-library-stats" aria-label="Template library contents">
         <span><strong>{studioTemplates.length}</strong> designs</span><span><strong>{compositionCount}</strong> compositions</span><span><strong>{categoryCount}</strong> categories</span><span><strong>{paletteCount}</strong> colour treatments</span>
       </div>
