@@ -35,7 +35,7 @@ export class DiscordStore {
       const detail = [failure?.code, failure?.message, failure?.details, failure?.hint]
         .filter(value => typeof value === "string" && value.trim())
         .join(" · ")
-        .replace(/[\\u0000-\\u001f\\u007f]/g, " ")
+        .replace(/[\u0000-\u001f\u007f]/g, " ")
         .slice(0, 600);
       throw new Error("Discord storage operation " + name + " failed with HTTP " + response.status
         + (detail ? " (" + detail + ")" : "") + ".");
