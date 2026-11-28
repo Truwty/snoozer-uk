@@ -531,7 +531,7 @@ export class DiscordCommunityPanels{
     const id=await this.store.createSubmission({guildId:this.guildId,kind:"poll",authorId:uid(i),title,body:"Vote for one option.",metadata:{options}});
     const channel=this.resources.polls_votes;
     const message=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{
-      embeds:[{title:"📊 "+title,description:options.map((v,n)=>"**"+(n+1)+".** "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll ID "+id}}],
+      embeds:[{title:"📊 "+title,description:options.map((v,n)=>"**"+(n+1)+".** "+v).join("\n"),color:0x4d91c9,footer:{text:"Snoozer · Community poll"}}],
       components:options.map((v,n)=>row(btn("poll:vote:"+id+":"+n,v,2))),allowed_mentions:{parse:[]},
     }});
     await this.store.setConfig(this.guildId,"poll_"+id.replaceAll("-",""),{message_id:message.id,channel_id:channel,title,options});
@@ -1065,8 +1065,8 @@ export class DiscordCommunityPanels{
     this.timer.unref?.();
     void this.publishPermanentPanels().then(result=>{
       if(result.errors.length)this.logger.warn("[discord-panels] some permanent panels could not be published",result.errors);
-    }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error));
-    void this.tick();
+    }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error))
+      .finally(()=>void this.tick());
   }
   stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
 
@@ -1213,13 +1213,13 @@ export class DiscordCommunityPanels{
         if(options.length<2)throw new Error("A poll needs at least two options.");
         const ref=await this.store.createSubmission({guildId:this.guildId,kind:"poll",authorId:uid(i),title,body:"Choose one option.",metadata:{options}});
         const channel=this.resources.polls_votes;
-        const msg=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:"📊 "+title,description:options.map((v,n)=>(n+1)+". "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll "+ref}}],components:options.map((v,n)=>row(btn("poll:vote:"+ref+":"+n,v,2))),allowed_mentions:{parse:[]}}});
+        const msg=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:"📊 "+title,description:options.map((v,n)=>(n+1)+". "+v).join("\n"),color:0x4d91c9,footer:{text:"Snoozer · Community poll"}}],components:options.map((v,n)=>row(btn("poll:vote:"+ref+":"+n,v,2))),allowed_mentions:{parse:[]}}});
         await this.store.setConfig(this.guildId,"poll_"+ref.replaceAll("-",""),{message_id:msg.id,channel_id:channel,options});
         await this.reply(i,{content:"Poll created in <#"+channel+">."},true);
       }else if(id.startsWith("poll:vote:")){
         const [, ,ref,index]=id.split(":");
         await this.pollVote(i,ref,index);
-      }else if(id==="poll:info")await this.reply(i,{content:"Select an option button on an active poll to submit your vote. Your latest vote is stored for that poll."},true);
+      }else if(id==="poll:info")await this.reply(i,{content:"Choose an option on an active poll. Vote counts and visible voters are shown below each option; your latest vote replaces your previous vote."},true);
       else if(id==="admin:refresh"){
         this.requireStaff(i,["admin","developer"]);await this.defer(i);const r=await this.publishPermanentPanels();
         await this.complete(i,{content:"Panels refreshed: "+r.posted+". Errors: "+(r.errors.length?r.errors.join("; "):"none")});
