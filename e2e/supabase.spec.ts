@@ -260,8 +260,9 @@ test("Plus can claim and switch between independent profiles", async ({ page, re
     await page.getByRole("tab", { name: "Design" }).click();
     await page.getByRole("link", { name: "Templates", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Find your profile style.", exact: true })).toBeVisible();
-    const templatePreview = page.getByRole("img", { name: /profile preview$/ }).first();
-    await expect(templatePreview).toBeVisible();
+    const templatePreview = page.locator(".template-preview-frame").first();
+    await expect(templatePreview).toHaveAttribute("role", "img");
+    await expect(templatePreview).toHaveAttribute("inert");
     await expect(templatePreview).toHaveCSS("pointer-events", "none");
     await expect(page.getByRole("button", { name: "Use Template", exact: true }).first()).toBeVisible();
     await page.goto("/studio/customize?profile=" + selectedProfile);
