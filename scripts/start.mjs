@@ -75,7 +75,7 @@ async function waitForWebReady() {
     }
     await new Promise(resolve => setTimeout(resolve, 1_000));
   }
-  console.error("[startup] Web service did not become healthy within 90 seconds; Presence worker will not start.");
+  console.error("[startup] Web service did not become healthy within 90 seconds; Discord worker will not start.");
   return false;
 }
 
