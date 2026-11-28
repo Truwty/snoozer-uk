@@ -1,6 +1,6 @@
 import { DiscordServerRebuilder } from "./server-rebuilder.mjs";
 
-const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embedLinks:1n<<14n,readMessageHistory:1n<<16n,manageGuild:1n<<5n,manageEvents:1n<<33n,kickMembers:1n<<1n,banMembers:1n<<2n,moderateMembers:1n<<40n};
+const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embedLinks:1n<<14n,readMessageHistory:1n<<16n,viewChannel:1n<<10n,sendMessages:1n<<11n,manageGuild:1n<<5n,manageEvents:1n<<33n,kickMembers:1n<<1n,banMembers:1n<<2n,moderateMembers:1n<<40n};
 const SF=/^[1-9][0-9]{16,19}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Discord permission overwrites are decimal strings. Avoid BigInt operations in the ticket creation path.
