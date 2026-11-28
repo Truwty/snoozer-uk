@@ -170,6 +170,7 @@ export class DiscordCommunityBot {
     this.logger = dependencies.logger ?? console;
     this.statusBaseline = null;
     this.cooldowns = new Map();
+    this.ticketCreationLocks = new Set();
   }
 
   enforceCooldown(interaction, action, durationMs) {
@@ -344,9 +345,11 @@ export class DiscordCommunityBot {
       }
       if (current === "unknown" || current === this.statusBaseline) return;
       const previous = this.statusBaseline;
-      this.statusBaseline = current;
-      if (previous === "unknown") return;
-      await this.announceStatusChange(snapshot, previous);
+      if (previous === "unknown") {
+        this.statusBaseline = current;
+        return;
+      }
+      if (await this.announceStatusChange(snapshot, previous)) this.statusBaseline = current;
     } catch (error) {
       this.logger.warn("[discord-community] status polling failed: " + (error?.message ?? error));
     }
@@ -373,9 +376,7 @@ export class DiscordCommunityBot {
 
     if (channelPrefix === "ticket") {
       const openTicket = channels.find(item => item.type === 0 && typeof item.topic === "string"
-        && item.topic.includes("SNOOZER_TICKET:v1")
-        && item.topic.includes("owner=" + openerId)
-        && item.topic.includes("status=open"));
+        && new RegExp("SNOOZER_TICKET:v1 owner=" + openerId + " status=open(?:\\s|$)").test(item.topic));
       if (openTicket) return { existing: true, channel: openTicket };
     }
 
@@ -428,18 +429,28 @@ export class DiscordCommunityBot {
     const details = cleanText(option(interaction, "details"), 1000);
     if (subject.length < 4 || details.length < 10) throw new Error("Add a clear subject and at least 10 characters of detail.");
     const openerId = interaction.member?.user?.id ?? interaction.user?.id;
-    const result = await this.createPrivateChannel({
-      interaction,
-      channelPrefix: "ticket",
-      categoryName: "SUPPORT & FEEDBACK",
-      topic: "SNOOZER_TICKET:v1 owner=" + openerId + " status=open created_at=" + new Date().toISOString(),
-      staffRoleNames: STAFF_ROLE_NAMES,
-      message: "**" + subject + "**\n\n" + details + "\n\nA Snoozer team member will reply here. Use /snoozer-ticket-close when the issue is resolved.",
-    });
-    if (result.existing) return "You already have an open support ticket: <#" + result.channel.id + ">.";
-    await this.logSupportTicket(interaction, result.channel, subject);
-    return "Your private support ticket has been created: <#" + result.channel.id + ">." +
-      (result.welcomeMessageSent ? "" : " The channel exists, but Discord rejected its opening message; please send your request details again inside the ticket.");
+    if (!safeSnowflake(openerId)) throw new Error("Discord did not provide a valid account ID for this request.");
+    if (this.ticketCreationLocks.has(openerId)) {
+      throw new Error("Your support ticket is already being opened. Please wait for the current request to finish.");
+    }
+
+    this.ticketCreationLocks.add(openerId);
+    try {
+      const result = await this.createPrivateChannel({
+        interaction,
+        channelPrefix: "ticket",
+        categoryName: "SUPPORT & FEEDBACK",
+        topic: "SNOOZER_TICKET:v1 owner=" + openerId + " status=open created_at=" + new Date().toISOString(),
+        staffRoleNames: STAFF_ROLE_NAMES,
+        message: "**" + subject + "**\n\n" + details + "\n\nA Snoozer team member will reply here. Use /snoozer-ticket-close when the issue is resolved.",
+      });
+      if (result.existing) return "You already have an open support ticket: <#" + result.channel.id + ">.";
+      await this.logSupportTicket(interaction, result.channel, subject);
+      return "Your private support ticket has been created: <#" + result.channel.id + ">." +
+        (result.welcomeMessageSent ? "" : " The channel exists, but Discord rejected its opening message; please send your request details again inside the ticket.");
+    } finally {
+      this.ticketCreationLocks.delete(openerId);
+    }
   }
 
   async logSupportTicket(interaction, channel, subject) {

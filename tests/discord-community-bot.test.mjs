@@ -345,6 +345,51 @@ test("public feedback submissions are rate limited per member to prevent command
   assert.equal(state.calls.filter(call => call.path === "/channels/650000000000000001/messages").length, 1);
 });
 
+
+test("concurrent ticket requests from one member cannot create duplicate private channels", async () => {
+  const roles = [
+    { id: "610000000000000001", name: "Snoozer Admin" },
+    { id: "610000000000000002", name: "Moderator" },
+    { id: "610000000000000003", name: "Support Team" },
+  ];
+  const channels = [{ id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 }];
+  const { bot, state } = botFixture({ roles, channels });
+  const create = () => bot.submitTicket(interaction("snoozer-ticket", [
+    { name: "subject", value: "Cannot update profile" },
+    { name: "details", value: "The save button does not complete the profile update." },
+  ]));
+  const results = await Promise.allSettled([create(), create()]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  assert.equal(results.filter(result => result.status === "rejected").length, 1);
+  assert.match(results.find(result => result.status === "rejected").reason.message, /already being opened/);
+  assert.equal(state.channels.filter(channel => channel.topic?.includes("SNOOZER_TICKET:v1")).length, 1);
+});
+
+test("status announcements retry after Discord rejects a message instead of losing the transition", async () => {
+  const { bot, api, state } = botFixture({
+    channels: [{ id: "610000000000000001", name: "service-status", type: 0 }],
+    fetcher: async () => new Response(JSON.stringify(statusSnapshot("outage")), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  });
+  bot.statusBaseline = "operational";
+  const original = api.request.bind(api);
+  let rejected = false;
+  api.request = async (path, options = {}) => {
+    if (!rejected && path === "/channels/610000000000000001/messages" && options.method === "POST") {
+      rejected = true;
+      throw new Error("Discord rate limit");
+    }
+    return original(path, options);
+  };
+  await bot.checkAndAnnounceStatus();
+  assert.equal(bot.statusBaseline, "operational", "failed notification must not advance the stored state");
+  await bot.checkAndAnnounceStatus();
+  assert.equal(bot.statusBaseline, "outage", "successful retry advances the status baseline");
+  assert.equal(state.calls.filter(call => call.path === "/channels/610000000000000001/messages" && call.method === "POST").length, 1);
+});
+
 test("ticket creation remains usable when Discord rejects the opening message", async () => {
   const roles = [{ id: "610000000000000003", name: "Support Team" }];
   const channels = [{ id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 }];
