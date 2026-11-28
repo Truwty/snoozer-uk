@@ -44,6 +44,7 @@ const safeSnowflake = value => typeof value === "string" && /^[1-9][0-9]{16,19}$
 const cleanText = (value, max = 500) => typeof value === "string"
   ? value.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max)
   : "";
+const option = (interaction, name) => interaction.data?.options?.find(item => item.name === name)?.value;
 const encodeAuditReason = reason => encodeURIComponent(cleanText(reason || "Snoozer community moderation", 400));
 
 function hasPermission(permissionValue, required) {
