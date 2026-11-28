@@ -13,6 +13,8 @@ services:
     envVars:
       - key: DISCORD_SERVER_SETUP_ENABLED
         value: "false"
+      - key: DISCORD_BOT_ENABLED
+        value: "false"
       - key: DISCORD_PRESENCE_ENABLED
         value: "false"
       - key: DISCORD_BOT_TOKEN

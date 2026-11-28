@@ -1,6 +1,12 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { DiscordApiClient, DiscordGuildSetup, hasAdministratorPermission, SNOOZER_SETUP_COMMAND } from "./server-setup.mjs";
+import {
+  DISCORD_COMMUNITY_COMMANDS,
+  DISCORD_COMMUNITY_COMMAND_NAMES,
+  DiscordCommunityBot,
+  SERVICE_STATUS_POLL_MS,
+} from "./community-bot.mjs";
 
 const GUILDS_INTENT = 1 << 0;
 const GUILD_PRESENCES_INTENT = 1 << 8;
@@ -97,6 +103,9 @@ export class DiscordPresenceWorker {
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
     this.discordFetcher = dependencies.discordFetcher ?? globalThis.fetch;
+    this.statusFetcher = dependencies.statusFetcher ?? globalThis.fetch;
+    this.communityBot = null;
+    this.communityStatusTimer = null;
     this.discordApi = new DiscordApiClient(config.token, this.discordFetcher, { logger: this.logger });
     this.applicationId = null;
     this.botUserId = null;
@@ -288,18 +297,42 @@ export class DiscordPresenceWorker {
       this.discordApi.request("/oauth2/applications/@me"),
     ]);
     if (!botUser?.id || !/^[1-9][0-9]{16,19}$/.test(botUser.id)) {
-      throw new Error("Discord did not return a valid bot user ID while registering the server setup command.");
+      throw new Error("Discord did not return a valid bot user ID while registering guild commands.");
     }
     if (!application?.id || !/^[1-9][0-9]{16,19}$/.test(application.id)) {
-      throw new Error("Discord did not return a valid application ID while registering the server setup command.");
+      throw new Error("Discord did not return a valid application ID while registering guild commands.");
     }
     this.botUserId = botUser.id;
     this.applicationId = application.id;
-    await this.discordApi.request("/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands", {
-      method: "POST",
-      body: SNOOZER_SETUP_COMMAND,
-    });
-    this.logger.info("[discord-presence] Registered the administrator-only /snoozer-setup command in the configured Snoozer guild.");
+    const commands = [];
+    if (this.config.serverSetupEnabled) commands.push(SNOOZER_SETUP_COMMAND);
+    if (this.config.botEnabled) commands.push(...DISCORD_COMMUNITY_COMMANDS);
+    if (commands.length === 0) throw new Error("No Discord guild commands are enabled.");
+    const commandPath = "/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands";
+    for (const command of commands) {
+      await this.discordApi.request(commandPath, {
+        method: "POST",
+        body: command,
+      });
+    }
+    if (this.config.botEnabled) {
+      this.communityBot = new DiscordCommunityBot({
+        guildId: this.config.guildId,
+        botUserId: this.botUserId,
+        applicationId: this.applicationId,
+      }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger });
+      try {
+        await this.communityBot.preflightPermissions();
+      } catch (error) {
+        this.logger.warn("[discord-presence] bot permission preflight could not complete:", error?.message ?? error);
+      }
+      await this.communityBot.primeStatusBaseline();
+      this.communityStatusTimer = setInterval(() => void this.communityBot?.checkAndAnnounceStatus(), SERVICE_STATUS_POLL_MS);
+      this.logger.info("[discord-presence] Registered " + DISCORD_COMMUNITY_COMMANDS.length + " Snoozer community commands.");
+    }
+    if (this.config.serverSetupEnabled) {
+      this.logger.info("[discord-presence] Registered the administrator-only /snoozer-setup command.");
+    }
   }
 
   async sendSetupInteractionResponse(interaction, payload, editOriginal = false) {
@@ -425,6 +458,8 @@ export class DiscordPresenceWorker {
       case "INTERACTION_CREATE":
         if (data.type === 2 && data.data?.name === SNOOZER_SETUP_COMMAND.name) {
           await this.handleServerSetupInteraction(data);
+        } else if (data.type === 2 && this.communityBot && DISCORD_COMMUNITY_COMMAND_NAMES.has(data.data?.name)) {
+          await this.communityBot.handle(data);
         }
         break;
       case "RATE_LIMITED":
@@ -559,11 +594,11 @@ export class DiscordPresenceWorker {
     } else {
       this.logger.info("[discord-presence] Presence monitoring is disabled; the worker will not read or submit presence data.");
     }
-    if (this.config.serverSetupEnabled) {
+    if (this.config.serverSetupEnabled || this.config.botEnabled) {
       try {
         await this.registerServerSetupCommand();
       } catch (error) {
-        this.logger.error("[discord-presence] could not register /snoozer-setup:", error?.message ?? error);
+        this.logger.error("[discord-presence] could not register Snoozer guild commands:", error?.message ?? error);
       }
     }
     this.connect();
@@ -576,6 +611,8 @@ export class DiscordPresenceWorker {
     this.snapshotTimer = null;
     this.workerHeartbeatTimer = null;
     this.reconnectTimer = null;
+    if (this.communityStatusTimer) clearInterval(this.communityStatusTimer);
+    this.communityStatusTimer = null;
     this.stopHeartbeat();
     this.socket?.close(1000, "Worker shutting down");
     if ((this.config.presenceEnabled !== false)) await this.heartbeat(false, false);
@@ -585,12 +622,13 @@ export class DiscordPresenceWorker {
 export function loadConfig(env = process.env) {
   const presenceEnabled = env.DISCORD_PRESENCE_ENABLED === "true";
   const serverSetupEnabled = env.DISCORD_SERVER_SETUP_ENABLED === "true";
+  const botEnabled = env.DISCORD_BOT_ENABLED === "true";
   const token = env.DISCORD_BOT_TOKEN ?? "";
   const guildId = env.DISCORD_PRESENCE_GUILD_ID ?? "";
   const baseUrl = env.SNOOZER_PRESENCE_URL ?? "";
   const secret = env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
-  if ((!presenceEnabled && !serverSetupEnabled) || !token || !/^[1-9][0-9]{16,19}$/.test(guildId)) {
-    throw new Error("Enable DISCORD_SERVER_SETUP_ENABLED or DISCORD_PRESENCE_ENABLED, and configure DISCORD_BOT_TOKEN and DISCORD_PRESENCE_GUILD_ID.");
+  if ((!presenceEnabled && !serverSetupEnabled && !botEnabled) || !token || !/^[1-9][0-9]{16,19}$/.test(guildId)) {
+    throw new Error("Enable DISCORD_SERVER_SETUP_ENABLED, DISCORD_BOT_ENABLED or DISCORD_PRESENCE_ENABLED, and configure DISCORD_BOT_TOKEN and DISCORD_PRESENCE_GUILD_ID.");
   }
   if (presenceEnabled && (!/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || !/^[a-f0-9]{64}$/i.test(secret))) {
     throw new Error("Discord Presence requires SNOOZER_PRESENCE_URL and the shared 64-character DISCORD_PRESENCE_INGEST_SECRET.");
@@ -602,6 +640,7 @@ export function loadConfig(env = process.env) {
     secret,
     presenceEnabled,
     serverSetupEnabled,
+    botEnabled,
   };
 }
 

@@ -105,6 +105,26 @@ const ROLE_DEFINITIONS = [
   { key: "bot", name: "Bots", color: 0x596579, hoist: false, permissions: "0" },
 ];
 
+
+function mergeManagedOverwrites(current, desired) {
+  const managedIds = new Set(desired.map(entry => String(entry.id)));
+  const preserved = (Array.isArray(current) ? current : [])
+    .filter(entry => !managedIds.has(String(entry.id)));
+  return [...preserved, ...desired];
+}
+
+function sameOverwrites(left, right) {
+  const signature = value => Array.isArray(value)
+    ? value.map(entry => [
+      String(entry.id),
+      String(entry.type),
+      String(entry.allow ?? "0"),
+      String(entry.deny ?? "0"),
+    ].join(":")).sort().join("|")
+    : "";
+  return signature(left) === signature(right);
+}
+
 function overwrite(id, type, allow = 0n, deny = 0n) {
   return { id, type, allow: allow.toString(), deny: deny.toString() };
 }
@@ -285,26 +305,39 @@ export class DiscordGuildSetup {
     const rolesByName = new Map(existingRoles.map(role => [normaliseName(role.name), role]));
     const ids = {};
     let created = 0;
+    let updated = 0;
     for (const definition of ROLE_DEFINITIONS) {
       let role = rolesByName.get(normaliseName(definition.name));
+      const desired = {
+        name: definition.name,
+        permissions: definition.permissions,
+        color: definition.color,
+        hoist: definition.hoist,
+        mentionable: false,
+      };
       if (!role) {
         role = await this.api.request("/guilds/" + this.guildId + "/roles", {
           method: "POST",
-          body: {
-            name: definition.name,
-            permissions: definition.permissions,
-            color: definition.color,
-            hoist: definition.hoist,
-            mentionable: false,
-          },
+          body: desired,
         });
         if (!role?.id) throw new Error("Discord did not return the created role ID for " + definition.name + ".");
         rolesByName.set(normaliseName(definition.name), role);
         created += 1;
+      } else if (String(role.permissions ?? "0") !== desired.permissions
+        || Number(role.color ?? 0) !== desired.color
+        || Boolean(role.hoist) !== desired.hoist
+        || Boolean(role.mentionable) !== false) {
+        const updatedRole = await this.api.request("/guilds/" + this.guildId + "/roles/" + role.id, {
+          method: "PATCH",
+          body: desired,
+        });
+        role = updatedRole?.id ? updatedRole : { ...role, ...desired };
+        rolesByName.set(normaliseName(definition.name), role);
+        updated += 1;
       }
       ids[definition.key] = role.id;
     }
-    return { ids, created };
+    return { ids, created, updated };
   }
 
   async ensureCategory(category, existingChannels, counts) {
@@ -316,6 +349,17 @@ export class DiscordGuildSetup {
       if (!channel?.id) throw new Error("Discord did not return the category ID for " + category.name + ".");
       existingChannels.push(channel);
       counts.categoriesCreated += 1;
+    } else if (category.permission_overwrites) {
+      const permissionOverwrites = mergeManagedOverwrites(channel.permission_overwrites, category.permission_overwrites);
+      if (!sameOverwrites(channel.permission_overwrites, permissionOverwrites)) {
+        const updated = await this.api.request("/channels/" + channel.id, {
+          method: "PATCH",
+          body: { permission_overwrites: permissionOverwrites },
+        });
+        channel = updated?.id ? updated : { ...channel, permission_overwrites: permissionOverwrites };
+        Object.assign(existingChannels.find(item => item.id === channel.id), channel);
+        counts.categoriesUpdated += 1;
+      }
     }
     return channel;
   }
@@ -324,7 +368,21 @@ export class DiscordGuildSetup {
     let channel = existingChannels.find(item => item.type === definition.type
       && normaliseName(item.name) === normaliseName(definition.name)
       && item.parent_id === parent.id);
-    if (channel) return channel;
+    if (channel) {
+      if (definition.permission_overwrites) {
+        const permissionOverwrites = mergeManagedOverwrites(channel.permission_overwrites, definition.permission_overwrites);
+        if (!sameOverwrites(channel.permission_overwrites, permissionOverwrites)) {
+          const updated = await this.api.request("/channels/" + channel.id, {
+            method: "PATCH",
+            body: { permission_overwrites: permissionOverwrites },
+          });
+          channel = updated?.id ? updated : { ...channel, permission_overwrites: permissionOverwrites };
+          Object.assign(existingChannels.find(item => item.id === channel.id), channel);
+          counts.channelsUpdated += 1;
+        }
+      }
+      return channel;
+    }
 
     if (definition.name === "snoozer-setup-state" && existingChannels.some(item =>
       item.type === 0 && normaliseName(item.name) === "snoozer-setup-state")) {
@@ -366,6 +424,51 @@ export class DiscordGuildSetup {
     return true;
   }
 
+  async repair() {
+    const resources = await this.listGuildResources();
+    if (!/^[1-9][0-9]{16,19}$/.test(this.botUserId ?? "")) {
+      throw new Error("The Discord bot user ID is unavailable; restart the worker before repairing the server.");
+    }
+
+    const roleResult = await this.ensureRoles(resources.roles);
+    const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId);
+    const counts = {
+      rolesCreated: roleResult.created,
+      rolesUpdated: roleResult.updated,
+      categoriesCreated: 0,
+      categoriesUpdated: 0,
+      channelsCreated: 0,
+      channelsUpdated: 0,
+      messagesCreated: 0,
+    };
+    const channelIds = new Map();
+
+    for (const categoryDefinition of layout) {
+      const category = await this.ensureCategory(categoryDefinition, resources.channels, counts);
+      for (const channelDefinition of categoryDefinition.channels) {
+        const channel = await this.ensureChannel(channelDefinition, category, resources.channels, counts);
+        channelIds.set(channelDefinition.name, channel);
+      }
+    }
+
+    for (const messageDefinition of STARTER_MESSAGES) {
+      const channel = channelIds.get(messageDefinition.channel);
+      if (channel && await this.ensureStarterMessage(channel, messageDefinition)) counts.messagesCreated += 1;
+    }
+
+    const stateChannel = channelIds.get("snoozer-setup-state");
+    if (!stateChannel) throw new Error("The private setup state channel could not be created.");
+    if (!stateChannel.topic?.includes(SETUP_COMPLETE_MARKER)) {
+      const completedAt = new Date().toISOString();
+      await this.api.request("/channels/" + stateChannel.id, {
+        method: "PATCH",
+        body: { topic: SETUP_COMPLETE_MARKER + " | completed_at=" + completedAt },
+      });
+    }
+
+    return { repaired: true, ...counts };
+  }
+
   async run() {
     const resources = await this.listGuildResources();
     const internalCategory = resources.channels.find(channel =>
@@ -395,7 +498,15 @@ export class DiscordGuildSetup {
 
     const roleResult = await this.ensureRoles(resources.roles);
     const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId);
-    const counts = { rolesCreated: roleResult.created, categoriesCreated: 0, channelsCreated: 0, messagesCreated: 0 };
+    const counts = {
+      rolesCreated: roleResult.created,
+      rolesUpdated: roleResult.updated,
+      categoriesCreated: 0,
+      categoriesUpdated: 0,
+      channelsCreated: 0,
+      channelsUpdated: 0,
+      messagesCreated: 0,
+    };
     const channelIds = new Map();
 
     for (const categoryDefinition of layout) {

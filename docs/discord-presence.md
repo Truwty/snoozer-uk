@@ -1,11 +1,11 @@
 # Discord Presence
 
-**Reviewed:** 27 November 2026  
+**Reviewed:** 28 November 2026  
 **Implementation:** Discord OAuth identity linking, per-profile public presence settings, a compact profile badge and a signed server-to-server ingest API are present in the current source.
 
 ## Runtime model
 
-The current main web service starts the Next.js server first. When either `DISCORD_SERVER_SETUP_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`, `scripts/start.mjs` waits for `/health/live` and then launches `workers/discord-presence/worker.mjs` as a child process. Server setup can run independently with only the bot token and guild ID; it uses the standard `GUILDS` intent and does not ingest presence data. Presence additionally requires its URL, HMAC secret and privileged Presence intent. If the worker exits, the website remains available. The GitHub Actions keep-awake workflow pings the public homepage every ten minutes on the Render Free service; this is a best-effort wake-up workaround, not an always-on guarantee.
+The current main web service starts the Next.js server first. When any of `DISCORD_SERVER_SETUP_ENABLED=true`, `DISCORD_BOT_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`, `scripts/start.mjs` waits for `/health/live` and then launches `workers/discord-presence/worker.mjs` as a child process. Server setup can run independently with only the bot token and guild ID; it uses the standard `GUILDS` intent and does not ingest presence data. Presence additionally requires its URL, HMAC secret and privileged Presence intent. If the worker exits, the website remains available. The GitHub Actions keep-awake workflow pings the public homepage every ten minutes on the Render Free service; this is a best-effort wake-up workaround, not an always-on guarantee.
 
 `render.presence-worker.yaml` describes an alternative standalone paid background worker deployment. Do not run that worker and the embedded child process against the same bot credentials at the same time: doing so can create two Gateway connections and duplicate ingestion. Choose one operating model deliberately.
 
@@ -66,7 +66,7 @@ For email/password Snoozer accounts, Discord identity linking also needs the Dis
 1. Create or select a Discord application that will own the presence bot.
 2. Add a bot user.
 3. Only when enabling Presence, turn on **Presence Intent** in **Bot → Privileged Gateway Intents**. Server setup alone does not require any privileged intents. Do not enable Message Content or Server Members for this integration.
-4. Invite the bot to the single shared Snoozer Discord server with the `bot` and `applications.commands` scopes. Presence observation itself needs no channel permissions, but the one-time server setup command needs **Manage Channels**, **Manage Roles**, **View Channels**, **Send Messages**, **Embed Links** and **Read Message History**. Give the bot role these permissions and place it above the roles it will manage. The combined permission bitfield is `268520464`.
+4. Invite the bot to the single shared Snoozer Discord server with the `bot` and `applications.commands` scopes. Presence observation itself needs no channel permissions. The server setup, support tickets and moderation features need **Manage Channels**, **Manage Roles**, **View Channels**, **Send Messages**, **Embed Links**, **Read Message History**, **Kick Members**, **Ban Members** and **Moderate Members**. Give the bot role these permissions and place it above all Snoozer roles and any members it must moderate. The combined permission bitfield is `1099780148246`. The bot runs a startup permission preflight and logs any missing permission; it does not grant itself permissions.
 5. Copy the server ID with Discord Developer Mode enabled. This becomes `DISCORD_PRESENCE_GUILD_ID`.
 6. Publish the server invite in `DISCORD_PRESENCE_INVITE_URL` so creators know where they must be members.
 7. Keep the bot token private. Never put it in GitHub, source code, browser configuration or ChatGPT messages.
@@ -81,7 +81,7 @@ The command creates the Snoozer role set (`Snoozer Admin`, `Moderator`, `Support
 
 The hidden `INTERNAL` category contains `#snoozer-setup-state`. Its channel topic stores `SNOOZER_SERVER_SETUP_COMPLETE:v1` after every setup step succeeds. A later invocation checks this marker and makes no changes. If a request fails before completion, the command can be retried: existing roles and channels are reused, existing messages are checked for their setup footer, and nothing is deleted or renamed. Do not delete the hidden marker channel if you want to preserve the one-time lock.
 
-The command does not assign roles to people, sync Premium subscriptions, run a ticket system or enable automated moderation. Assign staff and cosmetic roles manually after setup. Existing channels and roles are preserved rather than reconfigured; inspect their permissions if you are reusing an established server. Keep `DISCORD_SERVER_SETUP_ENABLED=true` while the command should remain available. It is safe to leave Presence disabled; the bot stays connected only for guild events and the setup interaction.
+The initial setup command does not assign roles to people, sync Premium subscriptions or enable Discord's native AutoMod. Assign staff and cosmetic roles manually after setup. Run `/snoozer-repair` as an Administrator to reconcile Snoozer-managed role permissions and channel/category overwrites without deleting existing channels or messages. Keep `DISCORD_SERVER_SETUP_ENABLED=true` only while `/snoozer-setup` needs to remain available; it can be turned off after the one-time setup. It is safe to leave Presence disabled; the community bot uses the standard guild intent and does not collect member presence.
 
 The command is available while `DISCORD_SERVER_SETUP_ENABLED=true` and the worker is running. It does not require `DISCORD_PRESENCE_ENABLED`, the Presence intent, `SNOOZER_PRESENCE_URL` or the HMAC secret. It registers against `DISCORD_PRESENCE_GUILD_ID`; do not point the same bot process at a different guild to provision a second server.
 
@@ -99,6 +99,8 @@ Set the same value in the Snoozer web service and the worker.
 
 ### Snoozer web service
 
+- `DISCORD_BOT_ENABLED=true` — enables the community bot, including tickets, bug/suggestion submissions, moderation commands, live status lookup and best-effort status change announcements. This does not enable Presence collection.
+- `DISCORD_SERVER_SETUP_ENABLED=false` — turn this off after the one-time server provisioning command is no longer needed. The new `/snoozer-repair` command remains available with the community bot enabled.
 - `DISCORD_PRESENCE_ENABLED=false` — default kill switch. Set to `true` only after policy clearance and after the bot/worker secrets are configured. In the free setup, this starts the worker as a child of the web service.
 - `DISCORD_BOT_TOKEN` — Discord bot token, secret.
 - `DISCORD_PRESENCE_GUILD_ID` — the shared Discord server ID.
@@ -115,7 +117,7 @@ Set the same value in the Snoozer web service and the worker.
 
 ## Render worker
 
-The default deployment can run the Discord Gateway worker as a child process alongside the Next.js web server on the existing free Render web service. `scripts/start.mjs` starts the worker when either `DISCORD_SERVER_SETUP_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`. Setup-only mode does not send presence data to Snoozer. No Docker image, extra npm dependency or paid Background Worker is required for this sleep-and-wake setup.
+The default deployment can run the Discord Gateway worker as a child process alongside the Next.js web server on the existing free Render web service. `scripts/start.mjs` starts the worker when `DISCORD_SERVER_SETUP_ENABLED=true`, `DISCORD_BOT_ENABLED=true` or `DISCORD_PRESENCE_ENABLED=true`. Setup-only and community-bot-only modes do not send presence data to Snoozer. No Docker image, extra npm dependency or paid Background Worker is required for this sleep-and-wake setup.
 
 Render's free web service can sleep after inactivity. `.github/workflows/keep-snoozer-awake.yml` sends an HTTP request to `https://snoozer.uk/` every 10 minutes. That request wakes the web service, which starts both Next.js and the Discord worker. The Gateway reconnect logic restores the Discord connection after a sleep/restart. GitHub scheduled workflows can be delayed or skipped, so this is best-effort rather than an always-on guarantee; presence updates can have gaps during sleep or wake-up.
 
@@ -127,9 +129,23 @@ The web service's Render start command remains `npm start`; the package script n
 node scripts/start.mjs
 ```
 
+## Snoozer community bot
+
+Set `DISCORD_BOT_ENABLED=true` in the main Render web service environment to register the community commands in the configured guild. Keep `DISCORD_PRESENCE_ENABLED=false` unless Discord Presence has been separately approved and configured. The bot upserts each Snoozer command by name during registration, so restarts update existing commands without deleting unrelated commands belonging to the same Discord application.
+
+Available commands are `/snoozer-help`, `/snoozer-status`, `/snoozer-ticket`, `/snoozer-ticket-close`, `/snoozer-bug`, `/snoozer-suggest` and `/snoozer-report`. Staff commands are `/snoozer-warn`, `/snoozer-timeout`, `/snoozer-kick`, `/snoozer-ban` and Administrator-only `/snoozer-repair`.
+
+Tickets are private text channels under SUPPORT & FEEDBACK, visible to the ticket owner, the Snoozer support/admin roles and the bot. Each member can have one open ticket at a time. The opener or staff can close a ticket; closing locks the owner's ability to send messages but preserves the transcript. Staff receive a summary in `#support-queue`. Members can submit bug reports and ideas into the existing feedback channels, or open a private moderation report under STAFF HQ. Reports are visible to the reporter and moderators/admins, and a summary is written to `#moderation-log`.
+
+Moderation actions require the corresponding Discord permission, pass a reason to Discord's audit log, and write a record to `#moderation-log`. Warning delivery by DM is best-effort because members can disable server DMs. Discord's native AutoMod and Community onboarding/rules screening remain configured in Discord itself, not by this worker.
+
+`/snoozer-status` reads the public JSON snapshot from `https://status.snoozer.uk/api/status`. The worker checks that feed every minute and posts a message in `#service-status` when the overall status changes. This is best-effort: a sleeping/restarting free Render service cannot guarantee instant incident announcements. The command itself fetches the latest status on demand.
+
+`/snoozer-repair` is a separate Administrator-only reconciliation command. It fixes role permissions, category overwrites and channel overwrites for the Snoozer-managed names. It does not remove or rename channels, roles or user content. Review the changes before confirming; put the bot's role above all Snoozer roles so Discord permits it to manage them.
+
 ## Rollout and acceptance
 
-The application side can be built, migrated and CI-tested without the Discord token. Production provider acceptance requires:
+The application side can be built and CI-tested without the Discord token. Production provider acceptance requires:
 
 - Discord Presence Intent enabled for the bot application
 - Bot invited to the shared server and the server ID configured
@@ -144,6 +160,9 @@ Before public launch, obtain written confirmation from Discord that displaying D
 ## References
 
 - [Discord Gateway intents](https://docs.discord.com/developers/events/gateway)
+- [Discord application commands](https://docs.discord.com/developers/interactions/application-commands)
+- [Discord guild member and moderation API](https://docs.discord.com/developers/resources/guild)
+- [Discord channel permissions](https://docs.discord.com/developers/resources/channel)
 - [Discord privileged intent access](https://support-dev.discord.com/hc/en-us/articles/40281523410967-Changes-to-Privileged-Intent-Access-for-Discord-Apps)
 - [Discord Developer Terms](https://discord.com/developers/docs/policies-and-agreements/developer-terms-of-service)
 - [Supabase Auth identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking)

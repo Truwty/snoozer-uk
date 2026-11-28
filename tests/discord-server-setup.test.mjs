@@ -31,6 +31,14 @@ function createGuildApi() {
         return structuredClone(role);
       }
 
+      const rolePath = path.match(/^\/guilds\/([0-9]+)\/roles\/([0-9]+)$/);
+      if (rolePath && method === "PATCH") {
+        const role = roles.find(item => item.id === rolePath[2]);
+        assert.ok(role, "patched role should exist");
+        Object.assign(role, options.body);
+        return structuredClone(role);
+      }
+
       if (path === "/guilds/" + guildId + "/channels" && method === "POST") {
         const channel = { id: String(nextId++), ...options.body };
         channels.push(channel);
@@ -254,8 +262,10 @@ test("worker registers /snoozer-setup only in the configured guild", async () =>
   assert.equal(worker.botUserId, botUserId);
   assert.equal(requests.length, 3);
   assert.match(requests[2].url, new RegExp("/applications/777777777777777777/guilds/" + guildId + "/commands$"));
-  const command = JSON.parse(requests[2].options.body);
-  assert.equal(command.name, "snoozer-setup");
+  assert.equal(requests[2].options.method, "PUT");
+  const commands = JSON.parse(requests[2].options.body);
+  const command = commands.find(item => item.name === "snoozer-setup");
+  assert.ok(command);
   assert.equal(command.default_member_permissions, "8");
   assert.equal(command.options[0].name, "confirm");
 });
@@ -304,7 +314,53 @@ test("server setup can run without enabling or configuring public Presence", () 
     DISCORD_PRESENCE_ENABLED: "false",
     DISCORD_BOT_TOKEN: "test-token",
     DISCORD_PRESENCE_GUILD_ID: guildId,
-  }), /Enable DISCORD_SERVER_SETUP_ENABLED or DISCORD_PRESENCE_ENABLED/);
+  }), /Enable DISCORD_SERVER_SETUP_ENABLED, DISCORD_BOT_ENABLED or DISCORD_PRESENCE_ENABLED/);
+});
+
+
+test("repair reconciles drifted Snoozer role and channel permissions without duplicating resources", async () => {
+  const state = createGuildApi();
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+    api: state.api,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await setup.run();
+  const moderator = state.roles.find(role => role.name === "Moderator");
+  moderator.permissions = "0";
+  moderator.color = 0;
+  moderator.hoist = false;
+
+  const staffCategory = state.channels.find(channel => channel.type === 4 && channel.name === "STAFF HQ");
+  staffCategory.permission_overwrites = [{
+    id: "600000000000000009",
+    type: 0,
+    allow: "1024",
+    deny: "0",
+  }];
+  const staffChat = state.channels.find(channel => channel.type === 0 && channel.name === "staff-chat");
+  staffChat.permission_overwrites = [{
+    id: "600000000000000010",
+    type: 1,
+    allow: "1024",
+    deny: "0",
+  }];
+
+  const channelCount = state.channels.length;
+  const roleCount = state.roles.length;
+  const messageCount = [...state.messages.values()].reduce((sum, messages) => sum + messages.length, 0);
+  const result = await setup.repair();
+
+  assert.equal(result.rolesUpdated, 1);
+  assert.equal(result.categoriesUpdated, 1);
+  assert.ok(result.channelsUpdated >= 1);
+  assert.notEqual(moderator.permissions, "0");
+  assert.ok(staffCategory.permission_overwrites.some(entry => entry.id === "600000000000000009"), "custom category override must survive repair");
+  assert.ok(staffChat.permission_overwrites.some(entry => entry.id === "600000000000000010"), "custom channel override must survive repair");
+  assert.ok(staffChat.permission_overwrites.some(entry => entry.id === guildId), "required Snoozer-managed privacy override must be restored");
+  assert.equal(state.channels.length, channelCount);
+  assert.equal(state.roles.length, roleCount);
+  assert.equal([...state.messages.values()].reduce((sum, messages) => sum + messages.length, 0), messageCount);
 });
 
 test("setup-only mode identifies with the GUILDS intent and not the privileged Presence intent", async () => {
