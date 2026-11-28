@@ -1163,3 +1163,17 @@ test("Discord server activity is posted to the configured bot logs channel witho
   assert.deepEqual(requests[0].options.body.allowed_mentions, { parse: [] });
 });
 
+
+
+test("ticket deletion jobs are accepted by the database constraint and enqueue RPC", async () => {
+  const sql = await readFile(new URL("../supabase/migrations/20261128122128_discord_ticket_delete_job_allowlist.sql", import.meta.url), "utf8");
+  assert.match(sql, /drop constraint if exists discord_bot_jobs_job_type_check/i);
+  assert.match(sql, /check\s*\(job_type in \([\s\S]*?'ticket_delete'/i);
+
+  const enqueueStart = sql.indexOf("create or replace function public.discord_bot_enqueue_job");
+  assert.ok(enqueueStart >= 0, "missing ticket job enqueue RPC migration");
+  const enqueueSql = sql.slice(enqueueStart);
+  assert.match(enqueueSql, /'tempban_unban'[\s\S]*?'ticket_delete'/);
+  assert.match(sql, /revoke all on function public\.discord_bot_enqueue_job[\s\S]*?from public, anon, authenticated/i);
+  assert.match(sql, /grant execute on function public\.discord_bot_enqueue_job[\s\S]*?to service_role/i);
+});
