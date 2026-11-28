@@ -564,6 +564,43 @@ test("community slash commands reach the complete router as well as rebuild", as
 
 
 
+test("slash rebuild protects the channel where the command was invoked", async () => {
+  const applicationId = "1574262035519115288";
+  const invocationChannelId = "1574262035519115730";
+  let received;
+  const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
+    api: { async request() { return {}; } },
+    store: { async recordInteraction() { return true; } },
+  });
+  panels.isAdmin = () => true;
+  panels.defer = async () => {};
+  panels.complete = async () => {};
+  panels.refreshResources = async () => {};
+  panels.rebuilder.rebuild = async (actorId, options) => {
+    received = { actorId, options };
+    return {
+      complete: true, categoryCount: 1, channelCount: 1, roleCount: 1,
+      memberRolesMigrated: 0, backupId: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90",
+      channelsPreserved: [],
+    };
+  };
+  await panels.handleCommunitySlash({
+    guild_id: guildId,
+    application_id: applicationId,
+    channel_id: invocationChannelId,
+    type: 2,
+    id: "1574262035519115731",
+    token: "test-interaction-token",
+    user: { id: botUserId },
+    member: { user: { id: botUserId }, permissions: String(1n << 3n), roles: [] },
+    data: {
+      name: "snoozer-rebuild-server",
+      options: [{ name: "confirmation", value: "REBUILD SNOOZER SERVER" }],
+    },
+  });
+  assert.deepEqual(received, { actorId: botUserId, options: { invocationChannelId } });
+});
+
 test("voice channel creation omits the text-only topic field", async () => {
   const posted = [];
   const api = {
