@@ -93,6 +93,35 @@ test("DiscordStore surfaces useful PostgREST details for failed storage operatio
   );
 });
 
+test("DiscordStore routes ticket and Creator submissions through persistent cooldown RPCs", async () => {
+  const calls = [];
+  const store = new DiscordStore({ url: "https://example.supabase.co", serviceKey: "key" }, {
+    fetcher: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body) });
+      const result = url.endsWith("/discord_bot_ticket_preflight")
+        ? { allowed: true }
+        : { created: false, reason: "cooldown", retry_after_seconds: 86_400 };
+      return new Response(JSON.stringify(result), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+
+  const ownerId = "1574262035519115835";
+  const discordId = "1574262035519115836";
+  const ticket = await store.ticketPreflight(guildId, ownerId);
+  const creator = await store.creatorRequest(discordId, "https://snoozer.uk/testcreator", "I create useful community projects and tutorials.");
+
+  assert.deepEqual(ticket, { allowed: true });
+  assert.deepEqual(creator, { created: false, reason: "cooldown", retry_after_seconds: 86_400 });
+  assert.equal(calls[0].url, "https://example.supabase.co/rest/v1/rpc/discord_bot_ticket_preflight");
+  assert.deepEqual(calls[0].body, { p_guild_id: guildId, p_owner_discord_id: ownerId });
+  assert.equal(calls[1].url, "https://example.supabase.co/rest/v1/rpc/discord_bot_creator_request_limited");
+  assert.deepEqual(calls[1].body, {
+    p_discord_user_id: discordId,
+    p_profile_url: "https://snoozer.uk/testcreator",
+    p_reason: "I create useful community projects and tutorials.",
+  });
+});
+
 test("DiscordStore reads poll results through the service-only RPC", async () => {
   let captured;
   const store = new DiscordStore({ url: "https://example.supabase.co", serviceKey: "key" }, {
