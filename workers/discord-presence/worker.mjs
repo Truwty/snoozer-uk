@@ -382,7 +382,7 @@ export class DiscordPresenceWorker {
       case "RESUMED":
         this.connected = true;
         this.guildReady = this.guildKnown;
-        await this.heartbeat(true, this.guildReady);
+        if (this.config.presenceEnabled) await this.heartbeat(true, this.guildReady);
         break;
       case "GUILD_CREATE":
         this.logger.info(`[discord-presence] Discord sent GUILD_CREATE (configured server match=${data.id === this.config.guildId}).`);
@@ -391,12 +391,14 @@ export class DiscordPresenceWorker {
           this.connected = true;
           this.guildKnown = true;
           this.guildReady = true;
-          await this.heartbeat(true, true);
-          const initialPresences = Array.isArray(data.presences) ? data.presences : [];
-          const subscribedInitialPresences = initialPresences.filter(presence => presence?.user?.id && this.subscriptions.has(presence.user.id));
-          this.logger.info(`[discord-presence] Initial guild presence snapshot received (entries=${initialPresences.length}; opted_in_matches=${subscribedInitialPresences.length}).`);
-          for (const presence of subscribedInitialPresences) await this.sendPresence(presence.user.id, presence);
-          void this.requestSnapshots(this.subscribedDiscordUserIds());
+          if (this.config.presenceEnabled) {
+            await this.heartbeat(true, true);
+            const initialPresences = Array.isArray(data.presences) ? data.presences : [];
+            const subscribedInitialPresences = initialPresences.filter(presence => presence?.user?.id && this.subscriptions.has(presence.user.id));
+            this.logger.info(`[discord-presence] Initial guild presence snapshot received (entries=${initialPresences.length}; opted_in_matches=${subscribedInitialPresences.length}).`);
+            for (const presence of subscribedInitialPresences) await this.sendPresence(presence.user.id, presence);
+            void this.requestSnapshots(this.subscribedDiscordUserIds());
+          }
         }
         break;
       case "GUILD_DELETE":
@@ -409,7 +411,7 @@ export class DiscordPresenceWorker {
             this.sequence = null;
             this.resumeUrl = null;
           }
-          await this.heartbeat(this.connected, false);
+          if (this.config.presenceEnabled) await this.heartbeat(this.connected, false);
         }
         break;
       case "PRESENCE_UPDATE":
@@ -452,7 +454,7 @@ export class DiscordPresenceWorker {
       this.connected = false;
       this.guildReady = false;
       this.stopHeartbeat();
-      void this.heartbeat(false, false);
+      if (this.config.presenceEnabled) void this.heartbeat(false, false);
       for (const pending of this.pendingChunks.values()) pending.resolve();
       this.pendingChunks.clear();
       if (!this.stopped) this.scheduleReconnect(event.code);
@@ -474,7 +476,7 @@ export class DiscordPresenceWorker {
         } else {
           this.send({ op: 2, d: {
             token: this.config.token,
-            intents: GUILDS_INTENT | GUILD_PRESENCES_INTENT,
+            intents: GUILDS_INTENT | (this.config.presenceEnabled ? GUILD_PRESENCES_INTENT : 0),
             large_threshold: 250,
             properties: { os: process.platform, browser: "Snoozer Presence", device: "Snoozer Presence" },
           } });
@@ -547,16 +549,23 @@ export class DiscordPresenceWorker {
   }
 
   async start() {
-    this.logger.info("[discord-presence] Worker process started; validating the signed Snoozer endpoint.");
-    await this.refreshSubscriptions();
-    try {
-      await this.registerServerSetupCommand();
-    } catch (error) {
-      this.logger.error("[discord-presence] could not register /snoozer-setup; presence monitoring will continue:", error?.message ?? error);
+    this.logger.info("[discord-presence] Discord worker process started.");
+    if (this.config.presenceEnabled) {
+      this.logger.info("[discord-presence] Presence monitoring is enabled; validating the signed Snoozer endpoint.");
+      await this.refreshSubscriptions();
+      this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
+      this.snapshotTimer = setInterval(() => void this.requestSnapshots(this.subscribedDiscordUserIds()), SNAPSHOT_REFRESH_MS);
+      this.workerHeartbeatTimer = setInterval(() => void this.heartbeat(this.connected, this.guildReady), HEARTBEAT_INTERVAL_MS);
+    } else {
+      this.logger.info("[discord-presence] Presence monitoring is disabled; the worker will not read or submit presence data.");
     }
-    this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
-    this.snapshotTimer = setInterval(() => void this.requestSnapshots(this.subscribedDiscordUserIds()), SNAPSHOT_REFRESH_MS);
-    this.workerHeartbeatTimer = setInterval(() => void this.heartbeat(this.connected, this.guildReady), HEARTBEAT_INTERVAL_MS);
+    if (this.config.serverSetupEnabled) {
+      try {
+        await this.registerServerSetupCommand();
+      } catch (error) {
+        this.logger.error("[discord-presence] could not register /snoozer-setup:", error?.message ?? error);
+      }
+    }
     this.connect();
   }
 
@@ -569,20 +578,31 @@ export class DiscordPresenceWorker {
     this.reconnectTimer = null;
     this.stopHeartbeat();
     this.socket?.close(1000, "Worker shutting down");
-    await this.heartbeat(false, false);
+    if (this.config.presenceEnabled) await this.heartbeat(false, false);
   }
 }
 
-function loadConfig(env = process.env) {
-  const enabled = env.DISCORD_PRESENCE_ENABLED === "true";
+export function loadConfig(env = process.env) {
+  const presenceEnabled = env.DISCORD_PRESENCE_ENABLED === "true";
+  const serverSetupEnabled = env.DISCORD_SERVER_SETUP_ENABLED === "true";
   const token = env.DISCORD_BOT_TOKEN ?? "";
   const guildId = env.DISCORD_PRESENCE_GUILD_ID ?? "";
   const baseUrl = env.SNOOZER_PRESENCE_URL ?? "";
   const secret = env.DISCORD_PRESENCE_INGEST_SECRET ?? "";
-  if (!enabled || !token || !/^[1-9][0-9]{16,19}$/.test(guildId) || !/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || !/^[a-f0-9]{64}$/i.test(secret)) {
-    throw new Error("Set DISCORD_PRESENCE_ENABLED=true and configure DISCORD_BOT_TOKEN, DISCORD_PRESENCE_GUILD_ID, SNOOZER_PRESENCE_URL and the shared 64-character DISCORD_PRESENCE_INGEST_SECRET.");
+  if ((!presenceEnabled && !serverSetupEnabled) || !token || !/^[1-9][0-9]{16,19}$/.test(guildId)) {
+    throw new Error("Enable DISCORD_SERVER_SETUP_ENABLED or DISCORD_PRESENCE_ENABLED, and configure DISCORD_BOT_TOKEN and DISCORD_PRESENCE_GUILD_ID.");
   }
-  return { token, guildId, baseUrl: baseUrl.replace(/\/$/, ""), secret };
+  if (presenceEnabled && (!/^https:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?$/i.test(baseUrl) || !/^[a-f0-9]{64}$/i.test(secret))) {
+    throw new Error("Discord Presence requires SNOOZER_PRESENCE_URL and the shared 64-character DISCORD_PRESENCE_INGEST_SECRET.");
+  }
+  return {
+    token,
+    guildId,
+    baseUrl: baseUrl.replace(/\/$/, ""),
+    secret,
+    presenceEnabled,
+    serverSetupEnabled,
+  };
 }
 
 async function main() {
