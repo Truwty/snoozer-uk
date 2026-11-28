@@ -148,25 +148,50 @@ export class DiscordCommunityPanels{
     if(!SF.test(channelId??""))return {posted:0,errors:["Creator verification channel is not configured."]};
     const items=await this.store.creatorQueue(50);
     if(!Array.isArray(items)||!items.length)return {posted:0,errors:[]};
-    const config=await this.store.getConfig(this.guildId);
+
+    const [config,messages]=await Promise.all([
+      this.store.getConfig(this.guildId),
+      this.api.request("/channels/"+channelId+"/messages?limit=100"),
+    ]);
+    const recentByRequest=new Map();
+    for(const message of Array.isArray(messages)?messages:[]){
+      if(message.author?.id!==this.botUserId)continue;
+      for(const embed of Array.isArray(message.embeds)?message.embeds:[]){
+        const match=String(embed.footer?.text??"").match(/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+        if(match&&SF.test(message.id??""))recentByRequest.set(match[1],message.id);
+      }
+    }
+
     let posted=0;const errors=[];
     for(const item of items){
-      const key="creator_"+String(item.id).replaceAll("-","");
+      const id=String(item.id??"");
+      if(!UUID.test(id))continue;
+      const key="creator_"+id.replaceAll("-","");
       const prior=config?.[key];
       const embed={title:"✨ Creator verification request",description:
-        "**Profile:** "+clean(item.profile_url,250)+"\n**Member:** <@"+item.discord_user_id+">\n**Submitted:** <t:"+Math.floor(Date.parse(item.created_at)/1000)+":R>\n\n**Creator information**\n"+clean(item.reason,2200)+"\n\n**Reference:** "+item.id,
-        color:0x8b72d9,footer:{text:"Pending Creator verification · "+item.id},timestamp:item.created_at};
-      const body={embeds:[embed],components:[row(btn("creator:approve:"+item.id,"Approve",3,"✅"),btn("creator:reject:"+item.id,"Reject",4,"❌"))],allowed_mentions:{parse:[]}};
+        "**Profile:** "+clean(item.profile_url,250)+"\n**Member:** <@"+item.discord_user_id+">\n**Submitted:** <t:"+Math.floor(Date.parse(item.created_at)/1000)+":R>\n\n**Creator information**\n"+clean(item.reason,2200)+"\n\n**Reference:** "+id,
+        color:0x8b72d9,footer:{text:"Pending Creator verification · "+id},timestamp:item.created_at};
+      const body={embeds:[embed],components:[row(btn("creator:approve:"+id,"Approve",3,"✅"),btn("creator:reject:"+id,"Reject",4,"❌"))],allowed_mentions:{parse:[]}};
+      let messageId=SF.test(prior?.message_id??"")?prior.message_id:recentByRequest.get(id);
+      const messageChannel=SF.test(prior?.channel_id??"")?prior.channel_id:channelId;
       try{
-        if(SF.test(prior?.channel_id??"")&&SF.test(prior?.message_id??"")){
-          await this.api.request("/channels/"+prior.channel_id+"/messages/"+prior.message_id,{method:"PATCH",body});
-        }else{
+        let updated=false;
+        if(messageId){
+          try{
+            await this.api.request("/channels/"+messageChannel+"/messages/"+messageId,{method:"PATCH",body});
+            updated=true;
+          }catch(error){
+            if(!/404|10008|unknown message/i.test(String(error?.message??error)))throw error;
+          }
+        }
+        if(!updated){
           const msg=await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body});
           if(!SF.test(msg?.id??""))throw new Error("Discord did not return the Creator review message ID.");
-          await this.store.setConfig(this.guildId,key,{channel_id:channelId,message_id:msg.id});
+          messageId=msg.id;
         }
+        await this.store.setConfig(this.guildId,key,{channel_id:channelId,message_id:messageId});
         posted++;
-      }catch(error){errors.push(item.id+": "+clean(error?.message??"Unknown error",180));}
+      }catch(error){errors.push(id+": "+clean(error?.message??"Unknown error",180));}
     }
     return {posted,errors};
   }
