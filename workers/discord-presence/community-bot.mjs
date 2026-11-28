@@ -970,6 +970,7 @@ async announceServerBoost(member) {
     } catch (error) {
       const detail = cleanText(error?.message ?? "Unknown error", 900) || "Unknown error";
       this.logger.error("[discord-community] command " + name + " failed: " + (error?.stack ?? detail));
+      try { await this.logEvent?.({ title:"Bot command failed", description:"Command: /"+cleanText(name,100)+"\nMember: <@"+(interaction.member?.user?.id??interaction.user?.id??"unknown")+">\nError: "+detail, severity:"error" }); } catch {}
       await this.complete(interaction, { content: "The command could not be completed. " + detail });
     }
   }
