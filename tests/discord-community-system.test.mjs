@@ -79,6 +79,126 @@ test("DiscordStore rejects invalid Supabase configuration and RPC names", async 
   await assert.rejects(store.rpc("../admin"), /Invalid internal Discord RPC name/);
 });
 
+test("DiscordStore surfaces useful PostgREST details for failed storage operations", async () => {
+  const store = new DiscordStore({ url: "https://example.supabase.co", serviceKey: "key" }, {
+    fetcher: async () => new Response(JSON.stringify({
+      code: "42702",
+      message: 'column reference "display_name" is ambiguous',
+      details: "It could refer to either a PL/pgSQL variable or a table column.",
+    }), { status: 400, headers: { "content-type": "application/json" } }),
+  });
+  await assert.rejects(
+    store.memberSummary("1574262035519115287"),
+    /HTTP 400.*42702.*display_name.*PL\\/pgSQL variable/,
+  );
+});
+
+test("DiscordStore reads poll results through the service-only RPC", async () => {
+  let captured;
+  const store = new DiscordStore({ url: "https://example.supabase.co", serviceKey: "key" }, {
+    fetcher: async (url, options) => {
+      captured = { url, body: JSON.parse(options.body) };
+      return new Response(JSON.stringify({ total: 2, options: [] }), { status: 200 });
+    },
+  });
+  const pollId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";
+  const results = await store.pollResults(pollId);
+  assert.equal(results.total, 2);
+  assert.equal(captured.url, "https://example.supabase.co/rest/v1/rpc/discord_bot_poll_results");
+  assert.deepEqual(captured.body, { p_id: pollId });
+});
+
+test("permanent panel publishing creates rules, FAQ and service status posts without internal marker footers", async () => {
+  const ids = {
+    rules: "1574262035519115801",
+    faq: "1574262035519115802",
+    service_status: "1574262035519115803",
+  };
+  const posts = [];
+  const panel = new DiscordCommunityPanels({ guildId, botUserId, applicationId: "1574262035519115288" }, {
+    api: { async request(path, options = {}) {
+      if (path.endsWith("/messages?limit=100")) return [];
+      if (options.method === "POST" && path.startsWith("/channels/")) {
+        posts.push({ path, body: structuredClone(options.body) });
+        return { id: "1574262035519115804" };
+      }
+      throw new Error("unexpected Discord request " + path);
+    } },
+    store: { async getResources() { return { map: ids }; }, async getConfig() { return {}; } },
+  });
+  const result = await panel.publishPermanentPanels();
+  assert.equal(result.errors.length, 0);
+  assert.equal(posts.length, 3);
+  for (const key of Object.keys(ids)) {
+    const post = posts.find(item => item.path === "/channels/" + ids[key] + "/messages");
+    assert.ok(post, "missing published panel " + key);
+    assert.doesNotMatch(post.body.embeds[0].footer.text, /^SNOOZER_PANEL:/);
+  }
+  assert.match(posts.find(item => item.path.includes(ids.faq)).body.embeds[0].title, /Frequently Asked Questions/);
+  assert.match(posts.find(item => item.path.includes(ids.rules)).body.embeds[0].title, /Community Rules/);
+  assert.match(posts.find(item => item.path.includes(ids.service_status)).body.embeds[0].title, /Service Status/);
+});
+
+test("bug report modal respects Discord's 4,000 character text input limit", async () => {
+  let modal;
+  const panel = new DiscordCommunityPanels({ guildId, botUserId, applicationId: "1574262035519115288" }, {
+    api: { async request() { return {}; } },
+    store: { async recordInteraction() { return true; } },
+  });
+  panel.showModal = async (_interaction, value) => { modal = value; };
+  await panel.handle({
+    guild_id: guildId, application_id: "1574262035519115288", type: 3,
+    id: "1574262035519115810", token: "test-interaction-token",
+    user: { id: botUserId }, data: { custom_id: "bug:open" },
+  });
+  assert.ok(modal);
+  assert.equal(modal.components[1].components[0].max_length, 4000);
+});
+
+test("poll voting refreshes the poll embed with voter mentions and suppresses mention notifications", async () => {
+  const pollId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";
+  const option = "Keep the current design";
+  const voterId = "1574262035519115287";
+  let patched = null;
+  let savedVote = null;
+  const panel = new DiscordCommunityPanels({ guildId, botUserId, applicationId: "1574262035519115288" }, {
+    api: { async request(path, options = {}) {
+      if (path === "/channels/1574262035519115811/messages?limit=100") return [];
+      if (path === "/channels/1574262035519115811/messages/1574262035519115812" && !options.method) {
+        return { embeds: [{ title: "📊 Choose a design" }] };
+      }
+      if (path === "/channels/1574262035519115811/messages/1574262035519115812" && options.method === "PATCH") {
+        patched = structuredClone(options.body);
+        return {};
+      }
+      throw new Error("unexpected Discord request " + path);
+    } },
+    store: {
+      async getConfig() { return { ["poll_" + pollId.replaceAll("-", "")]: {
+        title: "Choose a design", options: [option, "Try a new design"],
+        channel_id: "1574262035519115811", message_id: "1574262035519115812",
+      } }; },
+      async recordInteraction() { return true; },
+      async voteSubmission(id, userIdValue, choice) { savedVote = { id, userId: userIdValue, choice }; },
+      async pollResults() { return { total: 1, options: [
+        { choice: option, votes: 1, voters: [voterId] },
+        { choice: "Try a new design", votes: 0, voters: [] },
+      ] }; },
+    },
+  });
+  await panel.handle({
+    guild_id: guildId, application_id: "1574262035519115288", type: 3,
+    id: "1574262035519115813", token: "test-interaction-token",
+    user: { id: botUserId }, data: { custom_id: "poll:vote:" + pollId + ":0" },
+  });
+  assert.deepEqual(savedVote, { id: pollId, userId: botUserId, choice: option });
+  assert.ok(patched);
+  assert.match(patched.embeds[0].fields[0].value, new RegExp("<@" + voterId + ">"));
+  assert.deepEqual(patched.allowed_mentions.parse, []);
+  assert.equal(patched.embeds[0].footer.text, "Snoozer · Community poll");
+});
+
+
 test("server reset preflight stops before writes when the bot lacks permissions", async () => {
   const writes = [];
   const api = {
