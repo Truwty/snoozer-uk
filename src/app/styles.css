@@ -2434,7 +2434,7 @@ body:has(> .public-page[data-background-image="true"]) {
 .template-item-heading h2 { font-size:1.08rem; letter-spacing:-.02em; }
 .template-item-heading p { margin:0; }
 .template-item-heading .eyebrow { letter-spacing:.09em; font-size:.68rem; }
-.template-preview-frame { display:grid; align-items:stretch; min-width:0; }
+.template-preview-frame { display:grid; align-items:stretch; min-width:0; pointer-events:none; }
 .template-preview-frame .profile-card { min-height:22rem; height:100%; width:100%; }
 .template-preview-frame .profile-inner { --card-pad:clamp(1rem,8cqi,1.8rem); }
 .template-preview-frame .profile-identity .profile-name-heading { font-size:clamp(1.35rem,6cqi,2rem); }
