@@ -794,11 +794,15 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     const tierRank: Record<string, number> = { free: 0, plus: 1, pro: 2, studio: 3 };
     expect(effectTier).toBeTruthy();
     const tierChecks = [
-      ["aurora", "plus"], ["nebula", "pro"], ["singularity", "studio"],
-      ["tilt", "pro"], ["parallax", "studio"], ["deep-space", "studio"],
+      ["#profile-effect-background", "aurora", "plus"],
+      ["#profile-effect-background", "nebula", "pro"],
+      ["#profile-effect-background", "singularity", "studio"],
+      ['select[aria-label="Effect interaction"]', "tilt", "pro"],
+      ['select[aria-label="Effect interaction"]', "parallax", "studio"],
+      ['select[aria-label="Effect preset"]', "deep-space", "studio"],
     ] as const;
-    for (const [option, requiredTier] of tierChecks) {
-      const optionLocator = page.locator(`.effects-editor option[value="${option}"]`);
+    for (const [select, option, requiredTier] of tierChecks) {
+      const optionLocator = page.locator(`${select} option[value="${option}"]`);
       if (tierRank[effectTier!] < tierRank[requiredTier]) await expect(optionLocator).toBeDisabled();
       else await expect(optionLocator).toBeEnabled();
     }
