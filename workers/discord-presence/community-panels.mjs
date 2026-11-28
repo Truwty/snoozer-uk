@@ -196,7 +196,7 @@ export class DiscordCommunityPanels{
       stage="post private ticket welcome";
       await this.api.request("/channels/"+channel.id+"/messages",{method:"POST",body:{
         content:"<@"+owner+">",
-        embeds:[{title:"Support ticket opened",description:"**"+subject+"**\\n\\n"+details+"\\n\\nA Snoozer support team member will reply here.",color:0x438f9b,
+        embeds:[{title:"Support ticket opened",description:"**"+subject+"**\n\n"+details+"\n\nA Snoozer support team member will reply here.",color:0x438f9b,
           fields:[{name:"Category",value:category,inline:true},{name:"Priority",value:"Normal",inline:true}],
           footer:{text:"Ticket reference "+record.ticket_id},timestamp:new Date().toISOString()}],
         components:[row(btn("ticket:claim:"+record.ticket_id,"Claim",2,"🙋"),btn("ticket:priority:"+record.ticket_id,"Priority",2,"🚦"),btn("ticket:assign:"+record.ticket_id,"Assign",2,"👤"),btn("ticket:escalate:"+record.ticket_id,"Escalate",2,"⬆️"),btn("ticket:note:"+record.ticket_id,"Staff note",2,"📝")),row(btn("ticket:close:"+record.ticket_id,"Close",4,"🔒"))],
@@ -217,10 +217,10 @@ export class DiscordCommunityPanels{
       stage="notify support queue";
       const queue=this.resources.ticket_queue;
       if(SF.test(queue??""))try{await this.api.request("/channels/"+queue+"/messages",{method:"POST",body:{
-        embeds:[{title:"New support ticket",description:"**"+subject+"**\\nMember: <@"+owner+">\\nTicket: <#"+channel.id+">\\nCategory: "+category,
+        embeds:[{title:"New support ticket",description:"**"+subject+"**\nMember: <@"+owner+">\nTicket: <#"+channel.id+">\nCategory: "+category,
           color:0x8b72d9,footer:{text:"Ticket "+record.ticket_id},timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
       }});}catch(error){this.logger.error("[discord-panels] ticket queue notice failed",error?.stack??error?.message??error);}
-      try{await this.logEvent?.({title:"Support ticket opened",description:"Member: <@"+owner+">\\nChannel: <#"+channel.id+">\\nCategory: "+category+"\\nReference: "+record.ticket_id,severity:"info"});}catch{}
+      try{await this.logEvent?.({title:"Support ticket opened",description:"Member: <@"+owner+">\nChannel: <#"+channel.id+">\nCategory: "+category+"\nReference: "+record.ticket_id,severity:"info"});}catch{}
       stage="respond to ticket requester";
       await this.reply(i,{content:"Your private support ticket has been created: <#"+channel.id+">."},true);
     }catch(error){
@@ -338,7 +338,7 @@ export class DiscordCommunityPanels{
     }).slice(-100);
     await this.store.ticketAction(id,actor,"transcript",{transcript});
     await this.store.ticketAction(id,actor,"close",{});
-    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\\nClosed by: <@"+actor+">\\nReference: "+id,severity:"info"});}catch{}
+    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\nClosed by: <@"+actor+">\nReference: "+id,severity:"info"});}catch{}
     const overwrites=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));
     if(owner)overwrites.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory).toString(),deny:P.sendMessages.toString()});
     await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{
@@ -589,7 +589,7 @@ export class DiscordCommunityPanels{
     });
     const embed={
       title:"📊 "+title,
-      description:"**"+String(results?.total??0)+" total votes**\\nSelect an option below to vote. Voter names are shown beside each option.",
+      description:"**"+String(results?.total??0)+" total votes**\nSelect an option below to vote. Voter names are shown beside each option.",
       color:0x4d91c9,fields,footer:{text:"Snoozer · Community poll"},
       timestamp:previous?.timestamp??new Date().toISOString(),
     };
