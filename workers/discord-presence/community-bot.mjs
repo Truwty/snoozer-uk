@@ -1,4 +1,4 @@
-import { DiscordGuildSetup, SNOOZER_CHANNEL_IDS } from "./server-setup.mjs";
+import { SNOOZER_CHANNEL_IDS } from "./server-setup.mjs";
 
 const PERMISSIONS = {
   administrator: 1n << 3n,
@@ -44,7 +44,6 @@ const safeSnowflake = value => typeof value === "string" && /^[1-9][0-9]{16,19}$
 const cleanText = (value, max = 500) => typeof value === "string"
   ? value.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max)
   : "";
-const option = (interaction, name) => interaction.data?.options?.find(item => item.name === name)?.value;
 const encodeAuditReason = reason => encodeURIComponent(cleanText(reason || "Snoozer community moderation", 400));
 
 function hasPermission(permissionValue, required) {
@@ -167,13 +166,6 @@ export const DISCORD_COMMUNITY_COMMANDS = [
       { type: 6, name: "user", description: "The member to ban.", required: true },
       { type: 3, name: "reason", description: "Reason for the ban.", required: true, min_length: 5, max_length: 500 },
     ],
-  },
-  {
-    name: "snoozer-repair",
-    description: "Audit and repair Snoozer-managed roles and channel permissions.",
-    type: 1,
-    default_member_permissions: "8",
-    options: [{ type: 5, name: "confirm", description: "Confirm permission and role reconciliation.", required: true }],
   },
 ];
 
@@ -380,7 +372,7 @@ async announceServerBoost(member) {
     }
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "changelog", "changelog");
-    if (!channel?.id) throw new Error("The configured #changelog channel was not found. Ask an Administrator to run /snoozer-repair.");
+    if (!channel?.id) throw new Error("The configured #changelog channel was not found. Ask an Administrator to run /snoozer-reconcile.");
     const actor = interaction.member?.user ?? interaction.user ?? {};
     await this.api.request("/channels/" + channel.id + "/messages", {
       method: "POST",
@@ -578,7 +570,7 @@ async announceServerBoost(member) {
     const { channels, roles } = await this.guildResources();
     const categoryId = channelPrefix === "ticket" ? this.categoryIds.tickets : this.categoryIds.teamHq;
     const parent = channels.find(item => item.type === 4 && (categoryId ? item.id === categoryId : item.name.toLowerCase() === categoryName.toLowerCase()));
-    if (!parent) throw new Error("The " + categoryName + " category is missing. An administrator should run /snoozer-repair.");
+    if (!parent) throw new Error("The " + categoryName + " category is missing. An administrator should run /snoozer-reconcile.");
     const opener = interaction.user ?? interaction.member?.user ?? {};
     const openerId = interaction.member?.user?.id ?? interaction.user?.id;
     if (!safeSnowflake(openerId)) throw new Error("Discord did not provide a valid account ID for this request.");
@@ -600,7 +592,7 @@ async announceServerBoost(member) {
       ? configuredStaffIds.filter(id => !staffRoles.some(role => role.id === id))
       : staffRoleNames.filter(name => !staffRoles.some(role => role.name === name));
     if (missingStaffRoles.length) {
-      throw new Error("Required Snoozer staff roles are missing: " + missingStaffRoles.join(", ") + ". Ask an Administrator to run /snoozer-repair.");
+      throw new Error("Required Snoozer staff roles are missing: " + missingStaffRoles.join(", ") + ". Ask an Administrator to run /snoozer-reconcile.");
     }
     const notifyRoleKey = notifyRoleName === "Moderator" ? "moderator" : notifyRoleName === "Ticket Support" ? "ticket_support" : null;
     const notifyRoleId = notifyRoleKey ? this.roleIds[notifyRoleKey] : null;
@@ -759,7 +751,7 @@ async announceServerBoost(member) {
     if (title.length < 4 || details.length < 10) throw new Error("Add a clear title and at least 10 characters of detail.");
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = Array.isArray(channels) ? channels.find(item => item.type === 0 && item.name === channelName) : null;
-    if (!channel?.id) throw new Error("The #" + channelName + " channel is missing. Ask an administrator to run /snoozer-repair.");
+    if (!channel?.id) throw new Error("The #" + channelName + " channel is missing. Ask an administrator to run /snoozer-reconcile.");
     const user = interaction.member?.user ?? interaction.user ?? {};
     const userId = user.id;
     await this.api.request("/channels/" + channel.id + "/messages", {
@@ -908,14 +900,6 @@ async announceServerBoost(member) {
     return "The member has been banned from the server." + (logged ? "" : " Warning: #moderation-log could not be found.");
   }
 
-  async repairServer() {
-    const setup = new DiscordGuildSetup({ guildId: this.guildId, botUserId: this.botUserId, channelIds: this.channelIds }, {
-      api: this.api,
-      logger: this.logger,
-    });
-    return setup.repair();
-  }
-
   async handle(interaction) {
     if (interaction.guild_id !== this.guildId || interaction.application_id !== this.applicationId) return;
     const name = interaction.data?.name;
@@ -930,7 +914,7 @@ async announceServerBoost(member) {
           fields: [
             { name: "General", value: "/snoozer-status — live service health\n/snoozer-help — this command guide" },
             { name: "Support", value: "/snoozer-ticket — open a private ticket\n/snoozer-ticket-close — close your ticket\n/snoozer-bug — submit a bug\n/snoozer-suggest — suggest an improvement\n/snoozer-report — privately report a member" },
-            { name: "Staff", value: "/snoozer-changelog — publish release notes\n/snoozer-warn, /snoozer-timeout, /snoozer-kick, /snoozer-ban\n/snoozer-repair — Administrator-only server repair" },
+            { name: "Staff", value: "/snoozer-changelog — publish release notes\n/snoozer-warn, /snoozer-timeout, /snoozer-kick, /snoozer-ban\n/snoozer-reconcile — Administrator-only server repair" },
           ],
           footer: { text: "Snoozer · snoozer.uk" },
         }],
@@ -968,18 +952,7 @@ async announceServerBoost(member) {
           throw new Error("You do not have the Discord permission required for this moderation command.");
         }
         content = await this.moderate(interaction, name.replace("snoozer-", ""));
-      } else if (name === "snoozer-repair") {
-        if (!hasPermission(interaction.member?.permissions, PERMISSIONS.administrator)) {
-          throw new Error("Only a server administrator can repair Snoozer-managed permissions.");
-        }
-        if (option(interaction, "confirm") !== true) throw new Error("No changes were made. Run this command again and set confirm to true.");
-        const result = await this.repairServer();
-        content = "Snoozer server permissions have been reconciled.\n" +
-          "Roles created: " + result.rolesCreated + " · roles updated: " + result.rolesUpdated + "\n" +
-          "Categories created: " + result.categoriesCreated + " · categories updated: " + result.categoriesUpdated + "\n" +
-          "Channels created: " + result.channelsCreated + " · channels updated: " + result.channelsUpdated + "\n" +
-          "Starter posts added: " + result.messagesCreated + "\nExisting channels and messages were not deleted.";
-      }
+
       await this.complete(interaction, { content, embeds });
     } catch (error) {
       const detail = cleanText(error?.message ?? "Unknown error", 900) || "Unknown error";
