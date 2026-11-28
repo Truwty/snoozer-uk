@@ -190,6 +190,8 @@ export class DiscordCommunityBot {
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
     this.logEvent = dependencies.logEvent ?? null;
+    this.store = dependencies.store ?? null;
+    this.scheduleJobWake = dependencies.scheduleJobWake ?? null;
     this.channelIds = config.channelIds ?? SNOOZER_CHANNEL_IDS;
     this.categoryIds = config.categoryIds ?? {};
     this.roleIds = config.roleIds ?? {};
@@ -590,7 +592,7 @@ async announceServerBoost(member) {
 
     if (channelPrefix === "ticket") {
       const openTicket = channels.find(item => item.type === 0 && typeof item.topic === "string"
-        && new RegExp("SNOOZER_TICKET:v1 owner=" + openerId + " status=open(?:\\s|$)").test(item.topic));
+        && new RegExp("SNOOZER_TICKET:v[12](?: id=[0-9a-f-]+)? owner=" + openerId + " status=open(?:\\\\s|$)").test(item.topic));
       if (openTicket) return { existing: true, channel: openTicket };
     }
 
@@ -651,23 +653,77 @@ async announceServerBoost(member) {
     if (subject.length < 4 || details.length < 10) throw new Error("Add a clear subject and at least 10 characters of detail.");
     const openerId = interaction.member?.user?.id ?? interaction.user?.id;
     if (!safeSnowflake(openerId)) throw new Error("Discord did not provide a valid account ID for this request.");
+    if (!this.store || typeof this.store.ticketPreflight !== "function") {
+      throw new Error("Persistent ticket protection is temporarily unavailable. Please try again shortly.");
+    }
     if (this.ticketCreationLocks.has(openerId)) {
       throw new Error("Your support ticket is already being opened. Please wait for the current request to finish.");
     }
 
     this.ticketCreationLocks.add(openerId);
     try {
+      const preflight = await this.store.ticketPreflight(this.guildId, openerId);
+      if (preflight?.allowed === false) {
+        if (preflight.reason === "active" && safeSnowflake(preflight.channel_id)) {
+          return "You already have an open support ticket: <#" + preflight.channel_id + ">.";
+        }
+        if (preflight.reason === "cooldown") {
+          return "To prevent duplicate tickets, wait " + Math.max(1, Number(preflight.retry_after_seconds ?? 1)) + " second(s) before opening another ticket.";
+        }
+        throw new Error("A support ticket is already active or a recent ticket is still being processed.");
+      }
+
       const result = await this.createPrivateChannel({
         interaction,
         channelPrefix: "ticket",
         categoryName: "TICKETS",
-        topic: "SNOOZER_TICKET:v1 owner=" + openerId + " status=open created_at=" + new Date().toISOString(),
+        topic: "SNOOZER_TICKET:v2 owner=" + openerId + " status=open category=general created_at=" + new Date().toISOString(),
         staffRoleNames: STAFF_ROLE_NAMES,
         message: "**" + subject + "**\n\n" + details + "\n\nA Snoozer team member will reply here. Use /snoozer-ticket-close when the issue is resolved.",
       });
       if (result.existing) return "You already have an open support ticket: <#" + result.channel.id + ">.";
+
+      let ticket;
+      try {
+        ticket = await this.store.openTicket({
+          guildId: this.guildId, channelId: result.channel.id, ownerId: openerId,
+          category: "general", subject, details,
+        });
+        if (!ticket?.created) {
+          try { await this.api.request("/channels/" + result.channel.id, { method: "DELETE" }); } catch {}
+          if (ticket?.channel_id) return "You already have an open support ticket: <#" + ticket.channel_id + ">.";
+          if (ticket?.reason === "cooldown") return "To prevent duplicate tickets, wait " + Math.max(1, Number(ticket.retry_after_seconds ?? 1)) + " second(s) before opening another ticket.";
+          return "You already have an open support ticket.";
+        }
+        await this.api.request("/channels/" + result.channel.id, {
+          method: "PATCH",
+          body: { topic: "SNOOZER_TICKET:v2 id=" + ticket.ticket_id + " owner=" + openerId + " status=open category=general" },
+        });
+      } catch (error) {
+        try { await this.api.request("/channels/" + result.channel.id, { method: "DELETE" }); }
+        catch (cleanupError) { this.logger.error("[discord-community] orphan ticket cleanup failed", cleanupError?.message ?? cleanupError); }
+        throw error;
+      }
+
+      try {
+        await this.store.enqueueJob({
+          guildId: this.guildId, jobType: "ticket_reminder",
+          dedupeKey: "ticket-reminder:" + ticket.ticket_id + ":1",
+          payload: { ticket_id: ticket.ticket_id, channel_id: result.channel.id, reminder_number: 1 },
+          runAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+        });
+      } catch (error) {
+        this.logger.warn("[discord-community] ticket created but reminder scheduling failed", error?.message ?? error);
+      }
+
       await this.logSupportTicket(interaction, result.channel, subject);
-      try { await this.logEvent?.({ title:"Support ticket opened", description:"Member: <@"+openerId+">\nChannel: <#"+result.channel.id+">\nSubject: "+cleanText(subject,80), severity:"info" }); } catch {}
+      try {
+        await this.logEvent?.({
+          title: "Support ticket opened",
+          description: "Member: <@" + openerId + ">\nChannel: <#" + result.channel.id + ">\nReference: " + ticket.ticket_id + "\nSubject: " + cleanText(subject, 80),
+          severity: "info",
+        });
+      } catch {}
       return "Your private support ticket has been created: <#" + result.channel.id + ">." +
         (result.welcomeMessageSent ? "" : " The channel exists, but Discord rejected its opening message; please send your request details again inside the ticket.");
     } finally {
@@ -704,17 +760,37 @@ async announceServerBoost(member) {
     const channelId = interaction.channel_id;
     if (!safeSnowflake(channelId)) throw new Error("Run this command inside the ticket channel you want to close.");
     const channel = await this.api.request("/channels/" + channelId);
-    if (typeof channel?.topic !== "string" || !channel.topic.includes("SNOOZER_TICKET:v1")) {
+    if (typeof channel?.topic !== "string" || !/^SNOOZER_TICKET:v[12]\\b/.test(channel.topic)) {
       throw new Error("This channel is not a Snoozer support ticket.");
     }
     if (channel.topic.includes("status=closed")) return "This ticket is already closed.";
-    const ownerId = channel.topic.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1];
+    const ownerId = channel.topic.match(/\\bowner=([1-9][0-9]{16,19})\\b/)?.[1];
     const actorId = interaction.member?.user?.id ?? interaction.user?.id;
     const memberRoles = new Set(interaction.member?.roles ?? []);
     const roles = await this.api.request("/guilds/" + this.guildId + "/roles");
     const staffIds = roles.filter(role => STAFF_ROLE_NAMES.includes(role.name)).map(role => role.id);
     const isStaff = staffIds.some(id => memberRoles.has(id)) || hasPermission(interaction.member?.permissions, PERMISSIONS.manageMessages);
     if (actorId !== ownerId && !isStaff) throw new Error("Only the ticket owner or Snoozer staff can close this ticket.");
+
+    const ticketId = channel.topic.match(/\\bid=([0-9a-f-]{36})\\b/)?.[1] ?? null;
+    const messages = await this.api.request("/channels/" + channelId + "/messages?limit=100");
+    const transcript = (Array.isArray(messages) ? messages : []).reverse().map(message => {
+      let content = cleanText(message.content, 2000);
+      content = content.replace(/\\b(password|passcode|one[- ]time code|2fa|api key|secret|card number)\\b\\s*[:=]\\s*\\S+/gi, "$1: [REDACTED]");
+      content = content.replace(/\\b(?:\\d[ -]*?){13,19}\\b/g, "[POSSIBLE PAYMENT NUMBER REDACTED]");
+      return {
+        id: message.id,
+        author_id: message.author?.id ?? null,
+        author: cleanText(message.author?.username, 80),
+        content,
+        timestamp: message.timestamp,
+      };
+    }).slice(-100);
+
+    if (ticketId && this.store) {
+      await this.store.ticketAction(ticketId, actorId, "transcript", { transcript });
+      await this.store.ticketAction(ticketId, actorId, "close", {});
+    }
 
     const overwrites = (Array.isArray(channel.permission_overwrites) ? channel.permission_overwrites : [])
       .filter(entry => entry.id !== ownerId || entry.type !== 1);
@@ -734,6 +810,22 @@ async announceServerBoost(member) {
         permission_overwrites: overwrites,
       },
     });
+
+    if (!this.store || typeof this.store.enqueueJob !== "function") {
+      throw new Error("The ticket was closed, but automatic deletion could not be queued. Please contact an administrator.");
+    }
+    const deleteAt = new Date(Date.now() + 10_000).toISOString();
+    await this.store.enqueueJob({
+      guildId: this.guildId,
+      jobType: "ticket_delete",
+      dedupeKey: "ticket-delete:" + (ticketId ?? channelId),
+      payload: ticketId
+        ? { ticket_id: ticketId, channel_id: channelId, closed_by: actorId }
+        : { legacy: true, channel_id: channelId, closed_by: actorId },
+      runAt: deleteAt,
+    });
+    this.scheduleJobWake?.(deleteAt);
+
     let closeNoticeSent = true;
     try {
       await this.api.request("/channels/" + channel.id + "/messages", {
@@ -741,7 +833,9 @@ async announceServerBoost(member) {
         body: {
           embeds: [{
             title: "Ticket closed",
-            description: "This ticket has been closed by <@" + actorId + ">." + (reason ? "\n**Reason:** " + reason : ""),
+            description: "This ticket has been closed by <@" + actorId + ">." +
+              (reason ? "\n**Reason:** " + reason : "") +
+              "\n\nThis channel will be automatically deleted in 10 seconds.",
             color: 0x7a8493,
             timestamp: closedAt,
           }],
@@ -750,10 +844,17 @@ async announceServerBoost(member) {
       });
     } catch (error) {
       closeNoticeSent = false;
-      this.logger.error("[discord-community] ticket was closed but its transcript notice failed: " + (error?.message ?? error));
+      this.logger.error("[discord-community] ticket closed but its closure notice failed: " + (error?.message ?? error));
     }
-    try { await this.logEvent?.({ title:"Support ticket closed", description:"Channel: <#"+channelId+">\nClosed by: <@"+actorId+">\nOwner: <@"+ownerId+">", severity:"info" }); } catch {}
-    return "The ticket has been closed." + (closeNoticeSent ? "" : " Discord rejected the closing notice, but the ticket permissions and status have been updated.");
+    try {
+      await this.logEvent?.({
+        title: "Support ticket closed",
+        description: "Channel: <#" + channelId + ">\nClosed by: <@" + actorId + ">\nOwner: <@" + ownerId + ">\nScheduled deletion: " + deleteAt,
+        severity: "info",
+      });
+    } catch {}
+    return "The ticket has been closed and will be deleted in 10 seconds." +
+      (closeNoticeSent ? "" : " The channel deletion is still queued.");
   }
 
   async submitPublicFeedback(interaction, channelName, kind) {
