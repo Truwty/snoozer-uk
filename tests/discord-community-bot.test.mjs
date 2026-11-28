@@ -350,13 +350,14 @@ test("private member reports notify moderators but do not grant Support Team acc
   assert.ok(report);
   assert.equal(report.permission_overwrites.some(entry => entry.id === targetId && entry.type === 1), false);
   assert.ok(report.permission_overwrites.some(entry => entry.id === "610000000000000002" && entry.type === 0));
-  assert.equal(report.permission_overwrites.some(entry => entry.id === "610000000000000003"), false);
+  assert.ok(report.permission_overwrites.some(entry => entry.id === "610000000000000003" && entry.type === 0));
+  assert.equal(report.permission_overwrites.some(entry => entry.id === "610000000000000004"), false);
 
   const opening = state.messages.get(report.id)?.[0];
   assert.ok(opening);
-  assert.ok(opening.content.includes("<@&610000000000000002>"));
-  assert.deepEqual(opening.allowed_mentions.roles, ["610000000000000002"]);
-  assert.equal(opening.content.includes("<@&610000000000000003>"), false);
+  assert.ok(opening.content.includes("<@&610000000000000003>"));
+  assert.deepEqual(opening.allowed_mentions.roles, ["610000000000000003"]);
+  assert.equal(opening.content.includes("<@&610000000000000004>"), false);
 });
 
 test("staff timeout uses Discord's audit reason and records the action in moderation-log", async () => {
