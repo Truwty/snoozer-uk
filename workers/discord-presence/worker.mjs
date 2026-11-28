@@ -460,6 +460,11 @@ export class DiscordPresenceWorker {
           if (data.premium_since) await this.communityBot.handleMemberUpdate(data);
         }
         break;
+      case "GUILD_MEMBER_REMOVE":
+        if (data.guild_id === this.config.guildId && this.communityBot) {
+          this.communityBot.handleMemberRemove(data);
+        }
+        break;
       case "GUILD_MEMBER_UPDATE":
         if (data.guild_id === this.config.guildId && this.communityBot) {
           await this.communityBot.handleMemberUpdate(data);
