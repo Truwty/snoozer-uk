@@ -1,4 +1,4 @@
-import { DiscordGuildSetup } from "./server-setup.mjs";
+import { DiscordGuildSetup, SNOOZER_CHANNEL_IDS } from "./server-setup.mjs";
 
 const PERMISSIONS = {
   administrator: 1n << 3n,
@@ -15,7 +15,7 @@ const PERMISSIONS = {
   manageRoles: 1n << 28n,
 };
 
-const STAFF_ROLE_NAMES = ["Snoozer Admin", "Moderator", "Support Team"];
+const STAFF_ROLE_NAMES = ["Snoozer Admin", "Senior Moderator", "Moderator", "Support Team", "Support Manager", "Ticket Support"];
 const REQUIRED_BOT_PERMISSIONS = [
   ["Manage Channels", PERMISSIONS.manageChannels],
   ["Manage Roles", PERMISSIONS.manageRoles],
@@ -27,7 +27,7 @@ const REQUIRED_BOT_PERMISSIONS = [
   ["Ban Members", PERMISSIONS.banMembers],
   ["Moderate Members", PERMISSIONS.moderateMembers],
 ];
-const STAFF_MOD_ROLE_NAMES = ["Snoozer Admin", "Moderator"];
+const STAFF_MOD_ROLE_NAMES = ["Snoozer Admin", "Senior Moderator", "Moderator"];
 const STATUS_URL = "https://status.snoozer.uk/api/status";
 const STATUS_PAGE_URL = "https://status.snoozer.uk";
 export const SERVICE_STATUS_POLL_MS = 60_000;
@@ -67,6 +67,16 @@ function statusState(snapshot) {
 export const DISCORD_COMMUNITY_COMMANDS = [
   { name: "snoozer-help", description: "Show the Snoozer community bot commands.", type: 1 },
   { name: "snoozer-status", description: "Show live Snoozer service status.", type: 1 },
+  {
+    name: "snoozer-changelog",
+    description: "Publish an official Snoozer release note to the changelog channel.",
+    type: 1,
+    default_member_permissions: "8192",
+    options: [
+      { type: 3, name: "title", description: "A short release or update title.", required: true, min_length: 4, max_length: 100 },
+      { type: 3, name: "details", description: "Describe what changed and who it affects.", required: true, min_length: 10, max_length: 1500 },
+    ],
+  },
   {
     name: "snoozer-ticket",
     description: "Open a private support ticket with the Snoozer team.",
@@ -169,9 +179,12 @@ export class DiscordCommunityBot {
     this.api = dependencies.api;
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
+    this.channelIds = config.channelIds ?? SNOOZER_CHANNEL_IDS;
     this.statusBaseline = null;
     this.cooldowns = new Map();
     this.ticketCreationLocks = new Set();
+    this.boostedMembers = new Set();
+    this.boostAnnouncementLocks = new Set();
   }
 
   enforceCooldown(interaction, action, durationMs) {
@@ -188,6 +201,119 @@ export class DiscordCommunityBot {
     if (this.cooldowns.size > 500) {
       for (const [entry, expiry] of this.cooldowns) if (expiry <= now) this.cooldowns.delete(entry);
     }
+  }
+
+  findChannel(channels, channelKey, fallbackName) {
+    if (!Array.isArray(channels)) return null;
+    const configuredId = this.channelIds?.[channelKey];
+    return configuredId
+      ? channels.find(item => item.type === 0 && item.id === configuredId) ?? null
+      : channels.find(item => item.type === 0 && item.name === fallbackName) ?? null;
+  }
+
+  seedKnownBoosters(members) {
+    for (const member of Array.isArray(members) ? members : []) {
+      const userId = member?.user?.id;
+      if (safeSnowflake(userId) && member.premium_since) this.boostedMembers.add(userId);
+    }
+  }
+
+  async welcomeMember(member) {
+    const user = member?.user ?? {};
+    const userId = user.id;
+    if (!safeSnowflake(userId) || user.bot) return false;
+    const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
+    const channel = this.findChannel(channels, "welcome", "welcome");
+    if (!channel?.id) {
+      this.logger.warn("[discord-community] a new member joined but the configured #welcome channel was not found.");
+      return false;
+    }
+    await this.api.request("/channels/" + channel.id + "/messages", {
+      method: "POST",
+      body: {
+        content: "Welcome <@" + userId + "> to the official Snoozer community! 👋",
+        embeds: [{
+          title: "Welcome to Snoozer",
+          description: "We're glad you're here. Start with **#rules** and **#faq**, then introduce yourself in **#introductions**.\n\n" +
+            "[Visit Snoozer](https://snoozer.uk) · [Help Centre](https://help.snoozer.uk)",
+          color: 0x8b72d9,
+          footer: { text: "Snoozer · snoozer.uk" },
+          timestamp: new Date().toISOString(),
+        }],
+        allowed_mentions: { parse: [], users: [userId] },
+      },
+    });
+    this.logger.info("[discord-community] welcomed a new server member.");
+    return true;
+  }
+
+  async announceServerBoost(member) {
+    const userId = member?.user?.id;
+    if (!safeSnowflake(userId)) return false;
+    const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
+    const channel = this.findChannel(channels, "serverBoosts", "server-boosts");
+    if (!channel?.id) {
+      this.logger.warn("[discord-community] a server boost was detected but #server-boosts was not found.");
+      return false;
+    }
+    await this.api.request("/channels/" + channel.id + "/messages", {
+      method: "POST",
+      body: {
+        content: "Thanks <@" + userId + "> for boosting the server!",
+        allowed_mentions: { parse: [], users: [userId] },
+      },
+    });
+    this.logger.info("[discord-community] posted a server boost thank-you.");
+    return true;
+  }
+
+  async handleMemberUpdate(member) {
+    const userId = member?.user?.id;
+    if (!safeSnowflake(userId)) return false;
+    if (!member.premium_since) {
+      this.boostedMembers.delete(userId);
+      return false;
+    }
+    if (this.boostedMembers.has(userId) || this.boostAnnouncementLocks.has(userId)) return false;
+    this.boostAnnouncementLocks.add(userId);
+    try {
+      const sent = await this.announceServerBoost(member);
+      if (sent) this.boostedMembers.add(userId);
+      return sent;
+    } finally {
+      this.boostAnnouncementLocks.delete(userId);
+    }
+  }
+
+  async publishChangelog(interaction) {
+    this.enforceCooldown(interaction, "changelog", 30_000);
+    const title = cleanText(option(interaction, "title"), 100);
+    const details = cleanText(option(interaction, "details"), 1500);
+    if (title.length < 4 || details.length < 10) {
+      throw new Error("Add a title of at least 4 characters and details of at least 10 characters.");
+    }
+    if (!hasPermission(interaction.member?.permissions, PERMISSIONS.manageMessages)) {
+      throw new Error("You need Manage Messages (or Administrator) to publish an official changelog entry.");
+    }
+    const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
+    const channel = this.findChannel(channels, "changelog", "changelog");
+    if (!channel?.id) throw new Error("The configured #changelog channel was not found. Ask an Administrator to run /snoozer-repair.");
+    const actor = interaction.member?.user ?? interaction.user ?? {};
+    await this.api.request("/channels/" + channel.id + "/messages", {
+      method: "POST",
+      body: {
+        embeds: [{
+          title: "Snoozer update · " + title,
+          description: details,
+          color: 0x35a79b,
+          author: { name: "Snoozer Team" },
+          footer: { text: "Published by " + (cleanText(actor.username, 64) || "Snoozer staff") },
+          timestamp: new Date().toISOString(),
+        }],
+        allowed_mentions: { parse: [] },
+      },
+    });
+    return "The changelog entry has been published in <#" + channel.id + ">.";
   }
 
   async preflightPermissions() {
@@ -297,7 +423,7 @@ export class DiscordCommunityBot {
 
   async announceStatusChange(snapshot, previousState) {
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
-    const channel = Array.isArray(channels) ? channels.find(item => item.type === 0 && item.name === "service-status") : null;
+    const channel = this.findChannel(channels, "serviceStatus", "service-status");
     if (!channel?.id) {
       this.logger.warn("[discord-community] status changed but #service-status was not found.");
       return false;
@@ -365,7 +491,7 @@ export class DiscordCommunityBot {
     return { channels, roles };
   }
 
-  async createPrivateChannel({ interaction, channelPrefix, categoryName, topic, message, staffRoleNames, targetUserId, notifyRoleName = "Support Team" }) {
+  async createPrivateChannel({ interaction, channelPrefix, categoryName, topic, message, staffRoleNames, targetUserId, notifyRoleName = "Ticket Support" }) {
     const { channels, roles } = await this.guildResources();
     const parent = channels.find(item => item.type === 4 && item.name.toLowerCase() === categoryName.toLowerCase());
     if (!parent) throw new Error("The " + categoryName + " category is missing. An administrator should run /snoozer-repair.");
@@ -440,7 +566,7 @@ export class DiscordCommunityBot {
       const result = await this.createPrivateChannel({
         interaction,
         channelPrefix: "ticket",
-        categoryName: "SUPPORT & FEEDBACK",
+        categoryName: "TICKETS",
         topic: "SNOOZER_TICKET:v1 owner=" + openerId + " status=open created_at=" + new Date().toISOString(),
         staffRoleNames: STAFF_ROLE_NAMES,
         message: "**" + subject + "**\n\n" + details + "\n\nA Snoozer team member will reply here. Use /snoozer-ticket-close when the issue is resolved.",
@@ -691,7 +817,7 @@ export class DiscordCommunityBot {
   }
 
   async repairServer() {
-    const setup = new DiscordGuildSetup({ guildId: this.guildId, botUserId: this.botUserId }, {
+    const setup = new DiscordGuildSetup({ guildId: this.guildId, botUserId: this.botUserId, channelIds: this.channelIds }, {
       api: this.api,
       logger: this.logger,
     });
@@ -712,7 +838,7 @@ export class DiscordCommunityBot {
           fields: [
             { name: "General", value: "/snoozer-status — live service health\n/snoozer-help — this command guide" },
             { name: "Support", value: "/snoozer-ticket — open a private ticket\n/snoozer-ticket-close — close your ticket\n/snoozer-bug — submit a bug\n/snoozer-suggest — suggest an improvement\n/snoozer-report — privately report a member" },
-            { name: "Staff", value: "/snoozer-warn, /snoozer-timeout, /snoozer-kick, /snoozer-ban\n/snoozer-repair — Administrator-only permission repair" },
+            { name: "Staff", value: "/snoozer-changelog — publish release notes\n/snoozer-warn, /snoozer-timeout, /snoozer-kick, /snoozer-ban\n/snoozer-repair — Administrator-only server repair" },
           ],
           footer: { text: "Snoozer · snoozer.uk" },
         }],
@@ -727,6 +853,8 @@ export class DiscordCommunityBot {
       let embeds = [];
       if (name === "snoozer-status") {
         embeds = [this.statusEmbed(await this.fetchStatus())];
+      } else if (name === "snoozer-changelog") {
+        content = await this.publishChangelog(interaction);
       } else if (name === "snoozer-ticket") {
         content = await this.submitTicket(interaction);
       } else if (name === "snoozer-ticket-close") {
