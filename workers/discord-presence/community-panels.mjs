@@ -190,7 +190,11 @@ export class DiscordCommunityPanels{
     const previous=this.jobWakeTimers.get(key);if(previous)clearTimeout(previous);
     const target=Date.parse(runAt);
     const delay=Number.isFinite(target)?Math.max(250,target-Date.now()+200):250;
-    const timer=setTimeout(()=>{this.jobWakeTimers.delete(key);void this.tick();},delay);
+    const timer=setTimeout(()=>{
+      this.jobWakeTimers.delete(key);
+      if(this.busy){this.scheduleJobWake(new Date(Date.now()+1000).toISOString(),key);return;}
+      void this.tick();
+    },delay);
     timer.unref?.();this.jobWakeTimers.set(key,timer);return timer;
   }
   async scheduleTicketDeletion(ticketId,channelId,actorId){
