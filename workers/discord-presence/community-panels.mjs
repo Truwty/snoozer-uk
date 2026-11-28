@@ -3,6 +3,8 @@ import { DiscordServerRebuilder } from "./server-rebuilder.mjs";
 const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embedLinks:1n<<14n,readMessageHistory:1n<<16n,manageGuild:1n<<5n,manageEvents:1n<<33n,kickMembers:1n<<1n,banMembers:1n<<2n,moderateMembers:1n<<40n};
 const SF=/^[1-9][0-9]{16,19}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Discord permission overwrites are decimal strings. Avoid BigInt operations in the ticket creation path.
+const TICKET_PERMISSION_BITS=Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992"});
 const clean=(v,n=1000)=>typeof v==="string"?v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,"").trim().slice(0,n):"";
 const uid=i=>i.member?.user?.id??i.user?.id??"";
 const opt=(i,n)=>i.data?.options?.find(x=>x.name===n)?.value;
@@ -77,7 +79,7 @@ export const SNOOZER_REBUILD_COMMAND={
 export class DiscordCommunityPanels{
   constructor(config,deps={}){
     this.guildId=config.guildId;this.botUserId=config.botUserId;this.applicationId=config.applicationId;
-    this.api=deps.api;this.store=deps.store;this.logger=deps.logger??console;
+    this.api=deps.api;this.store=deps.store;this.logger=deps.logger??console;this.logEvent=deps.logEvent??null;
     this.resources={};this.roleIds={};this.onResourcesUpdated=deps.onResourcesUpdated??null;this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
@@ -160,51 +162,77 @@ export class DiscordCommunityPanels{
     ]))]},true);
   }
   async createTicket(i,category){
-    const subject=clean(i.data?.components?.[0]?.components?.[0]?.value,100);
-    const details=clean(i.data?.components?.[1]?.components?.[0]?.value,3000);
-    const owner=uid(i),parent=this.resources.category_tickets;
-    if(subject.length<4||details.length<10)throw new Error("Please provide a subject and at least 10 characters of detail.");
-    if(!SF.test(owner)||!SF.test(parent??""))throw new Error("The private ticket category or member ID is unavailable.");
-    const readSend=P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks|(1n<<15n);
-    const roles=STAFF.map(k=>this.roleIds[k]).filter(Boolean);
-    const overwrites=[{id:this.guildId,type:0,allow:"0",deny:P.viewChannel.toString()},
-      {id:owner,type:1,allow:readSend.toString(),deny:"0"},
-      ...roles.map(id=>({id,type:0,allow:(P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks).toString(),deny:"0"})),
-      {id:this.botUserId,type:1,allow:readSend.toString(),deny:"0"}];
-    const username=clean(i.member?.user?.username??i.user?.username,24).toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"")||"member";
-    const channel=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
-      name:"ticket-"+username+"-"+String(i.id).slice(-6),type:0,parent_id:parent,
-      topic:"SNOOZER_TICKET:v2 owner="+owner+" status=open category="+category,permission_overwrites:overwrites,
-    }});
-    if(!SF.test(channel?.id??""))throw new Error("Discord did not return a ticket channel ID.");
-    let record;
+    let stage="validate ticket request",channel=null,record=null,recordCreated=false;
     try{
+      const subject=clean(i.data?.components?.[0]?.components?.[0]?.value,100);
+      const details=clean(i.data?.components?.[1]?.components?.[0]?.value,3000);
+      const owner=uid(i),parent=this.resources.category_tickets;
+      if(subject.length<4||details.length<10)throw new Error("Please provide a subject and at least 10 characters of detail.");
+      if(!SF.test(owner)||!SF.test(parent??""))throw new Error("The private ticket category or member ID is unavailable.");
+      const roles=STAFF.map(k=>this.roleIds[k]).filter(id=>SF.test(id??""));
+      const overwrites=[
+        {id:this.guildId,type:0,allow:"0",deny:TICKET_PERMISSION_BITS.everyoneDenyView},
+        {id:owner,type:1,allow:TICKET_PERMISSION_BITS.ownerAllow,deny:"0"},
+        ...roles.map(id=>({id,type:0,allow:TICKET_PERMISSION_BITS.staffAllow,deny:"0"})),
+        {id:this.botUserId,type:1,allow:TICKET_PERMISSION_BITS.ownerAllow,deny:"0"},
+      ];
+      const username=clean(i.member?.user?.username??i.user?.username,24).toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"")||"member";
+      stage="create private ticket channel";
+      channel=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
+        name:"ticket-"+username+"-"+String(i.id).slice(-6),type:0,parent_id:parent,
+        topic:"SNOOZER_TICKET:v2 owner="+owner+" status=open category="+category,permission_overwrites:overwrites,
+      }});
+      if(!SF.test(channel?.id??""))throw new Error("Discord did not return a ticket channel ID.");
+      stage="save ticket record";
       record=await this.store.openTicket({guildId:this.guildId,channelId:channel.id,ownerId:owner,category,subject,details});
-      if(!record?.created){await this.api.request("/channels/"+channel.id,{method:"DELETE"});await this.reply(i,{content:record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":"You already have an active ticket."},true);return;}
+      if(!record?.created){
+        await this.api.request("/channels/"+channel.id,{method:"DELETE"});
+        await this.reply(i,{content:record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":"You already have an active ticket."},true);
+        return;
+      }
+      recordCreated=true;
+      stage="attach ticket reference";
       await this.api.request("/channels/"+channel.id,{method:"PATCH",body:{topic:"SNOOZER_TICKET:v2 id="+record.ticket_id+" owner="+owner+" status=open category="+category}});
-    }catch(e){try{await this.api.request("/channels/"+channel.id,{method:"DELETE"});}catch{}throw e;}
-    await this.api.request("/channels/"+channel.id+"/messages",{method:"POST",body:{
-      content:"<@"+owner+">",
-      embeds:[{title:"Support ticket opened",description:"**"+subject+"**\n\n"+details+"\n\nA Snoozer support team member will reply here.",color:0x438f9b,
-        fields:[{name:"Category",value:category,inline:true},{name:"Priority",value:"Normal",inline:true}],
-        footer:{text:"Ticket reference "+record.ticket_id},timestamp:new Date().toISOString()}],
-      components:[row(btn("ticket:claim:"+record.ticket_id,"Claim",2,"🙋"),btn("ticket:priority:"+record.ticket_id,"Priority",2,"🚦"),btn("ticket:assign:"+record.ticket_id,"Assign",2,"👤"),btn("ticket:escalate:"+record.ticket_id,"Escalate",2,"⬆️"),btn("ticket:note:"+record.ticket_id,"Staff note",2,"📝")),row(btn("ticket:close:"+record.ticket_id,"Close",4,"🔒"))],
-      allowed_mentions:{parse:[],users:[owner]},
-    }});
-    await this.store.enqueueJob({
-      guildId:this.guildId,jobType:"ticket_reminder",
-      dedupeKey:"ticket-reminder:"+record.ticket_id+":1",
-      payload:{ticket_id:record.ticket_id,channel_id:channel.id,reminder_number:1},
-      runAt:new Date(Date.now()+24*60*60_000).toISOString(),
-    });
-    const queue=this.resources.ticket_queue;
-    if(SF.test(queue??""))try{await this.api.request("/channels/"+queue+"/messages",{method:"POST",body:{
-      embeds:[{title:"New support ticket",description:"**"+subject+"**\nMember: <@"+owner+">\nTicket: <#"+channel.id+">\nCategory: "+category,
-        color:0x8b72d9,footer:{text:"Ticket "+record.ticket_id},timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
-    }});}catch(e){this.logger.error("[discord-panels] ticket queue notice failed",e?.message??e);}
-    await this.reply(i,{content:"Your private support ticket has been created: <#"+channel.id+">."},true);
+      stage="post private ticket welcome";
+      await this.api.request("/channels/"+channel.id+"/messages",{method:"POST",body:{
+        content:"<@"+owner+">",
+        embeds:[{title:"Support ticket opened",description:"**"+subject+"**\\n\\n"+details+"\\n\\nA Snoozer support team member will reply here.",color:0x438f9b,
+          fields:[{name:"Category",value:category,inline:true},{name:"Priority",value:"Normal",inline:true}],
+          footer:{text:"Ticket reference "+record.ticket_id},timestamp:new Date().toISOString()}],
+        components:[row(btn("ticket:claim:"+record.ticket_id,"Claim",2,"🙋"),btn("ticket:priority:"+record.ticket_id,"Priority",2,"🚦"),btn("ticket:assign:"+record.ticket_id,"Assign",2,"👤"),btn("ticket:escalate:"+record.ticket_id,"Escalate",2,"⬆️"),btn("ticket:note:"+record.ticket_id,"Staff note",2,"📝")),row(btn("ticket:close:"+record.ticket_id,"Close",4,"🔒"))],
+        allowed_mentions:{parse:[],users:[owner]},
+      }});
+      stage="schedule ticket reminder";
+      try{
+        await this.store.enqueueJob({
+          guildId:this.guildId,jobType:"ticket_reminder",
+          dedupeKey:"ticket-reminder:"+record.ticket_id+":1",
+          payload:{ticket_id:record.ticket_id,channel_id:channel.id,reminder_number:1},
+          runAt:new Date(Date.now()+24*60*60_000).toISOString(),
+        });
+      }catch(error){
+        this.logger.warn("[discord-panels] ticket created but reminder scheduling failed",error?.stack??error?.message??error);
+        try{await this.logEvent?.({title:"Ticket reminder could not be scheduled",description:"Ticket <#"+channel.id+"> · reference "+record.ticket_id+" · "+clean(error?.message,300),severity:"warning"});}catch{}
+      }
+      stage="notify support queue";
+      const queue=this.resources.ticket_queue;
+      if(SF.test(queue??""))try{await this.api.request("/channels/"+queue+"/messages",{method:"POST",body:{
+        embeds:[{title:"New support ticket",description:"**"+subject+"**\\nMember: <@"+owner+">\\nTicket: <#"+channel.id+">\\nCategory: "+category,
+          color:0x8b72d9,footer:{text:"Ticket "+record.ticket_id},timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+      }});}catch(error){this.logger.error("[discord-panels] ticket queue notice failed",error?.stack??error?.message??error);}
+      try{await this.logEvent?.({title:"Support ticket opened",description:"Member: <@"+owner+">\\nChannel: <#"+channel.id+">\\nCategory: "+category+"\\nReference: "+record.ticket_id,severity:"info"});}catch{}
+      stage="respond to ticket requester";
+      await this.reply(i,{content:"Your private support ticket has been created: <#"+channel.id+">."},true);
+    }catch(error){
+      if(channel?.id&&!recordCreated){
+        try{await this.api.request("/channels/"+channel.id,{method:"DELETE"});}catch(cleanupError){
+          this.logger.error("[discord-panels] orphan ticket channel cleanup failed",cleanupError?.stack??cleanupError?.message??cleanupError);
+        }
+      }
+      this.logger.error("[discord-panels] ticket creation failed during "+stage,error?.stack??error?.message??error);
+      throw new Error("Ticket creation failed during "+stage+": "+clean(error?.message??"Unknown error",500));
+    }
   }
-
   async assignTicket(i,id){
     if(!this.staff(i))throw new Error("Only support staff can assign tickets.");
     if(i.data?.component_type===5){
@@ -310,6 +338,7 @@ export class DiscordCommunityPanels{
     }).slice(-100);
     await this.store.ticketAction(id,actor,"transcript",{transcript});
     await this.store.ticketAction(id,actor,"close",{});
+    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\\nClosed by: <@"+actor+">\\nReference: "+id,severity:"info"});}catch{}
     const overwrites=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));
     if(owner)overwrites.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory).toString(),deny:P.sendMessages.toString()});
     await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{
@@ -636,14 +665,14 @@ export class DiscordCommunityPanels{
     this.requireAdmin(i);
     await this.reply(i,{embeds:[{title:"Snoozer bot settings",description:"Choose a notification channel or configure community protection. All settings are saved to Supabase.",color:0x596579}],
       components:[
-        row(btn("admin:channel:security_alerts","Security alerts"),btn("admin:channel:moderation_log","Moderation log"),btn("admin:channel:ticket_queue","Ticket queue")),
+        row(btn("admin:channel:security_alerts","Security alerts"),btn("admin:channel:moderation_log","Moderation log"),btn("admin:channel:ticket_queue","Ticket queue"),btn("admin:channel:bot_logs","Bot logs")),
         row(btn("admin:channel:changelog","Changelog"),btn("admin:channel:service_status","Service status"),btn("admin:channel:events","Events"),btn("admin:channel:giveaways","Giveaways")),
         row(btn("admin:toggle:antiRaidEnabled","Toggle anti-raid"),btn("admin:toggle:antiNukeEnabled","Toggle anti-nuke"),btn("admin:thresholds","Protection thresholds"),btn("admin:automod","Configure AutoMod")),
       ]},true);
   }
   async chooseChannel(i,key){
     this.requireAdmin(i);
-    if(!["security_alerts","moderation_log","ticket_queue","changelog","service_status","events","giveaways","appeals_queue"].includes(key))throw new Error("Unknown channel setting.");
+    if(!["security_alerts","moderation_log","ticket_queue","bot_logs","changelog","service_status","events","giveaways","appeals_queue"].includes(key))throw new Error("Unknown channel setting.");
     await this.reply(i,{content:"Choose the text channel for "+key.replaceAll("_"," ")+".",
       components:[row({type:8,custom_id:"admin:channel-set:"+key,placeholder:"Select a server text channel",min_values:1,max_values:1,channel_types:[0]})]},true);
   }
