@@ -1,3 +1,5 @@
+import { SETUP_COMPLETE_MARKER } from "./server-setup.mjs";
+
 export const SNOOZER_ROLE_LAYOUT = [
   { key: "admin", name: "👑・Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: ["manageGuild","manageChannels","manageRoles","manageEvents","manageWebhooks","viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
   { key: "senior_moderator", name: "🛡️・Senior Moderator", color: 0xb94b63, hoist: true, permissions: ["viewAuditLog","manageMessages","kickMembers","banMembers","moderateMembers"] },
@@ -22,6 +24,7 @@ export const SNOOZER_ROLE_LAYOUT = [
 const readOnly = (key,name,topic) => ({ key,name,type:"text",topic,mode:"readonly" });
 const publicChat = (key,name,topic) => ({ key,name,type:"text",topic,mode:"chat" });
 const staffChat = (key,name,topic) => ({ key,name,type:"text",topic,mode:"staff" });
+const internalChat = (key,name,topic) => ({ key,name,type:"text",topic,mode:"internal" });
 const voice = (key,name,topic) => ({ key,name,type:"voice",topic,mode:"voice" });
 
 export const SNOOZER_SERVER_LAYOUT = [
@@ -92,6 +95,7 @@ export const SNOOZER_SERVER_LAYOUT = [
   {
     key:"internal", name:"✦・𝗜𝗡𝗧𝗘𝗥𝗡𝗔𝗟", visibility:"internal",
     channels:[
+      internalChat("setup_state","snoozer-setup-state",SETUP_COMPLETE_MARKER+" | This private channel stores the one-time setup completion marker. Do not delete it."),
       staffChat("bot_logs","📡・bot-logs","Internal bot diagnostics and structured events."),
       staffChat("health_monitor","💓・health-monitor","Gateway, worker, queue and dependency health."),
       staffChat("backup_registry","🗄️・backup-registry","Server configuration backup records."),
