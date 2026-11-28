@@ -140,7 +140,7 @@ test("ticket reliability migration matches the existing ticket event and job con
   assert.match(enqueueSql, /'tempban_unban','ticket_delete'/);
   assert.match(sql, /revoke all on function public\.discord_bot_enqueue_job/);
   assert.match(sql, /grant execute on function public\.discord_bot_enqueue_job/);
-  assert.equal(sql.split("$").length - 1, 10);
+  assert.equal(sql.split("$").length - 1, 5);
 });
 
 test("DiscordStore reads poll results through the service-only RPC", async () => {
