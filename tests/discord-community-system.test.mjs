@@ -396,3 +396,74 @@ test("server rebuilder registers the Tickets category only once", async () => {
   assert.equal(keys.length,new Set(keys).size);
   assert.equal(keys.filter(key=>key==="category_tickets").length,1);
 });
+
+
+test("ticket reminders defer when the latest channel message is newer than 24 hours", async () => {
+  const scheduled=[];
+  const posts=[];
+  const state={status:"processing"};
+  const panel=Object.create(DiscordCommunityPanels.prototype);
+  panel.guildId=guildId;
+  panel.logger={error(){}};
+  panel.api={async request(path,options={}){
+    if(path.endsWith("/messages?limit=1"))return [{timestamp:new Date().toISOString()}];
+    if(path.endsWith("/messages")&&options.method==="POST"){posts.push(options.body);return {};}
+    throw new Error("unexpected Discord request "+path);
+  }};
+  panel.store={
+    async getTicket(){return {status:"open",created_at:new Date(Date.now()-60*60_000).toISOString()};},
+    async enqueueJob(job){scheduled.push(job);state.status="pending";return "job-id";},
+    async finishJob(_id,success){if(state.status!=="processing")return false;state.status=success?"done":"failed";return true;},
+  };
+  await panel.runJob({
+    id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90",job_type:"ticket_reminder",
+    payload:{ticket_id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c91",channel_id:"1574262035519115901",reminder_number:1},
+  });
+  assert.equal(posts.length,0);
+  assert.equal(scheduled.length,1);
+  assert.equal(scheduled[0].dedupeKey,"ticket-reminder:c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c91:1");
+  assert.equal(scheduled[0].payload.reminder_number,1);
+  assert.equal(state.status,"pending");
+});
+
+test("ticket reminders are capped at three and only continue for active tickets", async () => {
+  const scheduled=[];
+  const posts=[];
+  const panel=Object.create(DiscordCommunityPanels.prototype);
+  panel.guildId=guildId;
+  panel.logger={error(){}};
+  panel.api={async request(path,options={}){
+    if(path.endsWith("/messages?limit=1"))return [{timestamp:new Date(Date.now()-48*60*60_000).toISOString()}];
+    if(path.endsWith("/messages")&&options.method==="POST"){posts.push(options.body);return {};}
+    throw new Error("unexpected Discord request "+path);
+  }};
+  panel.store={
+    async getTicket(){return {status:"open",updated_at:new Date(Date.now()-48*60*60_000).toISOString()};},
+    async enqueueJob(job){scheduled.push(job);return "job-id";},
+    async finishJob(){return true;},
+  };
+  await panel.runJob({
+    id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90",job_type:"ticket_reminder",
+    payload:{ticket_id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c91",channel_id:"1574262035519115901",reminder_number:3},
+  });
+  assert.equal(posts.length,1);
+  assert.equal(scheduled.length,0);
+});
+
+test("ticket reminder jobs do not message tickets that have already closed", async () => {
+  const calls=[];
+  const panel=Object.create(DiscordCommunityPanels.prototype);
+  panel.guildId=guildId;
+  panel.logger={error(){}};
+  panel.api={async request(){calls.push("discord");return [];}};
+  panel.store={
+    async getTicket(){return {status:"closed"};},
+    async enqueueJob(){calls.push("enqueue");},
+    async finishJob(){return true;},
+  };
+  await panel.runJob({
+    id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90",job_type:"ticket_reminder",
+    payload:{ticket_id:"c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c91",channel_id:"1574262035519115901",reminder_number:1},
+  });
+  assert.deepEqual(calls,[]);
+});

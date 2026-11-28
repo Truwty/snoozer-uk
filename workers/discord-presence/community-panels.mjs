@@ -916,17 +916,34 @@ export class DiscordCommunityPanels{
         if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
       }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??"")&&UUID.test(job.payload?.ticket_id??"")){
         const ticket=await this.store.getTicket(job.payload.ticket_id);
-        if(ticket&&["open","claimed","waiting_member","waiting_staff"].includes(ticket.status)){
-          await this.api.request("/channels/"+job.payload.channel_id+"/messages",{method:"POST",body:{
-            content:"This support ticket is waiting for an update. Please reply when you can.",allowed_mentions:{parse:[]},
-          }});
-          const next=Number(job.payload.reminder_number??1)+1;
-          await this.store.enqueueJob({
-            guildId:this.guildId,jobType:"ticket_reminder",
-            dedupeKey:"ticket-reminder:"+job.payload.ticket_id+":"+next,
-            payload:{ticket_id:job.payload.ticket_id,channel_id:job.payload.channel_id,reminder_number:next},
-            runAt:new Date(Date.now()+24*60*60_000).toISOString(),
-          });
+        const reminderNumber=Number(job.payload.reminder_number??1);
+        if(ticket&&["open","claimed","waiting_member","waiting_staff"].includes(ticket.status)&&reminderNumber>=1&&reminderNumber<=3){
+          const messages=await this.api.request("/channels/"+job.payload.channel_id+"/messages?limit=1");
+          const latest=Array.isArray(messages)?messages[0]:null;
+          const latestActivity=Date.parse(latest?.timestamp??ticket.updated_at??ticket.created_at??"");
+          const dueAt=(Number.isFinite(latestActivity)?latestActivity:Date.now())+24*60*60_000;
+          if(Date.now()<dueAt){
+            // The latest channel activity is newer than 24 hours; defer this reminder
+            // using the same deduplication key so it remains a single persistent job.
+            await this.store.enqueueJob({
+              guildId:this.guildId,jobType:"ticket_reminder",
+              dedupeKey:"ticket-reminder:"+job.payload.ticket_id+":"+reminderNumber,
+              payload:{ticket_id:job.payload.ticket_id,channel_id:job.payload.channel_id,reminder_number:reminderNumber},
+              runAt:new Date(dueAt).toISOString(),
+            });
+          }else{
+            await this.api.request("/channels/"+job.payload.channel_id+"/messages",{method:"POST",body:{
+              content:"This support ticket has had no update for 24 hours. Please reply when you can.",
+              allowed_mentions:{parse:[]},
+            }});
+            const next=reminderNumber+1;
+            if(next<=3)await this.store.enqueueJob({
+              guildId:this.guildId,jobType:"ticket_reminder",
+              dedupeKey:"ticket-reminder:"+job.payload.ticket_id+":"+next,
+              payload:{ticket_id:job.payload.ticket_id,channel_id:job.payload.channel_id,reminder_number:next},
+              runAt:new Date(Date.now()+24*60*60_000).toISOString(),
+            });
+          }
         }
       }
       await this.store.finishJob(job.id,true,null);
