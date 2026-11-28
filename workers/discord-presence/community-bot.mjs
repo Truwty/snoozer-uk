@@ -47,14 +47,21 @@ const cleanText = (value, max = 500) => typeof value === "string"
 const option = (interaction, name) => interaction.data?.options?.find(item => item.name === name)?.value;
 const encodeAuditReason = reason => encodeURIComponent(cleanText(reason || "Snoozer community moderation", 400));
 
-function hasPermission(permissionValue, required) {
+function permissionBits(value) {
   try {
-    const value = BigInt(permissionValue ?? "0");
-    return (value & PERMISSIONS.administrator) === PERMISSIONS.administrator
-      || (value & required) === required;
-  } catch {
-    return false;
-  }
+    if (typeof value === "bigint") return value;
+    if (typeof value === "number" && Number.isSafeInteger(value)) return BigInt(value);
+    if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+  } catch {}
+  return null;
+}
+
+function hasPermission(permissionValue, required) {
+  const value = permissionBits(permissionValue);
+  const requiredBits = permissionBits(required);
+  if (value === null || requiredBits === null || requiredBits === 0n) return false;
+  return (value & PERMISSIONS.administrator) === PERMISSIONS.administrator
+    || (value & requiredBits) === requiredBits;
 }
 
 function embedColour(state) {
@@ -958,7 +965,7 @@ async announceServerBoost(member) {
       await this.complete(interaction, { content, embeds });
     } catch (error) {
       const detail = cleanText(error?.message ?? "Unknown error", 900) || "Unknown error";
-      this.logger.error("[discord-community] command " + name + " failed: " + detail);
+      this.logger.error("[discord-community] command " + name + " failed: " + (error?.stack ?? detail));
       await this.complete(interaction, { content: "The command could not be completed. " + detail });
     }
   }

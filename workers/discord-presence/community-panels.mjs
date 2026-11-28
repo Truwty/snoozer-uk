@@ -10,11 +10,34 @@ const row=(...components)=>({type:1,components});
 const btn=(id,label,style=2,emoji)=>({type:2,style,custom_id:id,label,...(emoji?{emoji:{name:emoji}}:{})});
 const link=(url,label,emoji)=>({type:2,style:5,url,label,...(emoji?{emoji:{name:emoji}}:{})});
 const select=(id,placeholder,options,min=1,max=1)=>({type:3,custom_id:id,placeholder,min_values:min,max_values:max,options});
-const input=(id,label,min,max,style=1,placeholder="")=>({type:4,custom_id:id,label,style,required:true,min_length:min,max_length:max,placeholder});
+const input=(id,label,min,max,style=1,placeholder="")=>{
+  const maxLength=Math.max(1,Math.min(4000,Number(max)||4000));
+  const minLength=Math.min(maxLength,Math.max(0,Number(min)||0));
+  return {type:4,custom_id:id,label,style,required:true,min_length:minLength,max_length:maxLength,placeholder};
+};
 const mkModal=(id,title,fields)=>({custom_id:id,title,components:fields.map(f=>row(input(f.id,f.label,f.min,f.max,f.style??1,f.placeholder??"")))});
-const has=(v,p)=>{try{const b=BigInt(v??"0");return (b&P.administrator)===P.administrator||(b&p)===p;}catch{return false;}};
+const asPermissionBits=value=>{
+  try {
+    if(typeof value==="bigint")return value;
+    if(typeof value==="number"&&Number.isSafeInteger(value))return BigInt(value);
+    if(typeof value==="string"&&/^\d+$/.test(value))return BigInt(value);
+  } catch {}
+  return null;
+};
+const has=(v,p)=>{
+  const bits=asPermissionBits(v),required=asPermissionBits(p);
+  return bits!==null&&required!==null&&required!==0n
+    &&((bits&P.administrator)===P.administrator||(bits&required)===required);
+};
 const STAFF=["admin","senior_moderator","moderator","support_manager","support_team","ticket_support"];
-const FOOTER=k=>"SNOOZER_PANEL:"+k+":v2";
+const PANEL_FOOTER_LABELS={
+  getting_started:"Getting started",member_hub:"Member hub",ticket_panel:"Support desk",
+  bot_control:"Staff controls",events:"Community events",giveaways:"Giveaways",
+  suggestions:"Suggestions",bug_reports:"Bug reports",polls_votes:"Polls and votes",
+  rules:"Community rules",faq:"Frequently asked questions",service_status:"Service status",
+};
+const FOOTER=k=>"Snoozer · "+(PANEL_FOOTER_LABELS[k]??"Community");
+const LEGACY_PANEL_FOOTER=k=>"SNOOZER_PANEL:"+k+":v2";
 
 
 export const SNOOZER_MEMBER_COMMANDS=[
@@ -80,7 +103,8 @@ export class DiscordCommunityPanels{
   async upsertPanel(channelId,key,embed,components){
     if(!SF.test(channelId??""))return false;
     const messages=await this.api.request("/channels/"+channelId+"/messages?limit=100");
-    const old=Array.isArray(messages)?messages.find(m=>m.author?.id===this.botUserId&&m.embeds?.some(e=>e.footer?.text===FOOTER(key))):null;
+    const old=Array.isArray(messages)?messages.find(m=>m.author?.id===this.botUserId&&m.embeds?.some(e=>
+      e.footer?.text===FOOTER(key)||e.footer?.text===LEGACY_PANEL_FOOTER(key))):null;
     const body={embeds:[{...embed,footer:{text:FOOTER(key)}}],components,allowed_mentions:{parse:[]}};
     if(old?.id)await this.api.request("/channels/"+channelId+"/messages/"+old.id,{method:"PATCH",body});
     else await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body});
@@ -91,6 +115,27 @@ export class DiscordCommunityPanels{
     const definitions=[
       ["getting_started","getting_started",{title:"Welcome to Snoozer",description:"Your guide to the Snoozer platform and community.\n\nRead the rules, explore the community and use the member hub to connect your account.",color:0x8b72d9,fields:[{name:"Website",value:"https://snoozer.uk",inline:true},{name:"Help Centre",value:"https://help.snoozer.uk",inline:true},{name:"Service status",value:"https://status.snoozer.uk",inline:true}]},[row(link("https://snoozer.uk","Open Snoozer","🌐"),link("https://help.snoozer.uk","Help Centre","📚")),row(btn("member:profile","My profile",1,"👤"),btn("ticket:start","Get support",2,"🎫"))]],
       ["member_hub","member_hub",{title:"Snoozer Member Hub",description:"Connect your account and manage community membership. Premium is verified against Snoozer's entitlement records.",color:0x8b72d9,fields:[{name:"Account",value:"Link your identity through Snoozer OAuth."},{name:"Membership",value:"View your verified Premium status."},{name:"Community",value:"Manage optional notification roles and creator verification."}]},[row(link("https://snoozer.uk/studio/discord","Link account","🔗"),btn("member:profile","My profile",2,"👤"),btn("member:premium","Premium",2,"💎")),row(btn("member:roles","Manage roles",2,"🎭"),btn("member:creator","Creator verification",2,"✨"),btn("member:cases","My cases",2,"⚖️"))]],
+      ["rules","rules",{title:"Snoozer Community Rules",description:"Welcome to Snoozer. Keep the community useful, safe and welcoming for everyone. By participating, you agree to follow these rules and Discord's Terms of Service and Community Guidelines.",color:0x8b72d9,fields:[
+        {name:"1 · Be respectful",value:"Treat members fairly. Harassment, hate speech, threats, discrimination and targeted abuse are not allowed."},
+        {name:"2 · Keep it safe",value:"No scams, phishing, malicious links, impersonation, malware or attempts to steal accounts."},
+        {name:"3 · Protect privacy",value:"Never post passwords, authentication codes, payment details, private messages or another person's personal information."},
+        {name:"4 · Use the right channels",value:"Keep messages relevant, avoid spam and do not flood channels, mass-mention members or repeatedly post the same content."},
+        {name:"5 · Appropriate content",value:"No explicit sexual content, illegal content or material that promotes real-world harm."},
+        {name:"6 · Promotion and contact",value:"Share projects in the appropriate channels. Do not send unsolicited promotional or suspicious direct messages."},
+        {name:"7 · Follow staff direction",value:"Respect moderator instructions. Use a private support ticket to appeal a moderation decision or report a concern."},
+      ]},[row(link("https://discord.com/terms","Discord Terms","📜"),link("https://discord.com/guidelines","Community Guidelines","🛡️"))]],
+      ["faq","faq",{title:"Snoozer · Frequently Asked Questions",description:"Quick answers for the most common account and community questions.",color:0x438f9b,fields:[
+        {name:"How do I link Discord to Snoozer?",value:"Open the Member Hub and choose Link account, or visit https://snoozer.uk/studio/discord."},
+        {name:"How do I edit my profile?",value:"Sign in at https://snoozer.uk and open Studio to customise and publish your profile."},
+        {name:"How do I check my account or Premium?",value:"Use My profile in the Member Hub or run /snoozer-account. Premium roles follow verified Snoozer entitlements."},
+        {name:"Where do I get support?",value:"Open a private ticket using the support panel, or visit https://help.snoozer.uk. Never share passwords, login codes or payment details."},
+        {name:"Where can I check outages?",value:"Live uptime, incidents and maintenance are shown at https://status.snoozer.uk and in this server's Service Status channel."},
+        {name:"How do I report a bug or suggest a feature?",value:"Use the Bug Reports or Suggestions channel and include clear steps or details. Do not post private account information."},
+      ]},[row(link("https://help.snoozer.uk","Open Help Centre","📚"),link("https://status.snoozer.uk","Service status","🟢"))]],
+      ["service_status","service_status",{title:"Snoozer Service Status",description:"This channel carries Snoozer service health updates, incident notices, planned maintenance and recovery announcements. For current component status and incident history, use the live status page.",color:0x438f9b,fields:[
+        {name:"Live status",value:"https://status.snoozer.uk",inline:true},
+        {name:"Help Centre",value:"https://help.snoozer.uk",inline:true},
+      ]},[row(link("https://status.snoozer.uk","View live status","🟢"),link("https://help.snoozer.uk","Get help","📚"))]],
       ["ticket_panel","ticket_panel",{title:"Snoozer Support Desk",description:"Choose the support category. A private ticket will be created for you.\n\nNever share passwords, authentication codes or payment card details.",color:0x438f9b},[row(btn("ticket:start","Open a ticket",1,"🎫"),link("https://help.snoozer.uk","Help Centre","📚"))]],
       ["bot_control","bot_control",{title:"Snoozer Administration",description:"Private staff controls for support, moderation, community, security and server management.",color:0x596579,fields:[{name:"Support",value:"View and manage tickets.",inline:true},{name:"Moderation",value:"Review cases and appeals.",inline:true},{name:"Security",value:"Configure AutoMod and server protection.",inline:true}]},[row(btn("admin:tickets","Ticket queue",2,"🎫"),btn("admin:moderation","Moderation",2,"🛡️"),btn("admin:refresh","Refresh panels",2,"🔄")),row(btn("admin:config","Bot settings",2,"⚙️"),btn("admin:creators","Creator reviews",2,"✨"),btn("admin:appeals","Appeals",2,"⚖️"),btn("admin:automod","Enable AutoMod",2,"🛡️"),btn("admin:giveaway","Create giveaway",2,"🎉"),btn("admin:event","Schedule event",2,"📅")),row(btn("admin:leaderboard","Activity stats",2,"📊"),btn("admin:support-stats","Support stats",2,"🎧"),btn("admin:backup","Create backup",2,"💾"),btn("admin:usage","Bot usage",2,"📈"),btn("admin:restore","Restore backup",1,"♻️"),btn("admin:reconcile","Repair layout",2,"🔧"),btn("admin:rebuild:start","Rebuild server",4,"⚠️"))]],
       ["events","events",{title:"Snoozer Community Events",description:"Find upcoming community events and join through Discord Scheduled Events.",color:0x438f9b},[row(btn("event:info","View upcoming events",2,"📅"))]],
@@ -486,18 +531,60 @@ export class DiscordCommunityPanels{
     const id=await this.store.createSubmission({guildId:this.guildId,kind:"poll",authorId:uid(i),title,body:"Vote for one option.",metadata:{options}});
     const channel=this.resources.polls_votes;
     const message=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{
-      embeds:[{title:"📊 "+title,description:options.map((v,n)=>"**"+(n+1)+".** "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll ID "+id}}],
+      embeds:[{title:"📊 "+title,description:options.map((v,n)=>"**"+(n+1)+".** "+v).join("\n"),color:0x4d91c9,footer:{text:"Snoozer · Community poll"}}],
       components:options.map((v,n)=>row(btn("poll:vote:"+id+":"+n,v,2))),allowed_mentions:{parse:[]},
     }});
-    await this.store.setConfig(this.guildId,"poll_"+id.replaceAll("-",""),{message_id:message.id,channel_id:channel,options});
+    await this.store.setConfig(this.guildId,"poll_"+id.replaceAll("-",""),{message_id:message.id,channel_id:channel,title,options});
     return this.reply(i,{content:"Poll created in <#"+channel+">."},true);
   }
+  async refreshPollMessage(id,poll){
+    if(!SF.test(poll?.channel_id??"")||!SF.test(poll?.message_id??""))throw new Error("The poll message reference is unavailable.");
+    const [message,results]=await Promise.all([
+      this.api.request("/channels/"+poll.channel_id+"/messages/"+poll.message_id),
+      this.store.pollResults(id),
+    ]);
+    const previous=Array.isArray(message?.embeds)?message.embeds[0]:null;
+    const title=clean(poll.title??String(previous?.title??"").replace(/^📊\s*/,""),120)||"Community poll";
+    const options=Array.isArray(poll.options)?poll.options:[];
+    const resultRows=Array.isArray(results?.options)?results.options:[];
+    const fields=options.slice(0,5).map((choice,index)=>{
+      const entry=resultRows.find(item=>item.choice===choice)??resultRows[index]??{};
+      const voterIds=Array.isArray(entry.voters)?entry.voters.filter(value=>SF.test(value)):[];
+      const visible=voterIds.slice(0,30).map(value=>"<@"+value+">");
+      if(voterIds.length>visible.length)visible.push("+"+(voterIds.length-visible.length)+" more");
+      return {
+        name:clean(choice,90)+" · "+String(entry.votes??0)+" vote"+(Number(entry.votes??0)===1?"":"s"),
+        value:visible.length?visible.join(" · "):"No votes yet.",
+        inline:false,
+      };
+    });
+    const embed={
+      title:"📊 "+title,
+      description:"**"+String(results?.total??0)+" total votes**\\nSelect an option below to vote. Voter names are shown beside each option.",
+      color:0x4d91c9,fields,footer:{text:"Snoozer · Community poll"},
+      timestamp:previous?.timestamp??new Date().toISOString(),
+    };
+    await this.api.request("/channels/"+poll.channel_id+"/messages/"+poll.message_id,{method:"PATCH",body:{
+      embeds:[embed],components:options.map((choice,index)=>row(btn("poll:vote:"+id+":"+index,choice,2))),
+      allowed_mentions:{parse:[]},
+    }});
+    return {total:Number(results?.total??0),fields};
+  }
   async pollVote(i,id,index){
+    if(!UUID.test(id))throw new Error("This poll is unavailable.");
     const config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+id.replaceAll("-","")];
-    if(!UUID.test(id)||!Array.isArray(poll?.options))throw new Error("This poll is unavailable.");
-    const choice=poll.options[Number(index)];if(typeof choice!=="string")throw new Error("Invalid poll choice.");
+    if(!Array.isArray(poll?.options))throw new Error("This poll is unavailable.");
+    const choiceIndex=Number(index);
+    if(!Number.isInteger(choiceIndex)||choiceIndex<0||choiceIndex>=poll.options.length)throw new Error("Invalid poll choice.");
+    const choice=poll.options[choiceIndex];
+    if(typeof choice!=="string")throw new Error("Invalid poll choice.");
     await this.store.voteSubmission(id,uid(i),choice);
-    return this.reply(i,{content:"Your vote for **"+choice+"** has been recorded."},true);
+    try{
+      await this.refreshPollMessage(id,poll);
+    }catch(error){
+      this.logger.warn("[discord-panels] vote was saved but poll results could not refresh",error?.stack??error?.message??error);
+    }
+    return this.reply(i,{content:"Your vote for **"+choice+"** has been recorded. The poll results include the visible voter list."},true);
   }
 
   async ticketAction(i,id,action){
@@ -972,7 +1059,15 @@ export class DiscordCommunityPanels{
       const jobs=await this.store.claimJobs(this.guildId,20);if(Array.isArray(jobs))for(const job of jobs)await this.runJob(job);
     }catch(e){this.logger.error("[discord-panels] automation tick failed",e?.message??e);}finally{this.busy=false;}
   }
-  start(){if(this.timer)return;this.timer=setInterval(()=>void this.tick(),30000);this.timer.unref?.();void this.tick();}
+  start(){
+    if(this.timer)return;
+    this.timer=setInterval(()=>void this.tick(),30000);
+    this.timer.unref?.();
+    void this.publishPermanentPanels().then(result=>{
+      if(result.errors.length)this.logger.warn("[discord-panels] some permanent panels could not be published",result.errors);
+    }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error))
+      .finally(()=>void this.tick());
+  }
   stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
 
   async handleSlash(i){
@@ -1118,15 +1213,13 @@ export class DiscordCommunityPanels{
         if(options.length<2)throw new Error("A poll needs at least two options.");
         const ref=await this.store.createSubmission({guildId:this.guildId,kind:"poll",authorId:uid(i),title,body:"Choose one option.",metadata:{options}});
         const channel=this.resources.polls_votes;
-        const msg=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:"📊 "+title,description:options.map((v,n)=>(n+1)+". "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll "+ref}}],components:options.map((v,n)=>row(btn("poll:vote:"+ref+":"+n,v,2))),allowed_mentions:{parse:[]}}});
+        const msg=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:"📊 "+title,description:options.map((v,n)=>(n+1)+". "+v).join("\n"),color:0x4d91c9,footer:{text:"Snoozer · Community poll"}}],components:options.map((v,n)=>row(btn("poll:vote:"+ref+":"+n,v,2))),allowed_mentions:{parse:[]}}});
         await this.store.setConfig(this.guildId,"poll_"+ref.replaceAll("-",""),{message_id:msg.id,channel_id:channel,options});
         await this.reply(i,{content:"Poll created in <#"+channel+">."},true);
       }else if(id.startsWith("poll:vote:")){
-        const [, ,ref,index]=id.split(":"),config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+ref.replaceAll("-","")];
-        if(!UUID.test(ref??"")||!Array.isArray(poll?.options)||typeof poll.options[Number(index)]!=="string")throw new Error("Poll unavailable.");
-        await this.store.voteSubmission(ref,uid(i),poll.options[Number(index)]);
-        await this.reply(i,{content:"Your vote for **"+poll.options[Number(index)]+"** has been recorded."},true);
-      }else if(id==="poll:info")await this.reply(i,{content:"Select an option button on an active poll to submit your vote. Your latest vote is stored for that poll."},true);
+        const [, ,ref,index]=id.split(":");
+        await this.pollVote(i,ref,index);
+      }else if(id==="poll:info")await this.reply(i,{content:"Choose an option on an active poll. Vote counts and visible voters are shown below each option; your latest vote replaces your previous vote."},true);
       else if(id==="admin:refresh"){
         this.requireStaff(i,["admin","developer"]);await this.defer(i);const r=await this.publishPermanentPanels();
         await this.complete(i,{content:"Panels refreshed: "+r.posted+". Errors: "+(r.errors.length?r.errors.join("; "):"none")});
@@ -1197,7 +1290,7 @@ export class DiscordCommunityPanels{
       }
       return true;
     }catch(e){
-      this.logger.error("[discord-panels] interaction failed",id,e?.message??e);
+      this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
       try{await this.reply(i,{content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)},true);}catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
       return true;
     }
