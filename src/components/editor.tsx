@@ -773,15 +773,18 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
               </select>
             </label>
           ) : null}
-          <details className="row-menu" onClick={(event) => { if (event.target instanceof Element && event.target.closest("button")) event.currentTarget.open = false; }}><summary aria-label={`Actions for link ${index + 1}`}>Actions</summary><div className="actions">
-            <button type="button" className="button small" disabled={index === 0} aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
-            <button type="button" className="button small" disabled={index === content.links.length - 1} aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
-            <button type="button" className="button small" aria-label={`Remove link ${index + 1}`} onClick={() => {
-              set("links", content.links.filter((_, i) => i !== index));
-              setAnnouncement(`Removed link ${index + 1}.`);
-              focusLink(Math.min(index, content.links.length - 2));
-            }}>Remove</button>
-          </div></details>
+          <div className="studio-link-actions" role="group" aria-label={`Actions for link ${index + 1}`}>
+            <button type="button" className="button small" disabled={index === 0}
+              aria-label={`Move up (link ${index + 1})`} onClick={() => move(index, index - 1)}>Move up</button>
+            <button type="button" className="button small" disabled={index === content.links.length - 1}
+              aria-label={`Move down (link ${index + 1})`} onClick={() => move(index, index + 1)}>Move down</button>
+            <button type="button" className="button small studio-link-remove" aria-label={`Remove link ${index + 1}`}
+              onClick={() => {
+                set("links", content.links.filter((_, i) => i !== index));
+                setAnnouncement(`Removed link ${index + 1}.`);
+                focusLink(Math.min(index, content.links.length - 2));
+              }}>Remove</button>
+          </div>
         </div>)}
         <button className="button" type="button" ref={addLink} disabled={content.links.length >= linkLimit}
           onClick={() => {
