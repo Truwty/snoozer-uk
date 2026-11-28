@@ -4,11 +4,11 @@ import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { profileLayouts } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
+import { findTemplates, getTemplatePage, studioTemplates, templateCategories, templateFilters, templatePalettes, templatePageSize } from "@/lib/studio-templates";
 
 export const metadata = {
   title: "Profile templates",
-  description: "Explore 120 free Snoozer profile designs across ten creative categories.",
+  description: "Explore free Snoozer profile designs across creative categories.",
 };
 type SearchParams = { q?: string | string[]; theme?: string | string[]; layout?: string | string[]; category?: string | string[]; palette?: string | string[]; page?: string | string[]; profile?: string | string[] };
 
@@ -20,6 +20,9 @@ export default async function Templates({ searchParams }: { searchParams: Promis
   const { page, pageCount, start } = getTemplatePage(params.page, templates.length);
   const visibleTemplates = templates.slice(start, start + templatePageSize);
   const active = Boolean(filters.q || filters.theme !== "all" || filters.layout !== "all" || filters.category !== "all" || filters.palette !== "all");
+  const compositionCount = new Set(studioTemplates.map((template) => template.style)).size;
+  const categoryCount = new Set(studioTemplates.map((template) => template.category)).size;
+  const paletteCount = new Set(studioTemplates.map((template) => template.paletteId)).size;
   const layoutLabels = { centred: "Centred card", editorial: "Editorial", portfolio: "Portfolio grid" };
   const queryForPage = (nextPage: number) => {
     const query = new URLSearchParams();
@@ -43,7 +46,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
       <h1>Find your profile style.</h1>
       <p className="muted">120 original starting points across ten styles of self-expression. Pick a complete composition, then make the details yours in Studio.</p>
       <div className="template-library-stats" aria-label="Template library contents">
-        <span><strong>120</strong> designs</span><span><strong>30</strong> compositions</span><span><strong>10</strong> categories</span><span><strong>4</strong> colour treatments</span>
+        <span><strong>{studioTemplates.length}</strong> designs</span><span><strong>{compositionCount}</strong> compositions</span><span><strong>{categoryCount}</strong> categories</span><span><strong>{paletteCount}</strong> colour treatments</span>
       </div>
     </header>
     <form key={JSON.stringify(filters)} action="/templates" method="get" className="template-filters">
