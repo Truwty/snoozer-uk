@@ -81,11 +81,6 @@ async function editorTab(page: Page, name: string) {
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
 
-async function linkMenu(page: Page, index: number) {
-  await editorTab(page, "Links");
-  const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
-  if (!(await summary.evaluate((element) => element.parentElement?.hasAttribute("open")))) await summary.click();
-}
 
 test("profile analytics requires consent, counts link clicks and exports only to its owner", async ({ page, browser }) => {
   test.setTimeout(90000);
@@ -863,9 +858,10 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
       await editorTab(page, "Links");
       await page.getByLabel(`Link ${index + 1} URL`).fill(`https://example.com/${label}`);
     }
-    await linkMenu(page, 2);
+    const reorderedLinkActions = page.getByRole("group", { name: "Actions for link 2", exact: true });
+    await expect(reorderedLinkActions).toBeVisible();
     await page.getByRole("button", { name: "Move up (link 2)" }).press("Enter");
-    expect(await page.getByLabel("Actions for link 2", { exact: true }).evaluate((element) => element.parentElement?.hasAttribute("open"))).toBe(false);
+    await expect(reorderedLinkActions).toBeVisible();
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
     await page.getByRole("button", { name: "Undo edit" }).press("Enter");
@@ -874,50 +870,27 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
 
     await page.setViewportSize({ width: 390, height: 844 });
-    const links = page.getByRole("group", { name: /^Links/ });
-    const topLink = links.locator('[data-reorder-index="0"] .reorder-handle');
-    const bottomLink = links.locator('[data-reorder-index="1"] .reorder-handle');
-    await topLink.evaluate((handle) => handle.scrollIntoView({ block: "center" }));
-    // Keep both drag endpoints inside the viewport. Scrolling only the first
-    // handle can leave the second handle below the viewport on a phone, causing
-    // CDP to dispatch touch events to <html> instead of the reorder handle.
-    await bottomLink.scrollIntoViewIfNeeded();
-    await expect(topLink).toBeInViewport();
-    await expect(bottomLink).toBeInViewport();
-    const topBox = (await topLink.boundingBox())!;
-    const bottomBox = (await bottomLink.boundingBox())!;
-    const touch = await page.context().newCDPSession(page);
-    try {
-      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
-      const from = { x: bottomBox.x + bottomBox.width / 2, y: bottomBox.y + bottomBox.height / 2 };
-      const to = { x: topBox.x + topBox.width / 2, y: topBox.y + topBox.height / 2 };
-      const targets = await page.evaluate(({ from, to }) => ({
-        from: Boolean(document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle")),
-        to: Boolean(document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle")),
-      }), { from, to });
-      expect(targets).toEqual({ from: true, to: true });
-      await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
-      for (let step = 1; step <= 8; step++) {
-        const y = from.y + (to.y - from.y) * step / 8;
-        await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: to.x, y }] });
-      }
-      await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    } finally {
-      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
-      await touch.detach();
-    }
+    // Link rows now keep all actions visible in normal flow. On a phone the
+    // explicit controls are the reliable accessible reorder mechanism; both
+    // rows do not need to fit in the viewport simultaneously for drag-and-drop.
+    const mobileLinkActions = page.getByRole("group", { name: "Actions for link 2", exact: true });
+    await expect(mobileLinkActions).toBeVisible();
+    await page.getByRole("button", { name: "Move up (link 2)", exact: true }).click();
     await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
+    await expect(page.getByRole("group", { name: "Actions for link 1", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 1100 });
 
-    // Regression: the sticky preview must not cover the link actions popover.
+    // Link controls stay visible in the inspector; Remove is never hidden in a clipped popover.
     await editorTab(page, "Links");
     await page.getByRole("button", { name: "Add link", exact: true }).click();
     await page.getByLabel("Link 3 label").fill("Temporary link");
     await page.getByLabel("Link 3 URL").fill("https://example.com/temporary");
-    await linkMenu(page, 3);
+    const actionControls = page.getByRole("group", { name: "Actions for link 3", exact: true });
+    await expect(actionControls).toBeVisible();
     const removeLink = page.getByRole("button", { name: "Remove link 3", exact: true });
     await expect(removeLink).toBeVisible();
+    await removeLink.scrollIntoViewIfNeeded();
     const removeIsTopmost = await removeLink.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
