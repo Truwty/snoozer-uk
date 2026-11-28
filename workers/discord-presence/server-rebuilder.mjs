@@ -4,7 +4,8 @@ const P = {
   administrator:1n<<3n, manageChannels:1n<<4n, manageGuild:1n<<5n, viewAuditLog:1n<<7n,
   viewChannel:1n<<10n, sendMessages:1n<<11n, manageMessages:1n<<13n, embedLinks:1n<<14n,
   attachFiles:1n<<15n, readMessageHistory:1n<<16n, connect:1n<<20n, speak:1n<<21n,
-  kickMembers:1n<<1n, banMembers:1n<<2n, manageRoles:1n<<28n, moderateMembers:1n<<40n,
+  kickMembers:1n<<1n, banMembers:1n<<2n, manageRoles:1n<<28n, manageWebhooks:1n<<29n,
+  manageEvents:1n<<33n, moderateMembers:1n<<40n,
 };
 const bitfield = names => names.reduce((value,name)=>value|P[name],0n);
 const validSnowflake = value => typeof value==="string" && /^[1-9][0-9]{16,19}$/.test(value);

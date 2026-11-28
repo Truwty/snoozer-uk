@@ -223,7 +223,7 @@ export class DiscordCommunityPanels{
     if(!UUID.test(id)||!["approved","rejected"].includes(decision))throw new Error("Invalid suggestion review.");
     await this.store.reviewSubmission(id,uid(i),decision);
     const config=await this.store.getConfig(this.guildId);
-    const messageRef=config?.["submission_"+id];
+    const messageRef=config?.["submission_"+id.replaceAll("-","")];
     if(SF.test(messageRef?.channel_id??"")&&SF.test(messageRef?.message_id??"")){
       try{
         const original=await this.api.request("/channels/"+messageRef.channel_id+"/messages/"+messageRef.message_id);
@@ -350,7 +350,7 @@ export class DiscordCommunityPanels{
         embeds:[{title:(kind==="bug"?"Bug report: ":"Suggestion: ")+title,description:body,color:kind==="bug"?0xd65a68:0x43a982,footer:{text:"Submission "+id}}],
         components:kind==="suggestion"?[row(btn("suggestion:vote:"+id,"Vote",1,"👍")),row(btn("suggestion:approve:"+id,"Approve",3,"✅"),btn("suggestion:reject:"+id,"Reject",4,"❌"))]:[],allowed_mentions:{parse:[]},
       }});
-      if(message?.id)await this.store.setConfig(this.guildId,"submission_"+id,{message_id:message.id,channel_id:channel});
+      if(message?.id)await this.store.setConfig(this.guildId,"submission_"+id.replaceAll("-",""),{message_id:message.id,channel_id:channel});
     }
     return this.reply(i,{content:"Your "+kind+" has been submitted. Reference: "+id+"."},true);
   }
@@ -435,11 +435,11 @@ export class DiscordCommunityPanels{
       embeds:[{title:"📊 "+title,description:options.map((v,n)=>"**"+(n+1)+".** "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll ID "+id}}],
       components:options.map((v,n)=>row(btn("poll:vote:"+id+":"+n,v,2))),allowed_mentions:{parse:[]},
     }});
-    await this.store.setConfig(this.guildId,"poll_"+id,{message_id:message.id,channel_id:channel,options});
+    await this.store.setConfig(this.guildId,"poll_"+id.replaceAll("-",""),{message_id:message.id,channel_id:channel,options});
     return this.reply(i,{content:"Poll created in <#"+channel+">."},true);
   }
   async pollVote(i,id,index){
-    const config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+id];
+    const config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+id.replaceAll("-","")];
     if(!UUID.test(id)||!Array.isArray(poll?.options))throw new Error("This poll is unavailable.");
     const choice=poll.options[Number(index)];if(typeof choice!=="string")throw new Error("Invalid poll choice.");
     await this.store.voteSubmission(id,uid(i),choice);
@@ -933,7 +933,7 @@ export class DiscordCommunityPanels{
             embeds:[{title:(kind==="bug"?"Bug report: ":"Suggestion: ")+title,description:body,color:kind==="bug"?0xd65a68:0x43a982,footer:{text:"Submission "+ref}}],
             components:kind==="suggestion"?[row(btn("suggestion:vote:"+ref,"Vote",1,"👍"))]:[],allowed_mentions:{parse:[]},
           }});
-          if(msg?.id)await this.store.setConfig(this.guildId,"submission_"+ref,{message_id:msg.id,channel_id:channel});
+          if(msg?.id)await this.store.setConfig(this.guildId,"submission_"+ref.replaceAll("-",""),{message_id:msg.id,channel_id:channel});
         }
         await this.reply(i,{content:"Your "+kind+" has been submitted. Reference: "+ref+"."},true);
       }else if(id.startsWith("suggestion:vote:")){
@@ -953,10 +953,10 @@ export class DiscordCommunityPanels{
         const ref=await this.store.createSubmission({guildId:this.guildId,kind:"poll",authorId:uid(i),title,body:"Choose one option.",metadata:{options}});
         const channel=this.resources.polls_votes;
         const msg=await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:"📊 "+title,description:options.map((v,n)=>(n+1)+". "+v).join("\n"),color:0x4d91c9,footer:{text:"Poll "+ref}}],components:options.map((v,n)=>row(btn("poll:vote:"+ref+":"+n,v,2))),allowed_mentions:{parse:[]}}});
-        await this.store.setConfig(this.guildId,"poll_"+ref,{message_id:msg.id,channel_id:channel,options});
+        await this.store.setConfig(this.guildId,"poll_"+ref.replaceAll("-",""),{message_id:msg.id,channel_id:channel,options});
         await this.reply(i,{content:"Poll created in <#"+channel+">."},true);
       }else if(id.startsWith("poll:vote:")){
-        const [, ,ref,index]=id.split(":"),config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+ref];
+        const [, ,ref,index]=id.split(":"),config=await this.store.getConfig(this.guildId),poll=config?.["poll_"+ref.replaceAll("-","")];
         if(!UUID.test(ref??"")||!Array.isArray(poll?.options)||typeof poll.options[Number(index)]!=="string")throw new Error("Poll unavailable.");
         await this.store.voteSubmission(ref,uid(i),poll.options[Number(index)]);
         await this.reply(i,{content:"Your vote for **"+poll.options[Number(index)]+"** has been recorded."},true);
