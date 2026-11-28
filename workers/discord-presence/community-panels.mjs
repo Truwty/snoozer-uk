@@ -4,7 +4,8 @@ const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embed
 const SF=/^[1-9][0-9]{16,19}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Discord permission overwrites are decimal strings. Avoid BigInt operations in the ticket creation path.
-const TICKET_PERMISSION_BITS=Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992"});
+const TICKET_PERMISSION_BITS=Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992",closedOwnerAllow:"66560",closedOwnerDeny:"2048"});
+const TICKET_DELETE_DELAY_MS=10_000;
 const clean=(v,n=1000)=>typeof v==="string"?v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,"").trim().slice(0,n):"";
 const uid=i=>i.member?.user?.id??i.user?.id??"";
 const opt=(i,n)=>i.data?.options?.find(x=>x.name===n)?.value;
@@ -84,6 +85,7 @@ export class DiscordCommunityPanels{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
     this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
+    this.deferredInteractions=new Set();this.jobWakeTimers=new Map();
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
@@ -98,10 +100,44 @@ export class DiscordCommunityPanels{
     const roles=new Set(i.member?.roles??[]);return keys.some(k=>this.roleIds[k]&&roles.has(this.roleIds[k]));
   }
   requireStaff(i,keys=STAFF){if(!this.staff(i,keys))throw new Error("You do not have permission to use this staff control.");}
-  async reply(i,payload,ephemeral=true){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:4,data:{flags:ephemeral?64:0,allowed_mentions:{parse:[]},...payload}}});}
-  async defer(i){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:5,data:{flags:64}}});}
-  async showModal(i,data){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:9,data}});}
-  async complete(i,payload){return this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});}
+  async reply(i,payload,ephemeral=true){
+    if(this.deferredInteractions.has(i.id))return this.complete(i,payload);
+    return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:4,data:{flags:ephemeral?64:0,allowed_mentions:{parse:[]},...payload}}});
+  }
+  async defer(i){
+    if(this.deferredInteractions.has(i.id))return null;
+    await this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:5,data:{flags:64}}});
+    this.deferredInteractions.add(i.id);
+    return true;
+  }
+  async showModal(i,data){
+    const result=await this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:9,data}});
+    const customId=i.data?.custom_id;
+    if(typeof customId==="string")void this.store.recordInteraction(i.id,customId).catch(error=>this.logger.warn("[discord-panels] modal interaction receipt failed",error?.message??error));
+    return result;
+  }
+  async complete(i,payload){
+    const result=await this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});
+    this.deferredInteractions.delete(i.id);
+    return result;
+  }
+  opensModal(customId){
+    return customId==="ticket:category"||customId==="member:creator"||customId==="suggestion:open"||customId==="bug:open"||customId==="poll:create"||customId==="admin:rebuild:start"||customId==="admin:reconcile"||customId==="admin:restore"||customId==="admin:thresholds"||customId==="giveaway:role-select"||customId==="admin:event"||customId.startsWith("ticket:note:")||customId.startsWith("appeal:open:")||customId.startsWith("mod:target:");
+  }
+  scheduleJobWake(runAt,key=String(Math.random())){
+    const target=Date.parse(runAt);
+    const delay=Number.isFinite(target)?Math.max(250,target-Date.now()+200):250;
+    const timer=setTimeout(()=>{this.jobWakeTimers.delete(key);void this.tick();},delay);
+    timer.unref?.();this.jobWakeTimers.set(key,timer);return timer;
+  }
+  async scheduleTicketDeletion(ticketId,channelId,actorId){
+    if(!UUID.test(ticketId??"")||!SF.test(channelId??""))throw new Error("The ticket deletion job could not be validated.");
+    const runAt=new Date(Date.now()+TICKET_DELETE_DELAY_MS).toISOString();
+    await this.store.enqueueJob({guildId:this.guildId,jobType:"ticket_delete",dedupeKey:"ticket-delete:"+ticketId,
+      payload:{ticket_id:ticketId,channel_id:channelId,closed_by:actorId},runAt});
+    this.scheduleJobWake(runAt,"ticket-delete:"+ticketId);
+    return runAt;
+  }
   async upsertPanel(channelId,key,embed,components){
     if(!SF.test(channelId??""))return false;
     const messages=await this.api.request("/channels/"+channelId+"/messages?limit=100");
