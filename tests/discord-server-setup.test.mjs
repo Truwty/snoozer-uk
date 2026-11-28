@@ -191,3 +191,64 @@ test("setup interactions from a different guild are ignored", async () => {
 
   assert.equal(requests.length, 0);
 });
+
+test("worker registers /snoozer-setup only in the configured guild", async () => {
+  const requests = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId,
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher: async () => new Response(null, { status: 204 }),
+    discordFetcher: async (url, options) => {
+      requests.push({ url, options });
+      if (url.endsWith("/users/@me")) {
+        return new Response(JSON.stringify({ id: botUserId }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ id: "666666666666666666", name: "snoozer-setup" }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      });
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await worker.registerServerSetupCommand();
+  assert.equal(worker.applicationId, botUserId);
+  assert.equal(worker.botUserId, botUserId);
+  assert.equal(requests.length, 2);
+  assert.match(requests[1].url, new RegExp("/applications/" + botUserId + "/guilds/" + guildId + "/commands$"));
+  const command = JSON.parse(requests[1].options.body);
+  assert.equal(command.name, "snoozer-setup");
+  assert.equal(command.default_member_permissions, "8");
+  assert.equal(command.options[0].name, "confirm");
+});
+
+test("Gateway command interactions are routed to the Snoozer setup handler", async () => {
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    secret: "s".repeat(64),
+    guildId,
+    baseUrl: "https://snoozer.example",
+  }, {
+    fetcher: async () => new Response(null, { status: 204 }),
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.applicationId = botUserId;
+  let received = null;
+  worker.handleServerSetupInteraction = async interaction => { received = interaction; };
+
+  await worker.dispatch({
+    t: "INTERACTION_CREATE",
+    d: {
+      type: 2,
+      application_id: botUserId,
+      guild_id: guildId,
+      data: { name: "snoozer-setup" },
+    },
+  });
+
+  assert.equal(received?.guild_id, guildId);
+  assert.equal(received?.data?.name, "snoozer-setup");
+});
