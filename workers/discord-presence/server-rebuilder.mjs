@@ -133,7 +133,7 @@ export class DiscordServerRebuilder {
       ["afk_channel_id","Discord AFK channel"],
     ]) addProtectedChannel(guild[field],reason);
     for(const channel of channels) {
-      if(normaliseRole(channel.name)==="snoozer setup state")
+      if(normaliseRole(String(channel.name??"").replaceAll("-"," "))==="snoozer setup state")
         addProtectedChannel(channel.id,"Snoozer one-time setup marker");
     }
     addProtectedChannel(invocationChannelId,"Channel where the rebuild command was invoked");
@@ -475,7 +475,8 @@ export class DiscordServerRebuilder {
     const channelResult=await this.deleteOldChannels(before.channels,before.protectedChannelIds??[]);
     if(channelResult.remaining.length) {
       const failures=channelResult.remaining.map(item=>item.name+" ("+item.id+"): "+item.error).join("; ");
-      throw new Error("The reset stopped before rebuilding because "+channelResult.remaining.length+" of "+before.channels.length+" channels could not be deleted. Removed "+channelResult.deleted+". Failures: "+failures+". The configuration backup is "+backupId+".");
+      const deletableChannels=before.channels.length-(channelResult.preserved?.length??0);
+      throw new Error("The reset stopped before rebuilding because "+channelResult.remaining.length+" of "+deletableChannels+" deletable channels could not be deleted. Removed "+channelResult.deleted+" and preserved "+(channelResult.preserved?.length??0)+" required channels. Failures: "+failures+". The configuration backup is "+backupId+".");
     }
 
     const roleResult=await this.deleteOldRoles(before.roles,before.protectedRoleIds??before.botMember?.roles??[]);
