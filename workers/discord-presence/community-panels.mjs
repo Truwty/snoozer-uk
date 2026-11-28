@@ -884,7 +884,8 @@ export class DiscordCommunityPanels{
       else if(job.job_type==="tempban_unban"&&SF.test(job.payload?.user_id??""))await this.api.request("/guilds/"+this.guildId+"/bans/"+job.payload.user_id,{method:"DELETE"});
       else if(job.job_type==="backup"){
         const result=await this.rebuilder.createBackup(this.botUserId);
-        this.logger.info("[discord-panels] scheduled server backup completed",result.backupId);
+        const pruned=await this.store.pruneBackups(this.guildId,30);
+        this.logger.info("[discord-panels] scheduled server backup completed",result.backupId,"old backups pruned",pruned);
       }else if(job.job_type==="health_check"){
         const [bot,resources]=await Promise.all([this.api.request("/users/@me"),this.store.getResources(this.guildId)]);
         if(!SF.test(bot?.id??""))throw new Error("Discord REST health check did not return a valid bot identity.");

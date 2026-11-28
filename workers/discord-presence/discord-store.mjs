@@ -52,6 +52,8 @@ export class DiscordStore {
     return { rows:resources, map };
   }
 
+  pruneBackups(guildId,keep=30) { return this.rpc("discord_bot_prune_backups",{p_guild_id:guildId,p_keep:keep}); }
+
   saveBackup(guildId, actorId, snapshot) {
     return this.rpc("discord_bot_save_backup", { p_guild_id:guildId,p_actor:actorId,p_snapshot:snapshot });
   }
