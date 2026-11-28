@@ -809,9 +809,6 @@ export class DiscordCommunityPanels{
     if(name==="snoozer-automod-setup"){await this.setupAutoMod(i);return true;}
     if(name==="snoozer-announce"){await this.createAnnouncement(i);return true;}
     if(name==="snoozer-health"){await this.healthStatus(i);return true;}
-    if(name==="snoozer-usage"){await this.showUsageStats(i);return true;}
-    if(name==="snoozer-backup"){this.requireAdmin(i);await this.defer(i);try{const result=await this.rebuilder.createBackup(uid(i));await this.complete(i,{content:"Server configuration backup saved. Roles: "+result.roleCount+" · channels: "+result.channelCount+" · reference: "+result.backupId+"."});}catch(error){await this.complete(i,{content:"Backup failed: "+clean(error?.message,700)});}return true;}
-    if(name==="snoozer-reconcile"){this.requireAdmin(i);if(opt(i,"confirmation")!=="RECONCILE SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation did not match."},true);return true;}await this.defer(i);try{const result=await this.rebuilder.reconcile(uid(i));await this.refreshResources();await this.complete(i,{content:"Snoozer layout repair "+(result.complete?"completed":"finished with panel errors")+". Roles: "+result.roleCount+" · channels: "+result.channelCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId+"."});}catch(error){await this.complete(i,{content:"Reconciliation stopped safely: "+clean(error?.message,700)});}return true;}
     if(name==="snoozer-backup"){
       this.requireAdmin(i);await this.defer(i);
       try{const result=await this.rebuilder.createBackup(uid(i));
@@ -1142,7 +1139,7 @@ export class DiscordCommunityPanels{
         if(phrase!=="REBUILD SNOOZER SERVER")throw new Error("Confirmation did not match. No changes were made.");
         await this.defer(i);const r=await this.rebuilder.rebuild(uid(i));await this.refreshResources();
         await this.complete(i,{content:r.complete?"The Snoozer server rebuild completed.":"The rebuild has outstanding errors. Check #bot-logs."});
-      }else if(id==="admin:config")await this.adminSettings(i);
+      }else if(id==="admin:usage")await this.showUsageStats(i);else if(id==="admin:config")await this.adminSettings(i);
       else if(id.startsWith("admin:channel:"))await this.chooseChannel(i,id.split(":")[2]);
       else if(id.startsWith("admin:channel-set:"))await this.saveChannel(i,id.split(":")[2]);
       else if(id.startsWith("admin:toggle:"))await this.toggleSecurity(i,id.split(":")[2]);
