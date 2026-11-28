@@ -4,7 +4,7 @@ import { ProfileCard } from "@/components/profile-card";
 import { defaultProfileWidgets } from "@/lib/profile-widgets";
 import { EmptyState } from "@/components/ui";
 import { defaultAppearance, profileAppearance, profileLayouts, themes, textSections } from "@/lib/profile";
-import { findTemplates, getTemplatePage, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
+import { findTemplates, getTemplatePage, studioTemplates, templateCategories, templateFilters, templatePalettes, templatePaletteThemes, templateStyleCategories, templatePageSize, templatePaletteIdForAppearance } from "@/lib/studio-templates";
 import { readStudioDraft, requireAccount, type StudioProfileQuery } from "@/lib/profiles-server";
 import { rateStudioTemplate, setTemplateFavorite, submitCommunityTemplate, useStudioTemplate } from "./actions";
 import { z } from "zod";
@@ -112,7 +112,7 @@ export default async function StudioTemplates({ searchParams }: { searchParams: 
     <header className="studio-page-heading">
       <div><p className="eyebrow">YOUR PROFILE / DESIGN LIBRARY</p><h1>Find your profile style.</h1>
         <p className="muted">Browse profile designs, save favourites, rate templates and return to your recent choices.</p>
-        <div className="template-library-stats"><span><strong>120</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
+        <div className="template-library-stats"><span><strong>{studioTemplates.length}</strong> curated designs</span><span><strong>{favorites.length}</strong> favourites</span><span><strong>{uploads.length}</strong> uploads</span></div>
       </div>
       <Link className="button primary" href={"/studio/templates?tab=create"+profileQuery}>＋ Create Template</Link>
     </header>
