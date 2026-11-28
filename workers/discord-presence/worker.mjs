@@ -14,9 +14,13 @@ import { DiscordSecurityGuard } from "./security-guard.mjs";
 const GUILDS_INTENT = 1 << 0;
 const GUILD_MEMBERS_INTENT = 1 << 1;
 const GUILD_MODERATION_INTENT = 1 << 2;
+const GUILD_EXPRESSIONS_INTENT = 1 << 3;
+const GUILD_INTEGRATIONS_INTENT = 1 << 4;
 const GUILD_WEBHOOKS_INTENT = 1 << 5;
+const GUILD_INVITES_INTENT = 1 << 6;
 const GUILD_VOICE_STATES_INTENT = 1 << 7;
 const GUILD_MESSAGES_INTENT = 1 << 9;
+const GUILD_MESSAGE_REACTIONS_INTENT = 1 << 10;
 const GUILD_SCHEDULED_EVENTS_INTENT = 1 << 16;
 const AUTO_MODERATION_CONFIGURATION_INTENT = 1 << 20;
 const AUTO_MODERATION_EXECUTION_INTENT = 1 << 21;
@@ -167,6 +171,37 @@ export class DiscordPresenceWorker {
     this.resumeUrl = null;
     this.reconnectAttempt = 0;
     this.snapshotRunning = false;
+  }
+
+  async logServerEvent(event = {}) {
+    const channelId = this.communityPanels?.resources?.bot_logs;
+    if (!/^[1-9][0-9]{16,19}$/.test(channelId ?? "")) return false;
+    const clean = (value, max = 500) => typeof value === "string"
+      ? value.replace(/[\\u0000-\\u001f\\u007f]/g, " ").replace(/\\s+/g, " ").trim().slice(0, max)
+      : "";
+    const title = clean(event.title, 240) || "Server activity";
+    const description = clean(event.description, 3500) || "A server event was received.";
+    const severity = ["warning", "critical", "error"].includes(event.severity) ? event.severity : "info";
+    const colour = severity === "critical" || severity === "error" ? 0xd65a68 : severity === "warning" ? 0xd5a33c : 0x596579;
+    try {
+      await this.discordApi.request("/channels/" + channelId + "/messages", {
+        method: "POST",
+        body: {
+          embeds: [{
+            title,
+            description,
+            color: colour,
+            timestamp: new Date().toISOString(),
+            footer: { text: "Snoozer · Server activity log" },
+          }],
+          allowed_mentions: { parse: [] },
+        },
+      });
+      return true;
+    } catch (error) {
+      this.logger.warn("[discord-presence] bot log delivery failed:", error?.message ?? error);
+      return false;
+    }
   }
 
   async post(payload) {
@@ -355,7 +390,7 @@ export class DiscordPresenceWorker {
         guildId: this.config.guildId,
         botUserId: this.botUserId,
         applicationId: this.applicationId,
-      }, { api: this.discordApi, store: this.discordStore, logger: this.logger });
+      }, { api: this.discordApi, store: this.discordStore, logger: this.logger, logEvent: event => this.logServerEvent(event) });
       await this.communityPanels.refreshResources();
 
       const resources = this.communityPanels.resources;
@@ -377,7 +412,7 @@ export class DiscordPresenceWorker {
           teamHq: resources.category_team_hq,
         },
         roleIds,
-      }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger });
+      }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger, logEvent: event => this.logServerEvent(event) });
       this.communityPanels.onResourcesUpdated = (resourceMap, nextRoleIds) => {
         if (!this.communityBot) return;
         this.communityBot.roleIds = nextRoleIds;
@@ -692,7 +727,7 @@ export class DiscordPresenceWorker {
           this.send({ op: 2, d: {
             token: this.config.token,
             intents: GUILDS_INTENT |
-              (this.config.botEnabled ? (GUILD_MEMBERS_INTENT | GUILD_MODERATION_INTENT | GUILD_WEBHOOKS_INTENT | GUILD_VOICE_STATES_INTENT | GUILD_MESSAGES_INTENT | GUILD_SCHEDULED_EVENTS_INTENT | AUTO_MODERATION_CONFIGURATION_INTENT | AUTO_MODERATION_EXECUTION_INTENT) : 0) |
+              (this.config.botEnabled ? (GUILD_MEMBERS_INTENT | GUILD_MODERATION_INTENT | GUILD_EXPRESSIONS_INTENT | GUILD_INTEGRATIONS_INTENT | GUILD_WEBHOOKS_INTENT | GUILD_INVITES_INTENT | GUILD_VOICE_STATES_INTENT | GUILD_MESSAGES_INTENT | GUILD_MESSAGE_REACTIONS_INTENT | GUILD_SCHEDULED_EVENTS_INTENT | AUTO_MODERATION_CONFIGURATION_INTENT | AUTO_MODERATION_EXECUTION_INTENT) : 0) |
               ((this.config.presenceEnabled !== false) ? GUILD_PRESENCES_INTENT : 0),
             large_threshold: 250,
             properties: { os: process.platform, browser: "Snoozer Presence", device: "Snoozer Presence" },
