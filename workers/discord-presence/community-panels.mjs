@@ -450,8 +450,8 @@ export class DiscordCommunityPanels{
       return {id:m.id,author_id:m.author?.id??null,author:clean(m.author?.username,80),content,timestamp:m.timestamp};
     }).slice(-100);
     await this.store.ticketAction(id,actor,"transcript",{transcript});
-    await this.store.ticketAction(id,actor,"close",{});
     const deleteAt=await this.scheduleTicketDeletion(id,t.channelId,actor);
+    await this.store.ticketAction(id,actor,"close",{});
     const overwrites=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));
     if(owner)overwrites.push({id:owner,type:1,allow:TICKET_PERMISSION_BITS.closedOwnerAllow,deny:TICKET_PERMISSION_BITS.closedOwnerDeny});
     await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{
