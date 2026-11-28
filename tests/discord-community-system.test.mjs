@@ -339,7 +339,7 @@ test("safe reconciliation preserves the current server and registers unique reso
     role.key,String(BigInt(guildId)+BigInt(100+index)),
   ]));
   const rebuilder=new DiscordServerRebuilder({guildId,botUserId},{
-    api:{async request(){throw new Error("unexpected API call");}},
+    api:{async request(path){if(path==="/guilds/"+guildId+"/roles")return [{id:guildId,name:"@everyone",permissions:"0",position:0}];throw new Error("unexpected API call "+path);}},
     store:{
       async saveBackup(_guild,_actor,snapshot){saved=snapshot;return "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90";},
       async registerResources(_guild,resources){registered=resources;return true;},
