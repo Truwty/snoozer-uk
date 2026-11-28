@@ -26,18 +26,12 @@ describe("profile effects", () => {
     expect(effectLinks.length).toBeGreaterThanOrEqual(17);
     expect(effectTexts.length).toBeGreaterThanOrEqual(20);
     expect(effectInteractions.length).toBeGreaterThanOrEqual(9);
-    const samples = [
-      { background: "singularity", tier: "studio" },
-      { particles: "matrix-rain", tier: "studio" },
-      { border: "hologram", tier: "studio" },
-      { links: "3d-tilt", tier: "studio" },
-      { text: "terminal", tier: "studio" },
-      { interaction: "parallax", tier: "studio" },
-    ] as const;
-    for (const sample of samples) {
-      const [key] = Object.keys(sample).filter((name) => name !== "tier");
-      expect(effectTierForOption(key as Parameters<typeof effectTierForOption>[0], sample[key as keyof typeof sample] as string)).toBe("studio");
-    }
+    expect(effectTierForOption("background", "singularity")).toBe("studio");
+    expect(effectTierForOption("particles", "matrix-rain")).toBe("studio");
+    expect(effectTierForOption("border", "hologram")).toBe("studio");
+    expect(effectTierForOption("links", "3d-tilt")).toBe("studio");
+    expect(effectTierForOption("text", "terminal")).toBe("studio");
+    expect(effectTierForOption("interaction", "parallax")).toBe("studio");
   });
 
   it("allows a Free gradient while locking paid effects at their required tier", () => {
