@@ -133,9 +133,8 @@ test("registerable command set includes public help/status, private support and 
     "snoozer-timeout",
     "snoozer-kick",
     "snoozer-ban",
-    "snoozer-repair",
   ]) assert.ok(names.has(name), "missing command " + name);
-  assert.equal(DISCORD_COMMUNITY_COMMANDS.find(command => command.name === "snoozer-repair").default_member_permissions, "8");
+  assert.ok(!names.has("snoozer-repair"), "the retired repair command must not be registered");
   assert.equal(SERVICE_STATUS_POLL_MS, 60_000);
 });
 
