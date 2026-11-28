@@ -1,5 +1,7 @@
 # Google sign-in and account linking
 
+**Reviewed:** 27 November 2026. OAuth secrets belong in Supabase Auth provider configuration, not in application source or client-side variables.
+
 Snoozer now offers Google alongside email/password and Discord sign-in. Account Settings can link Google to the currently signed-in Snoozer account without creating a second profile.
 
 ## Configure the Google provider

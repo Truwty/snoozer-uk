@@ -1,33 +1,85 @@
-# Supabase setup
+# Supabase setup and operations
 
-## Disposable development stack
+**Reviewed:** 27 November 2026  
+**Connected project:** `snoozer-staging` (`edgptbiwswcdmmxzwhxv`), region `eu-west-1`.
 
-Run `npx --yes supabase@3.1.0 start` from the repository root with Docker running. Set `NEXT_PUBLIC_SUPABASE_URL` to the local Project URL, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to the local publishable or legacy anon key, and `SUPABASE_SERVICE_ROLE_KEY` to the local secret or legacy service-role key. Use the exact browser origin `http://localhost:3000` for `NEXT_PUBLIC_SITE_URL`. The local email catcher runs at port 54324.
+## Disposable local stack
 
-For real provider browser tests, export all four values into the shell environment, then set `SNOOZER_TEST_LOCAL_SUPABASE=1`. Run `npm run build` followed by `npm run test:e2e` with port 3000 free. The provider suite refuses URLs other than the local CLI gateway. Use `npx --yes supabase@3.1.0 db reset` only for a disposable local stack.
+Use Node.js 24 and the repository-pinned Supabase CLI version:
 
-## Hosted project
+```bash
+npm ci
+npx --yes supabase@3.1.0 start
+cp .env.example .env.local
+npx --yes supabase@3.1.0 status
+```
 
-1. Select a dedicated Supabase Free project in an appropriate UK/EU region. Verify region, access, and resource budget before applying migrations.
-2. Authenticate the CLI locally. Run `npx --yes supabase@3.1.0 link --project-ref YOUR_PROJECT_REF`. Confirm the intended project, review `db push --dry-run`, take a protected backup, then run `npx --yes supabase@3.1.0 db push`. Migrations create private buckets and the required functions.
-3. In Auth URL Configuration set the canonical site URL and allowlist the exact `/auth/confirm` and `/reset-password` URLs for the active origin. Set the email provider to require confirmation, minimum password length 12, and configure real SMTP and provider rate limits.
-4. Set the confirmation and password recovery subjects and bodies from `supabase/templates`. The templates pass `.TokenHash` to the corresponding Snoozer form. Test both email flows and expiry on staging. Disable SMTP link rewriting for token links.
-5. Use the project URL and publishable key at build time and runtime. Set the service credential only in Render or ignored local configuration. Rebuild after rotating a publishable key or changing the URL. Rotate server secrets in the provider dashboard, redeploy, verify readiness and upload, then revoke retired credentials following the provider’s rotation sequence.
+Set these values in the ignored `.env.local` file:
 
-## Discord sign-in (hosted)
+- `NEXT_PUBLIC_SITE_URL=http://localhost:3000`
+- `NEXT_PUBLIC_SUPABASE_URL` to the local API URL
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to the local publishable key (or legacy anon key emitted by the CLI)
+- `SUPABASE_SERVICE_ROLE_KEY` to the local secret/service-role key
 
-1. In Discord Developer Portal, OAuth2, register the exact redirect URI
-   `https://edgptbiwswcdmmxzwhxv.supabase.co/auth/v1/callback` (use the callback shown in your own Supabase project if different).
-   Scopes: `identify` and `email` only. The URL Generator is not the URL the Snoozer app uses.
-2. In Supabase Authentication > Sign In / Providers > Discord, enable the provider and enter the Discord Application ID and Client Secret. Do not commit either secret or add them to the client bundle.
-3. In Supabase Authentication > URL Configuration, set Site URL to `https://snoozer.uk` and add exact Redirect URL `https://snoozer.uk/auth/callback`. Retain the existing email verification and password reset redirect URLs. Only add trusted staging/local callback URLs when intentionally testing.
-4. In Render, keep `NEXT_PUBLIC_SITE_URL=https://snoozer.uk` so the PKCE callback matches the allow list.
-5. Deploy this code, test both the sign-in and sign-up buttons in a clean/incognito browser window, and verify the user arrives at `/studio` without creating a second account unexpectedly.
+The local email catcher is normally available at port 54324. Keep service-role credentials server-side. Never put them in a client component, browser bundle, public variable or committed file.
 
-Snoozer starts OAuth via server-side `signInWithOAuth({ provider: "discord" })`,
-then exchanges the code in `/auth/callback` using the existing cookie-based Supabase client.
-Keep “Allow users without an email” disabled because the app requires a confirmed email.
-Supabase may automatically link accounts when verified email matches; test this with
-an existing account before rolling out broadly, and do not assume different emails merge.
+For provider-backed browser tests, export the four values into the process environment and set `SNOOZER_TEST_LOCAL_SUPABASE=1`. The E2E safety guard accepts only a local CLI gateway. Use `npx --yes supabase@3.1.0 db reset` only for this disposable local stack.
 
-The application uses the Data API, so the web service needs no direct database connection string. Keep migration credentials outside the Render runtime. Supabase default hosted SMTP is limited to authorised team addresses and unsuitable for public registration. [Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp)
+## Hosted migration procedure
+
+Hosted database changes are release operations:
+
+1. Confirm the project reference and region in the Supabase Dashboard.
+2. Confirm a protected backup exists and is recoverable.
+3. Authenticate the Supabase CLI in the operator environment.
+4. Link to the exact intended project:
+   ```bash
+   npx --yes supabase@3.1.0 link --project-ref YOUR_PROJECT_REF
+   ```
+5. Review pending changes:
+   ```bash
+   npx --yes supabase@3.1.0 db push --dry-run
+   ```
+6. Review migration order, table grants, RLS, function execution grants, `SECURITY DEFINER` and Storage policies. Only then apply the reviewed migrations:
+   ```bash
+   npx --yes supabase@3.1.0 db push
+   ```
+7. Verify the remote migration registry, relevant schema, grants, RLS, bucket privacy and feature journeys.
+
+Never run `db reset` against a hosted project. Do not edit applied migration files; create a new migration for every schema/policy change.
+
+## Auth configuration
+
+In Authentication settings:
+
+- Set the canonical Site URL to `https://snoozer.uk`.
+- Add only exact, required redirect URLs for `/auth/callback`, `/auth/confirm` and `/reset-password`, plus explicitly trusted staging/local origins when testing.
+- Require email confirmation and retain Secure Email Change.
+- Set the minimum password length to at least 12 characters to match the application checks.
+- Configure production SMTP, delivery diagnostics and provider rate limits. Default hosted SMTP is not suitable for public registration.
+- Enable leaked-password protection where the account plan supports it. The connected security advisor currently reports it disabled. Supabase documents this feature as available on Pro plan and above; see [password security](https://supabase.com/docs/guides/auth/password-security).
+
+The application uses TOTP MFA and recovery codes. Sensitive Owner database writes require AAL2 and a currently valid Auth session. Test enrollment, challenge, recovery-code consumption, session revocation and factor removal against disposable accounts before changing Auth settings.
+
+## OAuth providers
+
+Discord and Google credentials belong in Supabase Auth provider configuration, not source code or browser variables. Use the exact Supabase callback shown by the provider configuration. The app callback is `https://snoozer.uk/auth/callback`; add the trusted host to Supabase's redirect allow-list.
+
+Discord sign-in uses `identify email`. Discord Presence identity linking is a separate authenticated `linkIdentity` flow and uses `identify`. Keep “Allow users without an email” disabled because Snoozer requires a confirmed email. Verify linking/unlinking with an existing account; never merge identities based only on an unverified email.
+
+Google login and Google identity linking are separate flows. The link callback must return to the same initiating Snoozer user. Do not add automatic account-merging logic.
+
+## Email templates
+
+Use the templates under `supabase/templates`. Confirmation and recovery templates pass `.TokenHash` to the matching Snoozer route. Test expiry and single-use behaviour in staging. Disable email-link rewriting for Auth token links if it changes the token URL.
+
+## Runtime credentials
+
+The web service uses the Supabase Data API; it does not need a direct PostgreSQL connection string. Keep migration credentials outside the Render runtime.
+
+- Publishable key and project URL may be public.
+- Service-role key is server-only and bypasses RLS; restrict it to the intended server operations.
+- Stripe, Ko-fi, Discord and Render credentials must be stored as server environment secrets.
+- Rotate a credential in the provider first, update the runtime secret, redeploy, verify the new integration and revoke the retired credential.
+
+See [security audit](security-audit.md) for current database grants and advisor results.

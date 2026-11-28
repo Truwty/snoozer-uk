@@ -1,5 +1,7 @@
 # Analytics and public-widget API
 
+**Reviewed:** 27 November 2026. These route contracts are implemented in the current main source; the latest code and CI take precedence over historical test-run notes.
+
 These first-party routes are implemented. No browser receives service-role credentials. Read the consent/storage methodology in analytics-browsers.md and the provider boundaries in public-widgets.md.
 
 ## POST /api/v1/analytics/view

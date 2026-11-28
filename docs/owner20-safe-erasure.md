@@ -1,10 +1,12 @@
 # Feature #20 — Restricted GDPR erasure executor (operator acceptance)
 
+**Reviewed:** 27 November 2026. The executor is guarded by a server-only configuration flag and irreversible database preflight checks. This guide is an operator runbook, not a guarantee of automatic statutory erasure.
+
 ## Scope
 
 This is a **real, narrow erasure workflow**, not a general automatic GDPR guarantee. Only an Owner with a verified AAL2 session can run it, and only for a user with an open/review deletion request whose identity, Stripe billing, processors, retention and subscriptions have been documented in the Owner evidence table. No customer account is deleted during deployment.
 
-The executor is **disabled by default**. The Render server-only switch `SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE=true` exposes the irreversible action on Owner → Privacy for an eligible deletion request. It requires the Owner to type `ERASE <request UUID>`. Leave disabled until a disposable live acceptance cycle and legal review pass.
+The source defaults to **disabled when the flag is absent or false**. The Render server-only switch `SNOOZER_ENABLE_SAFE_PRIVACY_ERASURE=true` exposes the irreversible action on Owner → Privacy for an eligible deletion request. It requires the Owner to type `ERASE <request UUID>`. The connected Render environment value was not independently inspected during this audit; do not assume the live flag is on or off without checking Render.
 
 The preparation function refuses: Owner accounts, an unverified recipient, Stripe customer/checkout references, creator products or memberships, private avatar/gallery/storage-owner records, and any NO ACTION or RESTRICT FK into the target Auth identity. Other data relationships can still cause Auth's atomic deletion to fail; the application then records a failed job instead of falsely marking a request complete. Supabase Storage objects must be erased separately through the Storage API, never by directly deleting Storage metadata. Objects uploaded by a service key may not have an owner ID, so all historical media must be separately inventoried. Transactions, legal retention, disputes, subscriptions, Stripe processor exports and support/Zoho records are **not automatically deleted**.
 
@@ -23,8 +25,8 @@ Audit event actors are set to NULL automatically when their non-Owner Auth ident
 
 - On disposable local Supabase, prove normal users and anonymous users cannot invoke erasure, AAL1 is denied, AAL2 can prepare only verified deletion requests with complete prerequisites, active restrictions block deletion, and a no-data disposable Auth user is deleted and produces accurate audit/evidence.
 - Verify local and CI build/lint/test/E2E pass before merge.
-- Apply migration `20261122222400_owner_safe_privacy_erasure.sql` only after CI; confirm anon/service/Owner RPC privileges.
-- Deploy Render, leave the erasure flag OFF until a real controlled disposable end-to-end run.
+- Apply migration `20261122224213_owner_safe_privacy_erasure.sql` only after CI; confirm anon/service/Owner RPC privileges.
+- Before enabling the Render flag, complete a controlled disposable end-to-end acceptance and legal review. Verify the actual environment value in Render; do not infer it from source.
 - Independently sign off on a full export, actual Storage removal, Stripe subscription and invoice retention, paid commerce, OAuth and external processors before claiming general GDPR fulfilment.
 - Never run this executor on a paid customer, an Owner, a user with private Storage, or a user with a legal hold.
 

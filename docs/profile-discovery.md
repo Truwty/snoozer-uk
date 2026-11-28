@@ -72,7 +72,6 @@ Turning off Discover does not change SEO indexing, the public profile URL or con
 
 ## Operational notes
 
-- No migrations in this feature are applied to the hosted Supabase project by this implementation.
-- Render auto-deploy remains disabled; no Render deployment is part of the feature branch.
-- No third-party seller, creator commerce, tips, subscriptions or paid placements are included.
-- Block/mute and follower/DM features remain out of scope.
+The connected Supabase migration history currently extends through `20261127145557_homepage_stats`; the Discovery migrations are part of that hosted history. The main Render service tracks `main` and currently has commit-based auto-deploy enabled. Feature branches do not deploy to the service. Check the latest main CI and current service state before making a release claim.
+
+No third-party seller, creator commerce, tips, subscriptions or paid placements are included. Block/mute and follower/DM features remain out of scope.

@@ -1,4 +1,12 @@
-# Gift codes and billing diagnostics
+# Billing operations
+
+**Reviewed:** 27 November 2026
+
+Snoozer's active paid product is its own Plus, Pro and Studio subscription catalogue, processed through the main Snoozer Stripe account. The operator has confirmed that live payments and subscriptions work. Preserve the existing LIVE prices, webhook, credentials, payment gates and customer entitlements during unrelated work.
+
+Creator marketplace, creator seller onboarding, creator memberships and Stripe Connect checkout are retired. Historical sandbox records and database migrations are retained for audit. The following gift and diagnostic procedures are operator workflows; any Stripe sandbox instructions below are not live payment flows.
+
+
 
 Authorised operators can issue a single-use gift through the service-only issue_gift_code RPC. Pass the paid plan and catalogue version, gift duration in days, and redemption deadline. Keep the returned gift ID for support and share the returned code only with the intended recipient. The code is returned once and its hash is stored. Never put the code in a URL, ticket or shared log.
 

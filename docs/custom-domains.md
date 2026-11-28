@@ -1,52 +1,62 @@
-# Creator domains — staging delivery verified
+# Custom profile domains
 
-## Current checkpoint — custom-domain staging exit passed
+**Reviewed:** 27 November 2026  
+**Status:** DNS and provider-verification paths are implemented. Provider capacity and live domain associations must be checked in the Render dashboard before an operator action.
 
-Domain verification used application **2907dc9**, then Live on Render Free, deploy **dep-dbunt38m7kps73d0bvj0** (18 November 2026, 10:33 UTC). Both health endpoints returned200. Supabase migrations through **66** are applied and recorded; never edit/reapply those files. The existing native publication job includes bounded domain cleanup; its natural10:31UTC run succeeded. Analytics cleanup was unchanged.
+## How verification works
 
-CI **44285159462** passed:224 unit/SQL tests, two audit-policy checks,31 browser/HTTP checks and one expected skip, secret scan, audit, lint, types, build and four Lighthouse accessibility100 scores. Disposable CI uses an isolated provider-proof fixture; the external provider test below is separate actual evidence.
+A creator can request a custom hostname for a published profile. Snoozer does not purchase domains or automatically provision paid resources. The association is operator-managed within the existing Render service's custom-domain capacity.
 
-**Real DNS/provider/TLS verification passed at18:10UTC on18November.** The dedicated nonindexable profile phase5-qa-20261118 (3a75955b-c46b-47ec-bc35-044a1822e718) requested profile-qa.snoozer.uk, claim d0dfdd20-07fe-4fe7-a464-ff7d9bf13918. IONOS's fresh ownership TXT and one CNAME were observed publicly before service-only provisioning reservation. Render associated only that non-www subdomain within the second included slot and issued its certificate. The owner Verify action authenticated the approved Services→Read-only key and verified actual DNS, provider association and certificate-validated pinned HTTPS; routing lease ended19:10:46UTC. No secret was printed, committed or saved locally; the key remains only in staging as RENDER_CUSTOM_DOMAINS_API_KEY.
+The verification sequence requires:
+1. A fresh, owner-scoped DNS TXT challenge under `_snoozer.<hostname>`.
+2. A valid hostname and a current pending request/lease in the database.
+3. A read-only Render API check confirming that the hostname is associated with the expected web service and provider reports it verified.
+4. Safe public DNS answers, expected Render addressing and an HTTPS challenge request pinned to a validated IPv4 address.
+5. A valid first-party `.well-known/snoozer-domain` marker response.
 
-Actual custom-host root returned200 with the published version5 portfolio and custom canonical root; draft6 was absent. Credit returned to the platform origin. Studio, sign-in, plan, analytics export, rootPOST, billingPOST and Next-Action returned404; cross-profile analytics403; mapped analytics204. No certificate warnings were bypassed.
+The server rejects redirects, untrusted/private IP destinations, unexpected IPv6 answers and unbounded responses. HTTPS certificate validation remains enabled. Verification requests have short timeouts and do not follow redirects.
 
-**Cleanup completed at18:12UTC.** Owner Disconnect stopped routing, only the new Render association was removed, and owner Confirm provider removal succeeded using actual domain404 plus parent-service200. SQL records state removed with removed_at18:12:00UTC and the profile preserved. IONOS deleted only the two new QA records; public TXT/CNAME now return ENOTFOUND. Render Billing is back to **1 of2 included domain slots**. RootA217.160.0.206, both priority10 MX records, SPF, DMARC and DKIM remain unchanged. The platform portfolio returns200 with its platform canonical again. Do not recreate the completed QA domain.
+## Routing and privacy boundaries
 
-Evidence outside Git: ../snoozer-phase5-evidence-20261118/ includes domain-connected.jpg, custom-domain-portfolio.jpg, render-domain-verified.jpg, ionos-qa-records.jpg, domain-removed.jpg, ionos-qa-cleaned.jpg and render-capacity-restored.jpg. The provider screenshot initially showed Unknown while issuance updated; actual HTTPS and owner verification are authoritative. Render subsequently displayed Certificate Issued during cleanup.
+The proxy removes inbound Snoozer-internal headers before resolving a custom hostname. It sets trusted internal host/profile context only after validating the request Host against the database mapping.
 
-**Next unfinished Phase5 stream: creator commerce foundations**, including reviewed seller/Connect model, private products/assets, permissioned buyer delivery and sandbox receipt/refund paths. No commerce code or connected accounts exist yet. Preserve existing platform billing and Ko-fi flows. Live payments, production SMTP/legal/tax readiness and snoozer.uk DNS cutover remain Phase7 gates. Apex/www can consume two Render slots; resolve launch capacity before promising live creator-domain availability. Long-term certificate renewal and prolonged outage recovery have not been observed.
+On a custom profile host:
+- the root may render only the matching published profile;
+- public assets and explicitly supported public widget/analytics routes are bound to that profile;
+- Studio, account, authentication, billing, Owner, server actions and unrelated profile routes are denied;
+- canonical profile metadata uses the database-verified domain, not an untrusted Host value.
 
-Implemented scope: private ownership claims and hostname bindings; verified-user owner actions/UI; profile/account deletion protection; bounded DNS/provider/TLS leases; public Host routing; canonical metadata; media/widgets/analytics origin and profile binding; provider disconnection; SQL/HTTP/browser tests. Preserve current platform routes, aliases, media and consent behavior. Strip incoming internal domain headers on every proxy request. Do not forward auth/admin/billing routes or server actions on creator hosts.
+A domain verification marker is public and contains no secret. DNS challenge values are temporary and scoped to the active request.
 
-Lifecycle and trust boundaries:
-- Two tables: nonexclusive fresh pending requests (UUID challenge,24h expiry) and exclusive hostname bindings to profile/owner/current request. Pending requests cannot squat an active hostname. Fresh DNS proof + verified Render association + TLS/application proof can transfer an existing active hostname. A consumed old request can renew ONLY its current binding; it cannot reclaim a transferred host.
-- One domain per profile, account current effective-plan quota. Preserve bindings on downgrade and pause overage in stable order. Owner must be verified; target must remain owned and published to resolve. Public lookup exposes only the already-public username and ready/expired state, no private owner IDs.
-- Private service-only job leases serialize verification, bound retries to one per minute, expire stale completions and grant a finite routing lease (one hour). First request to the creator host or its platform profile after expiry performs bounded revalidation and fails closed while unavailable. No always-on worker or paid scheduler. Owner can manually retry. DNS changes/reassignment invalidate at the next verification or lease expiry.
-- Operator-managed Render association: the app verification path is READ-ONLY and never buys/provisions a domain. Before manual Render registration, the operator must verify the current DNS challenge and reserve a provisioning binding through a service-only RPC; this blocks profile/account deletion while the provider could have an association. Cancel/disconnect immediately stops routing, then requires confirmed Render removal/404 before a service-only completion frees deletion. A disconnecting binding blocks takeover/activation until removal completes, preventing a stale operator cleanup from deleting a newly adopted mapping.
-- New verification claims on an existing active hostname do not need provider re-provisioning. Never remove a provider association belonging to another active claim merely because a pending request was cancelled. Pending requests without a reserved binding can be retired locally.
-- Real provider status requires a server-only Render custom-domain read credential for the exact existing service. Environment templates and explicit unconfigured UI are required. Credential creation/expanded access requires action-time confirmation under the computer-use policy; do all code/review first. The approved scoped key is stored only in staging and actual verification authenticated successfully. Do not infer an API key from browser cookies or use internal endpoints.
-- Resolver TXT `_snoozer.<host>` must exactly match the current challenge. ASCII canonical hosts, IDNA at owner-action boundary, bounded labels/length, no URLs/ports/wildcards/IPs/private suffixes/platform primary or hosting names. IPv4 targets must match the service’s current onrender.com A records or Render’s documented apex216.24.57.1. Reject unexpected extra A/AAAA answers. HTTPS pins the approved IP, uses hostname SNI, verifies the certificate, fixed443/path, no redirects/credentials,4sec timeout,1KB response limit. Marker is first-party readiness only; provider association and fresh DNS are the ownership authority.
-- Well-known marker route is public but contains no secrets. All other creator-host paths are denied except root GET/HEAD, matching profile public media, icon/static assets and bound analytics/widget endpoints. Root rewrites to the canonical profile. Bind APIs to the proxy-validated username and custom origin; remove forged headers even on the platform host. Public credit links return to the configured platform origin.
-- Profile canonical metadata may use only the DB-selected ready custom hostname, never raw Host input. Social images may remain on the canonical platform origin. A public profile projection may add optional custom_domain, never part of editable profile content.
+## Disconnect and reassignment
 
-Free infrastructure: Render Hobby includes two workspace-wide domain slots; extra domains cost$0.25/month. Apex/www are added together. Verify actual workspace usage before any manual association; never exceed included capacity. No paid provisioning is approved. The IONOS tab remains signed in; apex/www still forward to the old bot service. Use a dedicated QA subdomain only after trusted-host code is deployed, preserve mail/root records, and release temporary provider/DNS resources after verification. Do not cut over production early.
+Disconnect stops routing immediately and uses a bounded provider-removal workflow. A binding is not made available for takeover until the existing Render association is confirmed removed. This avoids stale cleanup deleting a newer association.
 
-Observed Render UI detail: Custom Domains is lazy-loaded after scrolling the Settings Networking section. Add Custom Domain opens a real modal; it was inspected and closed without submission. No provider-UI capability blocker exists. Render MCP has no domain tools, so dashboard fallback is appropriate. Existing service remains Free, main auto-deploy off. The approved read-only credential is configured and tested.
-
-Sources checked18November2026: https://render.com/docs/custom-domains and https://render.com/docs/configure-other-dns; official API retrieve-custom-domain returns name and verificationStatus. The read-only verifier does not treat DNS status alone as proof that TLS works. Tests cover mismatches, redirects, bounded responses, private IP/IPv6, TLS failure and route allowlisting. CI and actual hosted lifecycle/host/API checks passed as recorded above.
+Unpublish, account restriction and domain disconnect are distinct states. Do not infer that a hostname is safe to reassign merely because an owner's UI says a request was cancelled.
 
 ## Operator procedure
 
-1. Confirm the exact existing service and workspace domain usage. Stay within included capacity. No code path creates a Render domain; paid additions remain prohibited without explicit spending approval.
-2. The owner requests a hostname in Settings and publishes the intended profile separately. Read the current claim UUID and TXT challenge from their owner-scoped inventory. Verify the exact `_snoozer.<host>` TXT answer against that fresh challenge before proceeding. Pending claims do not reserve another creator’s hostname.
-3. In the authorised staging SQL editor/service role, call `public.reserve_domain_provisioning(claim_uuid)` before adding a new domain in Render. This reserves the binding and protects deletion while provider setup is underway. A conflict means stop and inspect the existing binding; never remove another creator’s association to satisfy a pending claim. Existing active bindings can transfer only after a fresh complete proof.
-4. In the exact service’s Settings → Custom Domains, associate the approved hostname within confirmed capacity. Render may add apex/www together; inspect both and account for both slots. Configure only the owner-approved DNS records and wait for Render verification/certificate issuance. Preserve unrelated mail and platform-root records.
-5. Owner Verify checks the current TXT, the exact service’s Render domain record and verified status, IPv4/AAAA answers and a pinned HTTPS application-marker request. It can activate a ready binding only under current profile ownership, verified account and quota. It cannot provision resources or authorize a charge. Routing expires after one hour and renews opportunistically on creator-host or platform-profile requests; it fails closed while refresh is unavailable. Profiles remain accessible at their platform address.
-6. Disconnect immediately stops custom-host routing. Remove the exact association from Render before using Confirm provider removal. That control requires an actual404 from the configured provider service and the same disconnecting claim generation; it does not delete provider resources. Profile/account deletion is blocked until confirmation. Pending requests without a reserved binding can be cancelled without touching provider records.
-7. For a staging TLS test, retain precise before/after evidence and clean up only that dedicated binding/provider/DNS record with these controls. Do not cut over snoozer.uk or remove mail records during feature verification.
+Before manually adding or removing a Render custom domain:
 
-Required environment: server-only `RENDER_CUSTOM_DOMAINS_API_KEY` with the narrowest available read access to the existing service; `RENDER_SERVICE_ID` (supplied by Render); `RENDER_SERVICE_HOSTNAME` set to the exact service’s onrender.com host, retained after the production primary-domain change. No credential appears in source or chat. The current scoped key was generated and stored with action-time owner confirmation; future credential creation/expansion still requires that confirmation. Owner requests/disconnection work when verification is unconfigured; Verify and confirmation are disabled with an explicit explanation.
+1. Confirm the current Snoozer web-service ID and the intended hostname.
+2. Verify the owner has a fresh DNS challenge for that exact host.
+3. Confirm available workspace domain capacity in the Render dashboard.
+4. Use the read-only scoped Render credential held in the server environment.
+5. Apply only the requested provider association.
+6. Verify the domain status, TLS certificate and marker from the owner flow.
+7. On removal, wait for provider 404 and verify the parent service remains accessible before completing the database cleanup.
 
-API boundary coverage: the proxy strips spoofed domain headers, denies custom-host auth/admin/billing/server-action routes, rewrites only root GET/HEAD, and binds media/widgets/analytics to the mapped public username. Public API origin checks accept the validated custom origin only for that profile. Canonical SEO uses the ready DB-selected domain; social images and credit use the configured platform origin. Failed ownership, provider, TLS, quota or lease checks never redirect to another tenant.
+Never store the Render API credential in source, chat, URLs or client-side configuration. Do not attempt automatic purchases or add a wildcard domain without a separate approved design.
 
-Retention: the existing native publication job can run bounded domain cleanup through the updated operator script. Unbound unused claims expire from storage seven days after their proof expiry; Unbound previously used/retired proof history is eligible30days after recorded use/retirement (long-lived superseded proofs may be removed shortly after replacement). Removed provider bindings remain30days after confirmed removal. Current bindings and their proof records are protected. Indexed queues bound cleanup to1–500 rows per statement across removed bindings, unused proofs and prior used proofs; no new worker/service or HTTP job is required. The updated scheduler command ran naturally and succeeded at10:31UTC on18November2026.
+## Current operational note
+
+The connected main Render service is `snoozer-uk-staging` (`srv-dbts6jon74is73en2rjg`), Frankfurt, Free. Its actual custom-domain capacity and active hostname associations should be checked in Render at the time of an operation. Historical QA hostname and capacity snapshots in earlier versions of this document are not current inventory.
+
+## Implementation references
+
+- `src/lib/domain-verification.ts`
+- `src/lib/domains-server.ts`
+- `src/lib/domain-context.ts`
+- `src/proxy.ts`
+- `supabase/migrations/*profile_domains*`
+- `tests/domain-verification.test.ts` and database/E2E coverage

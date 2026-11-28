@@ -1,15 +1,55 @@
-# Deploy to Render Free
+# Render deployment and release procedure
 
-This deployment is gated on successful local-stack provider E2E, approval of public launch, and valid private GitHub and Supabase access. Production remains unverified.
+**Reviewed:** 27 November 2026
 
-1. Merge the reviewed source and `render.yaml` into the private repository’s `main` branch after CI succeeds.
-2. In Render, select **New → Blueprint**, connect GitHub, grant access to the private repository, then choose `main`. Check that the plan creates exactly one **Free** web service.
-3. Enter the exact initial site origin and the Supabase URL and keys from [setup-supabase.md](setup-supabase.md). For staging, use the assigned Render hostname as the site origin and add its specific Auth redirect URLs.
-4. Apply the Blueprint. For manual setup, choose **New → Web Service**, select the private repo and branch, select Frankfurt and **Free**, use the Node runtime and the commands from `render.yaml`, and set health path to `/health/live`. Configure **After CI Checks Pass**.
-5. Inspect the deploy event and test both health routes. Verify a complete signup and publish path and repeat after a restart. Run checks with separate staging and production projects.
-6. Add `www.snoozer.uk` as the primary custom domain. Follow the record instructions shown by Render for both hostnames. Render documents redirecting the paired apex to `www` when `www` is added first. Wait for TLS, verify the apex redirect and canonical profile metadata, update the site origin and Auth settings, then redeploy.
-7. Use **Manual Deploy** for a known commit when troubleshooting. Roll back the service to a previously healthy deploy only if its code works with the live schema. Use forward-fix migrations after additive schema changes and test the rollback path before launch.
+## Current service
 
-Health liveness does not depend on Supabase. Readiness checks the public Data API and verifies that all four avatar and gallery buckets exist and are private. Measure a real cold start and check both routes after release.
+The main Snoozer web application runs on the Render service:
 
-[Render web services](https://render.com/docs/web-services) · [Render custom domains](https://render.com/docs/custom-domains)
+- Name: `snoozer-uk-staging`
+- Service ID: `srv-dbts6jon74is73en2rjg`
+- Region/runtime: Frankfurt, Node
+- Plan: Free
+- Branch: `main`
+- URL: `https://snoozer-uk-staging.onrender.com`
+- Main custom domain: `https://snoozer.uk`
+- Auto-deploy: enabled for commits
+
+The service name contains “staging”, but it is the connected main Snoozer web service. Check the Render dashboard before assuming that a new service or environment exists.
+
+## Blueprint
+
+The repository Blueprint is `render.yaml`. It defines:
+
+- Node web service, Frankfurt, Free plan.
+- Build: `npm ci --include=dev && npm run build && npm prune --omit=dev`.
+- Start: `npm start`.
+- Health check: `/health/live`.
+- Commit-based automatic deployment from `main`.
+
+**Configuration drift found on 27 November:** the connected Render service currently reports an empty health-check path even though the repository Blueprint specifies `/health/live`. Reconcile the health-check setting in the Render dashboard and verify that the endpoint returns the expected liveness response. Do not assume the Blueprint is already reflected in the live service.
+
+## Safe release procedure
+
+1. Create a focused feature or fix branch.
+2. Open a pull request to `main`.
+3. Require the latest-head CI aggregate `validate` check to pass. Review the file diff and security-sensitive database/secret changes.
+4. Merge only with the repository owner's explicit approval.
+5. Main-branch commits automatically deploy to the connected Render service. Do not trigger a second manual deploy after an automatic deployment has begun.
+6. Verify the deploy's commit SHA and status in Render.
+7. Check `/health/live` and `/health/ready`, then test the specific authenticated and public journeys affected by the change.
+8. Monitor logs and relevant Supabase/Stripe queues. Roll back only when the old code is compatible with the current database schema; prefer forward-fix migrations for additive schema changes.
+
+This documentation task does not authorise a merge, Render configuration change or deployment. The owner controls the release.
+
+## Secrets and environment
+
+Set runtime credentials only in Render's Environment page. Do not commit secrets or place them in `NEXT_PUBLIC_*`. Keep migration credentials out of the application runtime unless a documented operation explicitly requires them.
+
+See [Supabase setup](setup-supabase.md) for authentication URLs, SMTP and migrations. See [security audit](security-audit.md) for current deployment findings.
+
+## References
+
+- [Render web services](https://render.com/docs/web-services)
+- [Render health checks](https://render.com/docs/health-checks)
+- [Render custom domains](https://render.com/docs/custom-domains)

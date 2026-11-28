@@ -1,6 +1,8 @@
 # Snoozer profile template library
 
-The first-party template library contains 120 free designs built from 30 distinct visual compositions and four colour treatments (Nocturne, Glacier, Parchment and Afterglow), each independently filterable in the gallery.
+**Reviewed:** 27 November 2026
+
+The first-party template library contains 120 free designs built from 30 distinct visual compositions and four colour treatments (Nocturne, Glacier, Parchment and Afterglow), each independently filterable in the gallery. The 120-entry catalogue is generated from source data; it is not a user-submitted template marketplace.
 
 ## Categories
 
@@ -19,7 +21,7 @@ Each composition has its own validated `templateStyle` token and responsive CSS 
 
 ## Applying a design
 
-A selected template changes theme and appearance only. A user-uploaded gallery background and existing motion effects are preserved. Links, badges, widgets, gallery items, text sections, blocks, SEO settings and publication state are not replaced. Sample text sections are offered separately and are only inserted when the profile has no existing sections.
+A selected template changes theme and appearance only. A user-uploaded gallery background and existing motion effects are preserved. Links, widgets, gallery items, text sections, blocks, SEO settings and publication state are not replaced. Profile badges are temporarily hidden in the current product UI; stored badge data is retained. Sample text sections are offered separately and are only inserted when the profile has no existing sections.
 
 The public profile card, Studio preview and template gallery all use the same ProfileCard renderer. Older profiles without a `templateStyle` value retain the classic presentation.
 
@@ -28,7 +30,6 @@ The public profile card, Studio preview and template gallery all use the same Pr
 Add a style identifier to `profileTemplateStyles` in `src/lib/profile.ts`, then add one composition record to `src/lib/studio-templates.ts`. Every composition is expanded into all four palettes automatically. The catalogue tests enforce 120 entries, 30 styles and ten categories.
 
 Run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build` before release.
-
 
 ## Database validation
 

@@ -1,5 +1,7 @@
 # Studio sections and templates
 
+**Reviewed:** 27 November 2026. This guide covers the legacy section system and its current integration with the ordered public-page layout and typed profile blocks.
+
 Creators can add up to six sections and select Text, Callout, Quote or Countdown for each. Callouts highlight an update; quotes display the text with an attribution. The heading or attribution can have up to 80 characters and the body up to 800 characters. Studio displays sections above the link list. Both fields must contain text before the editor will save the draft. Link order and section order are independent.
 
 Select a template in Studio to see a private preview. Apply its colours to any draft. If the draft has no text sections, you can also add the starter sections. Applying a template is a single undoable draft edit. Existing sections, profile identity, links and avatar are preserved. The selected template preview itself never saves or publishes. The preview width selector offers wide, 375 px and 320 px views. Templates change colour themes and optionally starter sections. They leave your card spacing and corner settings in place. On narrow editor screens, the preview fits the space available.
@@ -46,7 +48,7 @@ Use **Copy or paste appearance** in Studio to copy a version 1 code or select it
 
 Choose **Fade in** under **Background entrance** to animate the decorative background when the card loads. The effect uses the browser's reduced-motion preference and leaves text readable throughout. The choice is saved with appearance settings and included in copied appearance codes.
 
-The public gallery at `/templates` shows the same catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Creator-submitted templates, embeds and interactive blocks remain future work.
+The public gallery at `/templates` shows the same built-in catalogue. Its Studio links preselect the relevant preview for signed-in creators who already have a profile. Community-submitted templates are supported through the separate moderated template hub. Typed profile blocks and provider embeds are documented separately in `profile-blocks.md`, `profile-templates.md` and `youtube-widget.md`.
 
 ## Unified public page layout
 
@@ -54,7 +56,7 @@ Studio stores one ordered page layout for independently movable text sections, L
 
 The layout is a reference list, not a second copy of profile content. Text section references use their current section position and are remapped when the existing section editor reorders, edits, adds or removes sections. Links and widget configuration continue to be stored by their existing systems. Uploaded image assets remain private and are used only by features such as backgrounds, audio cover art and custom icons. Guestbook, Testimonials, Poll and FAQ remain one interactive module with their existing internal widget order and APIs.
 
-Migration `20261123040000_profile_page_layout.sql` adds a validated `page_layout` JSONB snapshot to draft and published profiles. The save RPC checks layout references against submitted sections, links and enabled widgets before calling the established revision-checked save transaction. Legacy Gallery entries are ignored by the application normaliser and are not rendered. Publication snapshots copy the remaining layout alongside other profile fields; restoring a publication restores that layout.
+Migration `20261123215130_profile_page_layout.sql` adds a validated `page_layout` JSONB snapshot to draft and published profiles. The save RPC checks layout references against submitted sections, links and enabled widgets before calling the established revision-checked save transaction. Legacy Gallery entries are ignored by the application normaliser and are not rendered. Publication snapshots copy the remaining layout alongside other profile fields; restoring a publication restores that layout.
 
 The Studio canvas uses the same `ProfileCard` renderer as the public profile. In preview mode, its layout handles expose cross-category drag ordering and its component surfaces open the matching existing editing panel. Public visitors never receive editor drag controls. Drag-and-drop is an enhancement; keyboard and click-based editing, the existing section/link reorder actions, save/publish controls and revision-conflict protection remain available.
 

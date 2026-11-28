@@ -2,7 +2,7 @@
 
 ## Account security
 
-Studio → Account Settings now includes Google sign-in identity linking, verified email change, TOTP authenticator enrolment and challenges, and per-device session management. Password reset remains on the established recovery path.
+Studio → Account Settings includes Google sign-in identity linking, verified email change, TOTP authenticator enrolment/challenges, ten one-time recovery codes and per-device session management. Email/password and Discord OAuth sign-in use server-side Supabase sessions; Google/Discord account linking is separately verified on callback. Password reset remains on the established recovery path.
 
 Supabase's default secure email-change policy can send confirmations to both the old and new inboxes. Keep **Secure email change** enabled. For hosted projects, set Authentication → Email Templates → Change email address to:
 
@@ -14,7 +14,7 @@ Supabase's default secure email-change policy can send confirmations to both the
 
 The email change redirect already includes `?type=email_change`, so the token hash is appended with `&`. The local CLI template is `supabase/templates/email_change.html`.
 
-TOTP is opt-in. When a verified factor is enrolled, sign-in requires AAL2 and the shared `snoozer.verified_user()` database guard also rejects AAL1 RPC calls. This prevents a caller from bypassing the Studio second-factor screen by invoking profile RPCs directly. Owner writes continue to require AAL2. The flow does not issue downloadable recovery codes, so the UI advises adding a second trusted authenticator before changing phones.
+TOTP is opt-in. When a verified factor is enrolled, sign-in requires AAL2 and the shared `snoozer.verified_user()` database guard also rejects AAL1 RPC calls. Owner writes additionally require an active AAL2 session. Users can generate ten one-time recovery codes after completing AAL2 verification; only SHA-256 hashes are stored in the database, and a code is consumed atomically when used. Save the displayed codes somewhere private because they are shown only when generated.
 
 Session revocation deletes the selected Auth session after checking ownership and preventing self-revocation of the current session. The refresh token is revoked immediately; an already issued access JWT remains valid until expiry. Snoozer's protected RPCs also validate the JWT session ID against `auth.sessions`.
 
@@ -34,4 +34,4 @@ The private `snoozer.badge_catalog` is the source of badge definitions; `snoozer
 
 **Temporary status (26 November 2026):** achievement badges are hidden from public profiles, and the Studio/Owner badge-management pages and navigation are disabled. Stored award records, catalogue definitions, migrations and private database history are retained; no badge records or images were deleted. The badge UI can be restored later without reconstructing past awards. Awarding/trigger history remains in the database but is not exposed through the application UI during this pause.
 
-The current catalogue contains 122 badge definitions.
+**Badge UI status (27 November 2026):** Achievement badges remain hidden from public profiles and Studio/Owner badge-management navigation is disabled. Existing definitions, award records, private images and migrations are retained. The badge UI should not be described as currently available to creators.

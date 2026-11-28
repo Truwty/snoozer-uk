@@ -1,6 +1,6 @@
 # Profile analytics
 
-Stage 4 increment, 17 November 2026. Accessible from the selected profile's Studio through Analytics.
+**Reviewed:** 27 November 2026. Accessible from the selected profile's Studio through Analytics. This guide describes the implemented event, retention, reporting and export contracts; see [analytics API](analytics-api.md), [browser methodology](analytics-browsers.md) and [campaigns](analytics-campaigns.md) for focused details.
 
 ## Collection and privacy
 
@@ -46,4 +46,4 @@ Migration 55 is applied on snoozer-staging with RLS enabled, anonymous write exe
 
 `tests/analytics.test.ts` checks consent, origin, bot/privacy signals, bounded bodies, strict fields, media types, durable failure handling and safe CSV values. `tests/database.test.ts` runs real migrations and verifies deduplication, published-link matching, owner exclusion, role denial, cross-owner isolation, retention, daily cap and deletion. All 125 unit/SQL tests pass locally with lint, typecheck and build.
 
-`e2e/supabase.spec.ts` verifies the real consent/click/export/owner-exclusion journey and an axe dashboard check. This was the initial analytics increment. The current Milestone 4 core/staging exit, including campaign attribution, daily browser methodology, CTR and additional providers, is recorded in milestone-4-review.md. Advanced inventory and production gates remain open.
+`e2e/supabase.spec.ts` verifies the real consent/click/export/owner-exclusion journey and an axe dashboard check. This was the initial analytics increment. The earlier milestone review is historical and has been removed from the maintained documentation set. The current route contract, methodology and campaign behaviour are documented in the three focused guides linked above. Hosted deployment and provider acceptance must be checked against the current release record in `PROGRESS.md`.
