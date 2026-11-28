@@ -50,7 +50,7 @@ export function EffectsEditor({ value, tier, onChange }: {
     </option>);
   }
 
-  return <fieldset className="stack effects-editor studio-reference-customization">
+  return <fieldset className="stack effects-editor studio-reference-customization" data-effect-tier={tier}>
     <legend className="section-title">Advanced animations &amp; effects</legend>
     <p className="muted">Layer animated backgrounds, borders, particles, link motion, typography and pointer interactions. Respect for reduced-motion settings is built in.</p>
     <label className="check"><input type="checkbox" checked={effects.enabled}
