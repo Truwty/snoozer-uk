@@ -155,7 +155,7 @@ function publicReadOnlyOverwrites(guildId, roles, botUserId) {
   return entries;
 }
 
-function staffOverwrites(guildId, roles, botUserId, keys = ["admin", "moderator", "communityManager", "supportManager", "support", "ticketSupport", "developer"]) {
+function staffOverwrites(guildId, roles, botUserId, keys = ["admin", "seniorModerator", "moderator", "communityManager", "supportManager", "support", "ticketSupport", "developer"]) {
   const viewSendRead = PERMISSIONS.viewChannel | PERMISSIONS.sendMessages | PERMISSIONS.readMessageHistory | PERMISSIONS.embedLinks;
   const entries = [overwrite(guildId, 0, 0n, PERMISSIONS.viewChannel)];
   for (const key of keys) {
