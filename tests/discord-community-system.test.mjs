@@ -94,6 +94,26 @@ test("server reset preflight stops before writes when the bot lacks permissions"
   assert.equal(writes.length, 0);
 });
 
+
+test("server reset preflight accepts the Discord Administrator permission", async () => {
+  const api = {
+    async request(path) {
+      if (path.endsWith("/roles")) return [
+        { id: guildId, permissions: "0", position: 0, name: "@everyone" },
+        { id: "1574262035519115286", permissions: String(1n << 3n), position: 10, name: "Snoozer Bot" },
+        { id: "1574262035519115287", permissions: "0", position: 5, name: "Snoozer Member" },
+      ];
+      if (path.endsWith("/members/" + botUserId)) return { roles: ["1574262035519115286"] };
+      if (path.endsWith("/channels")) return [];
+      throw new Error("unexpected request " + path);
+    },
+  };
+  const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, { api, store: {} });
+  const result = await rebuilder.permissionPreflight();
+  assert.equal(result.permissions, 1n << 3n);
+  assert.equal(result.botTop, 10);
+});
+
 test("server reset preflight refuses a bot role below managed legacy roles", async () => {
   const permissionBits = (1n << 1n) | (1n << 2n) | (1n << 4n) | (1n << 5n) | (1n << 7n)
     | (1n << 10n) | (1n << 11n) | (1n << 13n) | (1n << 14n) | (1n << 16n)
