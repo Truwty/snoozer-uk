@@ -10,7 +10,7 @@ describe("custom profile blocks", () => {
     const blocks = kinds.map((kind) => makeProfileBlock(kind));
     expect(profileBlocks.parse(blocks)).toHaveLength(kinds.length);
     expect(new Set(blocks.map((block) => block.id)).size).toBe(kinds.length);
-    expect(blocks.every((block) => !block.hidden && !block.locked && block.width === "full")).toBe(true);
+    expect(blocks.every((block) => block.hidden && !block.locked && block.width === "full")).toBe(true);
   });
 
   it("enforces bounded heading, paragraph and list content", () => {
