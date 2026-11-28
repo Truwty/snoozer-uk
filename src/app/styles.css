@@ -3082,7 +3082,7 @@ body:has(> .public-page[data-background-image="true"]) {
   font-size:.76rem;
 }
 .effects-editor-plan-guide strong {
-  color:var(--ink);
+  color:var(--text);
   font-size:.68rem;
   letter-spacing:.09em;
 }
