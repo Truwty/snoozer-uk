@@ -86,8 +86,9 @@ launchWebServer();
 
 const presenceEnabled = process.env.DISCORD_PRESENCE_ENABLED === "true";
 const serverSetupEnabled = process.env.DISCORD_SERVER_SETUP_ENABLED === "true";
+const botEnabled = process.env.DISCORD_BOT_ENABLED === "true";
 
-if (presenceEnabled || serverSetupEnabled) {
+if (presenceEnabled || serverSetupEnabled || botEnabled) {
   const required = ["DISCORD_BOT_TOKEN", "DISCORD_PRESENCE_GUILD_ID"];
   if (presenceEnabled) required.push("SNOOZER_PRESENCE_URL", "DISCORD_PRESENCE_INGEST_SECRET");
   const missing = required.filter(key => !process.env[key]);
@@ -97,5 +98,5 @@ if (presenceEnabled || serverSetupEnabled) {
     launchDiscordWorker();
   }
 } else {
-  console.info("[startup] Discord worker is disabled by DISCORD_PRESENCE_ENABLED and DISCORD_SERVER_SETUP_ENABLED.");
+  console.info("[startup] Discord worker is disabled by DISCORD_PRESENCE_ENABLED, DISCORD_SERVER_SETUP_ENABLED and DISCORD_BOT_ENABLED.");
 }
