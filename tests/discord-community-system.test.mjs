@@ -133,7 +133,7 @@ test("server reset preflight refuses a bot role below any replaceable custom rol
     },
   };
   const rebuilder = new DiscordServerRebuilder({ guildId, botUserId }, { api, store: {} });
-  await assert.rejects(rebuilder.permissionPreflight(), /Move the bot role above/i);
+  await assert.rejects(rebuilder.permissionPreflight(), /Move the bot's highest role above/i);
 });
 
 test("member-role migration never copies unverified Premium or Creator roles", async () => {
