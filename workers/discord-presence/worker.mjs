@@ -1,5 +1,6 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { DiscordApiClient, DiscordGuildSetup, hasAdministratorPermission, SNOOZER_SETUP_COMMAND } from "./server-setup.mjs";
 
 const GUILDS_INTENT = 1 << 0;
 const GUILD_PRESENCES_INTENT = 1 << 8;
@@ -95,6 +96,11 @@ export class DiscordPresenceWorker {
     this.WebSocketImpl = dependencies.WebSocketImpl ?? globalThis.WebSocket;
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
+    this.discordFetcher = dependencies.discordFetcher ?? globalThis.fetch;
+    this.discordApi = new DiscordApiClient(config.token, this.discordFetcher, { logger: this.logger });
+    this.applicationId = null;
+    this.botUserId = null;
+    this.serverSetupRunning = false;
     this.subscriptions = new Map();
     this.pendingChunks = new Map();
     this.socket = null;
@@ -276,6 +282,85 @@ export class DiscordPresenceWorker {
     }
   }
 
+  async registerServerSetupCommand() {
+    const botUser = await this.discordApi.request("/users/@me");
+    if (!botUser?.id || !/^[1-9][0-9]{16,19}$/.test(botUser.id)) {
+      throw new Error("Discord did not return a valid bot user ID while registering the server setup command.");
+    }
+    this.botUserId = botUser.id;
+    this.applicationId = botUser.id;
+    await this.discordApi.request("/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands", {
+      method: "POST",
+      body: SNOOZER_SETUP_COMMAND,
+    });
+    this.logger.info("[discord-presence] Registered the administrator-only /snoozer-setup command in the configured Snoozer guild.");
+  }
+
+  async sendSetupInteractionResponse(interaction, payload, editOriginal = false) {
+    const path = editOriginal
+      ? "/webhooks/" + this.applicationId + "/" + interaction.token + "/messages/@original"
+      : "/interactions/" + interaction.id + "/" + interaction.token + "/callback";
+    return this.discordApi.request(path, {
+      method: editOriginal ? "PATCH" : "POST",
+      body: payload,
+      auth: false,
+    });
+  }
+
+  async handleServerSetupInteraction(interaction) {
+    if (interaction.guild_id !== this.config.guildId || interaction.application_id !== this.applicationId) return;
+
+    const reply = async content => this.sendSetupInteractionResponse(interaction, {
+      type: 4,
+      data: { content, flags: 64 },
+    });
+
+    if (!hasAdministratorPermission(interaction.member?.permissions)) {
+      await reply("Only a server administrator can run the Snoozer server setup.");
+      return;
+    }
+
+    const confirm = interaction.data?.options?.find(option => option.name === "confirm")?.value;
+    if (confirm !== true) {
+      await reply("Nothing was changed. Run /snoozer-setup again and set confirm to true when you are ready.");
+      return;
+    }
+
+    if (this.serverSetupRunning) {
+      await reply("The Snoozer server setup is already running. Please do not start another run.");
+      return;
+    }
+
+    this.serverSetupRunning = true;
+    let deferred = false;
+    try {
+      await this.sendSetupInteractionResponse(interaction, { type: 5, data: { flags: 64 } });
+      deferred = true;
+      const result = await new DiscordGuildSetup({
+        token: this.config.token,
+        guildId: this.config.guildId,
+        botUserId: this.botUserId,
+      }, { api: this.discordApi, logger: this.logger }).run();
+
+      const content = result.alreadyComplete
+        ? "Snoozer server setup has already been completed" + (result.completedAt ? " (" + result.completedAt + ")" : "") + ". No changes were made."
+        : "Snoozer server setup completed. Created " + result.rolesCreated + " roles, " + result.categoriesCreated + " categories, " + result.channelsCreated + " channels and " + result.messagesCreated + " starter posts. Existing server items were preserved. This command is now locked by the private setup marker.";
+      await this.sendSetupInteractionResponse(interaction, { content }, true);
+      this.logger.info("[discord-presence] " + content);
+    } catch (error) {
+      this.logger.error("[discord-presence] one-time server setup failed:", error?.message ?? error);
+      const content = "Snoozer server setup did not finish. No completion marker was written, so the command can be safely retried after fixing this issue. " + String(error?.message ?? "Unknown Discord API error").slice(0, 900);
+      try {
+        if (deferred) await this.sendSetupInteractionResponse(interaction, { content }, true);
+        else await reply(content);
+      } catch (responseError) {
+        this.logger.error("[discord-presence] failed to report server setup outcome:", responseError?.message ?? responseError);
+      }
+    } finally {
+      this.serverSetupRunning = false;
+    }
+  }
+
   async dispatch(event) {
     const data = event.d ?? {};
     switch (event.t) {
@@ -327,6 +412,11 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_MEMBERS_CHUNK":
         if (data.guild_id === this.config.guildId) await this.handleChunk(data);
+        break;
+      case "INTERACTION_CREATE":
+        if (data.type === 2 && data.data?.name === SNOOZER_SETUP_COMMAND.name) {
+          void this.handleServerSetupInteraction(data);
+        }
         break;
       case "RATE_LIMITED":
         this.logger.warn("[discord-presence] Discord rate-limited a Gateway request; snapshots will retry on the next refresh.");
@@ -452,6 +542,11 @@ export class DiscordPresenceWorker {
   async start() {
     this.logger.info("[discord-presence] Worker process started; validating the signed Snoozer endpoint.");
     await this.refreshSubscriptions();
+    try {
+      await this.registerServerSetupCommand();
+    } catch (error) {
+      this.logger.error("[discord-presence] could not register /snoozer-setup; presence monitoring will continue:", error?.message ?? error);
+    }
     this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
     this.snapshotTimer = setInterval(() => void this.requestSnapshots(this.subscribedDiscordUserIds()), SNAPSHOT_REFRESH_MS);
     this.workerHeartbeatTimer = setInterval(() => void this.heartbeat(this.connected, this.guildReady), HEARTBEAT_INTERVAL_MS);
