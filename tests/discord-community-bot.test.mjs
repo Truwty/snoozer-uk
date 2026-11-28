@@ -105,6 +105,7 @@ function botFixture(options = {}) {
       guildId,
       botUserId,
       applicationId,
+      roleIds: options.roleIds ?? {},
       channelIds: options.channelIds ?? {},
     }, {
       api,
@@ -370,6 +371,33 @@ test("ticket close is limited to the owner or staff and locks the owner's send p
   assert.ok(state.jobs[0].runAt);
 });
 
+
+test("slash ticket close recognises registered staff roles with decorated Discord role names", async () => {
+  const ticketChannelId = "630000000000000002";
+  const supportRoleId = "610000000000000012";
+  const channel = {
+    id: ticketChannelId,
+    name: "ticket-account-member-555556",
+    type: 0,
+    topic: "SNOOZER_TICKET:v1 owner=" + memberId + " status=open created_at=2026-11-28T10:00:00.000Z",
+    permission_overwrites: [{ id: memberId, type: 1, allow: "117760", deny: "0" }],
+  };
+  const { bot, state } = botFixture({
+    channels: [channel],
+    roles: [{ id: supportRoleId, name: "🎧・Support Team" }],
+    roleIds: { support_team: supportRoleId },
+  });
+  const result = await bot.closeTicket(interaction("snoozer-ticket-close", [], {
+    channel_id: ticketChannelId,
+    member: { user: { id: moderatorId, username: "support-agent" }, permissions: "0", roles: [supportRoleId] },
+  }));
+
+  assert.match(result, /deleted in 10 seconds/i);
+  const closed = state.channels.find(item => item.id === ticketChannelId);
+  assert.match(closed.topic, /status=closed/);
+  assert.equal(state.jobs.length, 1);
+  assert.equal(state.jobs[0].jobType, "ticket_delete");
+});
 
 test("private member reports notify moderators but do not grant Support Team access", async () => {
   const roles = [
