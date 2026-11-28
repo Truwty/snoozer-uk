@@ -9,6 +9,7 @@ import {
 } from "./community-bot.mjs";
 
 const GUILDS_INTENT = 1 << 0;
+const GUILD_MEMBERS_INTENT = 1 << 1;
 const GUILD_PRESENCES_INTENT = 1 << 8;
 const SNAPSHOT_REFRESH_MS = 5 * 60_000;
 const SUBSCRIPTION_REFRESH_MS = 60_000;
@@ -420,6 +421,7 @@ export class DiscordPresenceWorker {
       case "GUILD_CREATE":
         this.logger.info(`[discord-presence] Discord sent GUILD_CREATE (configured server match=${data.id === this.config.guildId}).`);
         if (data.id === this.config.guildId) {
+          if (this.communityBot) this.communityBot.seedKnownBoosters(data.members);
           this.logger.info("[discord-presence] Connected to the configured shared Discord server.");
           this.connected = true;
           this.guildKnown = true;
@@ -450,6 +452,17 @@ export class DiscordPresenceWorker {
       case "PRESENCE_UPDATE":
         if (data.guild_id === this.config.guildId && data.user?.id && this.subscriptions.has(data.user.id)) {
           await this.sendPresence(data.user.id, data);
+        }
+        break;
+      case "GUILD_MEMBER_ADD":
+        if (data.guild_id === this.config.guildId && this.communityBot) {
+          await this.communityBot.welcomeMember(data);
+          if (data.premium_since) await this.communityBot.handleMemberUpdate(data);
+        }
+        break;
+      case "GUILD_MEMBER_UPDATE":
+        if (data.guild_id === this.config.guildId && this.communityBot) {
+          await this.communityBot.handleMemberUpdate(data);
         }
         break;
       case "GUILD_MEMBERS_CHUNK":
@@ -511,7 +524,9 @@ export class DiscordPresenceWorker {
         } else {
           this.send({ op: 2, d: {
             token: this.config.token,
-            intents: GUILDS_INTENT | ((this.config.presenceEnabled !== false) ? GUILD_PRESENCES_INTENT : 0),
+            intents: GUILDS_INTENT |
+              (this.config.botEnabled ? GUILD_MEMBERS_INTENT : 0) |
+              ((this.config.presenceEnabled !== false) ? GUILD_PRESENCES_INTENT : 0),
             large_threshold: 250,
             properties: { os: process.platform, browser: "Snoozer Presence", device: "Snoozer Presence" },
           } });
