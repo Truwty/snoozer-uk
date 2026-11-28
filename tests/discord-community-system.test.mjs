@@ -7,7 +7,7 @@ import { DiscordServerRebuilder } from "../workers/discord-presence/server-rebui
 import { DiscordCommunityPanels, SNOOZER_REBUILD_COMMAND } from "../workers/discord-presence/community-panels.mjs";
 import { DiscordSecurityGuard } from "../workers/discord-presence/security-guard.mjs";
 import { DiscordApiClient, SETUP_COMPLETE_MARKER } from "../workers/discord-presence/server-setup.mjs";
-import { buildGuildCommands } from "../workers/discord-presence/worker.mjs";
+import { buildGuildCommands, DiscordPresenceWorker } from "../workers/discord-presence/worker.mjs";
 
 const guildId = "1574262035519115284";
 const botUserId = "1574262035519115285";
@@ -879,3 +879,97 @@ test("Discord guild command bulk list excludes retired commands and replaces leg
     ["snoozer-setup"],
   );
 });
+
+test("ticket modal creates a private channel with string permission overwrites and logs the ticket", async () => {
+  const applicationId = "1574262035519115288";
+  const ownerId = "1574262035519115811";
+  const ticketChannelId = "1574262035519115808";
+  const queueChannelId = "1574262035519115809";
+  const calls = [];
+  const logs = [];
+  const replies = [];
+  const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
+    api: {
+      async request(path, options = {}) {
+        calls.push({ path, options: structuredClone(options) });
+        if (path === "/guilds/" + guildId + "/channels" && options.method === "POST") return { id: ticketChannelId };
+        return {};
+      },
+    },
+    store: {
+      async recordInteraction() { return true; },
+      async openTicket() { return { created: true, ticket_id: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90" }; },
+      async enqueueJob() { return true; },
+    },
+    logEvent: async event => logs.push(event),
+  });
+  panels.resources.category_tickets = "1574262035519115802";
+  panels.resources.ticket_queue = queueChannelId;
+  panels.reply = async (_interaction, payload) => { replies.push(payload); return {}; };
+
+  await panels.handle({
+    guild_id: guildId,
+    application_id: applicationId,
+    type: 5,
+    id: "1574262035519115810",
+    token: "test-interaction-token",
+    member: { user: { id: ownerId, username: "test member" }, roles: [] },
+    data: {
+      custom_id: "ticket:submit:account",
+      components: [
+        { components: [{ value: "Account login problem" }] },
+        { components: [{ value: "I cannot access my account since today." }] },
+      ],
+    },
+  });
+
+  const create = calls.find(call => call.path === "/guilds/" + guildId + "/channels" && call.options.method === "POST");
+  assert.ok(create, "ticket channel should be created");
+  assert.deepEqual(create.options.body.permission_overwrites.map(item => [item.type, item.allow, item.deny]), [
+    [0, "0", "1024"],
+    [1, "117760", "0"],
+    [1, "117760", "0"],
+  ]);
+  assert.ok(create.options.body.permission_overwrites.every(item =>
+    typeof item.allow === "string" && typeof item.deny === "string"));
+  assert.ok(logs.some(event => event.title === "Support ticket opened" && event.description.includes(ticketChannelId)));
+  assert.match(replies.at(-1).content, /ticket has been created/i);
+});
+
+test("Discord server activity is posted to the configured bot logs channel without copying message content", async () => {
+  const logChannelId = "1574262035519115807";
+  const requests = [];
+  const worker = {
+    config: { guildId },
+    communityPanels: { resources: { bot_logs: logChannelId } },
+    discordApi: { async request(path, options) { requests.push({ path, options }); return {}; } },
+    logServerEvent: DiscordPresenceWorker.prototype.logServerEvent,
+    logger: { warn() {} },
+    recordActivity() {},
+    securityGuard: null,
+    communityBot: null,
+  };
+
+  await DiscordPresenceWorker.prototype.dispatch.call(worker, {
+    t: "MESSAGE_CREATE",
+    d: {
+      guild_id: guildId,
+      id: "1574262035519115812",
+      channel_id: "1574262035519115813",
+      author: { id: "1574262035519115814", username: "member", bot: false },
+      content: "this private message body must not be copied into logs",
+      attachments: [],
+      embeds: [],
+    },
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].path, "/channels/" + logChannelId + "/messages");
+  const embed = requests[0].options.body.embeds[0];
+  assert.equal(embed.title, "Message sent");
+  assert.match(embed.description, /1574262035519115814/);
+  assert.match(embed.description, /1574262035519115813/);
+  assert.doesNotMatch(embed.description, /this private message body/);
+  assert.deepEqual(requests[0].options.body.allowed_mentions, { parse: [] });
+});
+

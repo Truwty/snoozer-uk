@@ -20,6 +20,8 @@ const PERMISSIONS = {
 };
 
 const STAFF_ROLE_NAMES = ["Snoozer Admin", "Senior Moderator", "Moderator", "Support Team", "Support Manager", "Ticket Support"];
+// Discord permission overwrite values are sent as decimal strings to avoid mixed BigInt operations.
+const TICKET_PERMISSION_BITS = Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992",closedOwnerAllow:"66560",closedOwnerDeny:"2048"});
 const REQUIRED_BOT_PERMISSIONS = [
   ["Manage Server", PERMISSIONS.manageGuild],
   ["View Audit Log", PERMISSIONS.viewAuditLog],
@@ -187,6 +189,7 @@ export class DiscordCommunityBot {
     this.api = dependencies.api;
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
+    this.logEvent = dependencies.logEvent ?? null;
     this.channelIds = config.channelIds ?? SNOOZER_CHANNEL_IDS;
     this.categoryIds = config.categoryIds ?? {};
     this.roleIds = config.roleIds ?? {};
@@ -605,12 +608,11 @@ async announceServerBoost(member) {
     const notifyRoleKey = notifyRoleName === "Moderator" ? "moderator" : notifyRoleName === "Ticket Support" ? "ticket_support" : null;
     const notifyRoleId = notifyRoleKey ? this.roleIds[notifyRoleKey] : null;
     const notifyRole = notifyRoleId ? roles.find(role => role.id === notifyRoleId) : (notifyRoleName ? roles.find(role => role.name === notifyRoleName) : null);
-    const viewSendRead = PERMISSIONS.viewChannel | PERMISSIONS.sendMessages | PERMISSIONS.readMessageHistory | PERMISSIONS.embedLinks;
     const overwrites = [
-      { id: this.guildId, type: 0, allow: "0", deny: PERMISSIONS.viewChannel.toString() },
-      { id: targetId, type: 1, allow: (viewSendRead | PERMISSIONS.attachFiles).toString(), deny: "0" },
-      ...staffRoles.map(role => ({ id: role.id, type: 0, allow: viewSendRead.toString(), deny: "0" })),
-      { id: this.botUserId, type: 1, allow: viewSendRead.toString(), deny: "0" },
+      { id: this.guildId, type: 0, allow: "0", deny: TICKET_PERMISSION_BITS.everyoneDenyView },
+      { id: targetId, type: 1, allow: TICKET_PERMISSION_BITS.ownerAllow, deny: "0" },
+      ...staffRoles.map(role => ({ id: role.id, type: 0, allow: TICKET_PERMISSION_BITS.staffAllow, deny: "0" })),
+      { id: this.botUserId, type: 1, allow: TICKET_PERMISSION_BITS.ownerAllow, deny: "0" },
     ];
     const username = cleanText(opener.username, 24).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "member";
     const suffix = String(interaction.id).slice(-6).replace(/[^0-9]/g, "") || String(Date.now()).slice(-6);
@@ -665,6 +667,7 @@ async announceServerBoost(member) {
       });
       if (result.existing) return "You already have an open support ticket: <#" + result.channel.id + ">.";
       await this.logSupportTicket(interaction, result.channel, subject);
+      try { await this.logEvent?.({ title:"Support ticket opened", description:"Member: <@"+openerId+">\nChannel: <#"+result.channel.id+">\nSubject: "+cleanText(subject,80), severity:"info" }); } catch {}
       return "Your private support ticket has been created: <#" + result.channel.id + ">." +
         (result.welcomeMessageSent ? "" : " The channel exists, but Discord rejected its opening message; please send your request details again inside the ticket.");
     } finally {
@@ -718,8 +721,8 @@ async announceServerBoost(member) {
     overwrites.push({
       id: ownerId,
       type: 1,
-      allow: (PERMISSIONS.viewChannel | PERMISSIONS.readMessageHistory).toString(),
-      deny: PERMISSIONS.sendMessages.toString(),
+      allow: TICKET_PERMISSION_BITS.closedOwnerAllow,
+      deny: TICKET_PERMISSION_BITS.closedOwnerDeny,
     });
     const reason = cleanText(option(interaction, "reason"), 300);
     const closedAt = new Date().toISOString();
@@ -749,6 +752,7 @@ async announceServerBoost(member) {
       closeNoticeSent = false;
       this.logger.error("[discord-community] ticket was closed but its transcript notice failed: " + (error?.message ?? error));
     }
+    try { await this.logEvent?.({ title:"Support ticket closed", description:"Channel: <#"+channelId+">\nClosed by: <@"+actorId+">\nOwner: <@"+ownerId+">", severity:"info" }); } catch {}
     return "The ticket has been closed." + (closeNoticeSent ? "" : " Discord rejected the closing notice, but the ticket permissions and status have been updated.");
   }
 
@@ -966,6 +970,7 @@ async announceServerBoost(member) {
     } catch (error) {
       const detail = cleanText(error?.message ?? "Unknown error", 900) || "Unknown error";
       this.logger.error("[discord-community] command " + name + " failed: " + (error?.stack ?? detail));
+      try { await this.logEvent?.({ title:"Bot command failed", description:"Command: /"+cleanText(name,100)+"\nMember: <@"+(interaction.member?.user?.id??interaction.user?.id??"unknown")+">\nError: "+detail, severity:"error" }); } catch {}
       await this.complete(interaction, { content: "The command could not be completed. " + detail });
     }
   }
