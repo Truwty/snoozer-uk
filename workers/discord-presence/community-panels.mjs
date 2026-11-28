@@ -219,9 +219,11 @@ export class DiscordCommunityPanels{
     return result;
   }
   async complete(i,payload){
-    const result=await this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});
-    this.deferredInteractions.delete(i.id);
-    return result;
+    try{
+      return await this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});
+    }finally{
+      this.deferredInteractions.delete(i.id);
+    }
   }
   opensModal(customId){
     return customId==="ticket:category"||customId==="member:creator"||customId==="suggestion:open"||customId==="bug:open"||customId==="poll:create"||customId==="admin:rebuild:start"||customId==="admin:reconcile"||customId==="admin:restore"||customId==="admin:thresholds"||customId==="giveaway:role-select"||customId==="admin:event"||customId.startsWith("ticket:note:")||customId.startsWith("appeal:open:")||customId.startsWith("mod:target:");
