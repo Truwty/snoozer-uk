@@ -132,10 +132,10 @@ const effectGroups: Array<[EffectGroup, string]> = [
 
 export function effectsAllowed(value: ProfileEffects, tier: EffectTier): boolean {
   if (!value.enabled) return true;
-  if (effectTierForOption("preset", value.preset) > tier) return false;
+  if (tierRank[effectTierForOption("preset", value.preset)] > tierRank[tier]) return false;
   for (const [group, key] of effectGroups) {
     const option = value[key as keyof ProfileEffects];
-    if (typeof option === "string" && effectTierForOption(group, option) > tier) return false;
+    if (typeof option === "string" && tierRank[effectTierForOption(group, option)] > tierRank[tier]) return false;
   }
   const active = effectGroups.reduce((count, [, key]) => {
     return count + (value[key as keyof ProfileEffects] !== "none" ? 1 : 0);
