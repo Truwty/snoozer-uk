@@ -1,9 +1,10 @@
 const SF=/^[1-9][0-9]{16,19}$/;
 const PERM={sendMessages:1n<<11n,manageChannels:1n<<4n,administrator:1n<<3n,manageGuild:1n<<5n,manageRoles:1n<<28n};
-const DESTRUCTIVE_ACTIONS=new Set([12,15,22,32,52,62,73,82,92,102,112,142]);
+const DESTRUCTIVE_ACTIONS=new Set([12,15,22,32,52,62,73,80,82,92,102,112,142]);
 const RELEVANT_ACTIONS=new Map([
-  [12,"Channel deleted"],[14,"Channel overwrite deleted"],[15,"Channel overwrite deleted"],
-  [22,"Role deleted"],[31,"Role permissions changed"],[32,"Role deleted"],
+  [12,"Channel deleted"],[14,"Channel overwrite changed"],[15,"Channel overwrite removed"],
+  [22,"Member banned"],[30,"Role created"],[31,"Role permissions changed"],[32,"Role deleted"],
+  [80,"Bot added to server"],
   [50,"Webhook created"],[51,"Webhook changed"],[52,"Webhook deleted"],
   [72,"Message deleted"],[73,"Messages bulk-deleted"],[82,"Integration deleted"],
   [102,"Scheduled event deleted"],[112,"Thread deleted"],[142,"AutoMod rule deleted"],
@@ -36,10 +37,19 @@ export class DiscordSecurityGuard{
     return true;
   }
 
-  isTrusted(actorId){
+  async isTrusted(actorId){
     if(!SF.test(actorId??""))return false;
     if(actorId===this.botUserId||actorId===this.ownerId)return true;
-    return false;
+    const roleIds=this.getRoleIds()??{};
+    const trustedRoles=new Set([roleIds.admin,roleIds.developer].filter(Boolean));
+    if(trustedRoles.size===0)return false;
+    try{
+      const member=await this.api.request("/guilds/"+this.guildId+"/members/"+actorId);
+      return Array.isArray(member?.roles)&&member.roles.some(roleId=>trustedRoles.has(roleId));
+    }catch(error){
+      this.logger.warn("[discord-security] could not verify audit actor roles; treating actor as untrusted",error?.message??error);
+      return false;
+    }
   }
 
   async alert(title,description,severity="warning"){
@@ -105,7 +115,7 @@ export class DiscordSecurityGuard{
   async handleAuditEntry(entry){
     if(!entry||entry.guild_id!==this.guildId)return false;
     const actorId=entry.user_id,targetId=entry.target_id,action=Number(entry.action_type);
-    if(!SF.test(actorId??"")||this.isTrusted(actorId))return false;
+    if(!SF.test(actorId??"")||await this.isTrusted(actorId))return false;
     const label=RELEVANT_ACTIONS.get(action);
     if(!label)return false;
     const now=Date.now(),items=this.actorActions.get(actorId)??[];
@@ -120,7 +130,7 @@ export class DiscordSecurityGuard{
     if(this.settings.antiNukeEnabled!==false&&highImpact>=this.settings.antiNukeActions){
       await this.lockdownPublicChannels("Possible anti-nuke response: "+highImpact+" destructive actions by "+actorId+" in "+this.settings.antiNukeWindowSeconds+" seconds.");
     }
-    if(action===31){
+    if(action===30||action===31){
       try{
         const roles=await this.api.request("/guilds/"+this.guildId+"/roles");
         const role=Array.isArray(roles)?roles.find(x=>x.id===targetId):null;
@@ -129,6 +139,29 @@ export class DiscordSecurityGuard{
           await this.alert("Role permission escalation","Role "+safe(role.name,80)+" now holds Administrator, Manage Server, Manage Roles or Manage Channels.\nActor: <@"+actorId+">. Review this change immediately.","critical");
         }
       }catch(error){this.logger.error("[discord-security] role escalation check failed",error?.message??error);}
+    }
+    if(action===50&&SF.test(targetId??"")){
+      try{
+        await this.api.request("/webhooks/"+targetId,{method:"DELETE"});
+        await this.record("anti_webhook_removed",actorId,targetId,{audit_entry_id:entry.id},"critical");
+        await this.alert("Untrusted webhook removed","A webhook created by an untrusted actor was deleted. Actor: <@"+actorId+">.","critical");
+      }catch(error){
+        await this.alert("Untrusted webhook detected","An untrusted actor created a webhook. Automatic removal was blocked by Discord permissions or API restrictions. Actor: <@"+actorId+"> · webhook: "+safe(targetId,40),"critical");
+        this.logger.warn("[discord-security] webhook removal was not permitted",error?.message??error);
+      }
+    }
+    if(action===80&&SF.test(targetId??"")){
+      try{
+        const member=await this.api.request("/guilds/"+this.guildId+"/members/"+targetId);
+        if(member?.user?.bot&&targetId!==this.botUserId){
+          await this.api.request("/guilds/"+this.guildId+"/members/"+targetId,{method:"DELETE",headers:{"X-Audit-Log-Reason":"Unapproved bot invite removed by Snoozer anti-raid protection."}});
+          await this.record("anti_unapproved_bot_removed",actorId,targetId,{audit_entry_id:entry.id},"critical");
+          await this.alert("Unapproved bot invite removed","An untrusted actor invited a bot. The bot was removed automatically. Inviting actor: <@"+actorId+">.","critical");
+        }
+      }catch(error){
+        await this.alert("Unapproved bot invite detected","A bot was added by an untrusted actor, but automatic removal failed. Review audit logs immediately. Actor: <@"+actorId+"> · target: "+safe(targetId,40),"critical");
+        this.logger.error("[discord-security] unapproved bot removal failed",error?.message??error);
+      }
     }
     return true;
   }
