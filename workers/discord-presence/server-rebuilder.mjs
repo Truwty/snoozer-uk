@@ -212,7 +212,10 @@ export class DiscordServerRebuilder {
       const roles=new Set((member.roles??[]).filter(id=>!oldMap.has(id)));
       const mapped=new Set((member.roles??[]).map(id=>oldMap.get(id)).filter(Boolean));
       if(member.user?.bot) mapped.add("bots");
-      else mapped.add("member");
+      else {
+        mapped.add("member");
+        if(member.premium_since) mapped.add("booster");
+      }
       for(const key of mapped) if(newRoleIds[key]) roles.add(newRoleIds[key]);
       const next=[...roles];
       if(next.length!==(member.roles??[]).length||next.some(id=>!(member.roles??[]).includes(id))) {

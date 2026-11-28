@@ -288,7 +288,22 @@ export class DiscordCommunityBot {
     return true;
   }
 
-  async announceServerBoost(member) {
+    async goodbyeMember(member) {
+    const userId=member?.user?.id;
+    if(!safeSnowflake(userId)||member.user.bot)return false;
+    const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
+    const channel=Array.isArray(channels)?channels.find(item=>item.type===0&&(
+      this.channelIds.goodbye?item.id===this.channelIds.goodbye:item.name==="goodbye"
+    )):null;
+    if(!channel)return false;
+    await this.api.request("/channels/"+channel.id+"/messages",{method:"POST",body:{
+      embeds:[{title:"Member left Snoozer",description:"<@"+userId+"> has left the Snoozer community. Thank you for being part of it.",
+        color:0x7a8493,timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+    }});
+    return true;
+  }
+
+async announceServerBoost(member) {
     const userId = member?.user?.id;
     if (!safeSnowflake(userId)) return false;
     const boosterRoleId = this.roleIds.booster;
@@ -310,6 +325,17 @@ export class DiscordCommunityBot {
       },
     });
     this.logger.info("[discord-community] posted a server boost thank-you.");
+    try{
+      const guild=await this.api.request("/guilds/"+this.guildId);
+      const count=Number(guild?.premium_subscription_count??0);
+      const milestones=new Set([5,10,15,20,25,30,40,50,75,100]);
+      if(milestones.has(count)&&this.channelIds.serverBoosts){
+        await this.api.request("/channels/"+this.channelIds.serverBoosts+"/messages",{method:"POST",body:{
+          embeds:[{title:"🚀 Snoozer boost milestone reached",description:"The community has reached **"+count+" server boosts**. Thank you to everyone supporting Snoozer.",
+            color:0xc69a43,timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+        }});
+      }
+    }catch(error){this.logger.warn("[discord-community] booster milestone check failed: "+(error?.message??error));}
     return true;
   }
 

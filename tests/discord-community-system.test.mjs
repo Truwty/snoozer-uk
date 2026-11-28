@@ -25,6 +25,7 @@ test("new Snoozer server layout has unique resource keys and names", () => {
   assert.ok(channelKeys.includes("moderation_log"));
   assert.ok(channelKeys.includes("security_alerts"));
   assert.ok(channelKeys.includes("server_boosts"));
+  assert.ok(channelKeys.includes("goodbye"));
 
   const roleKeys = SNOOZER_ROLE_LAYOUT.map(role => role.key);
   assert.equal(new Set(roleKeys).size, roleKeys.length);
@@ -94,7 +95,9 @@ test("server reset preflight stops before writes when the bot lacks permissions"
 });
 
 test("server reset preflight refuses a bot role below managed legacy roles", async () => {
-  const permissionBits = (1n << 4n) | (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 16n) | (1n << 28n);
+  const permissionBits = (1n << 1n) | (1n << 2n) | (1n << 4n) | (1n << 5n) | (1n << 7n)
+    | (1n << 10n) | (1n << 11n) | (1n << 13n) | (1n << 14n) | (1n << 16n)
+    | (1n << 28n) | (1n << 29n) | (1n << 33n) | (1n << 40n);
   const api = {
     async request(path) {
       if (path.endsWith("/roles")) return [
@@ -276,4 +279,22 @@ test("anti-nuke trusts the Snoozer Admin and Developer roles", async () => {
   assert.equal(handled, false);
   assert.equal(config.raid_lockdown, undefined);
   assert.ok(calls.some(call => call.path === "/guilds/" + guildId + "/members/" + actorId));
+});
+
+
+test("DiscordStore exposes persistent ticket statistics and staff review RPCs", async () => {
+  const calls=[];
+  const store=new DiscordStore({url:"https://example.supabase.co",serviceKey:"test-key"},{
+    fetcher:async(url,options)=>{
+      calls.push({url,body:JSON.parse(options.body)});
+      return new Response(JSON.stringify({ok:true}),{status:200,headers:{"content-type":"application/json"}});
+    },
+  });
+  await store.getTicket("2b74a90f-b239-4c62-8f43-e3cd5eaf3f3c");
+  await store.ticketStatistics(guildId);
+  await store.reviewSubmission("2b74a90f-b239-4c62-8f43-e3cd5eaf3f3c",botUserId,"approved","Looks good");
+  assert.ok(calls.some(call=>call.url.endsWith("/discord_bot_ticket_get")));
+  assert.ok(calls.some(call=>call.url.endsWith("/discord_bot_ticket_statistics")));
+  const review=calls.find(call=>call.url.endsWith("/discord_bot_submission_review"));
+  assert.deepEqual(review.body,{p_id:"2b74a90f-b239-4c62-8f43-e3cd5eaf3f3c",p_actor:botUserId,p_decision:"approved",p_note:"Looks good"});
 });

@@ -43,6 +43,7 @@ export const SNOOZER_SERVER_LAYOUT = [
       readOnly("service_status","🟢・service-status","Live Snoozer service health, incident and recovery announcements."),
       readOnly("roadmap","🗺️・roadmap","Snoozer product roadmap and planned improvements."),
       readOnly("maintenance_log","🛠️・maintenance-log","Planned maintenance windows and completion notices."),
+      readOnly("goodbye","👋・goodbye","A short message when a member leaves the Snoozer community."),
     ],
   },
   {

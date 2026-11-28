@@ -71,6 +71,12 @@ export class DiscordStore {
     return this.rpc("discord_bot_ticket_queue", { p_guild_id:guildId,p_limit:limit });
   }
 
+  getTicket(id) { return this.rpc("discord_bot_ticket_get", { p_ticket_id:id }); }
+  ticketStatistics(guildId) { return this.rpc("discord_bot_ticket_statistics", { p_guild_id:guildId }); }
+  reviewSubmission(id,actorId,decision,note=null) {
+    return this.rpc("discord_bot_submission_review", { p_id:id,p_actor:actorId,p_decision:decision,p_note:note });
+  }
+
   createCase(input) {
     return this.rpc("discord_bot_create_case", {
       p_guild_id:input.guildId,p_target:input.targetId,p_moderator:input.moderatorId,

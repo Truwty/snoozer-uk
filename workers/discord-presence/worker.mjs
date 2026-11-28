@@ -371,6 +371,7 @@ export class DiscordPresenceWorker {
           changelog: resourceMap.changelog,
           serviceStatus: resourceMap.service_status,
           serverBoosts: resourceMap.server_boosts,
+          goodbye: resourceMap.goodbye,
           ticketQueue: resourceMap.ticket_queue,
           moderationLog: resourceMap.moderation_log,
           bugReports: resourceMap.bug_reports,
@@ -578,6 +579,8 @@ export class DiscordPresenceWorker {
         break;
       case "GUILD_MEMBER_REMOVE":
         if (data.guild_id === this.config.guildId && this.communityBot) {
+          try { await this.communityBot.goodbyeMember(data); }
+          catch(error) { this.logger.warn("[discord-presence] goodbye message failed:",error?.message??error); }
           this.communityBot.handleMemberRemove(data);
         }
         break;
