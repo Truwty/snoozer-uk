@@ -149,7 +149,7 @@ declare retry_seconds integer;
 begin
   profile_match:=regexp_match(
     coalesce(p_profile_url,''),
-    '^https://(?:www\\.)?snoozer\\.uk/([A-Za-z0-9-]{2,30})/?$'
+    '^https://(?:www\.)?snoozer\.uk/([A-Za-z0-9-]{2,30})/?$'
   );
 
   if coalesce(p_discord_user_id,'') !~ '^[1-9][0-9]{16,19}$'
