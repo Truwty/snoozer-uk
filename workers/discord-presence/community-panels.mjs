@@ -4,7 +4,8 @@ const P={administrator:1n<<3n,manageChannels:1n<<4n,manageMessages:1n<<13n,embed
 const SF=/^[1-9][0-9]{16,19}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Discord permission overwrites are decimal strings. Avoid BigInt operations in the ticket creation path.
-const TICKET_PERMISSION_BITS=Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992"});
+const TICKET_PERMISSION_BITS=Object.freeze({everyoneDenyView:"1024",ownerAllow:"117760",staffAllow:"84992",closedOwnerAllow:"66560",closedOwnerDeny:"2048"});
+const TICKET_DELETE_DELAY_MS=10_000;
 const clean=(v,n=1000)=>typeof v==="string"?v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,"").trim().slice(0,n):"";
 const uid=i=>i.member?.user?.id??i.user?.id??"";
 const opt=(i,n)=>i.data?.options?.find(x=>x.name===n)?.value;
@@ -83,25 +84,170 @@ export class DiscordCommunityPanels{
     this.resources={};this.roleIds={};this.onResourcesUpdated=deps.onResourcesUpdated??null;this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
-    this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
+    this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;this.securitySettings={};
+    this.deferredInteractions=new Set();this.respondedInteractions=new Set();this.jobWakeTimers=new Map();this.jobWakeSequence=0;
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
-    this.resources=r.map??{};this.roleIds={};
+    this.resources=r.map??{};this.roleIds={};this.securitySettings=config?.security&&typeof config.security==="object"?{...config.security}:{};
     for(const [k,v] of Object.entries(this.resources))if(k.startsWith("role_"))this.roleIds[k.slice(5)]=v;
     for(const [key,value] of Object.entries(config??{}))if(key.startsWith("channel_override_")&&SF.test(value?.channel_id??""))this.resources[key.slice("channel_override_".length)]=value.channel_id;
     if(this.onResourcesUpdated)await this.onResourcesUpdated(this.resources,this.roleIds);
     return this.resources;
   }
+  async ensureCreatorVerificationChannel(){
+    await this.refreshResources();
+    const parent=this.resources.category_internal;
+    if(!SF.test(parent??"")){
+      this.logger.warn("[discord-panels] Creator verification channel not created because the private INTERNAL category is not registered.");
+      return null;
+    }
+
+    const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
+    if(!Array.isArray(channels))throw new Error("Discord did not return the server channel inventory.");
+    const registeredId=this.resources.creator_verification;
+    let channel=registeredId?channels.find(item=>item.type===0&&item.id===registeredId):null;
+    if(!channel)channel=channels.find(item=>item.type===0&&["✨・creator-verification","creator-verification"].includes(item.name));
+
+    const adminId=this.roleIds.admin;
+    const viewSend=P.viewChannel|P.sendMessages|P.readMessageHistory|P.embedLinks;
+    const overwrites=[
+      {id:this.guildId,type:0,allow:"0",deny:P.viewChannel.toString()},
+      ...(SF.test(adminId??"")?[{id:adminId,type:0,allow:viewSend.toString(),deny:"0"}]:[]),
+      {id:this.botUserId,type:1,allow:(viewSend|(1n<<15n)).toString(),deny:"0"},
+    ];
+
+    if(channel){
+      // An old or manually-created channel with the same name is moved into INTERNAL
+      // and its overwrites are replaced so submissions are never left in a public room.
+      channel=await this.api.request("/channels/"+channel.id,{method:"PATCH",body:{
+        parent_id:parent,
+        topic:"Private Creator verification review queue. Only Snoozer Admins and the bot can view submissions.",
+        permission_overwrites:overwrites,
+      }});
+    }else{
+      channel=await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body:{
+        name:"✨・creator-verification",type:0,parent_id:parent,
+        topic:"Private Creator verification review queue. Only Snoozer Admins and the bot can view submissions.",
+        permission_overwrites:overwrites,
+      }});
+    }
+    if(!SF.test(channel?.id??""))throw new Error("Discord did not return a valid Creator verification channel.");
+
+    const registry=await this.store.getResources(this.guildId);
+    const rows=(Array.isArray(registry?.rows)?registry.rows:[]).filter(item=>item.resource_key!=="creator_verification");
+    rows.push({resource_key:"creator_verification",resource_type:"text",discord_id:channel.id,name:channel.name??"✨・creator-verification"});
+    if(await this.store.registerResources(this.guildId,rows)!==true)throw new Error("Creator verification channel was created but could not be registered in Supabase.");
+    await this.refreshResources();
+    try{await this.logEvent?.({title:"Creator verification review channel ready",description:"Private review channel: <#"+channel.id+">",severity:"info"});}catch{}
+    return channel.id;
+  }
+
+  async publishCreatorQueue(){
+    const channelId=this.resources.creator_verification;
+    if(!SF.test(channelId??""))return {posted:0,errors:["Creator verification channel is not configured."]};
+    const items=await this.store.creatorQueue(50);
+    if(!Array.isArray(items)||!items.length)return {posted:0,errors:[]};
+
+    const [config,messages]=await Promise.all([
+      this.store.getConfig(this.guildId),
+      this.api.request("/channels/"+channelId+"/messages?limit=100"),
+    ]);
+    const recentByRequest=new Map();
+    for(const message of Array.isArray(messages)?messages:[]){
+      if(message.author?.id!==this.botUserId)continue;
+      for(const embed of Array.isArray(message.embeds)?message.embeds:[]){
+        const match=String(embed.footer?.text??"").match(/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+        if(match&&SF.test(message.id??""))recentByRequest.set(match[1],message.id);
+      }
+    }
+
+    let posted=0;const errors=[];
+    for(const item of items){
+      const id=String(item.id??"");
+      if(!UUID.test(id))continue;
+      const key="creator_"+id.replaceAll("-","");
+      const prior=config?.[key];
+      const embed={title:"✨ Creator verification request",description:
+        "**Profile:** "+clean(item.profile_url,250)+"\n**Member:** <@"+item.discord_user_id+">\n**Submitted:** <t:"+Math.floor(Date.parse(item.created_at)/1000)+":R>\n\n**Creator information**\n"+clean(item.reason,2200)+"\n\n**Reference:** "+id,
+        color:0x8b72d9,footer:{text:"Pending Creator verification · "+id},timestamp:item.created_at};
+      const body={embeds:[embed],components:[row(btn("creator:approve:"+id,"Approve",3,"✅"),btn("creator:reject:"+id,"Reject",4,"❌"))],allowed_mentions:{parse:[]}};
+      let messageId=prior?.channel_id===channelId&&SF.test(prior?.message_id??"")?prior.message_id:recentByRequest.get(id);
+      const messageChannel=channelId;
+      try{
+        let updated=false;
+        if(messageId){
+          try{
+            await this.api.request("/channels/"+messageChannel+"/messages/"+messageId,{method:"PATCH",body});
+            updated=true;
+          }catch(error){
+            if(!/404|10008|unknown message/i.test(String(error?.message??error)))throw error;
+          }
+        }
+        if(!updated){
+          const msg=await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body});
+          if(!SF.test(msg?.id??""))throw new Error("Discord did not return the Creator review message ID.");
+          messageId=msg.id;
+        }
+        await this.store.setConfig(this.guildId,key,{channel_id:channelId,message_id:messageId});
+        posted++;
+      }catch(error){errors.push(id+": "+clean(error?.message??"Unknown error",180));}
+    }
+    return {posted,errors};
+  }
+
   staff(i,keys=STAFF){
     if(has(i.member?.permissions,P.administrator)||has(i.member?.permissions,P.manageMessages))return true;
     const roles=new Set(i.member?.roles??[]);return keys.some(k=>this.roleIds[k]&&roles.has(this.roleIds[k]));
   }
   requireStaff(i,keys=STAFF){if(!this.staff(i,keys))throw new Error("You do not have permission to use this staff control.");}
-  async reply(i,payload,ephemeral=true){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:4,data:{flags:ephemeral?64:0,allowed_mentions:{parse:[]},...payload}}});}
-  async defer(i){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:5,data:{flags:64}}});}
-  async showModal(i,data){return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:9,data}});}
-  async complete(i,payload){return this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});}
+  async reply(i,payload,ephemeral=true){
+    if(this.deferredInteractions.has(i.id))return this.complete(i,payload);
+    return this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:4,data:{flags:ephemeral?64:0,allowed_mentions:{parse:[]},...payload}}});
+  }
+  async defer(i){
+    if(this.deferredInteractions.has(i.id))return null;
+    await this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:5,data:{flags:64}}});
+    this.deferredInteractions.add(i.id);
+    return true;
+  }
+  async showModal(i,data){
+    const result=await this.api.request("/interactions/"+i.id+"/"+i.token+"/callback",{method:"POST",auth:false,body:{type:9,data}});
+    this.respondedInteractions.add(i.id);
+    const customId=i.data?.custom_id;
+    if(typeof customId==="string")void this.store.recordInteraction(i.id,customId).catch(error=>this.logger.warn("[discord-panels] modal interaction receipt failed",error?.message??error));
+    return result;
+  }
+  async complete(i,payload){
+    try{
+      return await this.api.request("/webhooks/"+this.applicationId+"/"+i.token+"/messages/@original",{method:"PATCH",auth:false,body:{allowed_mentions:{parse:[]},...payload}});
+    }finally{
+      this.deferredInteractions.delete(i.id);
+    }
+  }
+  opensModal(customId){
+    return customId==="ticket:category"||customId==="member:creator"||customId==="suggestion:open"||customId==="bug:open"||customId==="poll:create"||customId==="admin:rebuild:start"||customId==="admin:reconcile"||customId==="admin:restore"||customId==="admin:thresholds"||customId==="giveaway:role-select"||customId==="admin:event"||customId.startsWith("ticket:note:")||customId.startsWith("appeal:open:")||customId.startsWith("mod:target:");
+  }
+  scheduleJobWake(runAt,key){
+    key=key??("job-wake:"+(++this.jobWakeSequence));
+    const previous=this.jobWakeTimers.get(key);if(previous)clearTimeout(previous);
+    const target=Date.parse(runAt);
+    const delay=Number.isFinite(target)?Math.max(250,target-Date.now()+200):250;
+    const timer=setTimeout(()=>{
+      this.jobWakeTimers.delete(key);
+      if(this.busy){this.scheduleJobWake(new Date(Date.now()+1000).toISOString(),key);return;}
+      void this.tick();
+    },delay);
+    timer.unref?.();this.jobWakeTimers.set(key,timer);return timer;
+  }
+  async scheduleTicketDeletion(ticketId,channelId,actorId){
+    if(!UUID.test(ticketId??"")||!SF.test(channelId??""))throw new Error("The ticket deletion job could not be validated.");
+    const runAt=new Date(Date.now()+TICKET_DELETE_DELAY_MS).toISOString();
+    await this.store.enqueueJob({guildId:this.guildId,jobType:"ticket_delete",dedupeKey:"ticket-delete:"+ticketId,
+      payload:{ticket_id:ticketId,channel_id:channelId,closed_by:actorId},runAt});
+    this.scheduleJobWake(runAt,"ticket-delete:"+ticketId);
+    return runAt;
+  }
   async upsertPanel(channelId,key,embed,components){
     if(!SF.test(channelId??""))return false;
     const messages=await this.api.request("/channels/"+channelId+"/messages?limit=100");
@@ -169,6 +315,14 @@ export class DiscordCommunityPanels{
       const owner=uid(i),parent=this.resources.category_tickets;
       if(subject.length<4||details.length<10)throw new Error("Please provide a subject and at least 10 characters of detail.");
       if(!SF.test(owner)||!SF.test(parent??""))throw new Error("The private ticket category or member ID is unavailable.");
+      stage="check ticket rate limit";
+      const preflight=await this.store.ticketPreflight(this.guildId,owner);
+      if(preflight?.allowed===false){
+        if(preflight.reason==="active"&&SF.test(preflight.channel_id??""))await this.reply(i,{content:"You already have an open support ticket: <#"+preflight.channel_id+">."},true);
+        else if(preflight.reason==="cooldown")await this.reply(i,{content:"To prevent duplicate tickets, wait "+Math.max(1,Number(preflight.retry_after_seconds??1))+" second(s) before opening another ticket."},true);
+        else throw new Error("A support ticket is already active or a recent ticket is still being processed.");
+        return;
+      }
       const roles=STAFF.map(k=>this.roleIds[k]).filter(id=>SF.test(id??""));
       const overwrites=[
         {id:this.guildId,type:0,allow:"0",deny:TICKET_PERMISSION_BITS.everyoneDenyView},
@@ -186,8 +340,9 @@ export class DiscordCommunityPanels{
       stage="save ticket record";
       record=await this.store.openTicket({guildId:this.guildId,channelId:channel.id,ownerId:owner,category,subject,details});
       if(!record?.created){
-        await this.api.request("/channels/"+channel.id,{method:"DELETE"});
-        await this.reply(i,{content:record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":"You already have an active ticket."},true);
+        try{await this.api.request("/channels/"+channel.id,{method:"DELETE"});}catch(cleanupError){this.logger.error("[discord-panels] duplicate ticket channel cleanup failed",cleanupError?.message??cleanupError);}
+        const message=record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":record?.reason==="cooldown"?"To prevent duplicate tickets, wait "+Math.max(1,Number(record.retry_after_seconds??1))+" second(s) before opening another ticket.":"You already have an active ticket.";
+        await this.reply(i,{content:message},true);
         return;
       }
       recordCreated=true;
@@ -326,9 +481,10 @@ export class DiscordCommunityPanels{
   }
 
   async closeTicket(i,id){
-    const t=await this.getTicket(i,id);const actor=uid(i);
+    const t=await this.getTicket(i,id),actor=uid(i);
     const owner=t.channel.topic?.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1]??t.ticket?.owner_discord_id;
     if(actor!==owner&&!this.staff(i))throw new Error("Only the ticket owner or support staff can close this ticket.");
+    if(["closed","resolved"].includes(t.ticket.status))throw new Error("This ticket is already closed.");
     const messages=await this.api.request("/channels/"+t.channelId+"/messages?limit=100");
     const transcript=(Array.isArray(messages)?messages:[]).reverse().map(m=>{
       let content=clean(m.content,2000);
@@ -337,24 +493,27 @@ export class DiscordCommunityPanels{
       return {id:m.id,author_id:m.author?.id??null,author:clean(m.author?.username,80),content,timestamp:m.timestamp};
     }).slice(-100);
     await this.store.ticketAction(id,actor,"transcript",{transcript});
+    const deleteAt=await this.scheduleTicketDeletion(id,t.channelId,actor);
     await this.store.ticketAction(id,actor,"close",{});
-    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\nClosed by: <@"+actor+">\nReference: "+id,severity:"info"});}catch{}
     const overwrites=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));
-    if(owner)overwrites.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory).toString(),deny:P.sendMessages.toString()});
+    if(owner)overwrites.push({id:owner,type:1,allow:TICKET_PERMISSION_BITS.closedOwnerAllow,deny:TICKET_PERMISSION_BITS.closedOwnerDeny});
     await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{
       name:("closed-"+clean(t.channel.name,90)).slice(0,100),
       topic:String(t.channel.topic??"").replace("status=open","status=closed")+" closed_at="+new Date().toISOString(),
       permission_overwrites:overwrites,
     }});
-    await this.api.request("/channels/"+t.channelId+"/messages",{method:"POST",body:{
-      embeds:[{title:"Ticket closed",description:"Closed by <@"+actor+">. A redacted transcript has been saved to restricted support records.",color:0x7a8493}],
-      components:[row(btn("ticket:rate:"+id+":1","1 ★",2),btn("ticket:rate:"+id+":2","2 ★",2),btn("ticket:rate:"+id+":3","3 ★",2),btn("ticket:rate:"+id+":4","4 ★",2),btn("ticket:rate:"+id+":5","5 ★",2)),row(btn("ticket:reopen:"+id,"Reopen ticket",1,"🔓"))],allowed_mentions:{parse:[]},
-    }});
-    await this.reply(i,{content:"Ticket closed. The restricted transcript has been saved."},true);
+    try{await this.api.request("/channels/"+t.channelId+"/messages",{method:"POST",body:{
+      embeds:[{title:"Ticket closed",description:"Closed by <@"+actor+">. A redacted transcript has been saved to restricted support records.\n\nThis channel will be automatically deleted <t:"+Math.floor(Date.parse(deleteAt)/1000)+":R>.",color:0x7a8493}],
+      components:[row(btn("ticket:rate:"+id+":1","1 ★",2),btn("ticket:rate:"+id+":2","2 ★",2),btn("ticket:rate:"+id+":3","3 ★",2),btn("ticket:rate:"+id+":4","4 ★",2),btn("ticket:rate:"+id+":5","5 ★",2))],allowed_mentions:{parse:[]},
+    }});}catch(error){this.logger.warn("[discord-panels] ticket closure notice failed; deletion remains scheduled",error?.message??error);}
+    try{await this.logEvent?.({title:"Support ticket closed",description:"Ticket channel: <#"+t.channelId+">\nClosed by: <@"+actor+">\nReference: "+id+"\nScheduled deletion: "+deleteAt,severity:"info"});}catch{}
+    await this.reply(i,{content:"Ticket closed. The restricted transcript has been saved. This channel will be deleted in 10 seconds."},true);
   }
+
   async ticketAction(i,id,action){
     if(action==="claim"){if(!this.staff(i))throw new Error("Only support staff can claim tickets.");await this.store.ticketAction(id,uid(i),"claim",{});return this.reply(i,{content:"Ticket claimed by <@"+uid(i)+">."},true);}
-    if(action==="reopen"){if(!this.staff(i))throw new Error("Only support staff can reopen tickets.");const t=await this.getTicket(i,id);const owner=t.channel.topic?.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1];const ow=(t.channel.permission_overwrites??[]).filter(x=>!(x.id===owner&&x.type===1));if(owner)ow.push({id:owner,type:1,allow:(P.viewChannel|P.readMessageHistory|P.sendMessages| (1n<<15n)).toString(),deny:"0"});await this.store.ticketAction(id,uid(i),"reopen",{});await this.api.request("/channels/"+t.channelId,{method:"PATCH",body:{name:clean(t.channel.name,100).replace(/^closed-/,""),topic:String(t.channel.topic??"").replace("status=closed","status=open"),permission_overwrites:ow}});return this.reply(i,{content:"Ticket reopened."},true);}
+    if(action==="reopen")throw new Error("Closed tickets are permanently queued for deletion 10 seconds after closure and cannot be reopened.");
+
     if(action==="priority"){
       if(!this.staff(i))throw new Error("Only support staff can change priority.");
       if(i.type===3){const priority=i.data?.values?.[0];if(!["low","normal","high","urgent"].includes(priority))throw new Error("Invalid priority.");await this.store.ticketAction(id,uid(i),"priority",{priority});return this.reply(i,{content:"Ticket priority set to "+priority.toUpperCase()+"."},true);}
@@ -384,7 +543,7 @@ export class DiscordCommunityPanels{
   async selectedTicket(i){
     this.requireStaff(i);const id=i.data?.values?.[0];if(!UUID.test(id??""))throw new Error("Choose a valid ticket.");
     return this.reply(i,{embeds:[{title:"Ticket controls",description:"Ticket reference "+id,color:0x8b72d9}],
-      components:[row(btn("ticket:claim:"+id,"Claim",2),btn("ticket:close:"+id,"Close",4),btn("ticket:reopen:"+id,"Reopen",1))]},true);
+      components:[row(btn("ticket:claim:"+id,"Claim",2),btn("ticket:close:"+id,"Close",4))]},true);
   }
   async memberSummary(i){
     const s=await this.store.memberSummary(uid(i));
@@ -411,10 +570,35 @@ export class DiscordCommunityPanels{
     {id:"reason",label:"Tell us about your creator work",min:15,max:1500,style:2,placeholder:"Explain what you create."},
   ]));}
   async submitCreator(i){
-    const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300),reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
-    const id=await this.store.creatorRequest(uid(i),profile,reason);
-    return this.reply(i,{content:"Creator verification submitted. Reference: "+id+"."},true);
+    const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300);
+    const reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
+    const result=await this.store.creatorRequest(uid(i),profile,reason);
+    if(!result?.created){
+      if(result?.reason==="pending")return this.reply(i,{content:"You already have a pending Creator verification request. Your existing request is awaiting staff review."},true);
+      if(result?.reason==="cooldown"){
+        const seconds=Math.max(1,Number(result.retry_after_seconds??0));
+        return this.reply(i,{content:"Creator verification requests are limited to one per 7 days. You can submit another request in approximately "+Math.max(1,Math.ceil(seconds/86400))+" day(s)."},true);
+      }
+      if(result?.reason==="already_approved")return this.reply(i,{content:"Your Snoozer account is already Creator verified."},true);
+      throw new Error("Creator verification request could not be accepted.");
+    }
+    const id=result.request_id;
+    if(!UUID.test(id??""))throw new Error("The Creator verification request was saved without a valid reference.");
+    const channelId=this.resources.creator_verification;
+    if(SF.test(channelId??"")){
+      const msg=await this.api.request("/channels/"+channelId+"/messages",{method:"POST",body:{
+        embeds:[{title:"✨ Creator verification request",description:
+          "**Profile:** "+profile+"\n**Member:** <@"+uid(i)+">\n**Submitted:** <t:"+Math.floor(Date.now()/1000)+":R>\n\n**Creator information**\n"+reason+"\n\n**Reference:** "+id,
+          color:0x8b72d9,footer:{text:"Pending Creator verification · "+id}}],
+        components:[row(btn("creator:approve:"+id,"Approve",3,"✅"),btn("creator:reject:"+id,"Reject",4,"❌"))],
+        allowed_mentions:{parse:[]},
+      }});
+      if(SF.test(msg?.id??""))await this.store.setConfig(this.guildId,"creator_"+id.replaceAll("-",""),{channel_id:channelId,message_id:msg.id});
+    }else this.logger.warn("[discord-panels] Creator request saved but its review channel is unavailable",id);
+    try{await this.logEvent?.({title:"Creator verification submitted",description:"Member: <@"+uid(i)+">\nProfile: "+profile+"\nReference: "+id,severity:"info"});}catch{}
+    return this.reply(i,{content:"Creator verification submitted. The team will review it in #creator-verification. Reference: "+id+"."},true);
   }
+
   async createSubmissionModal(i,kind){
     return this.showModal(i,mkModal(kind+":submit",kind==="bug"?"Submit a bug report":"Submit a suggestion",[
       {id:"title",label:kind==="bug"?"Bug summary":"Suggestion title",min:4,max:120,placeholder:"Short title"},
@@ -692,11 +876,12 @@ export class DiscordCommunityPanels{
     const config=await this.store.getConfig(this.guildId),security={...(config?.security??{})};
     security[key]=security[key]===false;
     await this.store.setConfig(this.guildId,"security",security);
+    this.securitySettings=security;
     await this.reply(i,{content:key.replace("Enabled","")+" is now "+(security[key]?"enabled":"disabled")+". The monitor will apply this setting on its next cycle."},true);
   }
   async openSecurityThresholds(i){
     this.requireAdmin(i);
-    const config=await this.store.getConfig(this.guildId),settings=config?.security??{};
+    const settings=this.securitySettings??{};
     await this.showModal(i,mkModal("admin:thresholds:save","Configure server protection",[
       {id:"raid_join_threshold",label:"Joins before raid lockdown (2–100)",min:1,max:3,placeholder:"10",value:String(settings.raidJoinThreshold??10)},
       {id:"raid_window",label:"Join burst window seconds (10–600)",min:2,max:3,placeholder:"60",value:String(settings.raidWindowSeconds??60)},
@@ -720,7 +905,8 @@ export class DiscordCommunityPanels{
       if(!Number.isInteger(values[key])||values[key]<min||values[key]>max)throw new Error(key+" must be between "+min+" and "+max+".");
     }
     const config=await this.store.getConfig(this.guildId);
-    await this.store.setConfig(this.guildId,"security",{...(config?.security??{}),...values});
+    this.securitySettings={...(config?.security??{}),...values};
+    await this.store.setConfig(this.guildId,"security",this.securitySettings);
     await this.reply(i,{content:"Server protection thresholds saved. The security monitor will load them on its next cycle."},true);
   }
 
@@ -763,8 +949,21 @@ export class DiscordCommunityPanels{
     this.requireAdmin(i);
     if(!UUID.test(id)||!["approved","rejected"].includes(decision))throw new Error("Invalid Creator review.");
     if(!await this.store.creatorReview(id,uid(i),decision))throw new Error("This Creator request was already reviewed.");
+    const key="creator_"+id.replaceAll("-","");
+    const config=await this.store.getConfig(this.guildId),messageRef=config?.[key];
+    if(SF.test(messageRef?.channel_id??"")&&SF.test(messageRef?.message_id??"")){
+      try{
+        const message=await this.api.request("/channels/"+messageRef.channel_id+"/messages/"+messageRef.message_id);
+        const embed=Array.isArray(message?.embeds)?message.embeds[0]:null;
+        if(embed)await this.api.request("/channels/"+messageRef.channel_id+"/messages/"+messageRef.message_id,{method:"PATCH",body:{
+          embeds:[{...embed,title:"Creator verification "+decision,color:decision==="approved"?0x43a982:0xd65a68,
+            footer:{text:"Reviewed "+decision+" by "+uid(i)+" · "+id},timestamp:new Date().toISOString()}],
+          components:[],allowed_mentions:{parse:[]},
+        }});
+      }catch(error){this.logger.warn("[discord-panels] Creator review card could not be updated",error?.message??error);}
+    }
     await this.store.recordSecurityEvent({guildId:this.guildId,action:"creator_verification_"+decision,actorId:uid(i),severity:"info",metadata:{request_id:id}});
-    await this.reply(i,{content:"Creator verification "+decision+"."},true);
+    return this.reply(i,{content:"Creator verification "+decision+". The member's Creator role will be synchronised automatically."},true);
   }
   async openGiveaway(i){
     this.requireStaff(i,["admin","community_manager","event_host"]);
@@ -775,10 +974,6 @@ export class DiscordCommunityPanels{
     this.requireStaff(i,["admin","community_manager","event_host"]);
     const roleId=i.data?.values?.[0]??"all";
     if(roleId!=="all"&&!SF.test(roleId))throw new Error("Select a valid Discord role.");
-    if(roleId!=="all"){
-      const roles=await this.api.request("/guilds/"+this.guildId+"/roles");
-      if(!Array.isArray(roles)||!roles.some(role=>role.id===roleId))throw new Error("The selected eligibility role no longer exists.");
-    }
     await this.showModal(i,mkModal("giveaway:submit:"+roleId,"Create a community giveaway",[
       {id:"title",label:"Giveaway title",min:4,max:140,placeholder:"Snoozer Community Giveaway"},
       {id:"prize",label:"Prize",min:2,max:300,placeholder:"Describe the prize"},
@@ -798,6 +993,7 @@ export class DiscordCommunityPanels{
     if(!SF.test(channelId??""))throw new Error("The giveaways channel has not been configured.");
     const endsAt=new Date(Date.now()+hours*3600_000).toISOString();
     const minimumRoleId=roleId==="all"?null:roleId;
+    if(minimumRoleId){const roles=await this.api.request("/guilds/"+this.guildId+"/roles");if(!Array.isArray(roles)||!roles.some(role=>role.id===minimumRoleId))throw new Error("The selected eligibility role no longer exists.");}
     const id=await this.store.createGiveaway({guildId:this.guildId,channelId,title,prize,winnerCount:winners,endsAt,minimumRoleId,actorId:uid(i)});
     await this.store.enqueueJob({guildId:this.guildId,jobType:"giveaway_finish",dedupeKey:"giveaway-finish:"+id,
       payload:{giveaway_id:id,channel_id:channelId},runAt:endsAt});
@@ -918,7 +1114,8 @@ export class DiscordCommunityPanels{
 
   async handleCommunitySlash(i){
     const name=i.data?.name;
-    if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70)))return true;
+    await this.defer(i);
+    if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70))){await this.complete(i,{content:"This command has already been processed."});return true;}
     if(name==="snoozer-profile"||name==="snoozer-account"){await this.memberSummary(i);return true;}
     if(name==="snoozer-leaderboard"){await this.showLeaderboard(i);return true;}
     if(name==="snoozer-settings"){await this.adminSettings(i);return true;}
@@ -1027,6 +1224,47 @@ export class DiscordCommunityPanels{
       }else if(job.job_type==="announcement"){
         const channel=this.resources[job.payload?.channel_key];
         if(SF.test(channel??""))await this.api.request("/channels/"+channel+"/messages",{method:"POST",body:{embeds:[{title:clean(job.payload?.title,180),description:clean(job.payload?.body,3500),color:0x35a79b}],allowed_mentions:{parse:[]}}});
+      }else if(job.job_type==="ticket_delete"&&SF.test(job.payload?.channel_id??"")){
+        const channelId=job.payload.channel_id,ticketId=job.payload?.ticket_id;
+        const retryCount=Math.max(0,Number(job.payload?.retry_count??0));
+        const activeStatuses=["open","claimed","waiting_member","waiting_staff"];
+        let shouldDelete=false,shouldRetry=false;
+        if(UUID.test(ticketId??"")){
+          const ticket=await this.store.getTicket(ticketId);
+          if(ticket&&ticket.channel_id===channelId){
+            shouldDelete=["closed","resolved"].includes(ticket.status);
+            shouldRetry=activeStatuses.includes(ticket.status);
+          }
+        }else if(job.payload?.legacy===true){
+          try{
+            const channel=await this.api.request("/channels/"+channelId);
+            const validTicket=typeof channel?.topic==="string"&&/^SNOOZER_TICKET:v[12]\b/.test(channel.topic);
+            shouldDelete=Boolean(validTicket&&channel.topic.includes("status=closed"));
+            shouldRetry=Boolean(validTicket&&!shouldDelete);
+          }catch(error){
+            if(String(error?.message??error).includes("HTTP 404"))shouldDelete=false;
+            else throw error;
+          }
+        }
+
+        // A close operation is persisted before the Discord PATCH. If the 10-second
+        // timer fires while that state transition is still in flight, retry briefly
+        // instead of silently losing the deletion job or deleting an open ticket.
+        if(shouldRetry&&retryCount<15){
+          const runAt=new Date(Date.now()+1000).toISOString();
+          const retryKey="ticket-delete-retry:"+(UUID.test(ticketId??"")?ticketId:channelId)+":"+(retryCount+1);
+          await this.store.enqueueJob({
+            guildId:this.guildId,jobType:"ticket_delete",dedupeKey:retryKey,
+            payload:{...job.payload,retry_count:retryCount+1},runAt,
+          });
+          this.scheduleJobWake(runAt,retryKey);
+        }else if(shouldDelete){
+          try{await this.api.request("/channels/"+channelId,{method:"DELETE"});}
+          catch(error){if(!String(error?.message??error).includes("HTTP 404"))throw error;}
+          try{await this.logEvent?.({title:"Closed ticket channel deleted",description:"Channel ID: "+channelId+"\nTicket reference: "+(UUID.test(ticketId??"")?ticketId:"legacy"),severity:"info"});}catch{}
+        }else if(shouldRetry){
+          await this.logEvent?.({title:"Ticket deletion requires administrator review",description:"Channel: <#"+channelId+">\nReference: "+(UUID.test(ticketId??"")?ticketId:"legacy")+"\nThe ticket remained active after retrying deletion.",severity:"warning"});
+        }
       }else if(job.job_type==="ticket_reminder"&&SF.test(job.payload?.channel_id??"")&&UUID.test(job.payload?.ticket_id??"")){
         const ticket=await this.store.getTicket(job.payload.ticket_id);
         const reminderNumber=Number(job.payload.reminder_number??1);
@@ -1092,15 +1330,22 @@ export class DiscordCommunityPanels{
     if(this.timer)return;
     this.timer=setInterval(()=>void this.tick(),30000);
     this.timer.unref?.();
-    void this.publishPermanentPanels().then(result=>{
+    void this.ensureCreatorVerificationChannel().then(()=>this.publishPermanentPanels()).then(async result=>{
       if(result.errors.length)this.logger.warn("[discord-panels] some permanent panels could not be published",result.errors);
+      const queue=await this.publishCreatorQueue();
+      if(queue.errors.length)this.logger.warn("[discord-panels] Creator verification queue could not be fully published",queue.errors);
     }).catch(error=>this.logger.error("[discord-panels] startup panel publishing failed",error?.stack??error?.message??error))
       .finally(()=>void this.tick());
   }
-  stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
+  stop(){if(this.timer)clearInterval(this.timer);this.timer=null;for(const timer of this.jobWakeTimers.values())clearTimeout(timer);this.jobWakeTimers.clear();}
 
   async handleSlash(i){
-    return this.handleCommunitySlash(i);
+    try{return await this.handleCommunitySlash(i);}
+    catch(error){
+      this.logger.error("[discord-panels] slash interaction failed",error?.stack??error?.message??error);
+      try{await this.reply(i,{content:"The command could not be completed: "+clean(error?.message??"Unknown error",700)},true);}catch(replyError){this.logger.error("[discord-panels] slash error reply failed",replyError?.message??replyError);}
+      return true;
+    }
   }
 
   async handle(i){
@@ -1108,8 +1353,18 @@ export class DiscordCommunityPanels{
     if(i.type===2)return this.handleSlash(i);
     if(i.type!==3&&i.type!==5)return false;
     const id=i.data?.custom_id;if(typeof id!=="string")return false;
-    if(!await this.store.recordInteraction(i.id,id))return true;
+    const modalLaunch=i.type===3&&this.opensModal(id);
     try{
+      // Discord interactions must be acknowledged before any Supabase or Discord REST work.
+      // Component interactions that open a modal must return the modal as the initial callback.
+      if(!modalLaunch){
+        await this.defer(i);
+        const firstDelivery=await this.store.recordInteraction(i.id,id);
+        if(!firstDelivery){
+          await this.complete(i,{content:"This interaction has already been processed."});
+          return true;
+        }
+      }
       if(id==="ticket:start")await this.ticketCategory(i);
       else if(id==="ticket:category"){
         const cat=i.data?.values?.[0];if(!["account","billing","technical","bug","report","general"].includes(cat))throw new Error("Invalid support category.");
@@ -1138,7 +1393,7 @@ export class DiscordCommunityPanels{
         else await this.reply(i,{embeds:[{title:"Open tickets",description:tickets.map(t=>"**"+t.subject+"** · "+t.priority+"\n<@"+t.owner_discord_id+"> · <#"+t.channel_id+">\n"+t.id).join("\n\n").slice(0,3900)}],components:[row(select("admin:ticket:select","Choose a ticket",tickets.map(t=>({label:clean(t.subject,90),value:t.id,description:t.priority+" · "+t.status}))))]},true);
       }else if(id==="admin:ticket:select"){
         this.requireStaff(i);const tid=i.data?.values?.[0];if(!UUID.test(tid??""))throw new Error("Invalid ticket.");
-        await this.reply(i,{embeds:[{title:"Ticket controls",description:tid}],components:[row(btn("ticket:claim:"+tid,"Claim",2),btn("ticket:close:"+tid,"Close",4),btn("ticket:reopen:"+tid,"Reopen",1))]},true);
+        await this.reply(i,{embeds:[{title:"Ticket controls",description:tid}],components:[row(btn("ticket:claim:"+tid,"Claim",2),btn("ticket:close:"+tid,"Close",4))]},true);
       }else if(id==="member:profile")await this.memberSummary(i);
       else if(id==="member:premium")await this.premiumSummary(i);
       else if(id==="member:roles")await this.reply(i,{content:"Choose your optional notification roles.",components:[row(select("member:roles:save","Optional roles",[
@@ -1153,10 +1408,8 @@ export class DiscordCommunityPanels{
         {id:"profile",label:"Snoozer profile URL",min:8,max:300,placeholder:"https://snoozer.uk/yourname"},
         {id:"reason",label:"Tell us about your creator work",min:15,max:1500,style:2,placeholder:"What do you create?"},
       ]));
-      else if(id==="creator:submit"){
-        const profile=clean(i.data?.components?.[0]?.components?.[0]?.value,300),reason=clean(i.data?.components?.[1]?.components?.[0]?.value,1500);
-        const ref=await this.store.creatorRequest(uid(i),profile,reason);await this.reply(i,{content:"Creator verification request submitted. Reference: "+ref+"."},true);
-      }else if(id==="member:cases"){
+      else if(id==="creator:submit")await this.submitCreator(i);
+      else if(id==="member:cases"){
         const list=await this.store.caseHistory(this.guildId,uid(i),10);
         if(!Array.isArray(list)||!list.length)await this.reply(i,{content:"No moderation cases found."},true);
         else await this.reply(i,{embeds:[{title:"Your moderation cases",description:list.map(c=>"**#"+c.case_number+" · "+c.action+"** · "+c.status+"\n"+clean(c.reason,160)+"\n"+c.id).join("\n\n").slice(0,3900)}],
@@ -1315,13 +1568,19 @@ export class DiscordCommunityPanels{
         ).join("\n\n"):"There are no upcoming Snoozer events.";
         await this.reply(i,{embeds:[{title:"Upcoming Snoozer events",description,color:0x438f9b}]},true);
       }else{
-        return false;
+        await this.reply(i,{content:"This control is no longer available. Refresh the Snoozer panel and try again."},true);
       }
+      this.respondedInteractions.delete(i.id);
       return true;
     }catch(e){
       this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
       try{await this.logEvent?.({title:"Bot interaction failed",description:"Action: "+clean(id,120)+"\nMember: <@"+uid(i)+">\nError: "+clean(e?.message??"Unknown error",500),severity:"error"});}catch{}
-      try{await this.reply(i,{content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)},true);}catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
+      try{
+        const message={content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)};
+        if(this.deferredInteractions.has(i.id))await this.complete(i,message);
+        else if(!this.respondedInteractions.has(i.id))await this.reply(i,message,true);
+      }catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
+      this.respondedInteractions.delete(i.id);
       return true;
     }
   }
