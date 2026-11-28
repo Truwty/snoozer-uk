@@ -282,13 +282,13 @@ export function Editor({ draft, effectTier, linkLimit, imageHostOffer = null, im
         return;
       }
       const section = kind === "text"
-        ? { heading: "New section", body: "Add your content here." }
+        ? { heading: "New section", body: "Add your content here.", hidden: true }
         : kind === "callout"
-          ? { kind: "callout" as const, heading: "Announcement", body: "Share an update with visitors." }
-          : { kind: "quote" as const, heading: "Your name", body: "Add your quote here." };
+          ? { kind: "callout" as const, heading: "Announcement", body: "Share an update with visitors.", hidden: true }
+          : { kind: "quote" as const, heading: "Your name", body: "Add your quote here.", hidden: true };
       set("sections", [...content.sections, section]);
       setTab("Sections");
-      setAnnouncement(kind[0].toUpperCase() + kind.slice(1) + " added to your page. Edit the new section in the Sections panel.");
+      setAnnouncement(kind[0].toUpperCase() + kind.slice(1) + " added as hidden. Edit the sample content in the Sections panel, then make it visible when it is ready.");
       return;
     }
 
