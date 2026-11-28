@@ -352,6 +352,25 @@ export class DiscordPresenceWorker {
         },
         roleIds,
       }, { api: this.discordApi, fetcher: this.statusFetcher, logger: this.logger });
+      this.communityPanels.onResourcesUpdated = (resourceMap, nextRoleIds) => {
+        if (!this.communityBot) return;
+        this.communityBot.roleIds = nextRoleIds;
+        this.communityBot.channelIds = {
+          ...this.communityBot.channelIds,
+          welcome: resourceMap.welcome,
+          changelog: resourceMap.changelog,
+          serviceStatus: resourceMap.service_status,
+          serverBoosts: resourceMap.server_boosts,
+          ticketQueue: resourceMap.ticket_queue,
+          moderationLog: resourceMap.moderation_log,
+          bugReports: resourceMap.bug_reports,
+          suggestions: resourceMap.suggestions,
+        };
+        this.communityBot.categoryIds = {
+          tickets: resourceMap.category_tickets,
+          teamHq: resourceMap.category_team_hq,
+        };
+      };
       try {
         await this.communityBot.preflightPermissions();
       } catch (error) {

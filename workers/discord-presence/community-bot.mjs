@@ -246,6 +246,15 @@ export class DiscordCommunityBot {
       return false;
     }
     this.knownMembers.add(userId);
+    const memberRoleId = this.roleIds.member;
+    if (memberRoleId && Array.isArray(member.roles) && !member.roles.includes(memberRoleId)) {
+      const nextRoles = [...member.roles, memberRoleId];
+      try {
+        await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: nextRoles } });
+      } catch (error) {
+        this.logger.warn("[discord-community] default Member role assignment failed: " + (error?.message ?? error));
+      }
+    }
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "welcome", "welcome");
     if (!channel?.id) {
@@ -274,6 +283,11 @@ export class DiscordCommunityBot {
   async announceServerBoost(member) {
     const userId = member?.user?.id;
     if (!safeSnowflake(userId)) return false;
+    const boosterRoleId = this.roleIds.booster;
+    if (boosterRoleId && Array.isArray(member.roles) && !member.roles.includes(boosterRoleId)) {
+      try { await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: [...member.roles, boosterRoleId] } }); }
+      catch (error) { this.logger.warn("[discord-community] booster role assignment failed: " + (error?.message ?? error)); }
+    }
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "serverBoosts", "server-boosts");
     if (!channel?.id) {
@@ -297,6 +311,11 @@ export class DiscordCommunityBot {
     if (!Object.hasOwn(member, "premium_since")) return false;
     if (!member.premium_since) {
       this.boostedMembers.delete(userId);
+      const boosterRoleId = this.roleIds.booster;
+      if (boosterRoleId && Array.isArray(member.roles) && member.roles.includes(boosterRoleId)) {
+        try { await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: member.roles.filter(id => id !== boosterRoleId) } }); }
+        catch (error) { this.logger.warn("[discord-community] booster role removal failed: " + (error?.message ?? error)); }
+      }
       return false;
     }
     const boostStartedAt = Date.parse(member.premium_since);

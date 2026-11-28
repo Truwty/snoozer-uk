@@ -39,7 +39,18 @@ function channelOverwrites(guildId,botUserId,roleIds,category,channel) {
     ...["admin","community_manager","developer"].map(key=>roleIds[key]).filter(Boolean).map(id=>overwrite(id,0,send)),
     overwrite(botUserId,1,send),
   ];
-  if(channel.mode==="chat" || channel.mode==="voice") return [
+  if(channel.type==="voice") {
+    if(category.visibility==="public") return [
+      overwrite(guildId,0,P.viewChannel|P.connect|P.speak),
+      overwrite(botUserId,1,P.viewChannel|P.connect|P.speak),
+    ];
+    return [
+      overwrite(guildId,0,0n,P.viewChannel),
+      ...allStaff(roleIds).map(id=>overwrite(id,0,P.viewChannel|P.connect|P.speak)),
+      overwrite(botUserId,1,P.viewChannel|P.connect|P.speak),
+    ];
+  }
+  if(channel.mode==="chat") return [
     overwrite(guildId,0,send),
     overwrite(botUserId,1,send|P.manageMessages),
   ];
@@ -120,6 +131,20 @@ export class DiscordServerRebuilder {
     return roleIds;
   }
 
+
+  async positionManagedRoles(roleIds) {
+    const [roles,member]=await Promise.all([
+      this.api.request("/guilds/"+this.guildId+"/roles"),
+      this.api.request("/guilds/"+this.guildId+"/members/"+this.botUserId),
+    ]);
+    const roleMap=new Map(roles.map(role=>[role.id,role]));
+    const botPosition=Math.max(0,...[this.guildId,...(member.roles??[])].map(id=>Number(roleMap.get(id)?.position??0)));
+    const ordered=SNOOZER_ROLE_LAYOUT.filter(role=>roleIds[role.key]);
+    if(botPosition<=ordered.length) throw new Error("The bot role hierarchy is too low to position all Snoozer roles safely. Move the bot role higher and retry.");
+    const positions=ordered.map((role,index)=>({id:roleIds[role.key],position:botPosition-1-index}));
+    await this.api.request("/guilds/"+this.guildId+"/roles",{method:"PATCH",body:positions});
+  }
+
   async ensureCategory(category,roleIds) {
     const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
     const found=channels.find(channel=>channel.type===4&&channel.name===category.name);
@@ -146,6 +171,7 @@ export class DiscordServerRebuilder {
   async createNewStructure() {
     const roleInventory=await this.api.request("/guilds/"+this.guildId+"/roles");
     const roleIds=await this.ensureRoles(roleInventory);
+    await this.positionManagedRoles(roleIds);
     const resources=[{resource_key:"guild",resource_type:"category",discord_id:this.guildId,name:"Snoozer Discord Guild"}];
     const categories={};
     const channelIds={};
@@ -176,9 +202,8 @@ export class DiscordServerRebuilder {
     for(const role of oldRoles) {
       if(role.managed) continue;
       const key=LEGACY_ROLE_NAMES.get(normaliseRole(role.name));
-      // Premium and Creator are security-sensitive entitlements. Never migrate them by name;
-      // only the verified Supabase entitlement/approval reconciliation may grant them.
-      if(key && key!=="premium" && key!=="creator") oldMap.set(role.id,key);
+      // Remove old entitlement roles; only verified Supabase entitlement/approval reconciliation may grant replacements.
+      if(key) oldMap.set(role.id,key==="premium"||key==="creator"?null:key);
     }
     let updated=0;
     for(const member of members) {
@@ -257,7 +282,9 @@ export class DiscordServerRebuilder {
     if(!backupId) throw new Error("The old server configuration backup was not saved. No server changes were made.");
     const created=await this.createNewStructure();
     const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds);
-    const channelResult=await this.deleteOldChannels(before.channels);
+    const newResourceIds=new Set(created.resources.map(resource=>resource.discord_id));
+    const oldOnlyChannels=before.channels.filter(channel=>!newResourceIds.has(channel.id));
+    const channelResult=await this.deleteOldChannels(oldOnlyChannels);
     const roleResult=await this.deleteOldRoles(before.roles,created.roleIds);
     const roleSync=await this.syncMembershipRoles(created.roleIds);
     let panelResult={posted:0,errors:[]};

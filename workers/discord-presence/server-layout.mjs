@@ -13,6 +13,7 @@ export const SNOOZER_ROLE_LAYOUT = [
   { key: "creator", name: "✨・Creator", color: 0x64a982, hoist: true, permissions: [] },
   { key: "member", name: "👤・Member", color: 0x7a8493, hoist: false, permissions: [] },
   { key: "bots", name: "🤖・Bots", color: 0x596579, hoist: false, permissions: [] },
+  { key: "booster", name: "🚀・Server Booster", color: 0xf47fff, hoist: true, permissions: [] },
 ];
 
 const readOnly = (key,name,topic) => ({ key,name,type:"text",topic,mode:"readonly" });

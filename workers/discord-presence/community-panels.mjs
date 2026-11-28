@@ -34,6 +34,7 @@ export class DiscordCommunityPanels{
   async refreshResources(){
     const r=await this.store.getResources(this.guildId);this.resources=r.map??{};this.roleIds={};
     for(const [k,v] of Object.entries(this.resources))if(k.startsWith("role_"))this.roleIds[k.slice(5)]=v;
+    if(this.onResourcesUpdated)await this.onResourcesUpdated(this.resources,this.roleIds);
     return this.resources;
   }
   staff(i,keys=STAFF){
@@ -219,7 +220,7 @@ export class DiscordCommunityPanels{
   async createSubmissionModal(i,kind){
     return this.showModal(i,mkModal(kind+":submit",kind==="bug"?"Submit a bug report":"Submit a suggestion",[
       {id:"title",label:kind==="bug"?"Bug summary":"Suggestion title",min:4,max:120,placeholder:"Short title"},
-      {id:"body",label:kind==="bug"?"Steps to reproduce":"Describe the idea",min:10,max:5000,style:2,placeholder:"Provide enough detail for the team."},
+      {id:"body",label:kind==="bug"?"Steps to reproduce":"Describe the idea",min:10,max:4000,style:2,placeholder:"Provide enough detail for the team."},
     ]));
   }
   async submitCommunityItem(i,kind){

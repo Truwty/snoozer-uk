@@ -11,7 +11,7 @@
     "start": "node scripts/start.mjs",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run && node --test scripts/dependency-audit.test.mjs tests/discord-presence-worker.test.mjs tests/discord-server-setup.test.mjs tests/discord-community-bot.test.mjs",
+    "test": "vitest run && node --test scripts/dependency-audit.test.mjs tests/discord-presence-worker.test.mjs tests/discord-server-setup.test.mjs tests/discord-community-bot.test.mjs tests/discord-community-system.test.mjs",
     "audit": "node scripts/dependency-audit.mjs",
     "test:e2e": "playwright test",
     "moderation:gallery": "node --env-file-if-exists=.env.local scripts/take-down-gallery-image.mjs",
