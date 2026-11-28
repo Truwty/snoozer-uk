@@ -11,6 +11,8 @@ services:
     buildCommand: echo "No build step required"
     startCommand: node workers/discord-presence/worker.mjs
     envVars:
+      - key: DISCORD_SERVER_SETUP_ENABLED
+        value: "false"
       - key: DISCORD_PRESENCE_ENABLED
         value: "false"
       - key: DISCORD_BOT_TOKEN
