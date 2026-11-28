@@ -310,6 +310,7 @@ test("member join and update events are handled only for the configured Snoozer 
   worker.communityBot = {
     seedKnownBoosters: members => events.push(["seed", members.length]),
     welcomeMember: member => events.push(["welcome", member.user.id]),
+    handleMemberRemove: member => events.push(["remove", member.user.id]),
     handleMemberUpdate: member => events.push(["boost", member.user.id]),
   };
 
@@ -330,12 +331,26 @@ test("member join and update events are handled only for the configured Snoozer 
     d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
   });
   await worker.dispatch({
+    t: "GUILD_MEMBER_REMOVE",
+    d: { guild_id: "999999999999999999", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_REMOVE",
+    d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_ADD",
+    d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
     t: "GUILD_MEMBER_UPDATE",
     d: { guild_id: "222222222222222222", user: { id: "555555555555555555" }, premium_since: "2026-11-28T00:00:00.000Z" },
   });
 
   assert.deepEqual(events, [
     ["seed", 1],
+    ["welcome", "444444444444444444"],
+    ["remove", "444444444444444444"],
     ["welcome", "444444444444444444"],
     ["boost", "555555555555555555"],
   ]);
