@@ -172,8 +172,8 @@ export class DiscordCommunityPanels{
         "**Profile:** "+clean(item.profile_url,250)+"\n**Member:** <@"+item.discord_user_id+">\n**Submitted:** <t:"+Math.floor(Date.parse(item.created_at)/1000)+":R>\n\n**Creator information**\n"+clean(item.reason,2200)+"\n\n**Reference:** "+id,
         color:0x8b72d9,footer:{text:"Pending Creator verification · "+id},timestamp:item.created_at};
       const body={embeds:[embed],components:[row(btn("creator:approve:"+id,"Approve",3,"✅"),btn("creator:reject:"+id,"Reject",4,"❌"))],allowed_mentions:{parse:[]}};
-      let messageId=SF.test(prior?.message_id??"")?prior.message_id:recentByRequest.get(id);
-      const messageChannel=SF.test(prior?.channel_id??"")?prior.channel_id:channelId;
+      let messageId=prior?.channel_id===channelId&&SF.test(prior?.message_id??"")?prior.message_id:recentByRequest.get(id);
+      const messageChannel=channelId;
       try{
         let updated=false;
         if(messageId){
@@ -1389,7 +1389,7 @@ export class DiscordCommunityPanels{
         else await this.reply(i,{embeds:[{title:"Open tickets",description:tickets.map(t=>"**"+t.subject+"** · "+t.priority+"\n<@"+t.owner_discord_id+"> · <#"+t.channel_id+">\n"+t.id).join("\n\n").slice(0,3900)}],components:[row(select("admin:ticket:select","Choose a ticket",tickets.map(t=>({label:clean(t.subject,90),value:t.id,description:t.priority+" · "+t.status}))))]},true);
       }else if(id==="admin:ticket:select"){
         this.requireStaff(i);const tid=i.data?.values?.[0];if(!UUID.test(tid??""))throw new Error("Invalid ticket.");
-        await this.reply(i,{embeds:[{title:"Ticket controls",description:tid}],components:[row(btn("ticket:claim:"+tid,"Claim",2),btn("ticket:close:"+tid,"Close",4),btn("ticket:reopen:"+tid,"Reopen",1))]},true);
+        await this.reply(i,{embeds:[{title:"Ticket controls",description:tid}],components:[row(btn("ticket:claim:"+tid,"Claim",2),btn("ticket:close:"+tid,"Close",4))]},true);
       }else if(id==="member:profile")await this.memberSummary(i);
       else if(id==="member:premium")await this.premiumSummary(i);
       else if(id==="member:roles")await this.reply(i,{content:"Choose your optional notification roles.",components:[row(select("member:roles:save","Optional roles",[
