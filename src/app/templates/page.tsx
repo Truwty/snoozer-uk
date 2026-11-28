@@ -66,7 +66,7 @@ export default async function Templates({ searchParams }: { searchParams: Promis
     <ul className="template-grid">
       {visibleTemplates.map((template) => <li className="template-item stack" key={template.id}>
         <div className="template-item-heading"><p className="eyebrow">{template.categoryLabel} · {template.palette}</p><h2>{template.name}</h2><p className="muted">{template.description}</p></div>
-        <div className="template-preview-frame">
+        <div className="template-preview-frame" role="img" aria-label={template.name + " profile preview"}>
           <ProfileCard avatarSrc="/icon.svg" preview previewLabel={template.name + " preview"} profile={{
             seo: { title: "", description: "" }, username: "snoozer-preview", display_name: "Your name",
             bio: "A little space on the internet that feels like you.", theme: template.theme, indexable: false,
