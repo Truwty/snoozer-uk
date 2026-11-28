@@ -2,7 +2,7 @@
 
 **Reviewed:** 27 November 2026. This guide covers the legacy section system and its current integration with the ordered public-page layout and typed profile blocks.
 
-Creators can add up to six sections and select Text, Callout, Quote or Countdown for each. Callouts highlight an update; quotes display the text with an attribution. The heading or attribution can have up to 80 characters and the body up to 800 characters. Studio displays sections above the link list. Both fields must contain text before the editor will save the draft. Link order and section order are independent.
+Creators can add up to six sections and select Text, Callout, Quote, Countdown or Project for each. Callouts highlight an update; quotes display the text with an attribution. The heading or attribution can have up to 80 characters and the body up to 800 characters. Studio displays sections above the link list. Both fields must contain text before the editor will save the draft. Sections inserted from the builder's starter-content shortcuts begin hidden; replace the sample copy and switch off Hide before publishing them. Link order and section order are independent.
 
 Select a template in Studio to see a private preview. Apply its colours to any draft. If the draft has no text sections, you can also add the starter sections. Applying a template is a single undoable draft edit. Existing sections, profile identity, links and avatar are preserved. The selected template preview itself never saves or publishes. The preview width selector offers wide, 375 px and 320 px views. Templates change colour themes and optionally starter sections. They leave your card spacing and corner settings in place. On narrow editor screens, the preview fits the space available.
 
