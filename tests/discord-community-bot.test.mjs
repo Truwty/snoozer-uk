@@ -198,10 +198,13 @@ test("welcome and server boost events post to their configured channels with saf
 
   const welcomed = await bot.welcomeMember({ user: { id: memberId, username: "new-member", bot: false } });
   assert.equal(welcomed, true);
-  const welcomePost = state.calls.find(call => call.path === "/channels/610000000000000011/messages" && call.method === "POST");
-  assert.ok(welcomePost);
-  assert.match(welcomePost.body.content, new RegExp("<@" + memberId + ">"));
-  assert.deepEqual(welcomePost.body.allowed_mentions.users, [memberId]);
+  const welcomePosts = () => state.calls.filter(call => call.path === "/channels/610000000000000011/messages" && call.method === "POST");
+  assert.equal(welcomePosts().length, 1);
+  assert.match(welcomePosts()[0].body.content, new RegExp("<@" + memberId + ">"));
+  assert.deepEqual(welcomePosts()[0].body.allowed_mentions.users, [memberId]);
+  assert.equal(bot.handleMemberRemove({ user: { id: memberId } }), true);
+  assert.equal(await bot.welcomeMember({ user: { id: memberId, username: "returning-member", bot: false } }), true);
+  assert.equal(welcomePosts().length, 2, "a member who leaves and rejoins receives a fresh welcome");
 
   bot.startedAt = Date.now() - 60_000;
   const newBoostAt = new Date(Date.now() - 30_000).toISOString();
