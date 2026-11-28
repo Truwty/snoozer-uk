@@ -322,12 +322,13 @@ export class DiscordGuildSetup {
 
   async ensureChannel(definition, parent, existingChannels, counts) {
     let channel = existingChannels.find(item => item.type === definition.type
-      && normaliseName(item.name) === normaliseName(definition.name));
-    if (channel) {
-      if (definition.name === "snoozer-setup-state" && channel.parent_id !== parent.id) {
-        throw new Error("A channel named #snoozer-setup-state already exists outside the private INTERNAL category. Rename it before running setup; the bot will not repurpose a possibly public channel.");
-      }
-      return channel;
+      && normaliseName(item.name) === normaliseName(definition.name)
+      && item.parent_id === parent.id);
+    if (channel) return channel;
+
+    if (definition.name === "snoozer-setup-state" && existingChannels.some(item =>
+      item.type === 0 && normaliseName(item.name) === "snoozer-setup-state")) {
+      throw new Error("A channel named #snoozer-setup-state already exists outside the private INTERNAL category. Rename it before running setup; the bot will not repurpose a possibly public channel.");
     }
 
     const body = {
@@ -367,10 +368,25 @@ export class DiscordGuildSetup {
 
   async run() {
     const resources = await this.listGuildResources();
-    const markerChannel = resources.channels.find(channel =>
-      normaliseName(channel.name) === "snoozer-setup-state" && channel.type === 0);
-    if (markerChannel?.topic?.includes(SETUP_COMPLETE_MARKER)) {
+    const internalCategory = resources.channels.find(channel =>
+      channel.type === 4 && normaliseName(channel.name) === "internal");
+    const markerChannel = internalCategory
+      ? resources.channels.find(channel => channel.type === 0
+        && normaliseName(channel.name) === "snoozer-setup-state"
+        && channel.parent_id === internalCategory.id)
+      : null;
+    const markerAccess = Array.isArray(markerChannel?.permission_overwrites)
+      ? markerChannel.permission_overwrites.find(entry => entry.id === this.guildId && entry.type === 0)
+      : null;
+    const markerIsPrivate = markerAccess
+      && (BigInt(markerAccess.deny ?? "0") & PERMISSIONS.viewChannel) === PERMISSIONS.viewChannel;
+    if (markerChannel?.topic?.includes(SETUP_COMPLETE_MARKER) && markerIsPrivate) {
       return { alreadyComplete: true, completedAt: markerChannel.topic.split("completed_at=")[1]?.trim() ?? null };
+    }
+    if (resources.channels.some(channel => channel.type === 0
+      && normaliseName(channel.name) === "snoozer-setup-state")
+      && !markerChannel) {
+      throw new Error("A channel named #snoozer-setup-state already exists outside the private INTERNAL category. Rename it before running setup; the bot will not treat a public or misplaced channel as its completion marker.");
     }
 
     if (!/^[1-9][0-9]{16,19}$/.test(this.botUserId ?? "")) {
