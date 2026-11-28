@@ -212,6 +212,7 @@ export class DiscordCommunityBot {
   }
 
   seedKnownBoosters(members) {
+    if (Array.isArray(members)) this.boostedMembers.clear();
     for (const member of Array.isArray(members) ? members : []) {
       const userId = member?.user?.id;
       if (safeSnowflake(userId) && member.premium_since) this.boostedMembers.add(userId);
@@ -270,6 +271,7 @@ export class DiscordCommunityBot {
   async handleMemberUpdate(member) {
     const userId = member?.user?.id;
     if (!safeSnowflake(userId)) return false;
+    if (!Object.hasOwn(member, "premium_since")) return false;
     if (!member.premium_since) {
       this.boostedMembers.delete(userId);
       return false;
