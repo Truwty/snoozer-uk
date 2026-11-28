@@ -176,18 +176,19 @@ begin
     raise exception 'The submitted Snoozer profile does not belong to your linked account';
   end if;
 
-  perform pg_advisory_xact_lock(hashtextextended(p_discord_user_id,7442));
+  -- Throttle by the linked Snoozer account so linking a second Discord identity cannot bypass the limit.
+  perform pg_advisory_xact_lock(hashtextextended(owner::text,7442));
 
   if exists(
     select 1 from snoozer.discord_bot_creator_verifications v
-    where v.discord_user_id=p_discord_user_id and v.status='approved'
+    where v.owner_id=owner and v.status='approved'
   ) then
     return jsonb_build_object('created',false,'reason','already_approved');
   end if;
 
   select * into pending_request
   from snoozer.discord_bot_creator_verifications
-  where discord_user_id=p_discord_user_id and status='pending'
+  where owner_id=owner and status='pending'
   order by created_at desc
   limit 1
   for update;
@@ -200,7 +201,7 @@ begin
 
   select * into latest_request
   from snoozer.discord_bot_creator_verifications
-  where discord_user_id=p_discord_user_id
+  where owner_id=owner
   order by created_at desc
   limit 1;
 
