@@ -768,7 +768,11 @@ async announceServerBoost(member) {
     const actorId = interaction.member?.user?.id ?? interaction.user?.id;
     const memberRoles = new Set(interaction.member?.roles ?? []);
     const roles = await this.api.request("/guilds/" + this.guildId + "/roles");
-    const staffIds = roles.filter(role => STAFF_ROLE_NAMES.includes(role.name)).map(role => role.id);
+    const configuredStaffIds = ["admin","senior_moderator","moderator","support_manager","support_team","ticket_support"]
+      .map(key => this.roleIds[key]).filter(id => safeSnowflake(id));
+    const staffIds = configuredStaffIds.length
+      ? configuredStaffIds
+      : roles.filter(role => STAFF_ROLE_NAMES.includes(role.name)).map(role => role.id);
     const isStaff = staffIds.some(id => memberRoles.has(id)) || hasPermission(interaction.member?.permissions, PERMISSIONS.manageMessages);
     if (actorId !== ownerId && !isStaff) throw new Error("Only the ticket owner or Snoozer staff can close this ticket.");
 
