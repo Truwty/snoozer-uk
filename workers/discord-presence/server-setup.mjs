@@ -17,7 +17,11 @@ const PERMISSIONS = {
   speak: 1n << 21n,
 };
 
-const bitset = (...names) => names.reduce((value, name) => value | PERMISSIONS[name], 0n).toString();
+const bitset = (...names) => names.reduce((value, name) => {
+  const permission = PERMISSIONS[name];
+  if (typeof permission !== "bigint") throw new Error("Unknown Discord permission key in setup role definition: " + String(name) + ".");
+  return value | permission;
+}, 0n).toString();
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const normaliseName = value => String(value ?? "").trim().toLowerCase();
 
