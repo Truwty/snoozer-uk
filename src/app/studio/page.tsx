@@ -97,7 +97,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     { label: "Upload Avatar", done: Boolean(draft.avatar), href: studioHref("/studio/customize", selected) },
     { label: "Add Description", done: Boolean(draft.bio.trim()), href: studioHref("/studio/customize", selected) },
     { label: "Link Discord Account", done: discord.success && discord.data.connected, href: studioHref("/studio/account", selected) },
-    { label: "Add Socials", done: draft.links.length > 0, href: studioHref("/studio/links", selected) },
+    { label: "Add Socials", done: draft.links.some((link) => !link.hidden), href: studioHref("/studio/links", selected) },
     { label: "Reach 10 profile views", done: viewTotal >= 10, href: studioHref("/studio/analytics", selected) },
   ];
   const completed = completionItems.filter((item) => item.done).length;
