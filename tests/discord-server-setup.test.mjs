@@ -175,6 +175,7 @@ test("non-administrators cannot invoke the setup operation", async () => {
     secret: "s".repeat(64),
     guildId,
     baseUrl: "https://snoozer.example",
+    serverSetupEnabled: true,
   }, {
     fetcher: async () => new Response(null, { status: 204 }),
     discordFetcher: async (url, options) => {
@@ -262,10 +263,9 @@ test("worker registers /snoozer-setup only in the configured guild", async () =>
   assert.equal(worker.botUserId, botUserId);
   assert.equal(requests.length, 3);
   assert.match(requests[2].url, new RegExp("/applications/777777777777777777/guilds/" + guildId + "/commands$"));
-  assert.equal(requests[2].options.method, "PUT");
-  const commands = JSON.parse(requests[2].options.body);
-  const command = commands.find(item => item.name === "snoozer-setup");
-  assert.ok(command);
+  assert.equal(requests[2].options.method, "POST");
+  const command = JSON.parse(requests[2].options.body);
+  assert.equal(command.name, "snoozer-setup");
   assert.equal(command.default_member_permissions, "8");
   assert.equal(command.options[0].name, "confirm");
 });

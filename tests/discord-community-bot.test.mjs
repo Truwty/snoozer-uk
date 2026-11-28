@@ -391,7 +391,11 @@ test("status announcements retry after Discord rejects a message instead of losi
 });
 
 test("ticket creation remains usable when Discord rejects the opening message", async () => {
-  const roles = [{ id: "610000000000000003", name: "Support Team" }];
+  const roles = [
+    { id: "610000000000000001", name: "Snoozer Admin" },
+    { id: "610000000000000002", name: "Moderator" },
+    { id: "610000000000000003", name: "Support Team" },
+  ];
   const channels = [{ id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 }];
   const { bot, api, state } = botFixture({ roles, channels });
   const original = api.request.bind(api);

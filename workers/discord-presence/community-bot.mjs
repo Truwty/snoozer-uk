@@ -12,6 +12,7 @@ const PERMISSIONS = {
   embedLinks: 1n << 14n,
   attachFiles: 1n << 15n,
   manageChannels: 1n << 4n,
+  manageRoles: 1n << 28n,
 };
 
 const STAFF_ROLE_NAMES = ["Snoozer Admin", "Moderator", "Support Team"];
