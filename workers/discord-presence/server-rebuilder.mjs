@@ -7,7 +7,11 @@ const P = {
   kickMembers:1n<<1n, banMembers:1n<<2n, manageRoles:1n<<28n, manageWebhooks:1n<<29n,
   manageEvents:1n<<33n, moderateMembers:1n<<40n,
 };
-const bitfield = names => names.reduce((value,name)=>value|P[name],0n);
+const bitfield = names => names.reduce((value,name)=>{
+  const permission=P[name];
+  if(typeof permission!=="bigint")throw new Error("Unknown Discord permission key in Snoozer role layout: "+String(name)+".");
+  return value|permission;
+},0n);
 const validSnowflake = value => typeof value==="string" && /^[1-9][0-9]{16,19}$/.test(value);
 const normaliseRole = value => String(value??"").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N} ]/gu,"").replace(/\s+/g," ").trim();
 
