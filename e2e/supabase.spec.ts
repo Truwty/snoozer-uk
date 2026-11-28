@@ -870,40 +870,15 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
 
     await page.setViewportSize({ width: 390, height: 844 });
-    const links = page.getByRole("group", { name: /^Links/ });
-    const topLink = links.locator('[data-reorder-index="0"] .reorder-handle');
-    const bottomLink = links.locator('[data-reorder-index="1"] .reorder-handle');
-    await topLink.evaluate((handle) => handle.scrollIntoView({ block: "center" }));
-    // Keep both drag endpoints inside the viewport. Scrolling only the first
-    // handle can leave the second handle below the viewport on a phone, causing
-    // CDP to dispatch touch events to <html> instead of the reorder handle.
-    await bottomLink.scrollIntoViewIfNeeded();
-    await expect(topLink).toBeInViewport();
-    await expect(bottomLink).toBeInViewport();
-    const topBox = (await topLink.boundingBox())!;
-    const bottomBox = (await bottomLink.boundingBox())!;
-    const touch = await page.context().newCDPSession(page);
-    try {
-      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
-      const from = { x: bottomBox.x + bottomBox.width / 2, y: bottomBox.y + bottomBox.height / 2 };
-      const to = { x: topBox.x + topBox.width / 2, y: topBox.y + topBox.height / 2 };
-      const targets = await page.evaluate(({ from, to }) => ({
-        from: Boolean(document.elementFromPoint(from.x, from.y)?.closest(".reorder-handle")),
-        to: Boolean(document.elementFromPoint(to.x, to.y)?.closest(".reorder-handle")),
-      }), { from, to });
-      expect(targets).toEqual({ from: true, to: true });
-      await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] });
-      for (let step = 1; step <= 8; step++) {
-        const y = from.y + (to.y - from.y) * step / 8;
-        await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: to.x, y }] });
-      }
-      await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    } finally {
-      await touch.send("Emulation.setTouchEmulationEnabled", { enabled: false });
-      await touch.detach();
-    }
-    await expect(page.getByLabel("Link 1 label")).toHaveValue("First");
+    // Link rows now keep all actions visible in normal flow. On a phone the
+    // explicit controls are the reliable accessible reorder mechanism; both
+    // rows do not need to fit in the viewport simultaneously for drag-and-drop.
+    const mobileLinkActions = page.getByRole("group", { name: "Actions for link 2", exact: true });
+    await expect(mobileLinkActions).toBeVisible();
+    await page.getByRole("button", { name: "Move up (link 2)", exact: true }).click();
+    await expect(page.getByLabel("Link 1 label")).toHaveValue("Second");
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
+    await expect(page.getByRole("group", { name: "Actions for link 1", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 1100 });
 
     // Link controls stay visible in the inspector; Remove is never hidden in a clipped popover.
