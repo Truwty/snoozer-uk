@@ -68,6 +68,10 @@ export class DiscordStore {
     return this.rpc("discord_bot_ticket_preflight", { p_guild_id:guildId,p_owner_discord_id:ownerId });
   }
 
+  nextJobDue(guildId) {
+    return this.rpc("discord_bot_next_job_due", { p_guild_id:guildId });
+  }
+
   openTicket(input) {
     return this.rpc("discord_bot_open_ticket", {
       p_guild_id:input.guildId,p_channel_id:input.channelId,p_owner_discord_id:input.ownerId,
