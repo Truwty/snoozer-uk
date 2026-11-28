@@ -382,7 +382,7 @@ export class DiscordPresenceWorker {
       case "RESUMED":
         this.connected = true;
         this.guildReady = this.guildKnown;
-        if (this.config.presenceEnabled) await this.heartbeat(true, this.guildReady);
+        if ((this.config.presenceEnabled !== false)) await this.heartbeat(true, this.guildReady);
         break;
       case "GUILD_CREATE":
         this.logger.info(`[discord-presence] Discord sent GUILD_CREATE (configured server match=${data.id === this.config.guildId}).`);
@@ -391,7 +391,7 @@ export class DiscordPresenceWorker {
           this.connected = true;
           this.guildKnown = true;
           this.guildReady = true;
-          if (this.config.presenceEnabled) {
+          if ((this.config.presenceEnabled !== false)) {
             await this.heartbeat(true, true);
             const initialPresences = Array.isArray(data.presences) ? data.presences : [];
             const subscribedInitialPresences = initialPresences.filter(presence => presence?.user?.id && this.subscriptions.has(presence.user.id));
@@ -411,7 +411,7 @@ export class DiscordPresenceWorker {
             this.sequence = null;
             this.resumeUrl = null;
           }
-          if (this.config.presenceEnabled) await this.heartbeat(this.connected, false);
+          if ((this.config.presenceEnabled !== false)) await this.heartbeat(this.connected, false);
         }
         break;
       case "PRESENCE_UPDATE":
@@ -454,7 +454,7 @@ export class DiscordPresenceWorker {
       this.connected = false;
       this.guildReady = false;
       this.stopHeartbeat();
-      if (this.config.presenceEnabled) void this.heartbeat(false, false);
+      if ((this.config.presenceEnabled !== false)) void this.heartbeat(false, false);
       for (const pending of this.pendingChunks.values()) pending.resolve();
       this.pendingChunks.clear();
       if (!this.stopped) this.scheduleReconnect(event.code);
@@ -476,7 +476,7 @@ export class DiscordPresenceWorker {
         } else {
           this.send({ op: 2, d: {
             token: this.config.token,
-            intents: GUILDS_INTENT | (this.config.presenceEnabled ? GUILD_PRESENCES_INTENT : 0),
+            intents: GUILDS_INTENT | ((this.config.presenceEnabled !== false) ? GUILD_PRESENCES_INTENT : 0),
             large_threshold: 250,
             properties: { os: process.platform, browser: "Snoozer Presence", device: "Snoozer Presence" },
           } });
@@ -550,7 +550,7 @@ export class DiscordPresenceWorker {
 
   async start() {
     this.logger.info("[discord-presence] Discord worker process started.");
-    if (this.config.presenceEnabled) {
+    if ((this.config.presenceEnabled !== false)) {
       this.logger.info("[discord-presence] Presence monitoring is enabled; validating the signed Snoozer endpoint.");
       await this.refreshSubscriptions();
       this.subscriptionTimer = setInterval(() => void this.refreshSubscriptions(), SUBSCRIPTION_REFRESH_MS);
@@ -578,7 +578,7 @@ export class DiscordPresenceWorker {
     this.reconnectTimer = null;
     this.stopHeartbeat();
     this.socket?.close(1000, "Worker shutting down");
-    if (this.config.presenceEnabled) await this.heartbeat(false, false);
+    if ((this.config.presenceEnabled !== false)) await this.heartbeat(false, false);
   }
 }
 
