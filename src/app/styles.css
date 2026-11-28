@@ -2835,3 +2835,56 @@ body:has(> .public-page[data-background-image="true"]) {
     height: 3rem;
   }
 }
+
+
+/* Discord community CTA in the shared top navigation. */
+.snoozer-header-links a.discord-server-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: .42rem;
+  min-height: 42px;
+  padding: .48rem .82rem;
+  border: 1px solid #5865f2;
+  border-radius: 999px;
+  background: #5865f2;
+  color: #fff;
+  box-shadow: 0 7px 20px #5865f233;
+  font-size: .82rem;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.snoozer-header-links a.discord-server-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+.snoozer-header-links a.discord-server-button:hover {
+  border-color: #4752c4;
+  background: #4752c4;
+  color: #fff;
+  box-shadow: 0 9px 24px #5865f255;
+  transform: translateY(-1px);
+}
+.snoozer-header-links a.discord-server-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+@media (max-width: 68rem) {
+  .snoozer-header-links a.discord-server-button {
+    min-height: 36px;
+    padding-inline: .62rem;
+    font-size: .74rem;
+  }
+}
+@media (max-width: 40rem) {
+  .snoozer-header-links a.discord-server-button {
+    min-height: 34px;
+    gap: .3rem;
+    padding-inline: .5rem;
+    font-size: .68rem;
+  }
+}
