@@ -84,12 +84,12 @@ export class DiscordCommunityPanels{
     this.resources={};this.roleIds={};this.onResourcesUpdated=deps.onResourcesUpdated??null;this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
-    this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
+    this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;this.securitySettings={};
     this.deferredInteractions=new Set();this.respondedInteractions=new Set();this.jobWakeTimers=new Map();this.jobWakeSequence=0;
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
-    this.resources=r.map??{};this.roleIds={};
+    this.resources=r.map??{};this.roleIds={};this.securitySettings=config?.security&&typeof config.security==="object"?{...config.security}:{};
     for(const [k,v] of Object.entries(this.resources))if(k.startsWith("role_"))this.roleIds[k.slice(5)]=v;
     for(const [key,value] of Object.entries(config??{}))if(key.startsWith("channel_override_")&&SF.test(value?.channel_id??""))this.resources[key.slice("channel_override_".length)]=value.channel_id;
     if(this.onResourcesUpdated)await this.onResourcesUpdated(this.resources,this.roleIds);
@@ -876,11 +876,12 @@ export class DiscordCommunityPanels{
     const config=await this.store.getConfig(this.guildId),security={...(config?.security??{})};
     security[key]=security[key]===false;
     await this.store.setConfig(this.guildId,"security",security);
+    this.securitySettings=security;
     await this.reply(i,{content:key.replace("Enabled","")+" is now "+(security[key]?"enabled":"disabled")+". The monitor will apply this setting on its next cycle."},true);
   }
   async openSecurityThresholds(i){
     this.requireAdmin(i);
-    const settings={};
+    const settings=this.securitySettings??{};
     await this.showModal(i,mkModal("admin:thresholds:save","Configure server protection",[
       {id:"raid_join_threshold",label:"Joins before raid lockdown (2–100)",min:1,max:3,placeholder:"10",value:String(settings.raidJoinThreshold??10)},
       {id:"raid_window",label:"Join burst window seconds (10–600)",min:2,max:3,placeholder:"60",value:String(settings.raidWindowSeconds??60)},
