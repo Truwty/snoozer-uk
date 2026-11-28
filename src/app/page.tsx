@@ -147,7 +147,7 @@ export default async function Home() {
           <div className="home-footer-column">
             <h2>{copy.footer.resources}</h2>
             <nav aria-label="Resource links">
-              <a href="https://help.snoozer.uk/">{copy.footer.help}</a>
+              <Link href="/help">{copy.footer.help}</Link>
               <Link href="/templates">{copy.footer.templates}</Link>
               <Link href="/discover">{copy.footer.discover}</Link>
               <a href="https://status.snoozer.uk/">Status</a>
@@ -156,7 +156,7 @@ export default async function Home() {
           <div className="home-footer-column">
             <h2>{copy.footer.contact}</h2>
             <nav aria-label="Contact links">
-              <a href="https://help.snoozer.uk/">{copy.footer.support}</a>
+              <Link href="/help">{copy.footer.support}</Link>
               <a href="mailto:snoozersupport@snoozer.uk">{copy.footer.supportEmail}</a>
             </nav>
           </div>
