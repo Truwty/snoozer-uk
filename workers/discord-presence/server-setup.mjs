@@ -24,6 +24,12 @@ const normaliseName = value => String(value ?? "").trim().toLowerCase();
 export const SETUP_COMPLETE_MARKER = "SNOOZER_SERVER_SETUP_COMPLETE:v1";
 export const SETUP_PENDING_MARKER = "SNOOZER_SERVER_SETUP_PENDING:v1";
 
+export const SNOOZER_CHANNEL_IDS = Object.freeze({
+  welcome: "1576098516189708379",
+  changelog: "1576098524607553738",
+  serviceStatus: "1576098525937270835",
+});
+
 export const SNOOZER_SETUP_COMMAND = {
   name: "snoozer-setup",
   description: "Create the Snoozer community server structure (one-time, server administrators only).",
@@ -94,11 +100,19 @@ export class DiscordApiClient {
   }
 }
 
+const MODERATOR_PERMISSIONS = bitset("kickMembers", "banMembers", "viewAuditLog", "manageMessages", "moderateMembers");
+
 const ROLE_DEFINITIONS = [
   { key: "admin", name: "Snoozer Admin", color: 0x8b72d9, hoist: true, permissions: bitset("administrator") },
-  { key: "moderator", name: "Moderator", color: 0xd65a68, hoist: true, permissions: bitset("kickMembers", "banMembers", "viewAuditLog", "manageMessages", "moderateMembers") },
+  { key: "seniorModerator", name: "Senior Moderator", color: 0xb94b63, hoist: true, permissions: MODERATOR_PERMISSIONS },
+  { key: "moderator", name: "Moderator", color: 0xd65a68, hoist: true, permissions: MODERATOR_PERMISSIONS },
+  { key: "communityManager", name: "Community Manager", color: 0x438f9b, hoist: true, permissions: bitset("manageMessages") },
+  { key: "supportManager", name: "Support Manager", color: 0x397fba, hoist: true, permissions: "0" },
   { key: "support", name: "Support Team", color: 0x4d91c9, hoist: true, permissions: "0" },
+  { key: "ticketSupport", name: "Ticket Support", color: 0x69a8d7, hoist: true, permissions: "0" },
   { key: "developer", name: "Developer", color: 0x35a79b, hoist: true, permissions: "0" },
+  { key: "eventHost", name: "Event Host", color: 0xc27b42, hoist: true, permissions: "0" },
+  { key: "helper", name: "Community Helper", color: 0x72a68e, hoist: true, permissions: "0" },
   { key: "premium", name: "Premium", color: 0xc69a43, hoist: true, permissions: "0" },
   { key: "creator", name: "Creator", color: 0x64a982, hoist: true, permissions: "0" },
   { key: "member", name: "Member", color: 0x7a8493, hoist: false, permissions: "0" },
@@ -135,16 +149,27 @@ function publicReadOnlyOverwrites(guildId, roles, botUserId) {
     overwrite(guildId, 0, viewAndRead, PERMISSIONS.sendMessages),
     overwrite(botUserId, 1, viewAndRead | PERMISSIONS.sendMessages | PERMISSIONS.embedLinks, 0n),
   ];
-  for (const key of ["admin", "developer"]) {
+  for (const key of ["admin", "developer", "communityManager"]) {
     if (roles[key]) entries.push(overwrite(roles[key], 0, viewAndRead | PERMISSIONS.sendMessages, 0n));
   }
   return entries;
 }
 
-function staffOverwrites(guildId, roles, botUserId, keys = ["admin", "moderator", "support", "developer"]) {
+function staffOverwrites(guildId, roles, botUserId, keys = ["admin", "moderator", "communityManager", "supportManager", "support", "ticketSupport", "developer"]) {
   const viewSendRead = PERMISSIONS.viewChannel | PERMISSIONS.sendMessages | PERMISSIONS.readMessageHistory | PERMISSIONS.embedLinks;
   const entries = [overwrite(guildId, 0, 0n, PERMISSIONS.viewChannel)];
   for (const key of keys) {
+    if (roles[key]) entries.push(overwrite(roles[key], 0, viewSendRead, 0n));
+  }
+  entries.push(overwrite(botUserId, 1, viewSendRead, 0n));
+  return entries;
+}
+
+function ticketLobbyOverwrites(guildId, roles, botUserId) {
+  const viewRead = PERMISSIONS.viewChannel | PERMISSIONS.readMessageHistory;
+  const viewSendRead = viewRead | PERMISSIONS.sendMessages | PERMISSIONS.embedLinks;
+  const entries = [overwrite(guildId, 0, viewRead, PERMISSIONS.sendMessages)];
+  for (const key of ["admin", "seniorModerator", "moderator", "communityManager", "supportManager", "support", "ticketSupport", "developer"]) {
     if (roles[key]) entries.push(overwrite(roles[key], 0, viewSendRead, 0n));
   }
   entries.push(overwrite(botUserId, 1, viewSendRead, 0n));
@@ -169,27 +194,27 @@ function privateCategory(name, channels, guildId, roles, botUserId) {
   return { name, channels, permission_overwrites: staffOverwrites(guildId, roles, botUserId) };
 }
 
-function buildServerLayout(guildId, roles, botUserId) {
-  const announcementOverwrites = publicReadOnlyOverwrites(guildId, roles, botUserId);
+function buildServerLayout(guildId, roles, botUserId, channelIds = SNOOZER_CHANNEL_IDS) {
   const staffDefault = staffOverwrites(guildId, roles, botUserId);
-  const adminAndModerators = staffOverwrites(guildId, roles, botUserId, ["admin", "moderator"]);
-  const adminSupportModerators = staffOverwrites(guildId, roles, botUserId, ["admin", "moderator", "support"]);
+  const adminAndModerators = staffOverwrites(guildId, roles, botUserId, ["admin", "seniorModerator", "moderator"]);
+  const adminSupportModerators = staffOverwrites(guildId, roles, botUserId, ["admin", "seniorModerator", "moderator", "communityManager", "supportManager", "support", "ticketSupport"]);
   const adminDevelopers = staffOverwrites(guildId, roles, botUserId, ["admin", "developer"]);
+  const ticketOverwrites = ticketLobbyOverwrites(guildId, roles, botUserId);
   const internal = [overwrite(guildId, 0, 0n, PERMISSIONS.viewChannel)];
   if (roles.admin) internal.push(overwrite(roles.admin, 0, PERMISSIONS.viewChannel | PERMISSIONS.readMessageHistory, 0n));
   internal.push(overwrite(botUserId, 1, PERMISSIONS.viewChannel | PERMISSIONS.sendMessages | PERMISSIONS.readMessageHistory, 0n));
 
   return [
     readOnlyCategory("START HERE", [
-      { name: "welcome", topic: "Welcome to the official Snoozer community. Start with #rules and #faq, then introduce yourself in #introductions." },
+      { name: "welcome", id: channelIds.welcome, topic: "Welcome to the official Snoozer community. New members are greeted here automatically. Start with #rules and #faq, then introduce yourself in #introductions." },
       { name: "rules", topic: "Read the community rules before chatting. Be respectful, protect personal information and follow Discord's Terms of Service." },
       { name: "announcements", topic: "Official Snoozer announcements. This channel is read-only; important platform news will be posted here." },
       { name: "server-updates", topic: "Community and server updates from the Snoozer team." },
       { name: "faq", topic: "Quick answers and links to the official Snoozer website and Help Centre." },
     ], guildId, roles, botUserId),
     readOnlyCategory("SNOOZER UPDATES", [
-      { name: "changelog", topic: "Released Snoozer features, fixes and platform changes." },
-      { name: "service-status", topic: "Operational notices and service incidents. Check the official status page for live component health." },
+      { name: "changelog", id: channelIds.changelog, topic: "Official Snoozer release notes. New platform changes are published here by authorised team members." },
+      { name: "service-status", id: channelIds.serviceStatus, topic: "Automated Snoozer service health updates. Check https://status.snoozer.uk for the live status page." },
       { name: "roadmap", topic: "Snoozer feature direction and planned improvements. Roadmap items may change." },
     ], guildId, roles, botUserId),
     {
@@ -199,6 +224,7 @@ function buildServerLayout(guildId, roles, botUserId) {
         { name: "introductions", topic: "Say hello, introduce yourself and share what you are building." },
         { name: "creator-showcase", topic: "Showcase your Snoozer profile, projects and creative work. No spam or unsolicited advertising." },
         { name: "off-topic", topic: "For conversations that do not fit the other channels." },
+        { name: "server-boosts", topic: "A thank-you wall for everyone supporting Snoozer by boosting this server.", permission_overwrites: publicReadOnlyOverwrites(guildId, roles, botUserId) },
         { name: "community-lounge", type: 2 },
         { name: "creator-hangout", type: 2 },
       ],
@@ -212,12 +238,19 @@ function buildServerLayout(guildId, roles, botUserId) {
         { name: "account-support", topic: "For private account, billing or personal-data requests, use the official Help Centre: https://help.snoozer.uk. Do not post personal or payment information in Discord." },
       ],
     },
+    {
+      name: "TICKETS",
+      permission_overwrites: ticketOverwrites,
+      channels: [
+        { name: "open-a-ticket", topic: "Read the instructions and use /snoozer-ticket to open a private support channel. Never include passwords, authentication codes or payment details.", permission_overwrites: ticketOverwrites },
+      ],
+    },
     privateCategory("STAFF HQ", [
       { name: "staff-chat", topic: "Private coordination for the Snoozer team.", permission_overwrites: staffDefault },
       { name: "moderation-log", topic: "Restricted moderation activity and incident notes.", permission_overwrites: adminAndModerators },
       { name: "support-queue", topic: "Private support-team coordination. Do not copy passwords, payment details or unnecessary personal data into Discord.", permission_overwrites: adminSupportModerators },
       { name: "bot-commands", topic: "Staff-only bot command testing and operational notes.", permission_overwrites: adminDevelopers },
-      { name: "staff-lounge", type: 2, permission_overwrites: staffVoiceOverwrites(guildId, roles, botUserId, ["admin", "moderator", "support", "developer"]) },
+      { name: "staff-lounge", type: 2, permission_overwrites: staffVoiceOverwrites(guildId, roles, botUserId, ["admin", "seniorModerator", "moderator", "communityManager", "supportManager", "support", "ticketSupport", "developer"]) },
     ], guildId, roles, botUserId),
     {
       name: "INTERNAL",
@@ -249,7 +282,9 @@ const STARTER_MESSAGES = [
       "• Read the community rules in **#rules**.\n" +
       "• Find quick answers in **#faq**.\n" +
       "• Introduce yourself in **#introductions**.\n" +
-      "• Share your profile in **#creator-showcase**.\n\n" +
+      "• Share your profile in **#creator-showcase**.\n" +
+      "• Open a private support request in **#open-a-ticket**.\n\n" +
+      "New members are greeted here automatically.\n\n" +
       "[Open Snoozer](https://snoozer.uk) · [Help Centre](https://help.snoozer.uk)",
     color: 0x8b72d9,
   },
@@ -274,11 +309,45 @@ const STARTER_MESSAGES = [
     description: "Need help with Snoozer?\n\n" +
       "• **Website:** https://snoozer.uk\n" +
       "• **Help Centre:** https://help.snoozer.uk\n" +
-      "• **Service status:** use the official Snoozer status page linked from the website.\n" +
+      "• **Service status:** https://status.snoozer.uk\n" +
       "• **Bug report:** use **#bug-reports** and include clear reproduction steps.\n" +
-      "• **Feature idea:** post it in **#suggestions**.\n\n" +
+      "• **Feature idea:** post it in **#suggestions**.\n" +
+      "• **Private support:** use **#open-a-ticket** and run **/snoozer-ticket**.\n\n" +
       "For account, billing, privacy or deletion requests, use the Help Centre rather than posting personal information in this server. Snoozer staff will never ask for your password or authentication codes.",
     color: 0x4d91c9,
+  },
+  {
+    channel: "changelog",
+    footer: "SNOOZER_SERVER_SETUP:v1:changelog",
+    title: "Snoozer changelog",
+    description: "Official product releases, new features, improvements and fixes will be posted in this channel by the Snoozer team.\n\n" +
+      "Authorised staff can publish an entry with **/snoozer-changelog**.",
+    color: 0x35a79b,
+  },
+  {
+    channel: "service-status",
+    footer: "SNOOZER_SERVER_SETUP:v1:service-status",
+    title: "Snoozer service status",
+    description: "Automated service updates are posted here when the overall Snoozer service state changes.\n\n" +
+      "[Open the live status page](https://status.snoozer.uk)",
+    color: 0x4d91c9,
+  },
+  {
+    channel: "open-a-ticket",
+    footer: "SNOOZER_SERVER_SETUP:v1:open-a-ticket",
+    title: "Need help? Open a ticket",
+    description: "Use **/snoozer-ticket** to create a private support channel with the Snoozer team.\n\n" +
+      "Please include a clear subject and enough detail for the team to investigate. A member of staff will reply in your private ticket.\n\n" +
+      "Never share passwords, one-time codes, payment card details or private account credentials.",
+    color: 0x8b72d9,
+  },
+  {
+    channel: "server-boosts",
+    footer: "SNOOZER_SERVER_SETUP:v1:server-boosts",
+    title: "Snoozer server boosters",
+    description: "Thank you to everyone who supports the Snoozer community by boosting the server.\n\n" +
+      "The bot automatically posts a thank-you message here when a new boost is detected.",
+    color: 0xc69a43,
   },
 ];
 
@@ -286,6 +355,7 @@ export class DiscordGuildSetup {
   constructor(config, dependencies = {}) {
     this.guildId = config.guildId;
     this.botUserId = config.botUserId;
+    this.channelIds = config.channelIds ?? dependencies.channelIds ?? SNOOZER_CHANNEL_IDS;
     this.api = dependencies.api ?? new DiscordApiClient(config.token, dependencies.fetcher, { logger: dependencies.logger });
     this.logger = dependencies.logger ?? console;
   }
@@ -340,6 +410,21 @@ export class DiscordGuildSetup {
     return { ids, created, updated };
   }
 
+  validateConfiguredChannels(channels) {
+    for (const [name, id] of Object.entries(this.channelIds)) {
+      if (!id) continue;
+      const channel = channels.find(item => item.id === id);
+      if (!channel) {
+        throw new Error("The configured #" + (name === "serviceStatus" ? "service-status" : name) +
+          " channel ID " + id + " was not found in this Discord server. Check DISCORD_PRESENCE_GUILD_ID and the channel ID before repairing.");
+      }
+      if (channel.type !== 0) {
+        throw new Error("The configured channel ID for #" + (name === "serviceStatus" ? "service-status" : name) +
+          " is not a text channel. No server changes were made.");
+      }
+    }
+  }
+
   async ensureCategory(category, existingChannels, counts) {
     let channel = existingChannels.find(item => item.type === 4 && normaliseName(item.name) === normaliseName(category.name));
     if (!channel) {
@@ -365,21 +450,39 @@ export class DiscordGuildSetup {
   }
 
   async ensureChannel(definition, parent, existingChannels, counts) {
-    let channel = existingChannels.find(item => item.type === definition.type
-      && normaliseName(item.name) === normaliseName(definition.name)
-      && item.parent_id === parent.id);
+    let channel = definition.id
+      ? existingChannels.find(item => item.id === definition.id)
+      : existingChannels.find(item => item.type === definition.type
+        && normaliseName(item.name) === normaliseName(definition.name)
+        && item.parent_id === parent.id);
+
+    if (definition.id && !channel) {
+      throw new Error("The configured channel ID for #" + definition.name + " (" + definition.id +
+        ") was not found in the configured Snoozer server. Check the channel ID before repairing.");
+    }
+    if (channel && channel.type !== definition.type) {
+      throw new Error("The existing channel for #" + definition.name + " has the wrong channel type. No channel was changed.");
+    }
+
     if (channel) {
+      const updates = {};
+      if (channel.name !== definition.name) updates.name = definition.name;
+      if (channel.parent_id !== parent.id) updates.parent_id = parent.id;
+      if (definition.topic && channel.topic !== definition.topic) updates.topic = definition.topic;
       if (definition.permission_overwrites) {
         const permissionOverwrites = mergeManagedOverwrites(channel.permission_overwrites, definition.permission_overwrites);
         if (!sameOverwrites(channel.permission_overwrites, permissionOverwrites)) {
-          const updated = await this.api.request("/channels/" + channel.id, {
-            method: "PATCH",
-            body: { permission_overwrites: permissionOverwrites },
-          });
-          channel = updated?.id ? updated : { ...channel, permission_overwrites: permissionOverwrites };
-          Object.assign(existingChannels.find(item => item.id === channel.id), channel);
-          counts.channelsUpdated += 1;
+          updates.permission_overwrites = permissionOverwrites;
         }
+      }
+      if (Object.keys(updates).length) {
+        const updated = await this.api.request("/channels/" + channel.id, {
+          method: "PATCH",
+          body: updates,
+        });
+        channel = updated?.id ? updated : { ...channel, ...updates };
+        Object.assign(existingChannels.find(item => item.id === channel.id), channel);
+        counts.channelsUpdated += 1;
       }
       return channel;
     }
@@ -426,12 +529,13 @@ export class DiscordGuildSetup {
 
   async repair() {
     const resources = await this.listGuildResources();
+    this.validateConfiguredChannels(resources.channels);
     if (!/^[1-9][0-9]{16,19}$/.test(this.botUserId ?? "")) {
       throw new Error("The Discord bot user ID is unavailable; restart the worker before repairing the server.");
     }
 
     const roleResult = await this.ensureRoles(resources.roles);
-    const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId);
+    const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId, this.channelIds);
     const counts = {
       rolesCreated: roleResult.created,
       rolesUpdated: roleResult.updated,
@@ -471,6 +575,7 @@ export class DiscordGuildSetup {
 
   async run() {
     const resources = await this.listGuildResources();
+    this.validateConfiguredChannels(resources.channels);
     const internalCategory = resources.channels.find(channel =>
       channel.type === 4 && normaliseName(channel.name) === "internal");
     const markerChannel = internalCategory
@@ -497,7 +602,7 @@ export class DiscordGuildSetup {
     }
 
     const roleResult = await this.ensureRoles(resources.roles);
-    const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId);
+    const layout = buildServerLayout(this.guildId, roleResult.ids, this.botUserId, this.channelIds);
     const counts = {
       rolesCreated: roleResult.created,
       rolesUpdated: roleResult.updated,
