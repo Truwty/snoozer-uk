@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   DiscordGuildSetup,
   SETUP_COMPLETE_MARKER,
+  SNOOZER_CHANNEL_IDS,
   SNOOZER_SETUP_COMMAND,
   hasAdministratorPermission,
 } from "../workers/discord-presence/server-setup.mjs";
@@ -71,17 +72,17 @@ function createGuildApi() {
 
 test("server setup creates the Snoozer roles, channel layout and starter posts once", async () => {
   const state = createGuildApi();
-  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token", channelIds: {} }, {
     api: state.api,
     logger: { info() {}, warn() {}, error() {} },
   });
 
   const result = await setup.run();
   assert.equal(result.alreadyComplete, false);
-  assert.equal(result.rolesCreated, 8);
-  assert.equal(result.categoriesCreated, 6);
-  assert.equal(result.channelsCreated, 24);
-  assert.equal(result.messagesCreated, 3);
+  assert.equal(result.rolesCreated, 14);
+  assert.equal(result.categoriesCreated, 7);
+  assert.equal(result.channelsCreated, 26);
+  assert.equal(result.messagesCreated, 7);
 
   assert.ok(state.roles.some(role => role.name === "Snoozer Admin" && role.permissions === "8"));
   assert.ok(state.roles.some(role => role.name === "Moderator" && role.permissions !== "0"));
@@ -101,13 +102,55 @@ test("server setup creates the Snoozer roles, channel layout and starter posts o
   assert.equal(state.calls.filter(call => call.method !== "GET").length, writeCount);
 });
 
+test("repair targets the three configured channel IDs and moves/renames them into the right sections", async () => {
+  const state = createGuildApi();
+  for (const [id, name] of [
+    [SNOOZER_CHANNEL_IDS.welcome, "old-welcome"],
+    [SNOOZER_CHANNEL_IDS.changelog, "old-changelog"],
+    [SNOOZER_CHANNEL_IDS.serviceStatus, "old-status"],
+  ]) {
+    state.channels.push({ id, name, type: 0, topic: "Old topic", parent_id: null, permission_overwrites: [] });
+    state.messages.set(id, []);
+  }
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+    api: state.api,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  const result = await setup.repair();
+  assert.equal(result.repaired, true);
+  for (const [id, name, categoryName] of [
+    [SNOOZER_CHANNEL_IDS.welcome, "welcome", "START HERE"],
+    [SNOOZER_CHANNEL_IDS.changelog, "changelog", "SNOOZER UPDATES"],
+    [SNOOZER_CHANNEL_IDS.serviceStatus, "service-status", "SNOOZER UPDATES"],
+  ]) {
+    const channel = state.channels.find(item => item.id === id);
+    const category = state.channels.find(item => item.type === 4 && item.name === categoryName);
+    assert.equal(channel.name, name);
+    assert.equal(channel.parent_id, category.id);
+    assert.ok(channel.topic.length > 0);
+    assert.equal(state.channels.filter(item => item.type === 0 && item.name === name).length, 1);
+  }
+});
+
+test("repair validates configured channel IDs before creating any roles or channels", async () => {
+  const state = createGuildApi();
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+    api: state.api,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  await assert.rejects(setup.repair(), /configured #welcome channel ID .* was not found/);
+  assert.equal(state.roles.length, 1);
+  assert.equal(state.channels.length, 0);
+});
+
 test("an identically named channel outside a category is not reused for a private staff channel", async () => {
   const state = createGuildApi();
   state.channels.push(
     { id: "600000000000000001", name: "OLDER CATEGORY", type: 4 },
     { id: "600000000000000002", name: "staff-chat", type: 0, parent_id: "600000000000000001" },
   );
-  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token", channelIds: {} }, {
     api: state.api,
     logger: { info() {}, warn() {}, error() {} },
   });
@@ -125,7 +168,7 @@ test("a public or misplaced setup-state channel is rejected rather than trusted"
   state.channels.push(
     { id: "600000000000000003", name: "snoozer-setup-state", type: 0, topic: SETUP_COMPLETE_MARKER, parent_id: null },
   );
-  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token", channelIds: {} }, {
     api: state.api,
     logger: { info() {}, warn() {}, error() {} },
   });
@@ -145,7 +188,7 @@ test("an interrupted setup can be safely resumed without duplicating existing re
     return originalRequest(path, options);
   };
 
-  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token", channelIds: {} }, {
     api: state.api,
     logger: { info() {}, warn() {}, error() {} },
   });
@@ -321,7 +364,7 @@ test("server setup can run without enabling or configuring public Presence", () 
 
 test("repair reconciles drifted Snoozer role and channel permissions without duplicating resources", async () => {
   const state = createGuildApi();
-  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token" }, {
+  const setup = new DiscordGuildSetup({ guildId, botUserId, token: "test-token", channelIds: {} }, {
     api: state.api,
     logger: { info() {}, warn() {}, error() {} },
   });
