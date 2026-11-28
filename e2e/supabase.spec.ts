@@ -790,6 +790,8 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(designPreview).toHaveAttribute("data-background-video", "true");
     await expect(designPreview.locator("video.profile-background-video")).toHaveAttribute("src", /\/studio\/background-video\//);
     await page.getByLabel("Background Effects").selectOption("gradient");
+    await expect(page.getByRole("option", { name: "Aurora · PLUS", exact: true })).toBeDisabled();
+    await expect(page.getByRole("option", { name: "Singularity · STUDIO", exact: true })).toBeDisabled();
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
     await page.getByRole("checkbox", { name: "Show location on my profile" }).check();
