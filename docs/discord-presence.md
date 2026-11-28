@@ -75,7 +75,7 @@ For email/password Snoozer accounts, Discord identity linking also needs the Dis
 
 The bot cannot create a brand-new Discord guild. Create the Snoozer server in Discord first, invite the bot to it, and configure that server ID as `DISCORD_PRESENCE_GUILD_ID`.
 
-When the Presence worker starts, it registers a server-scoped `/snoozer-setup` application command in that configured guild. The command is restricted to members with the Discord **Administrator** permission and requires the explicit `confirm: true` option. It uses Gateway interactions; it does not require Message Content or the Guild Members privileged intent.
+When the Discord worker starts with `DISCORD_SERVER_SETUP_ENABLED=true`, it registers a server-scoped `/snoozer-setup` application command in that configured guild. The command is restricted to members with the Discord **Administrator** permission and requires the explicit `confirm: true` option. It uses Gateway interactions; it does not require Message Content or the Guild Members privileged intent.
 
 The command creates the Snoozer role set (`Snoozer Admin`, `Moderator`, `Support Team`, `Developer`, `Premium`, `Creator`, `Member` and `Bots`), the START HERE, SNOOZER UPDATES, COMMUNITY, SUPPORT & FEEDBACK and STAFF HQ categories, their text and voice channels, read-only announcement areas, private staff channels, and starter welcome, rules and FAQ embeds. Account-specific support is directed to the Help Centre; users are told not to share passwords or payment information in Discord.
 
