@@ -1405,7 +1405,7 @@ export class DiscordCommunityPanels{
         {id:"reason",label:"Tell us about your creator work",min:15,max:1500,style:2,placeholder:"What do you create?"},
       ]));
       else if(id==="creator:submit")await this.submitCreator(i);
-      }else if(id==="member:cases"){
+      else if(id==="member:cases"){
         const list=await this.store.caseHistory(this.guildId,uid(i),10);
         if(!Array.isArray(list)||!list.length)await this.reply(i,{content:"No moderation cases found."},true);
         else await this.reply(i,{embeds:[{title:"Your moderation cases",description:list.map(c=>"**#"+c.case_number+" · "+c.action+"** · "+c.status+"\n"+clean(c.reason,160)+"\n"+c.id).join("\n\n").slice(0,3900)}],
