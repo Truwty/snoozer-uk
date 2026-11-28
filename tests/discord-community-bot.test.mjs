@@ -73,6 +73,7 @@ function botFixture(options = {}) {
       guildId,
       botUserId,
       applicationId,
+      channelIds: options.channelIds ?? {},
     }, {
       api,
       fetcher: options.fetcher ?? globalThis.fetch,
@@ -122,6 +123,7 @@ test("registerable command set includes public help/status, private support and 
   for (const name of [
     "snoozer-help",
     "snoozer-status",
+    "snoozer-changelog",
     "snoozer-ticket",
     "snoozer-ticket-close",
     "snoozer-bug",
@@ -186,14 +188,87 @@ test("status changes are announced once in the existing service-status channel",
   assert.equal(state.calls.length, callCount, "a stable status does not create a duplicate announcement or make an unnecessary Discord API call");
 });
 
+test("welcome and server boost events post to their configured channels with safe member mentions", async () => {
+  const { bot, state } = botFixture({
+    channels: [
+      { id: "610000000000000011", name: "welcome", type: 0 },
+      { id: "610000000000000012", name: "server-boosts", type: 0 },
+    ],
+  });
+
+  const welcomed = await bot.welcomeMember({ user: { id: memberId, username: "new-member", bot: false } });
+  assert.equal(welcomed, true);
+  const welcomePost = state.calls.find(call => call.path === "/channels/610000000000000011/messages" && call.method === "POST");
+  assert.ok(welcomePost);
+  assert.match(welcomePost.body.content, new RegExp("<@" + memberId + ">"));
+  assert.deepEqual(welcomePost.body.allowed_mentions.users, [memberId]);
+
+  const firstBoost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:00:00.000Z" });
+  const secondUpdate = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:00:00.000Z" });
+  assert.equal(firstBoost, true);
+  assert.equal(secondUpdate, false);
+  const boostPosts = state.calls.filter(call => call.path === "/channels/610000000000000012/messages" && call.method === "POST");
+  assert.equal(boostPosts.length, 1);
+  assert.equal(boostPosts[0].body.content, "Thanks <@" + targetId + "> for boosting the server!");
+  assert.deepEqual(boostPosts[0].body.allowed_mentions.users, [targetId]);
+
+  await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: null });
+  const reboost = await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T05:30:00.000Z" });
+  assert.equal(reboost, true);
+  assert.equal(state.calls.filter(call => call.path === "/channels/610000000000000012/messages" && call.method === "POST").length, 2);
+});
+
+test("currently boosted members are seeded at gateway ready and do not receive a false new-boost thank-you", async () => {
+  const { bot, state } = botFixture({
+    channels: [{ id: "610000000000000012", name: "server-boosts", type: 0 }],
+  });
+  bot.seedKnownBoosters([{ user: { id: targetId }, premium_since: "2026-11-28T04:00:00.000Z" }]);
+  assert.equal(await bot.handleMemberUpdate({ user: { id: targetId }, premium_since: "2026-11-28T04:00:00.000Z" }), false);
+  assert.equal(state.calls.some(call => call.path.endsWith("/messages") && call.method === "POST"), false);
+});
+
+test("changelog command publishes a formatted entry to the existing changelog channel for authorised staff", async () => {
+  const { bot, state } = botFixture({
+    channels: [{ id: "610000000000000013", name: "changelog", type: 0 }],
+  });
+  const result = await bot.publishChangelog(interaction("snoozer-changelog", [
+    { name: "title", value: "Studio improvements" },
+    { name: "details", value: "The profile editor has been improved and several layout bugs have been fixed." },
+  ], {
+    member: {
+      user: { id: moderatorId, username: "moderator" },
+      permissions: String(1n << 13n),
+      roles: [],
+    },
+  }));
+  assert.match(result, /published in/);
+  const post = state.calls.find(call => call.path === "/channels/610000000000000013/messages" && call.method === "POST");
+  assert.ok(post);
+  assert.equal(post.body.embeds[0].title, "Snoozer update · Studio improvements");
+  assert.deepEqual(post.body.allowed_mentions.parse, []);
+});
+
+test("members without Manage Messages cannot publish changelog entries", async () => {
+  const { bot } = botFixture({
+    channels: [{ id: "610000000000000013", name: "changelog", type: 0 }],
+  });
+  await assert.rejects(bot.publishChangelog(interaction("snoozer-changelog", [
+    { name: "title", value: "Studio improvements" },
+    { name: "details", value: "The profile editor has been improved and several layout bugs have been fixed." },
+  ])), /need Manage Messages/);
+});
+
 test("support ticket creates a private channel, notifies support and prevents duplicate open tickets", async () => {
   const roles = [
     { id: "610000000000000001", name: "Snoozer Admin" },
-    { id: "610000000000000002", name: "Moderator" },
-    { id: "610000000000000003", name: "Support Team" },
+    { id: "610000000000000002", name: "Senior Moderator" },
+    { id: "610000000000000003", name: "Moderator" },
+    { id: "610000000000000004", name: "Support Team" },
+    { id: "610000000000000005", name: "Support Manager" },
+    { id: "610000000000000006", name: "Ticket Support" },
   ];
   const channels = [
-    { id: "620000000000000001", name: "SUPPORT & FEEDBACK", type: 4 },
+    { id: "620000000000000001", name: "TICKETS", type: 4 },
     { id: "620000000000000002", name: "support-queue", type: 0 },
   ];
   const { bot, state } = botFixture({ roles, channels });
@@ -207,7 +282,7 @@ test("support ticket creates a private channel, notifies support and prevents du
   assert.ok(ticket);
   const publicDeny = ticket.permission_overwrites.find(entry => entry.id === guildId && entry.type === 0);
   const ownerAllow = ticket.permission_overwrites.find(entry => entry.id === memberId && entry.type === 1);
-  const supportAllow = ticket.permission_overwrites.find(entry => entry.id === "610000000000000003" && entry.type === 0);
+  const supportAllow = ticket.permission_overwrites.find(entry => entry.id === "610000000000000004" && entry.type === 0);
   assert.equal(publicDeny.deny, "1024");
   assert.ok(BigInt(ownerAllow.allow) & (1n << 10n));
   assert.ok(BigInt(supportAllow.allow) & (1n << 10n));
@@ -254,8 +329,9 @@ test("ticket close is limited to the owner or staff and locks the owner's send p
 test("private member reports notify moderators but do not grant Support Team access", async () => {
   const roles = [
     { id: "610000000000000001", name: "Snoozer Admin" },
-    { id: "610000000000000002", name: "Moderator" },
-    { id: "610000000000000003", name: "Support Team" },
+    { id: "610000000000000002", name: "Senior Moderator" },
+    { id: "610000000000000003", name: "Moderator" },
+    { id: "610000000000000004", name: "Support Team" },
   ];
   const channels = [
     { id: "620000000000000003", name: "STAFF HQ", type: 4 },
