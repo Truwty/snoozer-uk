@@ -226,6 +226,14 @@ export class DiscordCommunityBot {
     }
   }
 
+  handleMemberRemove(member) {
+    const userId = member?.user?.id;
+    if (!safeSnowflake(userId)) return false;
+    this.knownMembers.delete(userId);
+    this.boostedMembers.delete(userId);
+    return true;
+  }
+
   async welcomeMember(member) {
     const user = member?.user ?? {};
     const userId = user.id;
