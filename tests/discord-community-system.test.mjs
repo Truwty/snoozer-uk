@@ -888,23 +888,27 @@ test("ticket modal creates a private channel with string permission overwrites a
   const calls = [];
   const logs = [];
   const replies = [];
+  const sequence = [];
   const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
     api: {
       async request(path, options = {}) {
         calls.push({ path, options: structuredClone(options) });
+        if (path.startsWith("/interactions/") && path.endsWith("/callback")) sequence.push("initial acknowledgement");
         if (path === "/guilds/" + guildId + "/channels" && options.method === "POST") return { id: ticketChannelId };
         return {};
       },
     },
     store: {
-      async recordInteraction() { return true; },
-      async openTicket() { return { created: true, ticket_id: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90" }; },
+      async recordInteraction() { sequence.push("interaction receipt"); return true; },
+      async ticketPreflight() { sequence.push("ticket preflight"); return { allowed: true }; },
+      async openTicket() { sequence.push("ticket record"); return { created: true, ticket_id: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c90" }; },
       async enqueueJob() { return true; },
     },
     logEvent: async event => logs.push(event),
   });
   panels.resources.category_tickets = "1574262035519115802";
   panels.resources.ticket_queue = queueChannelId;
+  panels.complete = async (_interaction, payload) => { replies.push(payload); return {}; };
   panels.reply = async (_interaction, payload) => { replies.push(payload); return {}; };
 
   await panels.handle({
@@ -924,6 +928,7 @@ test("ticket modal creates a private channel with string permission overwrites a
   });
 
   const create = calls.find(call => call.path === "/guilds/" + guildId + "/channels" && call.options.method === "POST");
+  assert.deepEqual(sequence, ["initial acknowledgement", "interaction receipt", "ticket preflight", "ticket record"]);
   assert.ok(create, "ticket channel should be created");
   assert.deepEqual(create.options.body.permission_overwrites.map(item => [item.type, item.allow, item.deny]), [
     [0, "0", "1024"],
@@ -934,6 +939,71 @@ test("ticket modal creates a private channel with string permission overwrites a
     typeof item.allow === "string" && typeof item.deny === "string"));
   assert.ok(logs.some(event => event.title === "Support ticket opened" && event.description.includes(ticketChannelId)));
   assert.match(replies.at(-1).content, /ticket has been created/i);
+});
+
+test("Creator verification channel is private, registered and receives pending review cards", async () => {
+  const categoryId = "1574262035519115830";
+  const creatorChannelId = "1574262035519115831";
+  const adminRoleId = "1574262035519115832";
+  const developerRoleId = "1574262035519115833";
+  const creatorId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c92";
+  const messageId = "1574262035519115834";
+  const state = {
+    resources: [
+      { resource_key: "category_internal", resource_type: "category", discord_id: categoryId, name: "INTERNAL" },
+      { resource_key: "role_admin", resource_type: "role", discord_id: adminRoleId, name: "Admin" },
+      { resource_key: "role_developer", resource_type: "role", discord_id: developerRoleId, name: "Developer" },
+    ],
+    config: {},
+    posts: [],
+    channel: null,
+  };
+  const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
+    api: {
+      async request(path, options = {}) {
+        if (path === "/guilds/" + guildId + "/channels" && !options.method) return state.channel ? [state.channel] : [];
+        if (path === "/guilds/" + guildId + "/channels" && options.method === "POST") {
+          state.channel = { id: creatorChannelId, ...structuredClone(options.body) };
+          return structuredClone(state.channel);
+        }
+        if (path === "/channels/" + creatorChannelId && options.method === "PATCH") {
+          Object.assign(state.channel, structuredClone(options.body));
+          return structuredClone(state.channel);
+        }
+        if (path === "/channels/" + creatorChannelId + "/messages?limit=100") return [];
+        if (path === "/channels/" + creatorChannelId + "/messages" && options.method === "POST") {
+          state.posts.push(structuredClone(options.body));
+          return { id: messageId };
+        }
+        throw new Error("Unexpected Discord API request: " + path);
+      },
+    },
+    store: {
+      async getResources() { return { rows: structuredClone(state.resources), map: Object.fromEntries(state.resources.map(item => [item.resource_key, item.discord_id])) }; },
+      async registerResources(_guild, rows) { state.resources = structuredClone(rows); return true; },
+      async getConfig() { return structuredClone(state.config); },
+      async setConfig(_guild, key, value) { state.config[key] = structuredClone(value); return true; },
+      async creatorQueue() { return [{ id: creatorId, discord_user_id: "1574262035519115835", profile_url: "https://snoozer.uk/testcreator", reason: "I create useful community projects and tutorials.", created_at: new Date().toISOString() }]; },
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  const registered = await panels.ensureCreatorVerificationChannel();
+  assert.equal(registered, creatorChannelId);
+  assert.equal(state.channel.parent_id, categoryId);
+  const everyone = state.channel.permission_overwrites.find(item => item.id === guildId && item.type === 0);
+  assert.equal(everyone.deny, String(1n << 10n));
+  assert.ok(state.channel.permission_overwrites.some(item => item.id === adminRoleId && item.type === 0));
+  assert.ok(!state.channel.permission_overwrites.some(item => item.id === developerRoleId && item.type === 0));
+  assert.ok(state.resources.some(item => item.resource_key === "creator_verification" && item.discord_id === creatorChannelId));
+
+  const published = await panels.publishCreatorQueue();
+  assert.equal(published.posted, 1);
+  assert.equal(state.posts.length, 1);
+  assert.deepEqual(state.posts[0].components[0].components.map(item => item.custom_id), [
+    "creator:approve:" + creatorId, "creator:reject:" + creatorId,
+  ]);
+  assert.equal(state.config["creator_" + creatorId.replaceAll("-", "")].message_id, messageId);
 });
 
 test("Discord server activity is posted to the configured bot logs channel without copying message content", async () => {
