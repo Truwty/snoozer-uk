@@ -66,10 +66,24 @@ For email/password Snoozer accounts, Discord identity linking also needs the Dis
 1. Create or select a Discord application that will own the presence bot.
 2. Add a bot user.
 3. In **Bot → Privileged Gateway Intents**, enable **Presence Intent**. Do not enable Message Content or Server Members for this integration.
-4. Invite the bot to the single shared Snoozer Discord server. It needs no channel permissions for presence observation; keep its permissions minimal.
+4. Invite the bot to the single shared Snoozer Discord server with the `bot` and `applications.commands` scopes. Presence observation itself needs no channel permissions, but the one-time server setup command needs **Manage Channels**, **Manage Roles**, **View Channels**, **Send Messages**, **Embed Links** and **Read Message History**. Give the bot role these permissions and place it above the roles it will manage. The combined permission bitfield is `268520464`.
 5. Copy the server ID with Discord Developer Mode enabled. This becomes `DISCORD_PRESENCE_GUILD_ID`.
 6. Publish the server invite in `DISCORD_PRESENCE_INVITE_URL` so creators know where they must be members.
 7. Keep the bot token private. Never put it in GitHub, source code, browser configuration or ChatGPT messages.
+
+## One-time Snoozer server setup
+
+The bot cannot create a brand-new Discord guild. Create the Snoozer server in Discord first, invite the bot to it, and configure that server ID as `DISCORD_PRESENCE_GUILD_ID`.
+
+When the Presence worker starts, it registers a server-scoped `/snoozer-setup` application command in that configured guild. The command is restricted to members with the Discord **Administrator** permission and requires the explicit `confirm: true` option. It uses Gateway interactions; it does not require Message Content or the Guild Members privileged intent.
+
+The command creates the Snoozer role set (`Snoozer Admin`, `Moderator`, `Support Team`, `Developer`, `Premium`, `Creator`, `Member` and `Bots`), the START HERE, SNOOZER UPDATES, COMMUNITY, SUPPORT & FEEDBACK and STAFF HQ categories, their text and voice channels, read-only announcement areas, private staff channels, and starter welcome, rules and FAQ embeds. Account-specific support is directed to the Help Centre; users are told not to share passwords or payment information in Discord.
+
+The hidden `INTERNAL` category contains `#snoozer-setup-state`. Its channel topic stores `SNOOZER_SERVER_SETUP_COMPLETE:v1` after every setup step succeeds. A later invocation checks this marker and makes no changes. If a request fails before completion, the command can be retried: existing roles and channels are reused, existing messages are checked for their setup footer, and nothing is deleted or renamed. Do not delete the hidden marker channel if you want to preserve the one-time lock.
+
+The command does not assign roles to people, sync Premium subscriptions, run a ticket system or enable automated moderation. Assign staff and cosmetic roles manually after setup. Existing channels and roles are preserved rather than reconfigured; inspect their permissions if you are reusing an established server.
+
+The command is available only while `DISCORD_PRESENCE_ENABLED=true` and the worker is running. It registers against `DISCORD_PRESENCE_GUILD_ID`; do not point the same bot process at a different guild to provision a second server.
 
 Discord's 10 June 2026 privileged-intent rules use the number of unique users who can access the app across all installed servers, not the number of servers. Apps accessible to fewer than 10,000 users may enable Presence Intent using the Developer Portal toggle. At 10,000 users, Discord notifies the owner and requires a privileged-intent review request within 90 days; apps granted access through review must reapply annually when notified. Check the Developer Portal for the app's current eligibility and any review notice before launch. These intent-access rules do not resolve the separate policy question about displaying Discord API Data inside Snoozer's wider paid SaaS; obtain written confirmation from Discord before enabling public presence.
 
