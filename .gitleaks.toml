@@ -1,0 +1,15 @@
+title = "Snoozer secret scanning configuration"
+
+[extend]
+useDefault = true
+
+# This is a single historical false positive in a table-name list.
+# Keep full-history scanning and every other default rule enabled.
+[[allowlists]]
+description = "One exact historical Discord-looking database identifier; not a credential."
+targetRules = ["discord-client-secret"]
+condition = "AND"
+commits = ["c8aa4dc41024c8668b01b0f64b32545c3a880ce1"]
+paths = [ '''^supabase/migrations/20261128120000_discord_community_system\.sql$''' ]
+regexTarget = "line"
+regexes = [ '''^\s*'discord[_]bot[_]activity[_]daily','discord[_]bot[_]interaction[_]receipts'\s*$''' ]

@@ -12,12 +12,20 @@ const PERMISSIONS = {
   embedLinks: 1n << 14n,
   attachFiles: 1n << 15n,
   manageChannels: 1n << 4n,
+  manageGuild: 1n << 5n,
+  viewAuditLog: 1n << 7n,
   manageRoles: 1n << 28n,
+  manageWebhooks: 1n << 29n,
+  manageEvents: 1n << 33n,
 };
 
 const STAFF_ROLE_NAMES = ["Snoozer Admin", "Senior Moderator", "Moderator", "Support Team", "Support Manager", "Ticket Support"];
 const REQUIRED_BOT_PERMISSIONS = [
+  ["Manage Server", PERMISSIONS.manageGuild],
+  ["View Audit Log", PERMISSIONS.viewAuditLog],
   ["Manage Channels", PERMISSIONS.manageChannels],
+  ["Manage Webhooks", PERMISSIONS.manageWebhooks],
+  ["Manage Events", PERMISSIONS.manageEvents],
   ["Manage Roles", PERMISSIONS.manageRoles],
   ["View Channels", PERMISSIONS.viewChannel],
   ["Send Messages", PERMISSIONS.sendMessages],
@@ -180,6 +188,8 @@ export class DiscordCommunityBot {
     this.fetcher = dependencies.fetcher ?? globalThis.fetch;
     this.logger = dependencies.logger ?? console;
     this.channelIds = config.channelIds ?? SNOOZER_CHANNEL_IDS;
+    this.categoryIds = config.categoryIds ?? {};
+    this.roleIds = config.roleIds ?? {};
     this.statusBaseline = null;
     this.cooldowns = new Map();
     this.ticketCreationLocks = new Set();
@@ -244,6 +254,15 @@ export class DiscordCommunityBot {
       return false;
     }
     this.knownMembers.add(userId);
+    const memberRoleId = this.roleIds.member;
+    if (memberRoleId && Array.isArray(member.roles) && !member.roles.includes(memberRoleId)) {
+      const nextRoles = [...member.roles, memberRoleId];
+      try {
+        await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: nextRoles } });
+      } catch (error) {
+        this.logger.warn("[discord-community] default Member role assignment failed: " + (error?.message ?? error));
+      }
+    }
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "welcome", "welcome");
     if (!channel?.id) {
@@ -269,9 +288,29 @@ export class DiscordCommunityBot {
     return true;
   }
 
-  async announceServerBoost(member) {
+    async goodbyeMember(member) {
+    const userId=member?.user?.id;
+    if(!safeSnowflake(userId)||member.user.bot)return false;
+    const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
+    const channel=Array.isArray(channels)?channels.find(item=>item.type===0&&(
+      this.channelIds.goodbye?item.id===this.channelIds.goodbye:item.name==="goodbye"
+    )):null;
+    if(!channel)return false;
+    await this.api.request("/channels/"+channel.id+"/messages",{method:"POST",body:{
+      embeds:[{title:"Member left Snoozer",description:"<@"+userId+"> has left the Snoozer community. Thank you for being part of it.",
+        color:0x7a8493,timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+    }});
+    return true;
+  }
+
+async announceServerBoost(member) {
     const userId = member?.user?.id;
     if (!safeSnowflake(userId)) return false;
+    const boosterRoleId = this.roleIds.booster;
+    if (boosterRoleId && Array.isArray(member.roles) && !member.roles.includes(boosterRoleId)) {
+      try { await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: [...member.roles, boosterRoleId] } }); }
+      catch (error) { this.logger.warn("[discord-community] booster role assignment failed: " + (error?.message ?? error)); }
+    }
     const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
     const channel = this.findChannel(channels, "serverBoosts", "server-boosts");
     if (!channel?.id) {
@@ -286,6 +325,17 @@ export class DiscordCommunityBot {
       },
     });
     this.logger.info("[discord-community] posted a server boost thank-you.");
+    try{
+      const guild=await this.api.request("/guilds/"+this.guildId);
+      const count=Number(guild?.premium_subscription_count??0);
+      const milestones=new Set([5,10,15,20,25,30,40,50,75,100]);
+      if(milestones.has(count)&&this.channelIds.serverBoosts){
+        await this.api.request("/channels/"+this.channelIds.serverBoosts+"/messages",{method:"POST",body:{
+          embeds:[{title:"🚀 Snoozer boost milestone reached",description:"The community has reached **"+count+" server boosts**. Thank you to everyone supporting Snoozer.",
+            color:0xc69a43,timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+        }});
+      }
+    }catch(error){this.logger.warn("[discord-community] booster milestone check failed: "+(error?.message??error));}
     return true;
   }
 
@@ -295,6 +345,11 @@ export class DiscordCommunityBot {
     if (!Object.hasOwn(member, "premium_since")) return false;
     if (!member.premium_since) {
       this.boostedMembers.delete(userId);
+      const boosterRoleId = this.roleIds.booster;
+      if (boosterRoleId && Array.isArray(member.roles) && member.roles.includes(boosterRoleId)) {
+        try { await this.api.request("/guilds/" + this.guildId + "/members/" + userId, { method: "PATCH", body: { roles: member.roles.filter(id => id !== boosterRoleId) } }); }
+        catch (error) { this.logger.warn("[discord-community] booster role removal failed: " + (error?.message ?? error)); }
+      }
       return false;
     }
     const boostStartedAt = Date.parse(member.premium_since);
@@ -521,7 +576,8 @@ export class DiscordCommunityBot {
 
   async createPrivateChannel({ interaction, channelPrefix, categoryName, topic, message, staffRoleNames, targetUserId, notifyRoleName = "Ticket Support" }) {
     const { channels, roles } = await this.guildResources();
-    const parent = channels.find(item => item.type === 4 && item.name.toLowerCase() === categoryName.toLowerCase());
+    const categoryId = channelPrefix === "ticket" ? this.categoryIds.tickets : this.categoryIds.teamHq;
+    const parent = channels.find(item => item.type === 4 && (categoryId ? item.id === categoryId : item.name.toLowerCase() === categoryName.toLowerCase()));
     if (!parent) throw new Error("The " + categoryName + " category is missing. An administrator should run /snoozer-repair.");
     const opener = interaction.user ?? interaction.member?.user ?? {};
     const openerId = interaction.member?.user?.id ?? interaction.user?.id;
@@ -535,12 +591,20 @@ export class DiscordCommunityBot {
       if (openTicket) return { existing: true, channel: openTicket };
     }
 
-    const staffRoles = roles.filter(role => staffRoleNames.includes(role.name));
-    const missingStaffRoles = staffRoleNames.filter(name => !staffRoles.some(role => role.name === name));
+    const roleKeyByName = new Map([["Snoozer Admin","admin"],["Senior Moderator","senior_moderator"],["Moderator","moderator"],["Community Manager","community_manager"],["Support Manager","support_manager"],["Support Team","support_team"],["Ticket Support","ticket_support"]]);
+    const configuredStaffIds = staffRoleNames.map(name => this.roleIds[roleKeyByName.get(name)]).filter(Boolean);
+    const staffRoles = configuredStaffIds.length
+      ? roles.filter(role => configuredStaffIds.includes(role.id))
+      : roles.filter(role => staffRoleNames.includes(role.name));
+    const missingStaffRoles = configuredStaffIds.length
+      ? configuredStaffIds.filter(id => !staffRoles.some(role => role.id === id))
+      : staffRoleNames.filter(name => !staffRoles.some(role => role.name === name));
     if (missingStaffRoles.length) {
       throw new Error("Required Snoozer staff roles are missing: " + missingStaffRoles.join(", ") + ". Ask an Administrator to run /snoozer-repair.");
     }
-    const notifyRole = notifyRoleName ? roles.find(role => role.name === notifyRoleName) : null;
+    const notifyRoleKey = notifyRoleName === "Moderator" ? "moderator" : notifyRoleName === "Ticket Support" ? "ticket_support" : null;
+    const notifyRoleId = notifyRoleKey ? this.roleIds[notifyRoleKey] : null;
+    const notifyRole = notifyRoleId ? roles.find(role => role.id === notifyRoleId) : (notifyRoleName ? roles.find(role => role.name === notifyRoleName) : null);
     const viewSendRead = PERMISSIONS.viewChannel | PERMISSIONS.sendMessages | PERMISSIONS.readMessageHistory | PERMISSIONS.embedLinks;
     const overwrites = [
       { id: this.guildId, type: 0, allow: "0", deny: PERMISSIONS.viewChannel.toString() },
@@ -611,7 +675,7 @@ export class DiscordCommunityBot {
   async logSupportTicket(interaction, channel, subject) {
     try {
       const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
-      const queue = Array.isArray(channels) ? channels.find(item => item.type === 0 && item.name === "support-queue") : null;
+      const queue = Array.isArray(channels) ? channels.find(item => item.type === 0 && (this.channelIds.ticketQueue ? item.id === this.channelIds.ticketQueue : item.name === "support-queue")) : null;
       if (!queue?.id) return false;
       const openerId = interaction.member?.user?.id ?? interaction.user?.id;
       await this.api.request("/channels/" + queue.id + "/messages", {
@@ -736,7 +800,7 @@ export class DiscordCommunityBot {
     let reportLogged = false;
     try {
       const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
-      const log = Array.isArray(channels) ? channels.find(item => item.type === 0 && item.name === "moderation-log") : null;
+      const log = Array.isArray(channels) ? channels.find(item => item.type === 0 && (this.channelIds.moderationLog ? item.id === this.channelIds.moderationLog : item.name === "moderation-log")) : null;
       if (log?.id) {
         await this.api.request("/channels/" + log.id + "/messages", {
           method: "POST",
@@ -763,7 +827,7 @@ export class DiscordCommunityBot {
   async moderationLog(action, interaction, targetId, reason, extra = "") {
     try {
       const channels = await this.api.request("/guilds/" + this.guildId + "/channels");
-      const log = Array.isArray(channels) ? channels.find(item => item.type === 0 && item.name === "moderation-log") : null;
+      const log = Array.isArray(channels) ? channels.find(item => item.type === 0 && (this.channelIds.moderationLog ? item.id === this.channelIds.moderationLog : item.name === "moderation-log")) : null;
       if (!log?.id) {
         this.logger.error("[discord-community] moderation action completed but #moderation-log was not found.");
         return false;

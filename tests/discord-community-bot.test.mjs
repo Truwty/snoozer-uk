@@ -150,7 +150,7 @@ test("bot permission preflight clearly reports missing moderation permissions", 
     memberRoles: [botRoleId],
   });
   const result = await bot.preflightPermissions();
-  assert.deepEqual(result.missing, ["Kick Members", "Ban Members", "Moderate Members"]);
+  assert.deepEqual(result.missing, ["Manage Server", "View Audit Log", "Manage Webhooks", "Manage Events", "Kick Members", "Ban Members", "Moderate Members"]);
 });
 
 test("status command renders the live snapshot as a public Snoozer embed", async () => {
