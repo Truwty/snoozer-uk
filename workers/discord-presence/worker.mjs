@@ -107,6 +107,26 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export function buildGuildCommands(config) {
+  const commands = [];
+  // The old one-time setup command is only exposed when the full community bot is disabled.
+  if (config.serverSetupEnabled && !config.botEnabled) commands.push(SNOOZER_SETUP_COMMAND);
+  if (config.botEnabled) {
+    commands.push(
+      ...DISCORD_COMMUNITY_COMMANDS,
+      SNOOZER_REBUILD_COMMAND,
+      SNOOZER_RESTORE_COMMAND,
+      ...SNOOZER_MEMBER_COMMANDS,
+      ...SNOOZER_ADMIN_COMMANDS,
+    );
+  }
+  const names = commands.map(command => command.name);
+  if (new Set(names).size !== names.length) {
+    throw new Error("The Snoozer Discord command list contains duplicate command names.");
+  }
+  return commands;
+}
+
 export class DiscordPresenceWorker {
   constructor(config, dependencies = {}) {
     this.config = config;
@@ -321,15 +341,11 @@ export class DiscordPresenceWorker {
     }
     this.botUserId = botUser.id;
     this.applicationId = application.id;
-    const commands = [];
-    // The complete rebuild replaces the old one-time setup command when the community bot is enabled.
-    if (this.config.serverSetupEnabled && !this.config.botEnabled) commands.push(SNOOZER_SETUP_COMMAND);
-    if (this.config.botEnabled) commands.push(...DISCORD_COMMUNITY_COMMANDS.filter(command => command.name !== "snoozer-repair"), SNOOZER_REBUILD_COMMAND, SNOOZER_RESTORE_COMMAND, ...SNOOZER_MEMBER_COMMANDS, ...SNOOZER_ADMIN_COMMANDS);
+    const commands = buildGuildCommands(this.config);
     if (commands.length === 0) throw new Error("No Discord guild commands are enabled.");
     const commandPath = "/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands";
-    for (const command of commands) {
-      await this.discordApi.request(commandPath, { method: "POST", body: command });
-    }
+    // Guild command bulk overwrite also removes obsolete commands left by older bot versions.
+    await this.discordApi.request(commandPath, { method: "PUT", body: commands });
     if (this.config.botEnabled) {
       this.discordStore = new DiscordStore({
         url: this.config.supabaseUrl,

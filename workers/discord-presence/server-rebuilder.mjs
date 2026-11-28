@@ -57,9 +57,6 @@ function channelOverwrites(guildId,botUserId,roleIds,category,channel) {
   ];
   return categoryOverwrites(guildId,botUserId,roleIds,category.visibility);
 }
-function isKnownLegacyRole(role) {
-  return LEGACY_ROLE_NAMES.has(normaliseRole(role.name));
-}
 function safeSnapshot(roles,channels,guildId) {
   if(!Array.isArray(roles)||!Array.isArray(channels)
     ||roles.length>250||channels.length>500
@@ -112,9 +109,13 @@ export class DiscordServerRebuilder {
     const hasAdministrator=(perms&P.administrator)===P.administrator;
     const missing=hasAdministrator?[]:required.filter(key=>(perms&P[key])!==P[key]);
     if(missing.length) throw new Error("The bot is missing required permissions: "+missing.join(", ")+". No server changes were made.");
-    const blockedLegacy=roles.filter(isKnownLegacyRole).filter(role=>!role.managed&&Number(role.position)>=botTop);
-    if(blockedLegacy.length) throw new Error("The bot role is below or level with roles that need replacing: "+blockedLegacy.map(role=>role.name).join(", ")+". Move the bot role above the Snoozer roles, then retry. No server changes were made.");
-    return {roles,channels,botMember,botTop,permissions:perms};
+    // A full reset deletes every ordinary custom role, not only roles created by earlier Snoozer layouts.
+    // Keep @everyone, managed integration roles, and every role assigned to the bot so it retains API access.
+    const protectedRoleIds=new Set(botMember.roles);
+    const replaceableRoles=roles.filter(role=>role.id!==this.guildId&&!role.managed&&!protectedRoleIds.has(role.id));
+    const blockedRoles=replaceableRoles.filter(role=>Number(role.position??0)>=botTop);
+    if(blockedRoles.length) throw new Error("The bot role is below or level with roles that must be removed: "+blockedRoles.map(role=>role.name).join(", ")+". Move the bot's highest role above every ordinary server role, then retry. No server changes were made.");
+    return {roles,channels,botMember,botTop,permissions:perms,protectedRoleIds,replaceableRoles};
   }
 
   async listMembers() {
@@ -176,7 +177,10 @@ export class DiscordServerRebuilder {
     const channels=await this.api.request("/guilds/"+this.guildId+"/channels");
     const found=channels.find(item=>item.type===(channel.type==="voice"?2:0)&&item.name===channel.name);
     const body={name:channel.name,type:channel.type==="voice"?2:0,parent_id:parent.id,
-      topic:channel.topic,permission_overwrites:channelOverwrites(this.guildId,this.botUserId,roleIds,category,channel)};
+      permission_overwrites:channelOverwrites(this.guildId,this.botUserId,roleIds,category,channel)};
+    // Discord only accepts the topic field on text-like channels. Sending it on a voice
+    // channel causes HTTP 400 / INVALID_FORM_BODY and aborts the rebuild part-way through.
+    if(channel.type!=="voice"&&typeof channel.topic==="string")body.topic=channel.topic;
     const result=found
       ? await this.api.request("/channels/"+found.id,{method:"PATCH",body})
       : await this.api.request("/guilds/"+this.guildId+"/channels",{method:"POST",body});
@@ -209,20 +213,23 @@ export class DiscordServerRebuilder {
     return {roleIds,channelIds,categories,resources};
   }
 
-  async migrateMemberRoles(members,oldRoles,newRoleIds) {
+  async migrateMemberRoles(members,oldRoles,newRoleIds,deletedRoleIds=[]) {
+    const deleted=new Set(deletedRoleIds);
     const oldMap=new Map();
     for(const role of oldRoles) {
       if(role.managed) continue;
       const key=LEGACY_ROLE_NAMES.get(normaliseRole(role.name));
-      // Remove old entitlement roles; only verified Supabase entitlement/approval reconciliation may grant replacements.
+      // Entitlement roles are removed here and only granted again by verified Supabase sync.
       if(key) oldMap.set(role.id,key==="premium"||key==="creator"?null:key);
     }
     let updated=0;
     for(const member of members) {
       const userId=member.user?.id;
       if(!validSnowflake(userId)||userId===this.botUserId) continue;
-      const roles=new Set((member.roles??[]).filter(id=>!oldMap.has(id)));
-      const mapped=new Set((member.roles??[]).map(id=>oldMap.get(id)).filter(Boolean));
+      // Remove every role deleted by the reset, including custom roles unknown to Snoozer.
+      const assigned=member.roles??[];
+      const roles=new Set(assigned.filter(id=>!deleted.has(id)&&!oldMap.has(id)));
+      const mapped=new Set(assigned.map(id=>oldMap.get(id)).filter(Boolean));
       if(member.user?.bot) mapped.add("bots");
       else {
         mapped.add("member");
@@ -230,7 +237,7 @@ export class DiscordServerRebuilder {
       }
       for(const key of mapped) if(newRoleIds[key]) roles.add(newRoleIds[key]);
       const next=[...roles];
-      if(next.length!==(member.roles??[]).length||next.some(id=>!(member.roles??[]).includes(id))) {
+      if(next.length!==assigned.length||next.some(id=>!assigned.includes(id))) {
         await this.api.request("/guilds/"+this.guildId+"/members/"+userId,{method:"PATCH",body:{roles:next}});
         updated++;
       }
@@ -277,15 +284,20 @@ export class DiscordServerRebuilder {
     return {deleted:oldChannels.length-errors.length,remaining:errors};
   }
 
-  async deleteOldRoles(oldRoles,newRoleIds) {
-    const created=new Set(Object.values(newRoleIds));
+  async deleteOldRoles(oldRoles,protectedRoleIds=[]) {
+    const protectedIds=new Set([this.guildId,...protectedRoleIds]);
+    const targets=oldRoles.filter(role=>!protectedIds.has(role.id)&&!role.managed&&role.id!==this.guildId);
     const errors=[];
-    const targets=oldRoles.filter(role=>!created.has(role.id)&&!role.managed&&role.id!==this.guildId&&isKnownLegacyRole(role));
+    const deletedIds=[];
     for(const role of targets) {
-      try { await this.api.request("/guilds/"+this.guildId+"/roles/"+role.id,{method:"DELETE"}); }
-      catch(error) { errors.push({name:role.name,id:role.id,error:String(error?.message??error).slice(0,200)}); }
+      try {
+        await this.api.request("/guilds/"+this.guildId+"/roles/"+role.id,{method:"DELETE"});
+        deletedIds.push(role.id);
+      } catch(error) {
+        errors.push({name:role.name,id:role.id,error:String(error?.message??error).slice(0,500)});
+      }
     }
-    return {deleted:targets.length-errors.length,remaining:errors};
+    return {deleted:deletedIds.length,deletedIds,preserved:oldRoles.length-targets.length,remaining:errors};
   }
 
 
@@ -415,12 +427,24 @@ export class DiscordServerRebuilder {
     const backupId=await this.store.saveBackup(this.guildId,actorId,snapshot);
     if(!backupId) throw new Error("The old server configuration backup was not saved. No server changes were made.");
     await this.pruneOldBackups();
+
+    // Empty the existing layout before creating anything new. Keep @everyone,
+    // integration-managed roles, and the bot's own assigned roles so it retains access.
+    const channelResult=await this.deleteOldChannels(before.channels);
+    if(channelResult.remaining.length) {
+      const failures=channelResult.remaining.map(item=>item.name+" ("+item.id+"): "+item.error).join("; ");
+      throw new Error("The reset stopped before rebuilding because "+channelResult.remaining.length+" of "+before.channels.length+" channels could not be deleted. Removed "+channelResult.deleted+". Failures: "+failures+". The configuration backup is "+backupId+".");
+    }
+
+    const roleResult=await this.deleteOldRoles(before.roles,before.protectedRoleIds??before.botMember?.roles??[]);
+    if(roleResult.remaining.length) {
+      const failures=roleResult.remaining.map(item=>item.name+" ("+item.id+"): "+item.error).join("; ");
+      throw new Error("The reset stopped before rebuilding because "+roleResult.remaining.length+" roles could not be deleted. Removed "+roleResult.deleted+" ordinary roles. Failures: "+failures+". The configuration backup is "+backupId+".");
+    }
+
+    const deletedRoleIds=roleResult.deletedIds;
     const created=await this.createNewStructure();
-    const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds);
-    const newResourceIds=new Set(created.resources.map(resource=>resource.discord_id));
-    const oldOnlyChannels=before.channels.filter(channel=>!newResourceIds.has(channel.id));
-    const channelResult=await this.deleteOldChannels(oldOnlyChannels);
-    const roleResult=await this.deleteOldRoles(before.roles,created.roleIds);
+    const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds,deletedRoleIds);
     const roleSync=await this.syncMembershipRoles(created.roleIds);
     let panelResult={posted:0,errors:[]};
     try { panelResult=await this.onPanelsReady({channelIds:created.channelIds,roleIds:created.roleIds}); }
@@ -431,7 +455,7 @@ export class DiscordServerRebuilder {
       roleCount:Object.keys(created.roleIds).length,
       memberCount:members.length,memberRolesMigrated,
       channelsDeleted:channelResult.deleted,channelDeletionErrors:channelResult.remaining,
-      rolesDeleted:roleResult.deleted,roleDeletionErrors:roleResult.remaining,
+      rolesDeleted:roleResult.deleted,rolesPreserved:roleResult.preserved,roleDeletionErrors:roleResult.remaining,
       roleSync,panelResult,
       complete:channelResult.remaining.length===0&&roleResult.remaining.length===0&&panelResult.errors.length===0,
     };

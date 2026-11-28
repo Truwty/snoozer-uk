@@ -21,6 +21,26 @@ const bitset = (...names) => names.reduce((value, name) => value | PERMISSIONS[n
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const normaliseName = value => String(value ?? "").trim().toLowerCase();
 
+function describeDiscordValidationErrors(errors) {
+  const issues = [];
+  const visit = (value, path = "body") => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value._errors)) {
+      for (const issue of value._errors) {
+        const message = typeof issue?.message === "string" ? issue.message : issue?.code;
+        if (message) issues.push(path + ": " + message);
+      }
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "_errors") continue;
+      if (Array.isArray(child)) child.forEach((entry, index) => visit(entry, path + "." + key + "." + index));
+      else if (child && typeof child === "object") visit(child, path + "." + key);
+    }
+  };
+  visit(errors);
+  return issues.slice(0, 20).join("; ").slice(0, 1_200);
+}
+
 export const SETUP_COMPLETE_MARKER = "SNOOZER_SERVER_SETUP_COMPLETE:v1";
 export const SETUP_PENDING_MARKER = "SNOOZER_SERVER_SETUP_PENDING:v1";
 
@@ -88,7 +108,9 @@ export class DiscordApiClient {
       }
 
       if (!response.ok) {
-        const detail = typeof data?.message === "string" ? data.message : "No error detail returned";
+        const message = typeof data?.message === "string" ? data.message : "No error detail returned";
+        const validation = describeDiscordValidationErrors(data?.errors);
+        const detail = validation ? message + "; validation: " + validation : message;
         const code = data?.code ? " (Discord code " + data.code + ")" : "";
         throw new Error("Discord API " + method + " " + path + " failed with HTTP " + response.status + code + ": " + detail);
       }

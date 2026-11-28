@@ -294,8 +294,8 @@ test("worker registers /snoozer-setup only in the configured guild", async () =>
       if (url.endsWith("/oauth2/applications/@me")) {
         return new Response(JSON.stringify({ id: "777777777777777777" }), { status: 200, headers: { "content-type": "application/json" } });
       }
-      return new Response(JSON.stringify({ id: "666666666666666666", name: "snoozer-setup" }), {
-        status: 201,
+      return new Response(JSON.stringify([{ id: "666666666666666666", name: "snoozer-setup" }]), {
+        status: 200,
         headers: { "content-type": "application/json" },
       });
     },
@@ -307,8 +307,11 @@ test("worker registers /snoozer-setup only in the configured guild", async () =>
   assert.equal(worker.botUserId, botUserId);
   assert.equal(requests.length, 3);
   assert.match(requests[2].url, new RegExp("/applications/777777777777777777/guilds/" + guildId + "/commands$"));
-  assert.equal(requests[2].options.method, "POST");
-  const command = JSON.parse(requests[2].options.body);
+  assert.equal(requests[2].options.method, "PUT");
+  const commands = JSON.parse(requests[2].options.body);
+  assert.equal(Array.isArray(commands), true);
+  assert.equal(commands.length, 1);
+  const command = commands[0];
   assert.equal(command.name, "snoozer-setup");
   assert.equal(command.default_member_permissions, "8");
   assert.equal(command.options[0].name, "confirm");
