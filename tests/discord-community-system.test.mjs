@@ -941,6 +941,48 @@ test("ticket modal creates a private channel with string permission overwrites a
   assert.match(replies.at(-1).content, /ticket has been created/i);
 });
 
+test("ticket deletion waits for the durable ticket close state and retries while it is still active", async () => {
+  const channelId = "1574262035519115840";
+  const ticketId = "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c93";
+  const requests = [];
+  const retries = [];
+  const finished = [];
+  const wakeups = [];
+  let status = "open";
+  const panel = Object.create(DiscordCommunityPanels.prototype);
+  panel.guildId = guildId;
+  panel.api = {
+    async request(path, options = {}) { requests.push({ path, options }); return {}; },
+  };
+  panel.store = {
+    async getTicket() { return { id: ticketId, channel_id: channelId, status }; },
+    async enqueueJob(job) { retries.push(job); return true; },
+    async finishJob(id, ok, error) { finished.push({ id, ok, error }); return true; },
+  };
+  panel.scheduleJobWake = (runAt, key) => wakeups.push({ runAt, key });
+  panel.logEvent = async () => true;
+  panel.logger = { error() {}, warn() {} };
+
+  const job = {
+    id: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c94",
+    job_type: "ticket_delete",
+    payload: { ticket_id: ticketId, channel_id: channelId, retry_count: 0 },
+  };
+  await panel.runJob(job);
+
+  assert.equal(requests.some(call => call.options.method === "DELETE"), false);
+  assert.equal(retries.length, 1);
+  assert.equal(retries[0].jobType, "ticket_delete");
+  assert.equal(retries[0].payload.retry_count, 1);
+  assert.equal(wakeups.length, 1);
+  assert.equal(finished[0].ok, true);
+
+  status = "closed";
+  await panel.runJob({ ...job, id: "c25d3f44-6c1a-4d9c-8c3d-21a81f6d4c95", payload: { ...job.payload, retry_count: 1 } });
+  assert.ok(requests.some(call => call.path === "/channels/" + channelId && call.options.method === "DELETE"));
+  assert.equal(finished[1].ok, true);
+});
+
 test("Creator verification channel is private, registered and receives pending review cards", async () => {
   const categoryId = "1574262035519115830";
   const creatorChannelId = "1574262035519115831";
