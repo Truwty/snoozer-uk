@@ -283,12 +283,18 @@ export class DiscordPresenceWorker {
   }
 
   async registerServerSetupCommand() {
-    const botUser = await this.discordApi.request("/users/@me");
+    const [botUser, application] = await Promise.all([
+      this.discordApi.request("/users/@me"),
+      this.discordApi.request("/oauth2/applications/@me"),
+    ]);
     if (!botUser?.id || !/^[1-9][0-9]{16,19}$/.test(botUser.id)) {
       throw new Error("Discord did not return a valid bot user ID while registering the server setup command.");
     }
+    if (!application?.id || !/^[1-9][0-9]{16,19}$/.test(application.id)) {
+      throw new Error("Discord did not return a valid application ID while registering the server setup command.");
+    }
     this.botUserId = botUser.id;
-    this.applicationId = botUser.id;
+    this.applicationId = application.id;
     await this.discordApi.request("/applications/" + this.applicationId + "/guilds/" + this.config.guildId + "/commands", {
       method: "POST",
       body: SNOOZER_SETUP_COMMAND,
