@@ -5,7 +5,7 @@ const RELEVANT_ACTIONS=new Map([
   [12,"Channel deleted"],[14,"Channel overwrite changed"],[15,"Channel overwrite removed"],
   [22,"Member banned"],[30,"Role created"],[31,"Role permissions changed"],[32,"Role deleted"],
   [80,"Bot added to server"],
-  [28,"Bot added to server"],[50,"Webhook created"],[51,"Webhook changed"],[52,"Webhook deleted"],
+  [28,"Bot added to server"],[28,"Bot added to server"],[50,"Webhook created"],[51,"Webhook changed"],[52,"Webhook deleted"],[80,"Integration created"],[81,"Integration updated"],
   [72,"Message deleted"],[73,"Messages bulk-deleted"],[80,"Integration created"],[81,"Integration updated"],[82,"Integration deleted"],
   [102,"Scheduled event deleted"],[112,"Thread deleted"],[142,"AutoMod rule deleted"],
 ]);
@@ -41,7 +41,7 @@ export class DiscordSecurityGuard{
     if(!SF.test(actorId??""))return false;
     if(actorId===this.botUserId||actorId===this.ownerId)return true;
     const roleIds=this.getRoleIds()??{};
-    const trustedRoles=new Set([roleIds.admin,roleIds.developer].filter(Boolean));
+    const trustedRoles=new Set([roleIds.admin,roleIds.developer,roleIds.senior_moderator,roleIds.moderator].filter(Boolean));
     if(trustedRoles.size===0)return false;
     try{
       const member=await this.api.request("/guilds/"+this.guildId+"/members/"+actorId);

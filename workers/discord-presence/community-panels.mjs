@@ -35,6 +35,9 @@ export const SNOOZER_ADMIN_COMMANDS=[
     {type:3,name:"schedule_at",description:"Optional future ISO-8601 UTC time.",required:false,min_length:20,max_length:30},
   ]},
   {name:"snoozer-health",description:"Check the Discord bot and persistent storage health.",type:1,default_member_permissions:String(1n<<5n)},
+  {name:"snoozer-backup",description:"Create an immediate backup of the Snoozer Discord server layout.",type:1,default_member_permissions:String(1n<<5n)},
+  {name:"snoozer-reconcile",description:"Repair missing Snoozer server roles, channels and permissions without deleting the current layout.",type:1,default_member_permissions:String(1n<<5n),
+    options:[{type:3,name:"confirmation",description:"Type RECONCILE SNOOZER SERVER to confirm.",required:true,min_length:24,max_length:24}]},
 ];
 export const SNOOZER_RESTORE_COMMAND={
   name:"snoozer-restore-server",description:"Restore missing roles and channels from the latest backup.",
@@ -55,7 +58,7 @@ export class DiscordCommunityPanels{
     this.resources={};this.roleIds={};this.onResourcesUpdated=deps.onResourcesUpdated??null;this.rebuilder=deps.rebuilder??new DiscordServerRebuilder(config,{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
-    this.timer=null;this.busy=false;this.lastRoleSync=0;
+    this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
@@ -89,7 +92,7 @@ export class DiscordCommunityPanels{
       ["getting_started","getting_started",{title:"Welcome to Snoozer",description:"Your guide to the Snoozer platform and community.\n\nRead the rules, explore the community and use the member hub to connect your account.",color:0x8b72d9,fields:[{name:"Website",value:"https://snoozer.uk",inline:true},{name:"Help Centre",value:"https://help.snoozer.uk",inline:true},{name:"Service status",value:"https://status.snoozer.uk",inline:true}]},[row(link("https://snoozer.uk","Open Snoozer","🌐"),link("https://help.snoozer.uk","Help Centre","📚")),row(btn("member:profile","My profile",1,"👤"),btn("ticket:start","Get support",2,"🎫"))]],
       ["member_hub","member_hub",{title:"Snoozer Member Hub",description:"Connect your account and manage community membership. Premium is verified against Snoozer's entitlement records.",color:0x8b72d9,fields:[{name:"Account",value:"Link your identity through Snoozer OAuth."},{name:"Membership",value:"View your verified Premium status."},{name:"Community",value:"Manage optional notification roles and creator verification."}]},[row(link("https://snoozer.uk/studio/discord","Link account","🔗"),btn("member:profile","My profile",2,"👤"),btn("member:premium","Premium",2,"💎")),row(btn("member:roles","Manage roles",2,"🎭"),btn("member:creator","Creator verification",2,"✨"),btn("member:cases","My cases",2,"⚖️"))]],
       ["ticket_panel","ticket_panel",{title:"Snoozer Support Desk",description:"Choose the support category. A private ticket will be created for you.\n\nNever share passwords, authentication codes or payment card details.",color:0x438f9b},[row(btn("ticket:start","Open a ticket",1,"🎫"),link("https://help.snoozer.uk","Help Centre","📚"))]],
-      ["bot_control","bot_control",{title:"Snoozer Administration",description:"Private staff controls for support, moderation, community, security and server management.",color:0x596579,fields:[{name:"Support",value:"View and manage tickets.",inline:true},{name:"Moderation",value:"Review cases and appeals.",inline:true},{name:"Security",value:"Configure AutoMod and server protection.",inline:true}]},[row(btn("admin:tickets","Ticket queue",2,"🎫"),btn("admin:moderation","Moderation",2,"🛡️"),btn("admin:refresh","Refresh panels",2,"🔄")),row(btn("admin:config","Bot settings",2,"⚙️"),btn("admin:creators","Creator reviews",2,"✨"),btn("admin:automod","Enable AutoMod",2,"🛡️"),btn("admin:giveaway","Create giveaway",2,"🎉"),btn("admin:event","Schedule event",2,"📅")),row(btn("admin:leaderboard","Activity stats",2,"📊"),btn("admin:support-stats","Support stats",2,"🎧"),btn("admin:restore","Restore backup",1,"♻️"),btn("admin:rebuild:start","Rebuild server",4,"⚠️"))]],
+      ["bot_control","bot_control",{title:"Snoozer Administration",description:"Private staff controls for support, moderation, community, security and server management.",color:0x596579,fields:[{name:"Support",value:"View and manage tickets.",inline:true},{name:"Moderation",value:"Review cases and appeals.",inline:true},{name:"Security",value:"Configure AutoMod and server protection.",inline:true}]},[row(btn("admin:tickets","Ticket queue",2,"🎫"),btn("admin:moderation","Moderation",2,"🛡️"),btn("admin:refresh","Refresh panels",2,"🔄")),row(btn("admin:config","Bot settings",2,"⚙️"),btn("admin:creators","Creator reviews",2,"✨"),btn("admin:appeals","Appeals",2,"⚖️"),btn("admin:automod","Enable AutoMod",2,"🛡️"),btn("admin:giveaway","Create giveaway",2,"🎉"),btn("admin:event","Schedule event",2,"📅")),row(btn("admin:leaderboard","Activity stats",2,"📊"),btn("admin:support-stats","Support stats",2,"🎧"),btn("admin:backup","Create backup",2,"💾"),btn("admin:usage","Bot usage",2,"📈"),btn("admin:restore","Restore backup",1,"♻️"),btn("admin:reconcile","Repair layout",2,"🔧"),btn("admin:rebuild:start","Rebuild server",4,"⚠️"))]],
       ["events","events",{title:"Snoozer Community Events",description:"Find upcoming community events and join through Discord Scheduled Events.",color:0x438f9b},[row(btn("event:info","View upcoming events",2,"📅"))]],
       ["giveaways","giveaways",{title:"Snoozer Giveaways",description:"Official community giveaways are posted here. Use the entry button on an active giveaway to participate.",color:0xc69a43},[row(btn("giveaway:info","Giveaway information",2,"🎉"))]],
       ["suggestions","suggestions",{title:"Have an idea for Snoozer?",description:"Submit a feature suggestion and let the community vote.",color:0x43a982},[row(btn("suggestion:open","Submit suggestion",1,"💡"))]],
@@ -368,6 +371,54 @@ export class DiscordCommunityPanels{
     const components=list.filter(c=>["active","appealed"].includes(c.status)).slice(0,5).map(c=>row(btn("appeal:open:"+c.id,"Appeal case #"+c.case_number,2,"⚖️")));
     return this.reply(i,{embeds:[{title:"Your moderation cases",description:list.map(c=>"**#"+c.case_number+" · "+c.action.toUpperCase()+"** · "+c.status+"\n"+clean(c.reason,160)+"\n"+c.id).join("\n\n").slice(0,3900),color:0x7a8493}],components},true);
   }
+
+  async showAppealQueue(i){
+    this.requireStaff(i,["admin","senior_moderator","moderator","support_manager"]);
+    const appeals=await this.store.appealQueue(this.guildId,15);
+    if(!Array.isArray(appeals)||!appeals.length)return this.reply(i,{content:"There are no pending moderation appeals."},true);
+    const description=appeals.map(item=>
+      "**Case #"+item.case_number+" · "+clean(item.action,30).toUpperCase()+"**\n"+
+      "Member: <@"+item.appellant_discord_id+">\n"+
+      "Case reason: "+clean(item.case_reason,220)+"\n"+
+      "Appeal: "+clean(item.reason,300)+"\n"+
+      "Appeal ID: "+item.id
+    ).join("\n\n").slice(0,3900);
+    const components=appeals.slice(0,5).map(item=>row(
+      btn("appeal:accept:"+item.id,"Accept",3,"✅"),
+      btn("appeal:reject:"+item.id,"Reject",4,"❌")
+    ));
+    await this.reply(i,{embeds:[{title:"Pending moderation appeals",description,color:0xd5a33c}],components},true);
+  }
+
+  async reviewAppeal(i,id,decision){
+    this.requireStaff(i,["admin","senior_moderator","moderator","support_manager"]);
+    if(!UUID.test(id)||!["accepted","rejected"].includes(decision))throw new Error("Invalid appeal review.");
+    const pending=await this.store.appealQueue(this.guildId,100);
+    const appeal=Array.isArray(pending)?pending.find(item=>item.id===id):null;
+    if(!appeal)throw new Error("This appeal is no longer pending or does not belong to this server.");
+    if(decision==="accepted"){
+      if(["ban","tempban"].includes(appeal.action)){
+        await this.api.request("/guilds/"+this.guildId+"/bans/"+appeal.appellant_discord_id,{method:"DELETE"});
+      }else if(appeal.action==="timeout"){
+        await this.api.request("/guilds/"+this.guildId+"/members/"+appeal.appellant_discord_id,{method:"PATCH",body:{communication_disabled_until:null}});
+      }
+    }
+    const result=await this.store.reviewAppeal(id,uid(i),decision);
+    await this.store.recordSecurityEvent({guildId:this.guildId,action:"moderation_appeal_"+decision,
+      actorId:uid(i),targetId:result.target_discord_id,severity:"info",
+      metadata:{appeal_id:id,case_id:result.case_id,case_number:result.case_number}});
+    try{
+      const dm=await this.api.request("/users/@me/channels",{method:"POST",body:{recipient_id:result.target_discord_id}});
+      await this.api.request("/channels/"+dm.id+"/messages",{method:"POST",body:{
+        content:decision==="accepted"
+          ?"Your Snoozer Discord moderation appeal for case #"+result.case_number+" was accepted. The related moderation restriction has been lifted where applicable."
+          :"Your Snoozer Discord moderation appeal for case #"+result.case_number+" was reviewed and rejected. The original moderation case remains active.",
+        allowed_mentions:{parse:[]},
+      }});
+    }catch(error){this.logger.warn("[discord-panels] appeal outcome DM could not be delivered",error?.message??error);}
+    await this.reply(i,{content:"Appeal "+decision+". Related case #"+result.case_number+" is now "+(decision==="accepted"?"overturned":"active")+"."},true);
+  }
+
   async submitAppeal(i,id){
     const reason=clean(i.data?.components?.[0]?.components?.[0]?.value,2000);
     await this.store.createAppeal(id,uid(i),reason);
@@ -500,7 +551,7 @@ export class DiscordCommunityPanels{
       components:[
         row(btn("admin:channel:security_alerts","Security alerts"),btn("admin:channel:moderation_log","Moderation log"),btn("admin:channel:ticket_queue","Ticket queue")),
         row(btn("admin:channel:changelog","Changelog"),btn("admin:channel:service_status","Service status"),btn("admin:channel:events","Events"),btn("admin:channel:giveaways","Giveaways")),
-        row(btn("admin:toggle:antiRaidEnabled","Toggle anti-raid"),btn("admin:toggle:antiNukeEnabled","Toggle anti-nuke"),btn("admin:automod","Configure AutoMod")),
+        row(btn("admin:toggle:antiRaidEnabled","Toggle anti-raid"),btn("admin:toggle:antiNukeEnabled","Toggle anti-nuke"),btn("admin:thresholds","Protection thresholds"),btn("admin:automod","Configure AutoMod")),
       ]},true);
   }
   async chooseChannel(i,key){
@@ -527,12 +578,46 @@ export class DiscordCommunityPanels{
     await this.store.setConfig(this.guildId,"security",security);
     await this.reply(i,{content:key.replace("Enabled","")+" is now "+(security[key]?"enabled":"disabled")+". The monitor will apply this setting on its next cycle."},true);
   }
+  async openSecurityThresholds(i){
+    this.requireAdmin(i);
+    const config=await this.store.getConfig(this.guildId),settings=config?.security??{};
+    await this.showModal(i,mkModal("admin:thresholds:save","Configure server protection",[
+      {id:"raid_join_threshold",label:"Joins before raid lockdown (2–100)",min:1,max:3,placeholder:"10",value:String(settings.raidJoinThreshold??10)},
+      {id:"raid_window",label:"Join burst window seconds (10–600)",min:2,max:3,placeholder:"60",value:String(settings.raidWindowSeconds??60)},
+      {id:"lockdown_duration",label:"Lockdown duration seconds (30–1800)",min:2,max:4,placeholder:"300",value:String(settings.raidLockdownSeconds??300)},
+      {id:"anti_nuke_actions",label:"Destructive actions before lockdown (2–10)",min:1,max:2,placeholder:"3",value:String(settings.antiNukeActions??3)},
+      {id:"anti_nuke_window",label:"Anti-nuke action window seconds (10–300)",min:2,max:3,placeholder:"30",value:String(settings.antiNukeWindowSeconds??30)},
+    ]));
+  }
+  async saveSecurityThresholds(i){
+    this.requireAdmin(i);
+    const fields=i.data?.components??[];
+    const values={};
+    for(const [index,key] of ["raidJoinThreshold","raidWindowSeconds","raidLockdownSeconds","antiNukeActions","antiNukeWindowSeconds"].entries()){
+      values[key]=Number(clean(fields[index]?.components?.[0]?.value,5));
+    }
+    const limits={
+      raidJoinThreshold:[2,100],raidWindowSeconds:[10,600],raidLockdownSeconds:[30,1800],
+      antiNukeActions:[2,10],antiNukeWindowSeconds:[10,300],
+    };
+    for(const [key,[min,max]] of Object.entries(limits)){
+      if(!Number.isInteger(values[key])||values[key]<min||values[key]>max)throw new Error(key+" must be between "+min+" and "+max+".");
+    }
+    const config=await this.store.getConfig(this.guildId);
+    await this.store.setConfig(this.guildId,"security",{...(config?.security??{}),...values});
+    await this.reply(i,{content:"Server protection thresholds saved. The security monitor will load them on its next cycle."},true);
+  }
+
   async setupAutoMod(i){
     this.requireAdmin(i);
     const rules=await this.api.request("/guilds/"+this.guildId+"/auto-moderation/rules");
     const definitions=[
       {name:"Snoozer · Spam Protection",event_type:1,trigger_type:3,actions:[{type:1,metadata:{custom_message:"Snoozer automatically blocked this message as spam."}}],enabled:true,exempt_roles:[],exempt_channels:[]},
       {name:"Snoozer · Mention Spam",event_type:1,trigger_type:5,trigger_metadata:{mention_total_limit:5,mention_raid_protection_enabled:true},actions:[{type:1,metadata:{custom_message:"Please avoid mass mentions in the Snoozer community."}}],enabled:true,exempt_roles:[],exempt_channels:[]},
+      {name:"Snoozer · Credential and Fake Reward Scams",event_type:1,trigger_type:1,
+        trigger_metadata:{keyword_filter:["enter your seed phrase","share your seed phrase","discord token grabber","free nitro claim","verify wallet to receive prize","free steam gift claim"]},
+        actions:[{type:1,metadata:{custom_message:"This message was blocked by Snoozer's anti-scam protection."}}],
+        enabled:true,exempt_roles:[],exempt_channels:[]},
     ];
     let created=0,updated=0;
     for(const definition of definitions){
@@ -682,6 +767,16 @@ export class DiscordCommunityPanels{
     await this.reply(i,{content:"Announcement posted in <#"+channelId+">."},true);
   }
 
+  async showUsageStats(i){
+    this.requireAdmin(i);
+    const stats=await this.store.interactionStats(30,25);
+    const types=Array.isArray(stats?.types)?stats.types:[];
+    const description=types.length?types.map((item,index)=>
+      "**"+(index+1)+".** "+clean(item.interaction_type,80)+" · "+item.uses+" use(s) · last <t:"+Math.floor(Date.parse(item.last_used)/1000)+":R>"
+    ).join("\n"):"No command or component activity has been recorded yet.";
+    await this.reply(i,{embeds:[{title:"Snoozer bot usage · last 30 days",description:"**Total interactions:** "+String(stats?.total??0)+"\n\n"+description,color:0x596579}]},true);
+  }
+
   async healthStatus(i){
     this.requireAdmin(i);
     const started=Date.now();
@@ -707,12 +802,32 @@ export class DiscordCommunityPanels{
 
   async handleSlash(i){
     const name=i.data?.name;
+    if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70)))return true;
     if(name==="snoozer-profile"||name==="snoozer-account"){await this.memberSummary(i);return true;}
     if(name==="snoozer-leaderboard"){await this.showLeaderboard(i);return true;}
     if(name==="snoozer-settings"){await this.adminSettings(i);return true;}
     if(name==="snoozer-automod-setup"){await this.setupAutoMod(i);return true;}
     if(name==="snoozer-announce"){await this.createAnnouncement(i);return true;}
     if(name==="snoozer-health"){await this.healthStatus(i);return true;}
+    if(name==="snoozer-usage"){await this.showUsageStats(i);return true;}
+    if(name==="snoozer-backup"){this.requireAdmin(i);await this.defer(i);try{const result=await this.rebuilder.createBackup(uid(i));await this.complete(i,{content:"Server configuration backup saved. Roles: "+result.roleCount+" · channels: "+result.channelCount+" · reference: "+result.backupId+"."});}catch(error){await this.complete(i,{content:"Backup failed: "+clean(error?.message,700)});}return true;}
+    if(name==="snoozer-reconcile"){this.requireAdmin(i);if(opt(i,"confirmation")!=="RECONCILE SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation did not match."},true);return true;}await this.defer(i);try{const result=await this.rebuilder.reconcile(uid(i));await this.refreshResources();await this.complete(i,{content:"Snoozer layout repair "+(result.complete?"completed":"finished with panel errors")+". Roles: "+result.roleCount+" · channels: "+result.channelCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId+"."});}catch(error){await this.complete(i,{content:"Reconciliation stopped safely: "+clean(error?.message,700)});}return true;}
+    if(name==="snoozer-backup"){
+      this.requireAdmin(i);await this.defer(i);
+      try{const result=await this.rebuilder.createBackup(uid(i));
+        await this.complete(i,{content:"Server configuration backup saved. Roles: "+result.roleCount+" · channels: "+result.channelCount+" · reference: "+result.backupId+"."});
+      }catch(error){await this.complete(i,{content:"Backup failed: "+clean(error?.message,700)});}
+      return true;
+    }
+    if(name==="snoozer-reconcile"){
+      this.requireAdmin(i);
+      if(opt(i,"confirmation")!=="RECONCILE SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation did not match."},true);return true;}
+      await this.defer(i);
+      try{const result=await this.rebuilder.reconcile(uid(i));await this.refreshResources();
+        await this.complete(i,{content:"Snoozer layout reconciliation "+(result.complete?"completed":"finished with panel errors")+". Roles: "+result.roleCount+" · channels: "+result.channelCount+" · members checked: "+result.memberCount+" · role assignments updated: "+result.memberRolesMigrated+" · backup: "+result.backupId+"."});
+      }catch(error){await this.complete(i,{content:"Reconciliation stopped safely: "+clean(error?.message,700)});}
+      return true;
+    }
     if(name==="snoozer-rebuild-server"||name==="snoozer-restore-server"){
       if(!this.isAdmin(i)){await this.reply(i,{content:"Only a server Administrator or Snoozer Admin can perform this action."},true);return true;}
       const rebuild=name==="snoozer-rebuild-server";
@@ -739,11 +854,27 @@ export class DiscordCommunityPanels{
       if(!SF.test(target.discord_user_id??""))continue;
       let member;try{member=await this.api.request("/guilds/"+this.guildId+"/members/"+target.discord_user_id);}catch(e){if(String(e?.message??"").includes("404"))continue;throw e;}
       const roles=new Set(member.roles??[]);let changed=false;
+      let premiumChanged=null,creatorChanged=null;
       for(const [flag,key] of [["premium","premium"],["creator","creator"]]){
         const id=this.roleIds[key];if(!id)continue;
-        if(target[flag]&&!roles.has(id)){roles.add(id);changed=true;}if(!target[flag]&&roles.has(id)){roles.delete(id);changed=true;}
+        const currentlyAssigned=roles.has(id);
+        if(target[flag]&&!currentlyAssigned){roles.add(id);changed=true;if(flag==="premium")premiumChanged=true;else creatorChanged=true;}
+        if(!target[flag]&&currentlyAssigned){roles.delete(id);changed=true;if(flag==="premium")premiumChanged=false;else creatorChanged=false;}
       }
-      if(changed)await this.api.request("/guilds/"+this.guildId+"/members/"+target.discord_user_id,{method:"PATCH",body:{roles:[...roles]}});
+      if(changed){
+        await this.api.request("/guilds/"+this.guildId+"/members/"+target.discord_user_id,{method:"PATCH",body:{roles:[...roles]}});
+        try{
+          if(premiumChanged!==null||creatorChanged!==null){
+            const dm=await this.api.request("/users/@me/channels",{method:"POST",body:{recipient_id:target.discord_user_id}});
+            const messages=[];
+            if(premiumChanged===true)messages.push("Your Snoozer Premium membership is active"+(target.plan?" ("+String(target.plan).toUpperCase()+")":"")+". Your Discord Premium role has been added.");
+            if(premiumChanged===false)messages.push("Your Snoozer Premium Discord role has been removed because no active eligible entitlement was found. Check your Snoozer account for the current membership status.");
+            if(creatorChanged===true)messages.push("Your Snoozer Creator verification has been approved. Your Creator role has been added.");
+            if(creatorChanged===false)messages.push("Your Snoozer Creator role has been removed because there is no active Creator verification.");
+            if(messages.length)await this.api.request("/channels/"+dm.id+"/messages",{method:"POST",body:{content:messages.join("\n\n"),allowed_mentions:{parse:[]}}});
+          }
+        }catch(error){this.logger.warn("[discord-panels] membership role change DM could not be delivered",error?.message??error);}
+      }
     }
     this.lastRoleSync=Date.now();
   }
@@ -751,6 +882,17 @@ export class DiscordCommunityPanels{
     try{
       if(["premium_role_sync","creator_role_sync","role_reconcile"].includes(job.job_type))await this.roleSync();
       else if(job.job_type==="tempban_unban"&&SF.test(job.payload?.user_id??""))await this.api.request("/guilds/"+this.guildId+"/bans/"+job.payload.user_id,{method:"DELETE"});
+      else if(job.job_type==="backup"){
+        const result=await this.rebuilder.createBackup(this.botUserId);
+        this.logger.info("[discord-panels] scheduled server backup completed",result.backupId);
+      }else if(job.job_type==="health_check"){
+        const [bot,resources]=await Promise.all([this.api.request("/users/@me"),this.store.getResources(this.guildId)]);
+        if(!SF.test(bot?.id??""))throw new Error("Discord REST health check did not return a valid bot identity.");
+        const healthChannel=this.resources.health_monitor;
+        if(SF.test(healthChannel??""))await this.api.request("/channels/"+healthChannel+"/messages",{method:"POST",body:{
+          embeds:[{title:"Snoozer Discord bot health check",description:"Discord REST API reachable. Supabase resource registry returned "+String(resources?.rows?.length??0)+" resources.",color:0x43a982,timestamp:new Date().toISOString()}],allowed_mentions:{parse:[]},
+        }});
+      }
       else if(job.job_type==="giveaway_finish"){
         const result=await this.store.finishGiveaway(job.payload?.giveaway_id);
         if(result?.status==="ended"){
@@ -788,12 +930,31 @@ export class DiscordCommunityPanels{
         }
       }
       await this.store.finishJob(job.id,true,null);
+      if(job.job_type==="backup")await this.scheduleRecurringJob("backup","daily_backup",24*60*60_000);
+      if(job.job_type==="health_check")await this.scheduleRecurringJob("health_check","health_check",5*60_000);
     }catch(e){this.logger.error("[discord-panels] job failed",job.job_type,e?.message??e);await this.store.finishJob(job.id,false,String(e?.message??e));}
   }
+  async scheduleRecurringJob(jobType,configKey,intervalMs){
+    const config=await this.store.getConfig(this.guildId);
+    const current=Date.parse(config?.[configKey]?.next_at??"");
+    if(Number.isFinite(current)&&current>Date.now()+30_000)return false;
+    const next=new Date(Date.now()+intervalMs);
+    await this.store.enqueueJob({
+      guildId:this.guildId,jobType,
+      dedupeKey:jobType+"-schedule:"+next.toISOString().slice(0,10)+":"+next.toISOString().slice(11,16),
+      payload:{reason:"scheduled"},
+      runAt:next.toISOString(),
+    });
+    await this.store.setConfig(this.guildId,configKey,{next_at:next.toISOString()});
+    return true;
+  }
+
   async tick(){
     if(this.busy)return;this.busy=true;
     try{
       if(Date.now()-this.lastRoleSync>300000)try{await this.roleSync();}catch(e){this.logger.error("[discord-panels] role sync failed",e?.message??e);}
+      try{await this.scheduleRecurringJob("backup","daily_backup",24*60*60_000);}catch(error){this.logger.error("[discord-panels] daily backup scheduling failed",error?.message??error);}
+      try{await this.scheduleRecurringJob("health_check","health_check",5*60_000);}catch(error){this.logger.error("[discord-panels] health check scheduling failed",error?.message??error);}
       const jobs=await this.store.claimJobs(this.guildId,20);if(Array.isArray(jobs))for(const job of jobs)await this.runJob(job);
     }catch(e){this.logger.error("[discord-panels] automation tick failed",e?.message??e);}finally{this.busy=false;}
   }
@@ -981,6 +1142,8 @@ export class DiscordCommunityPanels{
       else if(id.startsWith("admin:channel-set:"))await this.saveChannel(i,id.split(":")[2]);
       else if(id.startsWith("admin:toggle:"))await this.toggleSecurity(i,id.split(":")[2]);
       else if(id==="admin:automod")await this.setupAutoMod(i);
+      else if(id==="admin:thresholds")await this.openSecurityThresholds(i);
+      else if(id==="admin:thresholds:save")await this.saveSecurityThresholds(i);
       else if(id==="admin:creators")await this.creatorQueue(i);
       else if(id.startsWith("creator:approve:"))await this.reviewCreator(i,id.split(":")[2],"approved");
       else if(id.startsWith("creator:reject:"))await this.reviewCreator(i,id.split(":")[2],"rejected");
@@ -992,7 +1155,23 @@ export class DiscordCommunityPanels{
       }else if(id==="admin:event")await this.openEvent(i);
       else if(id==="event:submit")await this.submitEvent(i);
       else if(id==="admin:leaderboard"||id==="member:leaderboard")await this.showLeaderboard(i);
-      else if(id==="admin:restore"){
+
+      else if(id==="admin:backup"){
+        this.requireAdmin(i);await this.defer(i);
+        const result=await this.rebuilder.createBackup(uid(i));
+        await this.complete(i,{content:"Configuration backup saved. Roles: "+result.roleCount+" · channels: "+result.channelCount+" · reference: "+result.backupId+"."});
+      }else if(id==="admin:reconcile"){
+        this.requireAdmin(i);
+        await this.showModal(i,mkModal("admin:reconcile:confirm","Confirm safe layout repair",[
+          {id:"phrase",label:"Type RECONCILE SNOOZER SERVER",min:24,max:24,placeholder:"RECONCILE SNOOZER SERVER"},
+        ]));
+      }else if(id==="admin:reconcile:confirm"){
+        this.requireAdmin(i);
+        if(clean(i.data?.components?.[0]?.components?.[0]?.value,40)!=="RECONCILE SNOOZER SERVER")throw new Error("Confirmation did not match. No changes were made.");
+        await this.defer(i);
+        const result=await this.rebuilder.reconcile(uid(i));await this.refreshResources();
+        await this.complete(i,{content:"Layout repair "+(result.complete?"completed":"finished with panel errors")+". Roles: "+result.roleCount+" · channels: "+result.channelCount+" · members migrated: "+result.memberRolesMigrated+" · backup: "+result.backupId+"."});
+      }else if(id==="admin:restore"){
         this.requireAdmin(i);
         await this.showModal(i,mkModal("admin:restore:confirm","Confirm server recovery",[
           {id:"phrase",label:"Type RESTORE LATEST SNOOZER BACKUP",min:29,max:29,placeholder:"RESTORE LATEST SNOOZER BACKUP"},

@@ -342,6 +342,44 @@ export class DiscordServerRebuilder {
     return {backupId:backup.id,rolesRestored,channelsRestored,sourceCreatedAt:backup.created_at};
   }
 
+  async createBackup(actorId) {
+    if(!validSnowflake(actorId)) throw new Error("A valid administrator or bot account is required.");
+    const [roles,channels]=await Promise.all([
+      this.api.request("/guilds/"+this.guildId+"/roles"),
+      this.api.request("/guilds/"+this.guildId+"/channels"),
+    ]);
+    if(!Array.isArray(roles)||!Array.isArray(channels)) throw new Error("Discord server inventory could not be read.");
+    const snapshot=safeSnapshot(roles,channels,this.guildId);
+    const backupId=await this.store.saveBackup(this.guildId,actorId,snapshot);
+    if(!backupId)throw new Error("The server configuration backup could not be saved.");
+    return {backupId,roleCount:snapshot.roles.length,channelCount:snapshot.channels.length};
+  }
+
+  async reconcile(actorId) {
+    if(!validSnowflake(actorId)) throw new Error("A valid administrator is required.");
+    const before=await this.permissionPreflight();
+    const members=await this.listMembers();
+    const backup=await this.store.saveBackup(this.guildId,actorId,safeSnapshot(before.roles,before.channels,this.guildId));
+    if(!backup)throw new Error("The pre-reconcile backup could not be saved. No server changes were made.");
+    const created=await this.createNewStructure();
+    const memberRolesMigrated=await this.migrateMemberRoles(members,before.roles,created.roleIds);
+    const roleSync=await this.syncMembershipRoles(created.roleIds);
+    let panelResult={posted:0,errors:[]};
+    try{panelResult=await this.onPanelsReady({channelIds:created.channelIds,roleIds:created.roleIds});}
+    catch(error){panelResult={posted:0,errors:[String(error?.message??error).slice(0,500)]};}
+    return {
+      backupId:backup,
+      categoryCount:Object.keys(created.categories).length,
+      channelCount:Object.keys(created.channelIds).length,
+      roleCount:Object.keys(created.roleIds).length,
+      memberCount:members.length,
+      memberRolesMigrated,
+      roleSync,
+      panelResult,
+      complete:panelResult.errors.length===0,
+    };
+  }
+
   async rebuild(actorId) {
     if(!validSnowflake(actorId)) throw new Error("A valid administrator account is required.");
     const before=await this.permissionPreflight();

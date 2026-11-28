@@ -89,6 +89,14 @@ export class DiscordStore {
     return this.rpc("discord_bot_case_history", { p_guild_id:guildId,p_target:targetId,p_limit:limit });
   }
 
+
+  appealQueue(guildId,limit=25) {
+    return this.rpc("discord_bot_appeal_queue", { p_guild_id:guildId,p_limit:limit });
+  }
+  reviewAppeal(id,reviewerId,decision,response=null) {
+    return this.rpc("discord_bot_review_appeal", { p_appeal_id:id,p_reviewer:reviewerId,p_decision:decision,p_response:response });
+  }
+
   createAppeal(caseId,appellantId,reason) {
     return this.rpc("discord_bot_create_appeal", { p_case_id:caseId,p_appellant:appellantId,p_reason:reason });
   }
@@ -175,6 +183,8 @@ export class DiscordStore {
   }
   enterGiveaway(id,userId,eligible=true) { return this.rpc("discord_bot_giveaway_enter", { p_id:id,p_user:userId,p_eligible:eligible }); }
   finishGiveaway(id) { return this.rpc("discord_bot_finish_giveaway", { p_id:id }); }
+
+  interactionStats(days=30,limit=25) { return this.rpc('discord_bot_interaction_usage',{p_days:days,p_limit:limit}); }
 
   recordInteraction(interactionId,interactionType) {
     return this.rpc("discord_bot_record_interaction", { p_id:interactionId,p_type:interactionType });
