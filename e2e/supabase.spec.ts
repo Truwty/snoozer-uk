@@ -81,11 +81,6 @@ async function editorTab(page: Page, name: string) {
   if (await tab.getAttribute("aria-selected") !== "true") await tab.click();
 }
 
-async function linkMenu(page: Page, index: number) {
-  await editorTab(page, "Links");
-  const summary = page.getByLabel(`Actions for link ${index}`, { exact: true });
-  if (!(await summary.evaluate((element) => element.parentElement?.hasAttribute("open")))) await summary.click();
-}
 
 test("profile analytics requires consent, counts link clicks and exports only to its owner", async ({ page, browser }) => {
   test.setTimeout(90000);
@@ -910,14 +905,16 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(page.getByLabel("Link 1 label")).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1100 });
 
-    // Regression: the sticky preview must not cover the link actions popover.
+    // Link controls stay visible in the inspector; Remove is never hidden in a clipped popover.
     await editorTab(page, "Links");
     await page.getByRole("button", { name: "Add link", exact: true }).click();
     await page.getByLabel("Link 3 label").fill("Temporary link");
     await page.getByLabel("Link 3 URL").fill("https://example.com/temporary");
-    await linkMenu(page, 3);
+    const actionControls = page.getByRole("group", { name: "Actions for link 3", exact: true });
+    await expect(actionControls).toBeVisible();
     const removeLink = page.getByRole("button", { name: "Remove link 3", exact: true });
     await expect(removeLink).toBeVisible();
+    await removeLink.scrollIntoViewIfNeeded();
     const removeIsTopmost = await removeLink.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
