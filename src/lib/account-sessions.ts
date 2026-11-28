@@ -46,3 +46,9 @@ export function accountCookieOptions(secure: boolean, maxAge = sessionMaxAge) {
 export function remainingAccounts(accounts: SavedAccount[], slot: string) {
   return accounts.filter((account) => account.slot !== slot);
 }
+
+/** Recognise an unsuffixed Supabase session cookie and its numbered chunks. */
+export function isSessionCookieName(cookieName: string, storageName?: string) {
+  if (storageName) return cookieName === storageName || cookieName.startsWith(storageName + ".");
+  return /^sb-[A-Za-z0-9_-]+-auth-token(?:\.\\d+)?$/.test(cookieName);
+}
