@@ -85,7 +85,7 @@ export class DiscordCommunityPanels{
       api:this.api,store:this.store,logger:this.logger,onPanelsReady:()=>this.publishPermanentPanels(),
     });
     this.timer=null;this.busy=false;this.lastRoleSync=0;this.dailyBackupScheduled=false;
-    this.deferredInteractions=new Set();this.jobWakeTimers=new Map();
+    this.deferredInteractions=new Set();this.jobWakeTimers=new Map();this.jobWakeSequence=0;
   }
   async refreshResources(){
     const [r,config]=await Promise.all([this.store.getResources(this.guildId),this.store.getConfig(this.guildId)]);
@@ -124,7 +124,9 @@ export class DiscordCommunityPanels{
   opensModal(customId){
     return customId==="ticket:category"||customId==="member:creator"||customId==="suggestion:open"||customId==="bug:open"||customId==="poll:create"||customId==="admin:rebuild:start"||customId==="admin:reconcile"||customId==="admin:restore"||customId==="admin:thresholds"||customId==="giveaway:role-select"||customId==="admin:event"||customId.startsWith("ticket:note:")||customId.startsWith("appeal:open:")||customId.startsWith("mod:target:");
   }
-  scheduleJobWake(runAt,key=String(Math.random())){
+  scheduleJobWake(runAt,key){
+    key=key??("job-wake:"+(++this.jobWakeSequence));
+    const previous=this.jobWakeTimers.get(key);if(previous)clearTimeout(previous);
     const target=Date.parse(runAt);
     const delay=Number.isFinite(target)?Math.max(250,target-Date.now()+200):250;
     const timer=setTimeout(()=>{this.jobWakeTimers.delete(key);void this.tick();},delay);
@@ -732,7 +734,7 @@ export class DiscordCommunityPanels{
   }
   async openSecurityThresholds(i){
     this.requireAdmin(i);
-    const config=await this.store.getConfig(this.guildId),settings=config?.security??{};
+    const settings={};
     await this.showModal(i,mkModal("admin:thresholds:save","Configure server protection",[
       {id:"raid_join_threshold",label:"Joins before raid lockdown (2–100)",min:1,max:3,placeholder:"10",value:String(settings.raidJoinThreshold??10)},
       {id:"raid_window",label:"Join burst window seconds (10–600)",min:2,max:3,placeholder:"60",value:String(settings.raidWindowSeconds??60)},
@@ -811,10 +813,6 @@ export class DiscordCommunityPanels{
     this.requireStaff(i,["admin","community_manager","event_host"]);
     const roleId=i.data?.values?.[0]??"all";
     if(roleId!=="all"&&!SF.test(roleId))throw new Error("Select a valid Discord role.");
-    if(roleId!=="all"){
-      const roles=await this.api.request("/guilds/"+this.guildId+"/roles");
-      if(!Array.isArray(roles)||!roles.some(role=>role.id===roleId))throw new Error("The selected eligibility role no longer exists.");
-    }
     await this.showModal(i,mkModal("giveaway:submit:"+roleId,"Create a community giveaway",[
       {id:"title",label:"Giveaway title",min:4,max:140,placeholder:"Snoozer Community Giveaway"},
       {id:"prize",label:"Prize",min:2,max:300,placeholder:"Describe the prize"},
@@ -834,6 +832,7 @@ export class DiscordCommunityPanels{
     if(!SF.test(channelId??""))throw new Error("The giveaways channel has not been configured.");
     const endsAt=new Date(Date.now()+hours*3600_000).toISOString();
     const minimumRoleId=roleId==="all"?null:roleId;
+    if(minimumRoleId){const roles=await this.api.request("/guilds/"+this.guildId+"/roles");if(!Array.isArray(roles)||!roles.some(role=>role.id===minimumRoleId))throw new Error("The selected eligibility role no longer exists.");}
     const id=await this.store.createGiveaway({guildId:this.guildId,channelId,title,prize,winnerCount:winners,endsAt,minimumRoleId,actorId:uid(i)});
     await this.store.enqueueJob({guildId:this.guildId,jobType:"giveaway_finish",dedupeKey:"giveaway-finish:"+id,
       payload:{giveaway_id:id,channel_id:channelId},runAt:endsAt});
@@ -1136,7 +1135,12 @@ export class DiscordCommunityPanels{
   stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
 
   async handleSlash(i){
-    return this.handleCommunitySlash(i);
+    try{return await this.handleCommunitySlash(i);}
+    catch(error){
+      this.logger.error("[discord-panels] slash interaction failed",error?.stack??error?.message??error);
+      try{await this.reply(i,{content:"The command could not be completed: "+clean(error?.message??"Unknown error",700)},true);}catch(replyError){this.logger.error("[discord-panels] slash error reply failed",replyError?.message??replyError);}
+      return true;
+    }
   }
 
   async handle(i){
@@ -1144,8 +1148,18 @@ export class DiscordCommunityPanels{
     if(i.type===2)return this.handleSlash(i);
     if(i.type!==3&&i.type!==5)return false;
     const id=i.data?.custom_id;if(typeof id!=="string")return false;
-    if(!await this.store.recordInteraction(i.id,id))return true;
+    const modalLaunch=i.type===3&&this.opensModal(id);
     try{
+      // Discord interactions must be acknowledged before any Supabase or Discord REST work.
+      // Component interactions that open a modal must return the modal as the initial callback.
+      if(!modalLaunch){
+        await this.defer(i);
+        const firstDelivery=await this.store.recordInteraction(i.id,id);
+        if(!firstDelivery){
+          await this.complete(i,{content:"This interaction has already been processed."});
+          return true;
+        }
+      }
       if(id==="ticket:start")await this.ticketCategory(i);
       else if(id==="ticket:category"){
         const cat=i.data?.values?.[0];if(!["account","billing","technical","bug","report","general"].includes(cat))throw new Error("Invalid support category.");
@@ -1357,8 +1371,13 @@ export class DiscordCommunityPanels{
     }catch(e){
       this.logger.error("[discord-panels] interaction failed",id,e?.stack??e?.message??e);
       try{await this.logEvent?.({title:"Bot interaction failed",description:"Action: "+clean(id,120)+"\nMember: <@"+uid(i)+">\nError: "+clean(e?.message??"Unknown error",500),severity:"error"});}catch{}
-      try{await this.reply(i,{content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)},true);}catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
+      try{
+        const message={content:"This action could not be completed: "+clean(e?.message??"Unknown error",800)};
+        if(this.deferredInteractions.has(i.id))await this.complete(i,message);
+        else if(!modalLaunch)await this.reply(i,message,true);
+      }catch(replyError){this.logger.error("[discord-panels] error reply failed",replyError?.message??replyError);}
       return true;
     }
+  }
   }
 }
