@@ -64,7 +64,8 @@ export async function save(input: unknown): Promise<SaveResult> {
   const planResult = await client.rpc("get_my_plan");
   const plan = accountPlan.safeParse(planResult.data);
   if (planResult.error || !plan.success) return { status: "error", message: "Couldn’t verify your current plan." };
-  if (effects && !effectsAllowed(effects, plan.data.plan)) return { status: "error", message: "This effect combination is not available on your current plan." };
+  const effectTier = plan.data.capabilities.advancedEffects ? plan.data.plan : "free";
+  if (effects && !effectsAllowed(effects, effectTier)) return { status: "error", message: "This effect combination is not available on your current plan." };
   const { data, error } = await client.rpc("save_profile", {
     p_profile: profileId,
     p_expected: revision,

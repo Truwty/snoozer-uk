@@ -790,6 +790,22 @@ test("verify, publish, restore, reset, delete and clean up a profile", async ({ 
     await expect(designPreview).toHaveAttribute("data-background-video", "true");
     await expect(designPreview.locator("video.profile-background-video")).toHaveAttribute("src", /\/studio\/background-video\//);
     await page.getByLabel("Background Effects").selectOption("gradient");
+    const effectTier = await page.locator(".effects-editor").getAttribute("data-effect-tier");
+    const tierRank: Record<string, number> = { free: 0, plus: 1, pro: 2, studio: 3 };
+    expect(effectTier).toBeTruthy();
+    const tierChecks = [
+      ["#profile-effect-background", "aurora", "plus"],
+      ["#profile-effect-background", "nebula", "pro"],
+      ["#profile-effect-background", "singularity", "studio"],
+      ['select[aria-label="Effect interaction"]', "tilt", "pro"],
+      ['select[aria-label="Effect interaction"]', "parallax", "studio"],
+      ['select[aria-label="Effect preset"]', "deep-space", "studio"],
+    ] as const;
+    for (const [select, option, requiredTier] of tierChecks) {
+      const optionLocator = page.locator(`${select} option[value="${option}"]`);
+      if (tierRank[effectTier!] < tierRank[requiredTier]) await expect(optionLocator).toBeDisabled();
+      else await expect(optionLocator).toBeEnabled();
+    }
     await expect(designPreview.locator(".profile-effects-layer")).toHaveAttribute("data-background", "gradient");
     await page.getByRole("textbox", { name: "Location", exact: true }).fill("Studio North");
     await page.getByRole("checkbox", { name: "Show location on my profile" }).check();
