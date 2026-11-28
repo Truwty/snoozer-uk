@@ -240,12 +240,15 @@ export class DiscordCommunityPanels{
 
   async getTicket(i,id){
     if(!UUID.test(id))throw new Error("Invalid ticket reference.");
-    if(i.channel?.topic?.includes("id="+id))return {id,channel:i.channel,channelId:i.channel_id};
-    const tickets=await this.store.ticketQueue(this.guildId,100);
-    const ticket=Array.isArray(tickets)?tickets.find(t=>t.id===id):null;
-    if(!ticket)throw new Error("Ticket could not be found.");
-    return {id,ticket,channel:await this.api.request("/channels/"+ticket.channel_id),channelId:ticket.channel_id};
+    const ticket=await this.store.getTicket(id);
+    if(!ticket||ticket.guild_id!==this.guildId)throw new Error("Ticket could not be found in this server.");
+    const channelId=ticket.channel_id;
+    const channel=i.channel_id===channelId&&i.channel
+      ? i.channel
+      : await this.api.request("/channels/"+channelId);
+    return {id,ticket,channel,channelId};
   }
+
   async closeTicket(i,id){
     const t=await this.getTicket(i,id);const actor=uid(i);
     const owner=t.channel.topic?.match(/\bowner=([1-9][0-9]{16,19})\b/)?.[1]??t.ticket?.owner_discord_id;

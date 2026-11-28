@@ -1,12 +1,12 @@
 const SF=/^[1-9][0-9]{16,19}$/;
 const PERM={sendMessages:1n<<11n,manageChannels:1n<<4n,administrator:1n<<3n,manageGuild:1n<<5n,manageRoles:1n<<28n};
-const DESTRUCTIVE_ACTIONS=new Set([12,15,32,52,62,73,80,82,92,102,112,142]);
+const DESTRUCTIVE_ACTIONS=new Set([12,15,28,32,52,62,73,82,92,102,112,142]);
 const RELEVANT_ACTIONS=new Map([
   [12,"Channel deleted"],[14,"Channel overwrite changed"],[15,"Channel overwrite removed"],
   [22,"Member banned"],[30,"Role created"],[31,"Role permissions changed"],[32,"Role deleted"],
   [80,"Bot added to server"],
-  [50,"Webhook created"],[51,"Webhook changed"],[52,"Webhook deleted"],
-  [72,"Message deleted"],[73,"Messages bulk-deleted"],[82,"Integration deleted"],
+  [28,"Bot added to server"],[50,"Webhook created"],[51,"Webhook changed"],[52,"Webhook deleted"],
+  [72,"Message deleted"],[73,"Messages bulk-deleted"],[80,"Integration created"],[81,"Integration updated"],[82,"Integration deleted"],
   [102,"Scheduled event deleted"],[112,"Thread deleted"],[142,"AutoMod rule deleted"],
 ]);
 const safe=(v,n=300)=>typeof v==="string"?v.replace(/[\u0000-\u001f\u007f]/g,"").slice(0,n):"";
@@ -150,7 +150,7 @@ export class DiscordSecurityGuard{
         this.logger.warn("[discord-security] webhook removal was not permitted",error?.message??error);
       }
     }
-    if(action===80&&SF.test(targetId??"")){
+    if(action===28&&SF.test(targetId??"")){
       try{
         const member=await this.api.request("/guilds/"+this.guildId+"/members/"+targetId);
         if(member?.user?.bot&&targetId!==this.botUserId){
