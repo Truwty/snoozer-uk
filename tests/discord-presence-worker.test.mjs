@@ -268,6 +268,94 @@ test("worker clears cached presence when a targeted snapshot reports the account
   assert.match(posted[0].eventId, /^[0-9a-f-]{36}$/);
 });
 
+test("community bot requests the privileged Guild Members intent for welcome and boost events", async () => {
+  const sent = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    guildId: "222222222222222222",
+    botEnabled: true,
+    presenceEnabled: false,
+    serverSetupEnabled: false,
+  }, {
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.socket = {
+    readyState: 1,
+    send: payload => sent.push(JSON.parse(payload)),
+  };
+
+  await worker.handleMessage(JSON.stringify({
+    op: 10,
+    d: { heartbeat_interval: 45_000 },
+  }));
+  const identify = sent.find(packet => packet.op === 2);
+  assert.ok(identify);
+  assert.ok((identify.d.intents & (1 << 0)) !== 0, "Guilds intent remains enabled");
+  assert.ok((identify.d.intents & (1 << 1)) !== 0, "Guild Members intent is enabled for community events");
+  assert.equal((identify.d.intents & (1 << 8)), 0, "Presence intent remains disabled unless explicitly configured");
+  worker.stopHeartbeat();
+});
+
+test("member join and update events are handled only for the configured Snoozer server", async () => {
+  const events = [];
+  const worker = new DiscordPresenceWorker({
+    token: "test-token",
+    guildId: "222222222222222222",
+    botEnabled: true,
+    presenceEnabled: false,
+    serverSetupEnabled: false,
+  }, {
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  worker.communityBot = {
+    seedKnownBoosters: members => events.push(["seed", members.length]),
+    welcomeMember: member => events.push(["welcome", member.user.id]),
+    handleMemberRemove: member => events.push(["remove", member.user.id]),
+    handleMemberUpdate: member => events.push(["boost", member.user.id]),
+  };
+
+  await worker.dispatch({
+    t: "GUILD_CREATE",
+    d: { id: "999999999999999999", members: [{ user: { id: "111111111111111111" } }] },
+  });
+  await worker.dispatch({
+    t: "GUILD_CREATE",
+    d: { id: "222222222222222222", members: [{ user: { id: "111111111111111111" }, premium_since: "2026-11-28T00:00:00.000Z" }] },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_ADD",
+    d: { guild_id: "999999999999999999", user: { id: "333333333333333333" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_ADD",
+    d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_REMOVE",
+    d: { guild_id: "999999999999999999", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_REMOVE",
+    d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_ADD",
+    d: { guild_id: "222222222222222222", user: { id: "444444444444444444" } },
+  });
+  await worker.dispatch({
+    t: "GUILD_MEMBER_UPDATE",
+    d: { guild_id: "222222222222222222", user: { id: "555555555555555555" }, premium_since: "2026-11-28T00:00:00.000Z" },
+  });
+
+  assert.deepEqual(events, [
+    ["seed", 1],
+    ["welcome", "444444444444444444"],
+    ["remove", "444444444444444444"],
+    ["welcome", "444444444444444444"],
+    ["boost", "555555555555555555"],
+  ]);
+});
+
 test("worker signs the exact JSON body with a timestamped HMAC", () => {
   const secret = "b".repeat(64);
   const payload = { type: "heartbeat", connected: true, guildReady: true };
