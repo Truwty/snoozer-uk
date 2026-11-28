@@ -33,3 +33,5 @@ services:
         sync: false
       - key: DISCORD_PRESENCE_INVITE_URL
         sync: false
+      - key: SNOOZER_PRESENCE_URL
+        value: https://snoozer.uk
