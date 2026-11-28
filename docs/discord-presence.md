@@ -102,7 +102,7 @@ Set the same value in the Snoozer web service and the worker.
 ### Snoozer web service
 
 - `DISCORD_BOT_ENABLED=true` — enables the community bot, including tickets, bug/suggestion submissions, moderation commands, live status lookup and best-effort status change announcements. This does not enable Presence collection.
-- `DISCORD_SERVER_SETUP_ENABLED=false` — turn this off after the one-time server provisioning command is no longer needed. The new `/snoozer-repair` command remains available with the community bot enabled.
+- `DISCORD_SERVER_SETUP_ENABLED=false` — turn this off after the one-time server provisioning command is no longer needed. `/snoozer-reconcile` remains available for non-destructive repairs and `/snoozer-rebuild-server` is the separately confirmed full reset.
 - `DISCORD_PRESENCE_ENABLED=false` — default kill switch. Set to `true` only after policy clearance and after the bot/worker secrets are configured. In the free setup, this starts the worker as a child of the web service.
 - `DISCORD_BOT_TOKEN` — Discord bot token, secret.
 - `DISCORD_PRESENCE_GUILD_ID` — the shared Discord server ID.
