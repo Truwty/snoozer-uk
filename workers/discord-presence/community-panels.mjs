@@ -297,8 +297,9 @@ export class DiscordCommunityPanels{
       stage="save ticket record";
       record=await this.store.openTicket({guildId:this.guildId,channelId:channel.id,ownerId:owner,category,subject,details});
       if(!record?.created){
-        await this.api.request("/channels/"+channel.id,{method:"DELETE"});
-        await this.reply(i,{content:record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":"You already have an active ticket."},true);
+        try{await this.api.request("/channels/"+channel.id,{method:"DELETE"});}catch(cleanupError){this.logger.error("[discord-panels] duplicate ticket channel cleanup failed",cleanupError?.message??cleanupError);}
+        const message=record?.channel_id?"You already have an active ticket: <#"+record.channel_id+">.":record?.reason==="cooldown"?"To prevent duplicate tickets, wait "+Math.max(1,Number(record.retry_after_seconds??1))+" second(s) before opening another ticket.":"You already have an active ticket.";
+        await this.reply(i,{content:message},true);
         return;
       }
       recordCreated=true;
