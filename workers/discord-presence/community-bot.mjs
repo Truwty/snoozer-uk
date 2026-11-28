@@ -953,6 +953,7 @@ async announceServerBoost(member) {
           throw new Error("You do not have the Discord permission required for this moderation command.");
         }
         content = await this.moderate(interaction, name.replace("snoozer-", ""));
+      }
 
       await this.complete(interaction, { content, embeds });
     } catch (error) {
