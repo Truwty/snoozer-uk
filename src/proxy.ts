@@ -6,7 +6,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { siteUrl, supabaseKey, supabaseUrl } from "@/lib/env";
 import { anonymousClient } from "@/lib/supabase";
-import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge } from "@/lib/account-sessions";
+import { activeAccountCookie, accountListCookie, readSavedAccounts, selectedAccountSlot, sessionStorageName, sessionMaxAge, isSessionCookieName } from "@/lib/account-sessions";
 import { canonicalUsername, username } from "@/lib/profile";
 
 const topLevelPages = new Set(["sign-in", "sign-up", "help", "forgot-password", "reset-password", "studio", "templates", "store", "profile-not-found", "privacy", "terms", "leaderboard", "discover", "pricing", "legal", "owner", "appeal", "report", "account-restricted", "maintenance"]);
@@ -168,8 +168,7 @@ export async function proxy(request: NextRequest) {
     const slot = selectedAccountSlot(request.cookies.get(activeAccountCookie)?.value, accounts);
     const name = sessionStorageName(slot);
     const hasSession = request.cookies.getAll().some(({ name: cookie }) =>
-      name ? cookie === name || cookie.startsWith(name + ".")
-        : /^sb-[A-Za-z0-9_-]+-auth-token(?:\\.\\d+)?$/.test(cookie));
+      isSessionCookieName(cookie, name));
     if (hasSession) {
     const client = createServerClient(supabaseUrl, supabaseKey, {
       global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8000) }) },
