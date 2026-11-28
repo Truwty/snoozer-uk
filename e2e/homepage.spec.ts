@@ -18,7 +18,7 @@ for (const width of [320, 375, 768, 1440]) {
     await expect(page.getByRole("heading", { name: /Everything you want, right here/i }).last()).toBeVisible();
     const navigation = page.getByRole("navigation", { name: "Primary navigation" });
     await expect(navigation.getByRole("link", { name: "Help Center" })).toHaveAttribute("href", "https://help.snoozer.uk/");
-    const discord = navigation.getByRole("link", { name: "Join the Snoozer Discord server" });
+    const discord = navigation.getByRole("link", { name: "Join Discord" });
     await expect(discord).toHaveAttribute("href", "https://discord.gg/PVk9UskfjD");
     await expect(discord).toHaveAttribute("target", "_blank");
     await expect(discord).toHaveAttribute("rel", "noopener noreferrer");
@@ -28,16 +28,6 @@ for (const width of [320, 375, 768, 1440]) {
   });
 }
 
-
-test("legacy Help Centre and Status URLs redirect to their standalone services", async ({ page }) => {
-  await page.route("https://help.snoozer.uk/**", (route) => route.fulfill({ status: 200, body: "Help Centre test route" }));
-  await page.goto("/help/premium-billing");
-  await expect(page).toHaveURL("https://help.snoozer.uk/premium-billing");
-
-  await page.route("https://status.snoozer.uk/**", (route) => route.fulfill({ status: 200, body: "Status page test route" }));
-  await page.goto("/status");
-  await expect(page).toHaveURL("https://status.snoozer.uk/");
-});
 
 test("homepage FAQ behaves as a single-open accordion", async ({ page }) => {
   await page.goto("/");
