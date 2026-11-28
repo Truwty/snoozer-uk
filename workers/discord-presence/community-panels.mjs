@@ -800,7 +800,7 @@ export class DiscordCommunityPanels{
     }]},true);
   }
 
-  async handleSlash(i){
+  async handleCommunitySlash(i){
     const name=i.data?.name;
     if(!await this.store.recordInteraction(i.id,"slash_"+String(name??"unknown").slice(0,70)))return true;
     if(name==="snoozer-profile"||name==="snoozer-account"){await this.memberSummary(i);return true;}
@@ -979,19 +979,7 @@ export class DiscordCommunityPanels{
   stop(){if(this.timer)clearInterval(this.timer);this.timer=null;}
 
   async handleSlash(i){
-    if(i.data?.name!==SNOOZER_REBUILD_COMMAND.name)return false;
-    if(!has(i.member?.permissions,P.administrator)){await this.reply(i,{content:"Only a server Administrator can rebuild the Snoozer server."},true);return true;}
-    if(opt(i,"confirmation")!=="REBUILD SNOOZER SERVER"){await this.reply(i,{content:"No changes were made. The confirmation did not match."},true);return true;}
-    await this.defer(i);
-    try{const result=await this.rebuilder.rebuild(uid(i));await this.refreshResources();await this.complete(i,{content:[
-      result.complete?"Snoozer server rebuild completed.":"Server rebuild has outstanding failures.",
-      "New categories: "+result.categoryCount+" · channels: "+result.channelCount+" · roles: "+result.roleCount,
-      "Members checked: "+result.memberCount+" · role assignments migrated: "+result.memberRolesMigrated,
-      "Old channels deleted: "+result.channelsDeleted+" · old roles deleted: "+result.rolesDeleted,
-      "Premium/Creator role checks: "+result.roleSync.updated+" updated of "+result.roleSync.checked,
-      "Configuration backup: "+result.backupId,
-    ].join("\n")});}catch(e){this.logger.error("[discord-panels] server rebuild failed",e?.message??e);await this.complete(i,{content:"Server rebuild did not complete: "+clean(e?.message,700)});}
-    return true;
+    return this.handleCommunitySlash(i);
   }
 
   async handle(i){

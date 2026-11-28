@@ -467,3 +467,25 @@ test("ticket reminder jobs do not message tickets that have already closed", asy
   });
   assert.deepEqual(calls,[]);
 });
+
+test("community slash commands reach the complete router as well as rebuild", async () => {
+  const applicationId = "1574262035519115288";
+  const handled = [];
+  const panels = new DiscordCommunityPanels({ guildId, botUserId, applicationId }, {
+    api: { async request() { return {}; } },
+    store: { async recordInteraction() { return true; } },
+  });
+  panels.healthStatus = async () => { handled.push("health"); };
+  await panels.handle({
+    guild_id: guildId,
+    application_id: applicationId,
+    type: 2,
+    id: "1574262035519115290",
+    token: "test-interaction-token",
+    user: { id: botUserId },
+    member: { permissions: "0", roles: [] },
+    data: { name: "snoozer-health", options: [] },
+  });
+  assert.deepEqual(handled, ["health"]);
+});
+
