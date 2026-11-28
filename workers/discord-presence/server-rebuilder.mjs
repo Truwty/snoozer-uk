@@ -108,7 +108,9 @@ export class DiscordServerRebuilder {
     const botTop=Math.max(0,...botRoles.map(role=>Number(role.position??0)));
     const perms=botRoles.reduce((value,role)=>value|BigInt(role.permissions??"0"),0n);
     const required=["manageChannels","manageRoles","manageGuild","manageEvents","manageWebhooks","viewAuditLog","kickMembers","banMembers","moderateMembers","viewChannel","sendMessages","embedLinks","readMessageHistory"];
-    const missing=required.filter(key=>(perms&P[key])!==P[key]);
+    // Discord ADMINISTRATOR grants every permission implicitly; its bit does not include each individual permission bit.
+    const hasAdministrator=(perms&P.administrator)===P.administrator;
+    const missing=hasAdministrator?[]:required.filter(key=>(perms&P[key])!==P[key]);
     if(missing.length) throw new Error("The bot is missing required permissions: "+missing.join(", ")+". No server changes were made.");
     const blockedLegacy=roles.filter(isKnownLegacyRole).filter(role=>!role.managed&&Number(role.position)>=botTop);
     if(blockedLegacy.length) throw new Error("The bot role is below or level with roles that need replacing: "+blockedLegacy.map(role=>role.name).join(", ")+". Move the bot role above the Snoozer roles, then retry. No server changes were made.");
